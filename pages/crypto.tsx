@@ -11,6 +11,7 @@ import IconCaretDown from '@/components/Icon/IconCaretDown';
 const ReactApexChart = dynamic(() => import('react-apexcharts'), {
     ssr: false,
 });
+
 const coins = [
     {
         id: 1,
