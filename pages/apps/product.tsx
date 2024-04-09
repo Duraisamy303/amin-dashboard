@@ -21,34 +21,44 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
+import { date } from 'yup/lib/locale';
 
 const rowData1 = [
     {
         id: 1,
         image: `${Image1.src}`,
-        name: 'Anklets',
-        description: 'Anklets',
-        slug: 'anklets',
-        count: 3,
+        name: 'Necklace Yazhu',
+        sku: 'PBS_NP_34',
+        stock: 'Out of stock',
+        price: 10800.0,
+        categories: 'Necklace',
+        tags: 'New',
+        date: '26-03-2022',
     },
     {
         id: 2,
         image: `${Image2.src}`,
-        name: '__Black Thread',
-        description: 'Black Thread Black Thread',
-        slug: 'black-thread',
-        count: 65,
+        name: 'Necklace Preetham',
+        sku: 'PBS_NP_31',
+        stock: 'In stock ',
+        price: 14450.0,
+        categories: 'Earings',
+        tags: 'New',
+        date: '09-10-2023',
     },
     {
         id: 3,
         image: `${Image3.src}`,
-        name: '__Kada',
-        description: 'Kada',
-        slug: 'kada',
-        count: 65,
+        name: 'Necklace Shila',
+        sku: 'PBS_NP_32',
+        stock: 'Out of stock',
+        price: 18900.0,
+        categories: 'New Arrivals',
+        tags: 'New',
+        date: '01-01-2024',
     },
 ];
-const Category = () => {
+const Product = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
@@ -73,7 +83,12 @@ const Category = () => {
     const [modalTitle, setModalTitle] = useState(null);
     const [modalContant, setModalContant] = useState<any>(null);
 
-    // const [viewModal, setViewModal] = useState(false);
+    const [viewModal, setViewModal] = useState(false);
+
+    const [filterFormData, setFilterFormData] = useState({
+        category: '',
+        stock: '',
+    });
 
     useEffect(() => {
         setPage(1);
@@ -92,9 +107,11 @@ const Category = () => {
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
                     item.name.toLowerCase().includes(search.toLowerCase()) ||
-                    item.description.toLowerCase().includes(search.toLowerCase()) ||
-                    item.slug.toLowerCase().includes(search.toLowerCase()) ||
-                    item.count.toString().includes(search.toLowerCase())
+                    item.sku.toLowerCase().includes(search.toLowerCase()) ||
+                    item.stock.toLowerCase().includes(search.toLowerCase()) ||
+                    item.price.toString().includes(search.toLowerCase()) ||
+                    item.categories.toLowerCase().includes(search.toLowerCase()) ||
+                    item.date.toString().includes(search.toLowerCase())
                 );
             });
         });
@@ -108,11 +125,14 @@ const Category = () => {
     // FORM VALIDATION
     const SubmittedForm = Yup.object().shape({
         name: Yup.string().required('Please fill the Name'),
-        description: Yup.string().required('Please fill the Description'),
-        slug: Yup.string().required('Please fill the Slug'),
-        // count: Yup.string().required('Please fill the count'),
+        sku: Yup.string().required('Please fill the SKU'),
+        stock: Yup.string().required('Please fill the Slug'),
+        price: Yup.string().required('Please fill the count'),
         image: Yup.string().required('Please fill the Image'),
-        parentCategory: Yup.string().required('Please fill the Parent Category'),
+        categories: Yup.string().required('Please fill the Parent categories'),
+        tags: Yup.string().required('Please fill the Tags'),
+        date: Yup.string().required('Please fill the Date'),
+        // parentProduct: Yup.string().required('Please fill the Parent Product'),
     });
 
     // form submit
@@ -134,24 +154,24 @@ const Category = () => {
         resetForm();
     };
 
-    // category table edit
-    const EditCategory = (record: any) => {
+    // Product table edit
+    const EditProduct = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
-    // category table create
-    const CreateCategory = () => {
+    // Product table create
+    const CreateProduct = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
     };
 
     // view categotry
-    // const ViewCategory = (record: any) => {
-    //     setViewModal(true);
-    // };
+    const ViewProduct = (record: any) => {
+        setViewModal(true);
+    };
 
     // delete Alert Message
     const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
@@ -167,7 +187,7 @@ const Category = () => {
         swalWithBootstrapButtons
             .fire({
                 title: 'Are you sure?',
-                text: "You won't be able to revert this!",
+                text: "You won't be able to Delete this!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, delete it!',
@@ -184,7 +204,7 @@ const Category = () => {
             });
     };
 
-    const BulkDeleteCategory = async () => {
+    const BulkDeleteProduct = async () => {
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -197,32 +217,67 @@ const Category = () => {
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Category List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
             }
         );
     };
 
-    const DeleteCategory = (record: any) => {
+    const DeleteProduct = (record: any) => {
         showDeleteAlert(
             () => {
                 const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
-                Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
+                Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Category List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
             }
         );
     };
 
-    // completed category delete option
+    // completed Product delete option
+    console.log('modalcontant', modalContant);
+
+    // top Filter Category change
+    const CategoryChange = (selectedCategory: string) => {
+        console.log('Selected Category:', selectedCategory);
+        // Update the state with the selected category
+        setFilterFormData((prevState) => ({
+            ...prevState,
+            category: selectedCategory,
+        }));
+    };
+
+    const StockStatusChange = (selectedStockStatus: string) => {
+        console.log('Selected Stock Status:', selectedStockStatus);
+        // Update the state with the selected stock status
+        setFilterFormData((prevState) => ({
+            ...prevState,
+            stock: selectedStockStatus,
+        }));
+    };
+
+    const onFilterSubmit = (e: any) => {
+        e.preventDefault();
+        console.log('filterFormData', filterFormData);
+
+        setFilterFormData({
+            category: '',
+            stock: '',
+        })
+    };
 
     return (
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
-
+                    <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
+                    <button type="button" className="btn btn-outline-primary">
+                        Import
+                    </button>
+                    <button type="button" className="btn btn-outline-primary">
+                        Export
+                    </button>
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                         <div className="dropdown  mr-2 ">
@@ -240,18 +295,43 @@ const Category = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteCategory()}>
+                                        <button type="button" onClick={() => BulkDeleteProduct()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateCategory()}>
+                        <button type="button" className="btn btn-primary" onClick={() => CreateProduct()}>
                             + Create
                         </button>
                     </div>
                 </div>
+
+                <div className="mb-5 ">
+                    <form onSubmit={onFilterSubmit}>
+                        <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 md:flex-row">
+                            <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
+                                <option value="">Select a Categories </option>
+                                <option value="Anklets">Anklets</option>
+                                <option value="Earings">Earings</option>
+                                <option value="Palakka">Palakka</option>
+                            </select>
+
+                            {/* New select dropdown for stock status */}
+                            <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>
+                                <option value="">Filter By Stock Status</option>
+                                <option value="In Stock">In Stock</option>
+                                <option value="Out Of Stock">Out Of Stock</option>
+                            </select>
+
+                            <button type="submit" className="btn btn-primary py-2.5">
+                                Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
                 <div className="datatables">
                     <DataTable
                         className="table-hover whitespace-nowrap"
@@ -260,9 +340,12 @@ const Category = () => {
                             { accessor: 'id', sortable: true },
                             { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                             { accessor: 'name', sortable: true },
-                            { accessor: 'description', sortable: true },
-                            { accessor: 'slug', sortable: true },
-                            { accessor: 'count', sortable: true },
+                            { accessor: 'sku', sortable: true },
+                            { accessor: 'stock', sortable: true },
+                            { accessor: 'price', sortable: true },
+                            { accessor: 'categories', sortable: true },
+                            { accessor: 'tags', sortable: true },
+                            { accessor: 'date', sortable: true },
                             {
                                 // Custom column for actions
                                 accessor: 'actions', // You can use any accessor name you want
@@ -270,18 +353,18 @@ const Category = () => {
                                 // Render method for custom column
                                 render: (row: any) => (
                                     <>
-                                        {/* <Tippy content="View">
-                                            <button type="button" onClick={() => ViewCategory(row)}>
+                                        <Tippy content="View">
+                                            <button type="button" onClick={() => ViewProduct(row)}>
                                                 <IconEye className="ltr:mr-2 rtl:ml-2" />
                                             </button>
-                                        </Tippy> */}
+                                        </Tippy>
                                         <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditCategory(row)}>
+                                            <button type="button" onClick={() => EditProduct(row)}>
                                                 <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy>
                                         <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteCategory(row)}>
+                                            <button type="button" onClick={() => DeleteProduct(row)}>
                                                 <IconTrashLines />
                                             </button>
                                         </Tippy>
@@ -308,7 +391,7 @@ const Category = () => {
                 </div>
             </div>
 
-            {/* CREATE AND EDIT CATEGORY FORM */}
+            {/* CREATE AND EDIT Product FORM */}
             <Transition appear show={modal1} as={Fragment}>
                 <Dialog as="div" open={modal1} onClose={() => setModal1(false)}>
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
@@ -327,7 +410,7 @@ const Category = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Category' : 'Edit Category'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Product' : 'Edit Product'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -336,14 +419,15 @@ const Category = () => {
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', description: '', slug: '', image: '', parentCategory: '' }
+                                                    ? { name: '', sku: '', stock: '', image: '', price: '', categories: '', tags: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                          description: modalContant?.description,
-                                                          slug: modalContant?.slug,
-                                                          //   count: modalContant?.count,
+                                                          sku: modalContant?.sku,
+                                                          stock: modalContant?.stock,
+                                                          price: modalContant?.price,
                                                           image: modalContant?.image,
-                                                          parentCategory: modalContant?.name,
+                                                          categories: modalContant?.categories,
+                                                          tags: modalContant?.tags,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
@@ -372,57 +456,44 @@ const Category = () => {
 
                                                     <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="fullName">Name </label>
-                                                        <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
+                                                        <Field name="name" type="text" id="name" placeholder="Enter Name" className="form-input" />
 
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
-                                                    <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="description">description </label>
-                                                        <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
+                                                    <div className={submitCount ? (errors.sku ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="sku">SKU </label>
+                                                        <Field name="sku" type="text" id="sku" placeholder="Enter SKU" className="form-input" />
 
-                                                        {submitCount ? (
-                                                            errors.description ? (
-                                                                <div className="mt-1 text-danger">{errors.description}</div>
-                                                            ) : (
-                                                                <div className="mt-1 text-success"></div>
-                                                            )
-                                                        ) : (
-                                                            ''
-                                                        )}
+                                                        {submitCount ? errors.sku ? <div className="mt-1 text-danger">{errors.sku}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
-                                                    <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="slug">Slug </label>
-                                                        <Field name="slug" type="text" id="slug" placeholder="Enter Description" className="form-input" />
+                                                    <div className={submitCount ? (errors.stock ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="stock">Stock </label>
+                                                        <Field name="stock" type="text" id="stock" placeholder="Enter Stock" className="form-input" />
 
-                                                        {submitCount ? errors.slug ? <div className="mt-1 text-danger">{errors.slug}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                        {submitCount ? errors.stock ? <div className="mt-1 text-danger">{errors.stock}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
-                                                    {/* <div className={submitCount ? (errors.count ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="count">Count</label>
-                                                        <Field name="count" type="number" id="count" placeholder="Enter Count" className="form-input" />
+                                                    <div className={submitCount ? (errors.price ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="price">Price</label>
+                                                        <Field name="price" type="number" id="price" placeholder="Enter Price" className="form-input" />
 
-                                                        {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div> */}
+                                                        {submitCount ? errors.price ? <div className="mt-1 text-danger">{errors.price}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div>
 
-                                                    <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="parentCategory">Parent Category</label>
-                                                        <Field as="select" name="parentCategory" className="form-select">
-                                                            <option value="">Open this select menu</option>
-                                                            <option value="Anklets">Anklets</option>
-                                                            <option value="BlackThread">__Black Thread</option>
-                                                            <option value="Kada">__Kada</option>
-                                                        </Field>
-                                                        {submitCount ? (
-                                                            errors.parentCategory ? (
-                                                                <div className=" mt-1 text-danger">{errors.parentCategory}</div>
-                                                            ) : (
-                                                                <div className=" mt-1 text-[#1abc9c]"></div>
-                                                            )
-                                                        ) : (
-                                                            ''
-                                                        )}
+                                                    <div className={submitCount ? (errors.categories ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="categories">Categories</label>
+                                                        <Field name="categories" type="text" id="categories" placeholder="Enter categories" className="form-input" />
+
+                                                        {submitCount ? errors.categories ? <div className="mt-1 text-danger">{errors.categories}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div>
+
+                                                    <div className={submitCount ? (errors.tags ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="tags">Tags</label>
+                                                        <Field name="tags" type="text" id="tags" placeholder="Enter Tags" className="form-input" />
+
+                                                        {submitCount ? errors.tags ? <div className="mt-1 text-danger">{errors.tags}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
@@ -439,8 +510,8 @@ const Category = () => {
                 </Dialog>
             </Transition>
 
-            {/* Full View Category data*/}
-            {/* <Transition appear show={viewModal} as={Fragment}>
+            {/* Full View Product data*/}
+            <Transition appear show={viewModal} as={Fragment}>
                 <Dialog as="div" open={viewModal} onClose={() => setViewModal(false)}>
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
                         <div className="fixed inset-0" />
@@ -458,7 +529,7 @@ const Category = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">View Category</div>
+                                        <div className="text-lg font-bold">View Product</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setViewModal(false)}>
                                             <IconX />
                                         </button>
@@ -469,9 +540,9 @@ const Category = () => {
                         </div>
                     </div>
                 </Dialog>
-            </Transition> */}
+            </Transition>
         </div>
     );
 };
 
-export default Category;
+export default Product;
