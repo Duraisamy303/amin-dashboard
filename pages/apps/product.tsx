@@ -48,7 +48,7 @@ const rowData1 = [
         count: 65,
     },
 ];
-const Category = () => {
+const product = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
@@ -220,7 +220,7 @@ const Category = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
 
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -473,4 +473,4 @@ const Category = () => {
     );
 };
 
-export default Category;
+export default product;

@@ -140,11 +140,19 @@ const Sidebar = () => {
 
                             <li className="nav-item">
                                 <ul>
-                                <li className="nav-item">
+                                    <li className="nav-item">
                                         <Link href="/apps/category" className="group">
                                             <div className="flex items-center">
                                                 <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
                                                 <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Category')}</span>
+                                            </div>
+                                        </Link>
+                                    </li>
+                                    <li className="nav-item">
+                                        <Link href="/apps/product" className="group">
+                                            <div className="flex items-center">
+                                                <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
                                             </div>
                                         </Link>
                                     </li>
@@ -164,7 +172,7 @@ const Sidebar = () => {
                                             </div>
                                         </Link>
                                     </li>
-                                  
+
                                     <li className="nav-item">
                                         <Link href="/apps/todolist" className="group">
                                             <div className="flex items-center">
