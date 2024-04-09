@@ -130,23 +130,25 @@ const Category = () => {
         resetForm();
     };
 
-    // table edit
+    // category table edit
     const EditCategory = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
+        // category table create
     const CreateCategory = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
     };
 
-    console.log('modalContant: ', modalContant);
+
+
 
     // delete Alert Message
-    const BulkDeleteCategory = async () => {
+    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
         const swalWithBootstrapButtons = Swal.mixin({
             customClass: {
                 confirmButton: 'btn btn-secondary',
@@ -155,10 +157,11 @@ const Category = () => {
             },
             buttonsStyling: false,
         });
+
         swalWithBootstrapButtons
             .fire({
                 title: 'Are you sure?',
-                text: "You won't be able to Delete this!",
+                text: "You won't be able to revert this!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, delete it!',
@@ -167,68 +170,49 @@ const Category = () => {
                 padding: '2em',
             })
             .then((result) => {
-                if (result.value) {
-                    if (selectedRecords.length == 0) {
-                        swalWithBootstrapButtons.fire('Cancelled', 'Please select atleast one record!', 'error');
-                    } else {
-                        const updatedRecordsData = recordsData.filter((record) => !selectedRecords.includes(record));
-
-                        setRecordsData(updatedRecordsData);
-
-                        setSelectedRecords([]);
-                        swalWithBootstrapButtons.fire('Deleted!', 'Your file has been deleted.', 'success');
-                    }
+                if (result.isConfirmed) {
+                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
                 } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    swalWithBootstrapButtons.fire('Cancelled', 'Your imaginary file is safe :)', 'error');
+                    onCancel(); // Call the onCancel function if the user cancels the deletion
                 }
             });
     };
 
-    // delete category
-    const DeleteCategory = (record: any) => {
-        const swalWithBootstrapButtons = Swal.mixin({
-            customClass: {
-                confirmButton: 'btn btn-secondary',
-                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
-                popup: 'sweet-alerts',
-            },
-            buttonsStyling: false,
-        });
-    
-        swalWithBootstrapButtons.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'No, cancel!',
-            reverseButtons: true,
-            padding: '2em',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Filter out the deleted record from your local data array
-                const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
-                // Update your local data array with the filtered data
+    const BulkDeleteCategory = async () => {
+        showDeleteAlert(
+            () => {
+                if (selectedRecords.length === 0) {
+                    Swal.fire('Cancelled', 'Please select at least one record!', 'error');
+                    return;
+                }
+                const updatedRecordsData = recordsData.filter((record) => !selectedRecords.includes(record));
                 setRecordsData(updatedRecordsData);
-    
-                swalWithBootstrapButtons.fire('Deleted!', 'Your file has been deleted.', 'success');
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                swalWithBootstrapButtons.fire('Cancelled', 'Your imaginary file is safe :)', 'error');
+                setSelectedRecords([]);
+                Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
+            },
+            () => {
+                Swal.fire('Cancelled', 'Your Category List is safe :)', 'error');
             }
-        });
+        );
     };
-    
+
+    const DeleteCategory = (record: any) => {
+        showDeleteAlert(
+            () => {
+                const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
+                setRecordsData(updatedRecordsData);
+                Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
+            },
+            () => {
+                Swal.fire('Cancelled', 'Your Category List is safe :)', 'error');
+            }
+        );
+    };
+
+    // completed category delete option
+
     return (
         <div>
-            {/* <div className="panel flex items-center overflow-x-auto whitespace-nowrap p-3 text-primary">
-                <div className="rounded-full bg-primary p-1.5 text-white ring-2 ring-primary/30 ltr:mr-3 rtl:ml-3">
-                    <IconBell />
-                </div>
-                <span className="ltr:mr-3 rtl:ml-3">Documentation: </span>
-                <a href="https://www.npmjs.com/package/mantine-datatable" target="_blank" className="block hover:underline" rel="noreferrer">
-                    https://www.npmjs.com/package/mantine-datatable
-                </a>
-            </div> */}
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
                     <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
@@ -316,6 +300,7 @@ const Category = () => {
                 </div>
             </div>
 
+            {/* CREATE AND EDIT CATEGORY FORM */}
             <Transition appear show={modal1} as={Fragment}>
                 <Dialog as="div" open={modal1} onClose={() => setModal1(false)}>
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
@@ -370,23 +355,17 @@ const Category = () => {
                                                             }}
                                                             className="form-input"
                                                         />
-                                                        {values.image && typeof values.image === 'string' && <img src={values.image} alt="Product Image" style={{ width: '100px', height: 'auto' }} />}
-                                                        {submitCount ? (
-                                                            errors.image ? (
-                                                                <div className="mt-1 text-danger">{errors.image}</div>
-                                                            ) : (
-                                                                <div className="mt-1 text-success">Looks Good!</div>
-                                                            )
-                                                        ) : (
-                                                            ''
+                                                        {values.image && typeof values.image === 'string' && (
+                                                            <img src={values.image} alt="Product Image" style={{ width: '30px', height: 'auto', paddingTop: '5px' }} />
                                                         )}
+                                                        {submitCount ? errors.image ? <div className="mt-1 text-danger">{errors.image}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
                                                     <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="fullName">Name </label>
                                                         <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
 
-                                                        {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success">Looks Good!</div> : ''}
+                                                        {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
                                                     <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
@@ -397,7 +376,7 @@ const Category = () => {
                                                             errors.description ? (
                                                                 <div className="mt-1 text-danger">{errors.description}</div>
                                                             ) : (
-                                                                <div className="mt-1 text-success">Looks Good!</div>
+                                                                <div className="mt-1 text-success"></div>
                                                             )
                                                         ) : (
                                                             ''
@@ -408,22 +387,14 @@ const Category = () => {
                                                         <label htmlFor="slug">Slug </label>
                                                         <Field name="slug" type="text" id="slug" placeholder="Enter Description" className="form-input" />
 
-                                                        {submitCount ? errors.slug ? <div className="mt-1 text-danger">{errors.slug}</div> : <div className="mt-1 text-success">Looks Good!</div> : ''}
+                                                        {submitCount ? errors.slug ? <div className="mt-1 text-danger">{errors.slug}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
                                                     <div className={submitCount ? (errors.count ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="count">Count</label>
                                                         <Field name="count" type="number" id="count" placeholder="Enter Count" className="form-input" />
 
-                                                        {submitCount ? (
-                                                            errors.count ? (
-                                                                <div className="mt-1 text-danger">{errors.count}</div>
-                                                            ) : (
-                                                                <div className="mt-1 text-success">Looks Good!</div>
-                                                            )
-                                                        ) : (
-                                                            ''
-                                                        )}
+                                                        {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
