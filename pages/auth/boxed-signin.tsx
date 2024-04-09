@@ -14,19 +14,66 @@ import IconInstagram from '@/components/Icon/IconInstagram';
 import IconFacebookCircle from '@/components/Icon/IconFacebookCircle';
 import IconTwitter from '@/components/Icon/IconTwitter';
 import IconGoogle from '@/components/Icon/IconGoogle';
+import { useMutation } from '@apollo/client';
+import { CHECKOUT_TOKEN, LOGIN } from '@/query/auth';
 
 const LoginBoxed = () => {
+    const [addFormData] = useMutation(LOGIN);
+
+    const [checkoutTokens] = useMutation(CHECKOUT_TOKEN);
+
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        subscribe: false,
+    });
+
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(setPageTitle('Login Boxed'));
     });
     const router = useRouter();
 
-    const submitForm = (e: any) => {
-        e.preventDefault();
-        router.push('/');
+    // const submitForm = (e: any) => {
+    //     e.preventDefault();
+    //     router.push('/');
+    // };
+
+    const getCheckoutToken = async (email: any) => {
+        try {
+            const data = await checkoutTokens({
+                variables: { channel: 'india-channel', email },
+            });
+            const checkoutToken = data?.data?.checkoutCreate?.checkout?.token;
+            return checkoutToken;
+        } catch (error) {
+            console.error('Error:', error);
+        }
     };
 
+    const submitForm = async () => {
+        const { data } = await addFormData({
+            variables: { email: formData.email, password: formData.password },
+        });
+        if (data?.tokenCreate?.errors?.length > 0) {
+            alert(data?.tokenCreate?.errors[0]?.message);
+        } else {
+            localStorage.setItem('token', data?.tokenCreate?.token);
+            localStorage.setItem('user', data?.tokenCreate?.user);
+            localStorage.setItem('refreshToken', data?.tokenCreate?.refreshToken);
+
+            // notifySuccess("Login successfully");
+            const checkoutToken: any = await getCheckoutToken(data?.data?.data?.tokenCreate?.user?.email);
+            console.log('checkoutToken: ', checkoutToken);
+            localStorage.setItem('checkoutToken', checkoutToken);
+
+            router.push('/');
+        }
+        console.log('data: ', data);
+
+        // e.preventDefault();
+        // router.push('/');
+    };
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
@@ -39,11 +86,21 @@ const LoginBoxed = () => {
         }
     };
     const [flag, setFlag] = useState('');
-    useEffect(() => {
-        setLocale(localStorage.getItem('i18nextLng') || themeConfig.locale);
-    }, []);
+
+    // useEffect(() => {
+    //     setLocale(localStorage.getItem('i18nextLng') || themeConfig.locale);
+    // }, []);
 
     const { t, i18n } = useTranslation();
+
+    const handleChange = (e: any) => {
+        const { name, value, type, checked } = e.target;
+        const newValue = type === 'checkbox' ? checked : value;
+        setFormData((prevState) => ({
+            ...prevState,
+            [name]: newValue,
+        }));
+    };
 
     return (
         <div>
@@ -106,11 +163,20 @@ const LoginBoxed = () => {
                                 <h1 className="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">Sign in</h1>
                                 <p className="text-base font-bold leading-normal text-white-dark">Enter your email and password to login</p>
                             </div>
-                            <form className="space-y-5 dark:text-white" onSubmit={submitForm}>
+                            <form className="space-y-5 dark:text-white">
                                 <div>
                                     <label htmlFor="Email">Email</label>
                                     <div className="relative text-white-dark">
-                                        <input id="Email" type="email" placeholder="Enter Email" className="form-input ps-10 placeholder:text-white-dark" />
+                                        <input
+                                            id="Email"
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            placeholder="Enter Email"
+                                            className="form-input ps-10 placeholder:text-white-dark"
+                                        />
+                                        {/* <input id="Email" type="email" placeholder="Enter Email" className="form-input ps-10 placeholder:text-white-dark" /> */}
                                         <span className="absolute start-4 top-1/2 -translate-y-1/2">
                                             <IconMail fill={true} />
                                         </span>
@@ -119,7 +185,16 @@ const LoginBoxed = () => {
                                 <div>
                                     <label htmlFor="Password">Password</label>
                                     <div className="relative text-white-dark">
-                                        <input id="Password" type="password" placeholder="Enter Password" className="form-input ps-10 placeholder:text-white-dark" />
+                                        <input
+                                            id="Password"
+                                            type="password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            placeholder="Enter Password"
+                                            className="form-input ps-10 placeholder:text-white-dark"
+                                        />
+                                        {/* <input id="Password" type="password" placeholder="Enter Password" className="form-input ps-10 placeholder:text-white-dark" /> */}
                                         <span className="absolute start-4 top-1/2 -translate-y-1/2">
                                             <IconLockDots fill={true} />
                                         </span>
@@ -131,10 +206,14 @@ const LoginBoxed = () => {
                                         <span className="text-white-dark">Subscribe to weekly newsletter</span>
                                     </label>
                                 </div>
-                                <button type="submit" className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]">
+                                {/* <button onClick={() => console.log('first')} className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]">
                                     Sign in
-                                </button>
+                                </button> */}
                             </form>
+
+                            <button onClick={() => submitForm()} className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]">
+                                Sign in
+                            </button>
                             <div className="relative my-7 text-center md:mb-9">
                                 <span className="absolute inset-x-0 top-1/2 h-px w-full -translate-y-1/2 bg-white-light dark:bg-white-dark"></span>
                                 <span className="relative bg-white px-2 font-bold uppercase text-white-dark dark:bg-dark dark:text-white-light">or</span>

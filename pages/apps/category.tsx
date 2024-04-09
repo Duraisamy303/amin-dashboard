@@ -15,21 +15,34 @@ import IconLinkedin from '@/components/Icon/IconLinkedin';
 import IconTwitter from '@/components/Icon/IconTwitter';
 import IconX from '@/components/Icon/IconX';
 import { useGetAllProductsQuery } from '@/Api/categoryApi';
+import { useQuery } from '@apollo/client';
+import { CATEGORY_LIST, PRODUCT_LIST } from '@/query/categoryList';
+import { useSetState } from '@/utils/functions';
+import { DataTable } from 'mantine-datatable';
 
 const Contacts = () => {
+    const [state, setState] = useSetState({
+        categoryList: [],
+    });
 
     const {
-        data: productsData,
-        isError,
-        isLoading,
-      } = useGetAllProductsQuery({ channel: "india-channel", first: 20 });
-      console.log("productsData: ", productsData);
+        loading,
+        error,
+        data: categoryData,
+    } = useQuery(CATEGORY_LIST, {
+        variables: { channel: 'india-channel', first: 100 }, // Pass variables here
+    });
+
+    useEffect(() => {
+        if (categoryData && categoryData?.categories && categoryData?.categories.edges) {
+            const newData = categoryData?.categories?.edges?.map((item: any) => item?.node);
+            setState({ categoryList: newData });
+        }
+    }, [categoryData]);
 
     const dispatch = useDispatch();
 
     const themeConfig = useSelector((state: any) => state);
-    console.log("themeConfig: ", themeConfig);
-
 
     useEffect(() => {
         dispatch(setPageTitle('Contacts'));
@@ -55,158 +68,12 @@ const Contacts = () => {
     };
 
     const [search, setSearch] = useState<any>('');
-    const [contactList] = useState<any>([
-        {
-            id: 1,
-            path: 'profile-35.png',
-            name: 'Alan Green',
-            role: 'Web Developer',
-            email: 'alan@mail.com',
-            location: 'Boston, USA',
-            phone: '+1 202 555 0197',
-            posts: 25,
-            followers: '5K',
-            following: 500,
-        },
-        {
-            id: 2,
-            path: 'profile-35.png',
-            name: 'Linda Nelson',
-            role: 'Web Designer',
-            email: 'linda@mail.com',
-            location: 'Sydney, Australia',
-            phone: '+1 202 555 0170',
-            posts: 25,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 3,
-            path: 'profile-35.png',
-            name: 'Lila Perry',
-            role: 'UX/UI Designer',
-            email: 'lila@mail.com',
-            location: 'Miami, USA',
-            phone: '+1 202 555 0105',
-            posts: 20,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 4,
-            path: 'profile-35.png',
-            name: 'Andy King',
-            role: 'Project Lead',
-            email: 'andy@mail.com',
-            location: 'Tokyo, Japan',
-            phone: '+1 202 555 0194',
-            posts: 25,
-            followers: '21.5K',
-            following: 300,
-        },
-        {
-            id: 5,
-            path: 'profile-35.png',
-            name: 'Jesse Cory',
-            role: 'Web Developer',
-            email: 'jesse@mail.com',
-            location: 'Edinburgh, UK',
-            phone: '+1 202 555 0161',
-            posts: 30,
-            followers: '20K',
-            following: 350,
-        },
-        {
-            id: 6,
-            path: 'profile-35.png',
-            name: 'Xavier',
-            role: 'UX/UI Designer',
-            email: 'xavier@mail.com',
-            location: 'New York, USA',
-            phone: '+1 202 555 0155',
-            posts: 25,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 7,
-            path: 'profile-35.png',
-            name: 'Susan',
-            role: 'Project Manager',
-            email: 'susan@mail.com',
-            location: 'Miami, USA',
-            phone: '+1 202 555 0118',
-            posts: 40,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 8,
-            path: 'profile-35.png',
-            name: 'Raci Lopez',
-            role: 'Web Developer',
-            email: 'traci@mail.com',
-            location: 'Edinburgh, UK',
-            phone: '+1 202 555 0135',
-            posts: 25,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 9,
-            path: 'profile-35.png',
-            name: 'Steven Mendoza',
-            role: 'HR',
-            email: 'sokol@verizon.net',
-            location: 'Monrovia, US',
-            phone: '+1 202 555 0100',
-            posts: 40,
-            followers: '21.8K',
-            following: 300,
-        },
-        {
-            id: 10,
-            path: 'profile-35.png',
-            name: 'James Cantrell',
-            role: 'Web Developer',
-            email: 'sravani@comcast.net',
-            location: 'Michigan, US',
-            phone: '+1 202 555 0134',
-            posts: 100,
-            followers: '28K',
-            following: 520,
-        },
-        {
-            id: 11,
-            path: 'profile-35.png',
-            name: 'Reginald Brown',
-            role: 'Web Designer',
-            email: 'drhyde@gmail.com',
-            location: 'Entrimo, Spain',
-            phone: '+1 202 555 0153',
-            posts: 35,
-            followers: '25K',
-            following: 500,
-        },
-        {
-            id: 12,
-            path: 'profile-35.png',
-            name: 'Stacey Smith',
-            role: 'Chief technology officer',
-            email: 'maikelnai@optonline.net',
-            location: 'Lublin, Poland',
-            phone: '+1 202 555 0115',
-            posts: 21,
-            followers: '5K',
-            following: 200,
-        },
-    ]);
 
-    const [filteredItems, setFilteredItems] = useState<any>(contactList);
+    const [filteredItems, setFilteredItems] = useState<any>(state.categoryList);
 
     const searchContact = () => {
         setFilteredItems(() => {
-            return contactList.filter((item: any) => {
+            return state.categoryList.filter((item: any) => {
                 return item.name.toLowerCase().includes(search.toLowerCase());
             });
         });
@@ -327,6 +194,7 @@ const Contacts = () => {
                     </div>
                 </div>
             </div>
+
             {value === 'list' && (
                 <div className="panel mt-5 overflow-hidden border-0 p-0">
                     <div className="table-responsive">
@@ -334,14 +202,14 @@ const Contacts = () => {
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Location</th>
-                                    <th>Phone</th>
-                                    <th className="!text-center">Actions</th>
+                                    {/* <th>Email</th> */}
+                                    {/* <th>Location</th> */}
+                                    {/* <th>Phone</th> */}
+                                    <th className="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredItems.map((contact: any) => {
+                                {state.categoryList.map((contact: any) => {
                                     return (
                                         <tr key={contact.id}>
                                             <td>
@@ -356,7 +224,7 @@ const Contacts = () => {
                                                     )}
                                                     {!contact.path && !contact.name && (
                                                         <div className="rounded-full border border-gray-300 p-2 ltr:mr-2 rtl:ml-2 dark:border-gray-800">
-                                                            <IconUser className="w-4.5 h-4.5" />
+                                                            <IconUser className="h-4.5 w-4.5" />
                                                         </div>
                                                     )}
                                                     <div>{contact.name}</div>
@@ -490,7 +358,7 @@ const Contacts = () => {
                                     >
                                         <IconX />
                                     </button>
-                                    <div className="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pr-5 rtl:pl-[50px] dark:bg-[#121c2c]">
+                                    <div className="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]">
                                         {params.id ? 'Edit Contact' : 'Add Contact'}
                                     </div>
                                     <div className="p-5">

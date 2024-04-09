@@ -14,35 +14,61 @@ import IconInstagram from '@/components/Icon/IconInstagram';
 import IconFacebookCircle from '@/components/Icon/IconFacebookCircle';
 import IconTwitter from '@/components/Icon/IconTwitter';
 import IconGoogle from '@/components/Icon/IconGoogle';
+import { useMutation } from '@apollo/client';
+import { LOGIN } from '@/query/categoryList';
 
 const LoginCover = () => {
-    const dispatch = useDispatch();
-    useEffect(() => {
-        dispatch(setPageTitle('Login Cover'));
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        subscribe: false,
     });
+
+    const dispatch = useDispatch();
+
     const router = useRouter();
 
-    const submitForm = (e: any) => {
-        e.preventDefault();
-        router.push('/');
+    const [addFormData] = useMutation(LOGIN);
+
+    const submitForm = async () => {
+        console.log('first')
+        const { data } = await addFormData({
+            variables: { email: formData.email, password: formData.password },
+        });
+        console.log("data: ", data);
+
+        // e.preventDefault();
+        // router.push('/');
     };
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+
+    // const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
-    const setLocale = (flag: string) => {
-        setFlag(flag);
-        if (flag.toLowerCase() === 'ae') {
-            dispatch(toggleRTL('rtl'));
-        } else {
-            dispatch(toggleRTL('ltr'));
-        }
-    };
+    // const setLocale = (flag: string) => {
+    //     setFlag(flag);
+    //     if (flag.toLowerCase() === 'ae') {
+    //         dispatch(toggleRTL('rtl'));
+    //     } else {
+    //         dispatch(toggleRTL('ltr'));
+    //     }
+    // };
+
     const [flag, setFlag] = useState('');
-    useEffect(() => {
-        setLocale(localStorage.getItem('i18nextLng') || themeConfig.locale);
-    }, []);
+
+    // useEffect(() => {
+    //     setLocale(localStorage.getItem('i18nextLng') || themeConfig.locale);
+    // }, []);
 
     const { t, i18n } = useTranslation();
+
+    const handleChange = (e: any) => {
+        const { name, value, type, checked } = e.target;
+        const newValue = type === 'checkbox' ? checked : value;
+        setFormData((prevState) => ({
+            ...prevState,
+            [name]: newValue,
+        }));
+    };
 
     return (
         <div>
@@ -99,7 +125,7 @@ const LoginCover = () => {
                                                             onClick={() => {
                                                                 dispatch(toggleLocale(item.code));
                                                                 i18n.changeLanguage(item.code);
-                                                                setLocale(item.code);
+                                                                // setLocale(item.code);
                                                             }}
                                                         >
                                                             <img src={`/assets/images/flags/${item.code.toUpperCase()}.svg`} alt="flag" className="h-5 w-5 rounded-full object-cover" />
@@ -118,11 +144,20 @@ const LoginCover = () => {
                                 <h1 className="text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">Sign in</h1>
                                 <p className="text-base font-bold leading-normal text-white-dark">Enter your email and password to login</p>
                             </div>
-                            <form className="space-y-5 dark:text-white" onSubmit={submitForm}>
+                            <form className="space-y-5 dark:text-white" >
                                 <div>
                                     <label htmlFor="Email">Email</label>
                                     <div className="relative text-white-dark">
-                                        <input id="Email" type="email" placeholder="Enter Email" className="form-input ps-10 placeholder:text-white-dark" />
+                                        <input
+                                            id="Email"
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            placeholder="Enter Email"
+                                            className="form-input ps-10 placeholder:text-white-dark"
+                                        />
+                                        {/* <input id="Email" type="email" placeholder="Enter Email" className="form-input ps-10 placeholder:text-white-dark" /> */}
                                         <span className="absolute start-4 top-1/2 -translate-y-1/2">
                                             <IconMail fill={true} />
                                         </span>
@@ -131,7 +166,16 @@ const LoginCover = () => {
                                 <div>
                                     <label htmlFor="Password">Password</label>
                                     <div className="relative text-white-dark">
-                                        <input id="Password" type="password" placeholder="Enter Password" className="form-input ps-10 placeholder:text-white-dark" />
+                                        <input
+                                            id="Password"
+                                            type="password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            placeholder="Enter Password"
+                                            className="form-input ps-10 placeholder:text-white-dark"
+                                        />
+                                        {/* <input id="Password" type="password" placeholder="Enter Password" className="form-input ps-10 placeholder:text-white-dark" /> */}
                                         <span className="absolute start-4 top-1/2 -translate-y-1/2">
                                             <IconLockDots fill={true} />
                                         </span>
@@ -143,7 +187,7 @@ const LoginCover = () => {
                                         <span className="text-white-dark">Subscribe to weekly newsletter</span>
                                     </label>
                                 </div>
-                                <button type="submit" className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]">
+                                <button onClick={()=>submitForm()} type="submit" className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]">
                                     Sign in
                                 </button>
                             </form>
@@ -192,12 +236,15 @@ const LoginCover = () => {
                                     </li>
                                 </ul>
                             </div>
-                            <div className="text-center dark:text-white">
+                            <button  className="text-center dark:text-white">
+                                <span className="uppercase text-primary underline transition hover:text-black dark:hover:text-white"> SIGN UP</span>
+                            </button>
+                            {/* <div className="text-center dark:text-white">
                                 Don't have an account ?&nbsp;
                                 <Link href="/auth/cover-register" className="uppercase text-primary underline transition hover:text-black dark:hover:text-white">
                                     SIGN UP
                                 </Link>
-                            </div>
+                            </div> */}
                         </div>
                         <p className="absolute bottom-6 w-full text-center dark:text-white">© {new Date().getFullYear()}.VRISTO All Rights Reserved.</p>
                     </div>

@@ -41,7 +41,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
     });
 
     const client = new ApolloClient({
-        link: authLink.concat(httpLink),
+        link: httpLink,
         cache: new InMemoryCache(),
     });
     const getLayout = Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);

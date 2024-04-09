@@ -20,5 +20,5 @@ export const apiSlice = createApi({
     },
   }),
   endpoints: (builder) => ({}),
-  tagTypes: ["Auth","category"]
+  tagTypes: ["Auth","Category"]
 });
