@@ -48,7 +48,7 @@ const rowData1 = [
         count: 65,
     },
 ];
-const product = () => {
+const Product = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
@@ -110,8 +110,9 @@ const product = () => {
         name: Yup.string().required('Please fill the Name'),
         description: Yup.string().required('Please fill the Description'),
         slug: Yup.string().required('Please fill the Slug'),
-        count: Yup.string().required('Please fill the count'),
+        // count: Yup.string().required('Please fill the count'),
         image: Yup.string().required('Please fill the Image'),
+        parentCategory: Yup.string().required('Please fill the Parent Category'),
     });
 
     // form submit
@@ -220,7 +221,7 @@ const product = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
 
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -342,7 +343,7 @@ const product = () => {
                                                           slug: modalContant?.slug,
                                                           //   count: modalContant?.count,
                                                           image: modalContant?.image,
-                                                          parentCategory: modalContant?.parentCategory,
+                                                          parentCategory: modalContant?.name,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
@@ -473,4 +474,4 @@ const product = () => {
     );
 };
 
-export default product;
+export default Product;

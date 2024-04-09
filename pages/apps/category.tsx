@@ -110,8 +110,9 @@ const Category = () => {
         name: Yup.string().required('Please fill the Name'),
         description: Yup.string().required('Please fill the Description'),
         slug: Yup.string().required('Please fill the Slug'),
-        count: Yup.string().required('Please fill the count'),
+        // count: Yup.string().required('Please fill the count'),
         image: Yup.string().required('Please fill the Image'),
+        parentCategory: Yup.string().required('Please fill the Parent Category'),
     });
 
     // form submit
@@ -342,7 +343,7 @@ const Category = () => {
                                                           slug: modalContant?.slug,
                                                           //   count: modalContant?.count,
                                                           image: modalContant?.image,
-                                                          parentCategory: modalContant?.parentCategory,
+                                                          parentCategory: modalContant?.name,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
