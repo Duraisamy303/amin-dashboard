@@ -144,6 +144,80 @@ const Category = () => {
     };
 
     console.log('modalContant: ', modalContant);
+
+    // delete Alert Message
+    const BulkDeleteCategory = async () => {
+        const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: 'btn btn-secondary',
+                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
+                popup: 'sweet-alerts',
+            },
+            buttonsStyling: false,
+        });
+        swalWithBootstrapButtons
+            .fire({
+                title: 'Are you sure?',
+                text: "You won't be able to Delete this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'No, cancel!',
+                reverseButtons: true,
+                padding: '2em',
+            })
+            .then((result) => {
+                if (result.value) {
+                    if (selectedRecords.length == 0) {
+                        swalWithBootstrapButtons.fire('Cancelled', 'Please select atleast one record!', 'error');
+                    } else {
+                        const updatedRecordsData = recordsData.filter((record) => !selectedRecords.includes(record));
+
+                        setRecordsData(updatedRecordsData);
+
+                        setSelectedRecords([]);
+                        swalWithBootstrapButtons.fire('Deleted!', 'Your file has been deleted.', 'success');
+                    }
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    swalWithBootstrapButtons.fire('Cancelled', 'Your imaginary file is safe :)', 'error');
+                }
+            });
+    };
+
+    // delete category
+    const DeleteCategory = (record: any) => {
+        const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: 'btn btn-secondary',
+                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
+                popup: 'sweet-alerts',
+            },
+            buttonsStyling: false,
+        });
+    
+        swalWithBootstrapButtons.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'No, cancel!',
+            reverseButtons: true,
+            padding: '2em',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Filter out the deleted record from your local data array
+                const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
+                // Update your local data array with the filtered data
+                setRecordsData(updatedRecordsData);
+    
+                swalWithBootstrapButtons.fire('Deleted!', 'Your file has been deleted.', 'success');
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                swalWithBootstrapButtons.fire('Cancelled', 'Your imaginary file is safe :)', 'error');
+            }
+        });
+    };
+    
     return (
         <div>
             {/* <div className="panel flex items-center overflow-x-auto whitespace-nowrap p-3 text-primary">
@@ -179,7 +253,9 @@ const Category = () => {
                                         <button type="button">Bulk Actions</button>
                                     </li>
                                     <li>
-                                        <button type="button">Delete</button>
+                                        <button type="button" onClick={() => BulkDeleteCategory()}>
+                                            Delete
+                                        </button>
                                     </li>
                                 </ul>
                             </Dropdown>
@@ -213,7 +289,7 @@ const Category = () => {
                                             </button>
                                         </Tippy>
                                         <Tippy content="Delete">
-                                            <button type="button">
+                                            <button type="button" onClick={() => DeleteCategory(row)}>
                                                 <IconTrashLines />
                                             </button>
                                         </Tippy>
@@ -231,7 +307,9 @@ const Category = () => {
                         sortStatus={sortStatus}
                         onSortStatusChange={setSortStatus}
                         selectedRecords={selectedRecords}
-                        onSelectedRecordsChange={setSelectedRecords}
+                        onSelectedRecordsChange={(selectedRecords) => {
+                            setSelectedRecords(selectedRecords);
+                        }}
                         minHeight={200}
                         paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
                     />
