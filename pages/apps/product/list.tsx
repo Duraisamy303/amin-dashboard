@@ -2,7 +2,7 @@ import { DataTable, DataTableSortStatus } from 'mantine-datatable';
 import { useEffect, useState, Fragment } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
-import { setPageTitle } from "../../../store/themeConfigSlice";
+import { setPageTitle } from '../../../store/themeConfigSlice';
 import IconBell from '@/components/Icon/IconBell';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
@@ -22,8 +22,11 @@ import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
 import { date } from 'yup/lib/locale';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import IconEdit from '@/components/Icon/IconEdit';
 
-const rowData1 = [
+const rowData = [
     {
         id: 1,
         image: `${Image1.src}`,
@@ -59,6 +62,7 @@ const rowData1 = [
     },
 ];
 const ProductList = () => {
+    const router = useRouter();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
@@ -68,7 +72,7 @@ const ProductList = () => {
     const [page, setPage] = useState(1);
     const PAGE_SIZES = [10, 20, 30, 50, 100];
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
-    const [initialRecords, setInitialRecords] = useState(sortBy(rowData1, 'id'));
+    const [initialRecords, setInitialRecords] = useState(sortBy(rowData, 'id'));
     const [recordsData, setRecordsData] = useState(initialRecords);
 
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
@@ -78,12 +82,6 @@ const ProductList = () => {
         columnAccessor: 'id',
         direction: 'asc',
     });
-
-    const [modal1, setModal1] = useState(false);
-    const [modalTitle, setModalTitle] = useState(null);
-    const [modalContant, setModalContant] = useState<any>(null);
-
-    const [viewModal, setViewModal] = useState(false);
 
     const [filterFormData, setFilterFormData] = useState({
         category: '',
@@ -102,7 +100,7 @@ const ProductList = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return rowData1.filter((item) => {
+            return rowData.filter((item) => {
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -122,18 +120,7 @@ const ProductList = () => {
         setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
     }, [sortStatus]);
 
-    // FORM VALIDATION
-    const SubmittedForm = Yup.object().shape({
-        name: Yup.string().required('Please fill the Name'),
-        sku: Yup.string().required('Please fill the SKU'),
-        stock: Yup.string().required('Please fill the Slug'),
-        price: Yup.string().required('Please fill the count'),
-        image: Yup.string().required('Please fill the Image'),
-        categories: Yup.string().required('Please fill the Parent categories'),
-        tags: Yup.string().required('Please fill the Tags'),
-        date: Yup.string().required('Please fill the Date'),
-        // parentProduct: Yup.string().required('Please fill the Parent Product'),
-    });
+
 
     // form submit
     const onSubmit = (record: any, { resetForm }: any) => {
@@ -150,27 +137,12 @@ const ProductList = () => {
             title: 'Form submitted successfully',
             padding: '10px 20px',
         });
-        setModal1(false);
         resetForm();
-    };
-
-    // Product table edit
-    const EditProduct = (record: any) => {
-        setModal1(true);
-        setModalTitle(record);
-        setModalContant(record);
     };
 
     // Product table create
     const CreateProduct = () => {
-        setModal1(true);
-        setModalTitle(null);
-        setModalContant(null);
-    };
-
-    // view categotry
-    const ViewProduct = (record: any) => {
-        setViewModal(true);
+        router.push('/apps/product/add');
     };
 
     // delete Alert Message
@@ -235,9 +207,6 @@ const ProductList = () => {
         );
     };
 
-    // completed Product delete option
-    console.log('modalcontant', modalContant);
-
     // top Filter Category change
     const CategoryChange = (selectedCategory: string) => {
         console.log('Selected Category:', selectedCategory);
@@ -264,7 +233,7 @@ const ProductList = () => {
         setFilterFormData({
             category: '',
             stock: '',
-        })
+        });
     };
 
     return (
@@ -353,21 +322,19 @@ const ProductList = () => {
                                 // Render method for custom column
                                 render: (row: any) => (
                                     <>
-                                        <Tippy content="View">
-                                            <button type="button" onClick={() => ViewProduct(row)}>
-                                                <IconEye className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy>
-                                        <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditProduct(row)}>
-                                                <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy>
-                                        <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteProduct(row)}>
+                                        <div className="mx-auto flex w-max items-center gap-4">
+                                            <Link href="/apps/product/edit" className="flex hover:text-info">
+                                                <IconEdit className="h-4.5 w-4.5" />
+                                            </Link>
+
+                                            <Link href="/apps/product/view" className="flex hover:text-primary">
+                                                <IconEye />
+                                            </Link>
+
+                                            <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
                                                 <IconTrashLines />
                                             </button>
-                                        </Tippy>
+                                        </div>
                                     </>
                                 ),
                             },
@@ -390,157 +357,6 @@ const ProductList = () => {
                     />
                 </div>
             </div>
-
-            {/* CREATE AND EDIT Product FORM */}
-            <Transition appear show={modal1} as={Fragment}>
-                <Dialog as="div" open={modal1} onClose={() => setModal1(false)}>
-                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-                        <div className="fixed inset-0" />
-                    </Transition.Child>
-                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
-                        <div className="flex min-h-screen items-start justify-center px-4">
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
-                                    <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Product' : 'Edit Product'}</div>
-                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
-                                            <IconX />
-                                        </button>
-                                    </div>
-                                    <div className="mb-5 p-5">
-                                        <Formik
-                                            initialValues={
-                                                modalContant === null
-                                                    ? { name: '', sku: '', stock: '', image: '', price: '', categories: '', tags: '' }
-                                                    : {
-                                                          name: modalContant?.name,
-                                                          sku: modalContant?.sku,
-                                                          stock: modalContant?.stock,
-                                                          price: modalContant?.price,
-                                                          image: modalContant?.image,
-                                                          categories: modalContant?.categories,
-                                                          tags: modalContant?.tags,
-                                                      }
-                                            }
-                                            validationSchema={SubmittedForm}
-                                            onSubmit={(values, { resetForm }) => {
-                                                onSubmit(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
-                                            }}
-                                        >
-                                            {({ errors, submitCount, touched, setFieldValue, values }: any) => (
-                                                <Form className="space-y-5">
-                                                    <div className={submitCount ? (errors.image ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="image">Image</label>
-                                                        <input
-                                                            id="image"
-                                                            name="image"
-                                                            type="file"
-                                                            onChange={(event: any) => {
-                                                                setFieldValue('image', event.currentTarget.files[0]);
-                                                            }}
-                                                            className="form-input"
-                                                        />
-                                                        {values.image && typeof values.image === 'string' && (
-                                                            <img src={values.image} alt="Product Image" style={{ width: '30px', height: 'auto', paddingTop: '5px' }} />
-                                                        )}
-                                                        {submitCount ? errors.image ? <div className="mt-1 text-danger">{errors.image}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
-
-                                                    <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="fullName">Name </label>
-                                                        <Field name="name" type="text" id="name" placeholder="Enter Name" className="form-input" />
-
-                                                        {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
-
-                                                    <div className={submitCount ? (errors.sku ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="sku">SKU </label>
-                                                        <Field name="sku" type="text" id="sku" placeholder="Enter SKU" className="form-input" />
-
-                                                        {submitCount ? errors.sku ? <div className="mt-1 text-danger">{errors.sku}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
-
-                                                    <div className={submitCount ? (errors.stock ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="stock">Stock </label>
-                                                        <Field name="stock" type="text" id="stock" placeholder="Enter Stock" className="form-input" />
-
-                                                        {submitCount ? errors.stock ? <div className="mt-1 text-danger">{errors.stock}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
-
-                                                    <div className={submitCount ? (errors.price ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="price">Price</label>
-                                                        <Field name="price" type="number" id="price" placeholder="Enter Price" className="form-input" />
-
-                                                        {submitCount ? errors.price ? <div className="mt-1 text-danger">{errors.price}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
-
-                                                    <div className={submitCount ? (errors.categories ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="categories">Categories</label>
-                                                        <Field name="categories" type="text" id="categories" placeholder="Enter categories" className="form-input" />
-
-                                                        {submitCount ? errors.categories ? <div className="mt-1 text-danger">{errors.categories}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
-
-                                                    <div className={submitCount ? (errors.tags ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="tags">Tags</label>
-                                                        <Field name="tags" type="text" id="tags" placeholder="Enter Tags" className="form-input" />
-
-                                                        {submitCount ? errors.tags ? <div className="mt-1 text-danger">{errors.tags}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
-
-                                                    <button type="submit" className="btn btn-primary !mt-6">
-                                                        {modalTitle === null ? 'Submit' : 'Update'}
-                                                    </button>
-                                                </Form>
-                                            )}
-                                        </Formik>
-                                    </div>
-                                </Dialog.Panel>
-                            </Transition.Child>
-                        </div>
-                    </div>
-                </Dialog>
-            </Transition>
-
-            {/* Full View Product data*/}
-            <Transition appear show={viewModal} as={Fragment}>
-                <Dialog as="div" open={viewModal} onClose={() => setViewModal(false)}>
-                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-                        <div className="fixed inset-0" />
-                    </Transition.Child>
-                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
-                        <div className="flex min-h-screen items-start justify-center px-4">
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
-                                    <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">View Product</div>
-                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setViewModal(false)}>
-                                            <IconX />
-                                        </button>
-                                    </div>
-                                    <div className="mb-5 p-5"></div>
-                                </Dialog.Panel>
-                            </Transition.Child>
-                        </div>
-                    </div>
-                </Dialog>
-            </Transition>
         </div>
     );
 };
