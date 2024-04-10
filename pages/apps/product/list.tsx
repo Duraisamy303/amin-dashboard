@@ -2,16 +2,16 @@ import { DataTable, DataTableSortStatus } from 'mantine-datatable';
 import { useEffect, useState, Fragment } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
-import { setPageTitle } from '../../store/themeConfigSlice';
+import { setPageTitle } from "../../../store/themeConfigSlice";
 import IconBell from '@/components/Icon/IconBell';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import IconPencil from '@/components/Icon/IconPencil';
 import { Button } from '@mantine/core';
-import Dropdown from '../../components/Dropdown';
+import Dropdown from '../../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
-import { IRootState } from '../../store';
+import { IRootState } from '../../../store';
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -58,7 +58,7 @@ const rowData1 = [
         date: '01-01-2024',
     },
 ];
-const Product = () => {
+const ProductList = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
@@ -545,4 +545,4 @@ const Product = () => {
     );
 };
 
-export default Product;
+export default ProductList;

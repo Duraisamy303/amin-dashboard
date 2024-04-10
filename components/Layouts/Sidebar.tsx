@@ -147,13 +147,34 @@ const Sidebar = () => {
                                             </div>
                                         </Link>
                                     </li>
-                                    <li className="nav-item">
-                                        <Link href="/apps/product" className="group">
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'product' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('product')}>
                                             <div className="flex items-center">
-                                                <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
+                                                <IconMenuInvoice className="shrink-0 group-hover:!text-primary" />
                                                 <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
                                             </div>
-                                        </Link>
+
+                                            <div className={currentMenu !== 'product' ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'product' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/apps/product/list">{t('list')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/product/view">{t('view')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/product/add">{t('add')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/product/edit">{t('edit')}</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
                                     </li>
                                     <li className="nav-item">
                                         <Link href="/apps/chat" className="group">
