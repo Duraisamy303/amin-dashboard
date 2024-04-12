@@ -81,6 +81,15 @@ export const CATEGORY_LIST = gql`
     }
 `;
 
-
-
-
+export const CREATE_CATEGORY = gql`
+    mutation CategoryCreate($input: CategoryInput!) {
+        categoryCreate(input: $input) {
+            category {
+                id
+                name
+                description
+                slug
+            }
+        }
+    }
+`;

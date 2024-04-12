@@ -140,22 +140,54 @@ const Sidebar = () => {
 
                             <li className="nav-item">
                                 <ul>
-                                    <li className="nav-item">
+                                    {/* <li className="nav-item">
                                         <Link href="/apps/category" className="group">
                                             <div className="flex items-center">
                                                 <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Category')}</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
                                             </div>
                                         </Link>
+                                    </li> */}
+
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'product' ? 'active' : ''} nav-link group w-full`} >
+                                            <div className="flex items-center">
+                                            <Link href="/apps/product"className="flex items-center">
+                                                <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
+                                          </Link>
+                                            </div>
+
+                                            <div className={currentMenu !== 'product' ? '-rotate-90 rtl:rotate-90' : ''} onClick={() => toggleMenu('product')}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'product' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/apps/category">{t('Category')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/invoice/preview">{t('Finish')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/invoice/add">{t('Designs')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/invoice/edit">{t('Stone type')}</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
                                     </li>
-                                    <li className="nav-item">
+                                    {/* <li className="nav-item">
                                         <Link href="/apps/product" className="group">
                                             <div className="flex items-center">
                                                 <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
                                                 <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
                                             </div>
                                         </Link>
-                                    </li>
+                                    </li> */}
                                     <li className="nav-item">
                                         <Link href="/apps/chat" className="group">
                                             <div className="flex items-center">

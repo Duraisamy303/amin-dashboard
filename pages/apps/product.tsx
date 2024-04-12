@@ -22,6 +22,8 @@ import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
 import { date } from 'yup/lib/locale';
+import { useQuery } from '@apollo/client';
+import {  PRODUCT_LIST } from '@/query/product';
 
 const rowData1 = [
     {
@@ -59,6 +61,17 @@ const rowData1 = [
     },
 ];
 const Product = () => {
+
+    const {
+        loading,
+        error,
+        data: productData,
+    } = useQuery(PRODUCT_LIST, {
+        variables: { channel: 'india-channel', first: 20 }, // Pass variables here
+    });
+
+    console.log("productData: ", productData);
+
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();

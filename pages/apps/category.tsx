@@ -15,13 +15,22 @@ import IconLinkedin from '@/components/Icon/IconLinkedin';
 import IconTwitter from '@/components/Icon/IconTwitter';
 import IconX from '@/components/Icon/IconX';
 import { useGetAllProductsQuery } from '@/Api/categoryApi';
-import { useQuery } from '@apollo/client';
-import { CATEGORY_LIST, PRODUCT_LIST } from '@/query/categoryList';
+import { useMutation, useQuery } from '@apollo/client';
+import { CATEGORY_LIST, CREATE_CATEGORY, PRODUCT_LIST } from '@/query/product';
 import { useSetState } from '@/utils/functions';
+import Tippy from '@tippyjs/react';
+import IconEye from '@/components/Icon/IconEye';
+import IconPencil from '@/components/Icon/IconPencil';
+import IconTrashLines from '@/components/Icon/IconTrashLines';
+import { DataTable, DataTableSortStatus } from 'mantine-datatable';
+import sortBy from 'lodash/sortBy';
 
 const Contacts = () => {
-    const [state, setState] = useSetState({
-        categoryList: [],
+    const dispatch = useDispatch();
+
+    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
+        columnAccessor: 'id',
+        direction: 'asc',
     });
 
     const {
@@ -32,257 +41,118 @@ const Contacts = () => {
         variables: { channel: 'india-channel', first: 20 }, // Pass variables here
     });
 
+    const [page, setPage] = useState(1);
+    const PAGE_SIZES = [10, 20, 30, 50, 100];
+    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+    const [categoryList, setCategoryList] = useState([]);
+    const [filteredItems, setFilteredItems] = useState<any>(categoryList);
+    const [selectedRecords, setSelectedRecords] = useState<any>([]);
+    const [search, setSearch] = useState('');
+    const [addContactModal, setAddContactModal] = useState(false);
+
     useEffect(() => {
-        if (categoryData && categoryData.categories && categoryData.categories.edges) {
-            const newData = categoryData.categories.edges.map((item) => item.node);
-            setState({ categoryList: newData });
-        }
+        getCategoryList();
     }, [categoryData]);
 
-        // const modifyData = categoryData?.categories;
-
-        // if (modifyData) {
-        //     if (modifyData?.edges?.length > 0) {
-        //         const data = modifyData?.edges?.map((item: any) => item.node);
-        //         setState({ categoryList: data });
-        //     }
-        // }
-        console.log('state', state.categoryList);
-
-    const dispatch = useDispatch();
-
-    const themeConfig = useSelector((state: any) => state);
+    const getCategoryList = () => {
+        if (categoryData && categoryData.categories && categoryData.categories.edges) {
+            const newData = categoryData.categories.edges.map((item) => ({
+                ...item.node,
+                product: item?.node?.products?.totalCount,
+            }));
+            const sorting:any=sortBy(newData,"id")
+            setCategoryList(sorting);
+            // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+        }
+    };
 
     useEffect(() => {
-        dispatch(setPageTitle('Contacts'));
-    });
+        setPage(1);
+    }, [pageSize]);
+    console.log("out: ", categoryList);
 
-    const [addContactModal, setAddContactModal] = useState<any>(false);
+
+    useEffect(() => {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize;
+        console.log("from, to: ", from, to);
+        console.log("categoryList: ", [...categoryList.slice(from, to)]);
+
+        setCategoryList([...categoryList.slice(from, to)])
+    }, [page, pageSize]);
+
+   
 
     const [value, setValue] = useState<any>('list');
     const [defaultParams] = useState({
         id: null,
         name: '',
-        email: '',
-        phone: '',
-        role: '',
-        location: '',
+        description: '',
     });
 
     const [params, setParams] = useState<any>(JSON.parse(JSON.stringify(defaultParams)));
+
+    const [addCategory] = useMutation(CREATE_CATEGORY);
 
     const changeValue = (e: any) => {
         const { value, id } = e.target;
         setParams({ ...params, [id]: value });
     };
 
-    const [search, setSearch] = useState<any>('');
-    const [contactList] = useState<any>([
-        {
-            id: 1,
-            path: 'profile-35.png',
-            name: 'Alan Green',
-            role: 'Web Developer',
-            email: 'alan@mail.com',
-            location: 'Boston, USA',
-            phone: '+1 202 555 0197',
-            posts: 25,
-            followers: '5K',
-            following: 500,
-        },
-        {
-            id: 2,
-            path: 'profile-35.png',
-            name: 'Linda Nelson',
-            role: 'Web Designer',
-            email: 'linda@mail.com',
-            location: 'Sydney, Australia',
-            phone: '+1 202 555 0170',
-            posts: 25,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 3,
-            path: 'profile-35.png',
-            name: 'Lila Perry',
-            role: 'UX/UI Designer',
-            email: 'lila@mail.com',
-            location: 'Miami, USA',
-            phone: '+1 202 555 0105',
-            posts: 20,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 4,
-            path: 'profile-35.png',
-            name: 'Andy King',
-            role: 'Project Lead',
-            email: 'andy@mail.com',
-            location: 'Tokyo, Japan',
-            phone: '+1 202 555 0194',
-            posts: 25,
-            followers: '21.5K',
-            following: 300,
-        },
-        {
-            id: 5,
-            path: 'profile-35.png',
-            name: 'Jesse Cory',
-            role: 'Web Developer',
-            email: 'jesse@mail.com',
-            location: 'Edinburgh, UK',
-            phone: '+1 202 555 0161',
-            posts: 30,
-            followers: '20K',
-            following: 350,
-        },
-        {
-            id: 6,
-            path: 'profile-35.png',
-            name: 'Xavier',
-            role: 'UX/UI Designer',
-            email: 'xavier@mail.com',
-            location: 'New York, USA',
-            phone: '+1 202 555 0155',
-            posts: 25,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 7,
-            path: 'profile-35.png',
-            name: 'Susan',
-            role: 'Project Manager',
-            email: 'susan@mail.com',
-            location: 'Miami, USA',
-            phone: '+1 202 555 0118',
-            posts: 40,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 8,
-            path: 'profile-35.png',
-            name: 'Raci Lopez',
-            role: 'Web Developer',
-            email: 'traci@mail.com',
-            location: 'Edinburgh, UK',
-            phone: '+1 202 555 0135',
-            posts: 25,
-            followers: '21.5K',
-            following: 350,
-        },
-        {
-            id: 9,
-            path: 'profile-35.png',
-            name: 'Steven Mendoza',
-            role: 'HR',
-            email: 'sokol@verizon.net',
-            location: 'Monrovia, US',
-            phone: '+1 202 555 0100',
-            posts: 40,
-            followers: '21.8K',
-            following: 300,
-        },
-        {
-            id: 10,
-            path: 'profile-35.png',
-            name: 'James Cantrell',
-            role: 'Web Developer',
-            email: 'sravani@comcast.net',
-            location: 'Michigan, US',
-            phone: '+1 202 555 0134',
-            posts: 100,
-            followers: '28K',
-            following: 520,
-        },
-        {
-            id: 11,
-            path: 'profile-35.png',
-            name: 'Reginald Brown',
-            role: 'Web Designer',
-            email: 'drhyde@gmail.com',
-            location: 'Entrimo, Spain',
-            phone: '+1 202 555 0153',
-            posts: 35,
-            followers: '25K',
-            following: 500,
-        },
-        {
-            id: 12,
-            path: 'profile-35.png',
-            name: 'Stacey Smith',
-            role: 'Chief technology officer',
-            email: 'maikelnai@optonline.net',
-            location: 'Lublin, Poland',
-            phone: '+1 202 555 0115',
-            posts: 21,
-            followers: '5K',
-            following: 200,
-        },
-    ]);
-
-    const [filteredItems, setFilteredItems] = useState<any>(contactList);
 
     const searchContact = () => {
         setFilteredItems(() => {
-            return contactList.filter((item: any) => {
+            return categoryList.filter((item: any) => {
                 return item.name.toLowerCase().includes(search.toLowerCase());
             });
         });
     };
 
-    useEffect(() => {
-        searchContact();
-    }, [search]);
+    // useEffect(() => {
+    //     searchContact();
+    // }, [search]);
 
-    const saveUser = () => {
+    const saveUser = async () => {
         if (!params.name) {
             showMessage('Name is required.', 'error');
             return true;
         }
-        if (!params.email) {
-            showMessage('Email is required.', 'error');
-            return true;
-        }
-        if (!params.phone) {
-            showMessage('Phone is required.', 'error');
-            return true;
-        }
-        if (!params.role) {
-            showMessage('Occupation is required.', 'error');
+        if (!params.description) {
+            showMessage('Description is required.', 'error');
             return true;
         }
 
-        if (params.id) {
-            //update user
-            let user: any = filteredItems.find((d: any) => d.id === params.id);
-            user.name = params.name;
-            user.email = params.email;
-            user.phone = params.phone;
-            user.role = params.role;
-            user.location = params.location;
-        } else {
-            //add user
-            let maxUserId = filteredItems.length ? filteredItems.reduce((max: any, character: any) => (character.id > max ? character.id : max), filteredItems[0].id) : 0;
+        const { data } = await addCategory({
+            variables: { email: params.name, password: params.description },
+        });
 
-            let user = {
-                id: maxUserId + 1,
-                path: 'profile-35.png',
-                name: params.name,
-                email: params.email,
-                phone: params.phone,
-                role: params.role,
-                location: params.location,
-                posts: 20,
-                followers: '5K',
-                following: 500,
-            };
-            filteredItems.splice(0, 0, user);
-            //   searchContacts();
-        }
+        // if (params.id) {
+        //     //update user
+        //     let user: any = filteredItems.find((d: any) => d.id === params.id);
+        //     user.name = params.name;
+        //     user.email = params.email;
+        //     user.phone = params.phone;
+        //     user.role = params.role;
+        //     user.location = params.location;
+        // } else {
+        //     //add user
+        //     let maxUserId = filteredItems.length ? filteredItems.reduce((max: any, character: any) => (character.id > max ? character.id : max), filteredItems[0].id) : 0;
+
+        //     let user = {
+        //         id: maxUserId + 1,
+        //         path: 'profile-35.png',
+        //         name: params.name,
+        //         email: params.email,
+        //         phone: params.phone,
+        //         role: params.role,
+        //         location: params.location,
+        //         posts: 20,
+        //         followers: '5K',
+        //         following: 500,
+        //     };
+        //     filteredItems.splice(0, 0, user);
+        //     //   searchContacts();
+        // }
 
         showMessage('User has been saved successfully.');
         setAddContactModal(false);
@@ -318,6 +188,12 @@ const Contacts = () => {
         });
     };
 
+    useEffect(() => {
+        const data = sortBy(categoryList, sortStatus.columnAccessor);
+        console.log("data: ", data);
+        setCategoryList(sortStatus.direction === 'desc' ? data.reverse() : data)
+    }, [sortStatus]);
+
     return (
         <div>
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -349,7 +225,64 @@ const Contacts = () => {
                     </div>
                 </div>
             </div>
-            {value === 'list' && (
+
+            <div className="datatables pt-5">
+                <DataTable
+                    className="table-hover whitespace-nowrap"
+                    records={categoryList}
+                    columns={[
+                        // { accessor: 'id', sortable: true },
+                        // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                        { accessor: 'name', sortable: true },
+                        { accessor: 'product', sortable: true },
+                      
+                        {
+                            // Custom column for actions
+                            accessor: 'actions', // You can use any accessor name you want
+                            title: 'Actions',
+                            // Render method for custom column
+                            render: (row: any) => (
+                                <>
+                                    <Tippy content="View">
+                                        <button type="button">
+                                            <IconEye className="ltr:mr-2 rtl:ml-2" />
+                                        </button>
+                                    </Tippy>
+                                    <Tippy content="Edit">
+                                        <button type="button">
+                                            <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                        </button>
+                                    </Tippy>
+                                    <Tippy content="Delete">
+                                        <button type="button">
+                                            <IconTrashLines />
+                                        </button>
+                                    </Tippy>
+                                </>
+                            ),
+                        },
+                    ]}
+                    highlightOnHover
+                    totalRecords={categoryList.length}
+                    recordsPerPage={pageSize}
+                    page={page}
+                    onPageChange={(p) => setPage(p)}
+                    recordsPerPageOptions={PAGE_SIZES}
+                    onRecordsPerPageChange={setPageSize}
+                    sortStatus={sortStatus}
+                    onSortStatusChange={setSortStatus}
+                    selectedRecords={selectedRecords}
+                    onSelectedRecordsChange={(selectedRecords: any) => {
+                        console.log('selectedRecords: ', selectedRecords);
+                        setSelectedRecords(selectedRecords);
+                    }}
+                    minHeight={200}
+                    paginationText={({ from, to, totalRecords }) =>{
+                        return `Showing  ${from} to ${to} of ${totalRecords} entries`}}
+                />
+            </div>
+
+            {/* {value === 'list' && (
                 <div className="panel mt-5 overflow-hidden border-0 p-0">
                     <div className="table-responsive">
                         <table className="table-striped table-hover">
@@ -486,7 +419,7 @@ const Contacts = () => {
                         );
                     })}
                 </div>
-            )}
+            )} */}
 
             <Transition appear show={addContactModal} as={Fragment}>
                 <Dialog as="div" open={addContactModal} onClose={() => setAddContactModal(false)} className="relative z-50">
@@ -513,7 +446,7 @@ const Contacts = () => {
                                         <IconX />
                                     </button>
                                     <div className="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]">
-                                        {params.id ? 'Edit Contact' : 'Add Contact'}
+                                        {params.id ? 'Edit Contact' : 'Add Category'}
                                     </div>
                                     <div className="p-5">
                                         <form>
@@ -521,7 +454,7 @@ const Contacts = () => {
                                                 <label htmlFor="name">Name</label>
                                                 <input id="name" type="text" placeholder="Enter Name" className="form-input" value={params.name} onChange={(e) => changeValue(e)} />
                                             </div>
-                                            <div className="mb-5">
+                                            {/* <div className="mb-5">
                                                 <label htmlFor="email">Email</label>
                                                 <input id="email" type="email" placeholder="Enter Email" className="form-input" value={params.email} onChange={(e) => changeValue(e)} />
                                             </div>
@@ -532,15 +465,15 @@ const Contacts = () => {
                                             <div className="mb-5">
                                                 <label htmlFor="occupation">Occupation</label>
                                                 <input id="role" type="text" placeholder="Enter Occupation" className="form-input" value={params.role} onChange={(e) => changeValue(e)} />
-                                            </div>
+                                            </div> */}
                                             <div className="mb-5">
-                                                <label htmlFor="address">Address</label>
+                                                <label htmlFor="address">Description</label>
                                                 <textarea
-                                                    id="location"
+                                                    id="description"
                                                     rows={3}
-                                                    placeholder="Enter Address"
+                                                    placeholder="Enter description"
                                                     className="form-textarea min-h-[130px] resize-none"
-                                                    value={params.location}
+                                                    value={params.description}
                                                     onChange={(e) => changeValue(e)}
                                                 ></textarea>
                                             </div>
