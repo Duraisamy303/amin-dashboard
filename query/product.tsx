@@ -64,6 +64,17 @@ export const PRODUCT_LIST = gql`
     ${PRODUCT_LIST_ITEM_FRAGMENT}
 `;
 
+export const DELETE_PRODUCT = gql`
+    mutation deleteCategory($id: ID!) {
+        categoryDelete(id: $id) {
+            errors {
+                message
+                values
+            }
+        }
+    }
+`;
+
 export const CATEGORY_LIST = gql`
     query CategoryList($first: Int!, $after: String, $channel: String!) {
         categories(first: $first, after: $after) {
@@ -81,6 +92,26 @@ export const CATEGORY_LIST = gql`
     }
 `;
 
+export const CREATE_CATEGORY = gql`
+    mutation CategoryCreate($input: CategoryInput!) {
+        categoryCreate(input: $input) {
+            category {
+                id
+                name
+                description
+                slug
+            }
+        }
+    }
+`;
 
-
-
+export const DELETE_CATEGORY = gql`
+    mutation deleteCategory($id: ID!) {
+        categoryDelete(id: $id) {
+            errors {
+                message
+                values
+            }
+        }
+    }
+`;

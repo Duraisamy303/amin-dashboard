@@ -87,7 +87,23 @@ const Sidebar = () => {
                 className={`sidebar fixed bottom-0 top-0 z-50 h-full min-h-screen w-[260px] shadow-[5px_0_25px_0_rgba(94,92,154,0.1)] transition-all duration-300 ${semidark ? 'text-white-dark' : ''}`}
             >
                 <div className="h-full bg-white dark:bg-black">
-                    <div className="flex items-center justify-between px-4 py-3">
+
+                <div className="flex items-center justify-center px-4 py-3">
+                        <Link href="/" className="main-logo flex shrink-0 items-center">
+                            <img className="ml-[5px] w-30 flex-none" src="/assets/images/logo.png" alt="logo" />
+                        </Link>
+
+                        <button
+                            type="button"
+                            className="collapse-icon flex h-8 w-8 items-center rounded-full transition duration-300 hover:bg-gray-500/10 rtl:rotate-180 dark:text-white-light dark:hover:bg-dark-light/10"
+                            onClick={() => dispatch(toggleSidebar())}
+                        >
+                            <IconCaretsDown className="m-auto rotate-90" />
+                        </button>
+                    </div>
+
+
+                    {/* <div className="flex items-center justify-between px-4 py-3">
                         <Link href="/" className="main-logo flex shrink-0 items-center">
                             <img className="ml-[5px] w-8 flex-none" src="/assets/images/logo.svg" alt="logo" />
                             <span className="align-middle text-2xl font-semibold ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light lg:inline">{t('VRISTO')}</span>
@@ -100,7 +116,7 @@ const Sidebar = () => {
                         >
                             <IconCaretsDown className="m-auto rotate-90" />
                         </button>
-                    </div>
+                    </div> */}
                     <PerfectScrollbar className="relative h-[calc(100vh-80px)]">
                         <ul className="relative space-y-0.5 p-4 py-0 font-semibold">
                             <li className="menu nav-item">
@@ -140,14 +156,54 @@ const Sidebar = () => {
 
                             <li className="nav-item">
                                 <ul>
-                                <li className="nav-item">
+                                    {/* <li className="nav-item">
                                         <Link href="/apps/category" className="group">
                                             <div className="flex items-center">
                                                 <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Category')}</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
                                             </div>
                                         </Link>
+                                    </li> */}
+
+                                    <li className="menu nav-item">
+                                        <button type="button" className={`${currentMenu === 'product' ? 'active' : ''} nav-link group w-full`} >
+                                            <div className="flex items-center">
+                                            <Link href="/apps/product"className="flex items-center">
+                                                <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
+                                          </Link>
+                                            </div>
+
+                                            <div className={currentMenu !== 'product' ? '-rotate-90 rtl:rotate-90' : ''} onClick={() => toggleMenu('product')}>
+                                                <IconCaretDown />
+                                            </div>
+                                        </button>
+
+                                        <AnimateHeight duration={300} height={currentMenu === 'product' ? 'auto' : 0}>
+                                            <ul className="sub-menu text-gray-500">
+                                                <li>
+                                                    <Link href="/apps/category">{t('Category')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/invoice/preview">{t('Finish')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/invoice/add">{t('Designs')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/invoice/edit">{t('Stone type')}</Link>
+                                                </li>
+                                            </ul>
+                                        </AnimateHeight>
                                     </li>
+                                    {/* <li className="nav-item">
+                                        <Link href="/apps/product" className="group">
+                                            <div className="flex items-center">
+                                                <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
+                                            </div>
+                                        </Link>
+                                    </li> */}
                                     <li className="nav-item">
                                         <Link href="/apps/chat" className="group">
                                             <div className="flex items-center">
@@ -164,7 +220,7 @@ const Sidebar = () => {
                                             </div>
                                         </Link>
                                     </li>
-                                  
+
                                     <li className="nav-item">
                                         <Link href="/apps/todolist" className="group">
                                             <div className="flex items-center">
