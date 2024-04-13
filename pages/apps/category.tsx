@@ -16,7 +16,7 @@ import IconTwitter from '@/components/Icon/IconTwitter';
 import IconX from '@/components/Icon/IconX';
 import { useGetAllProductsQuery } from '@/Api/categoryApi';
 import { useMutation, useQuery } from '@apollo/client';
-import { CATEGORY_LIST, CREATE_CATEGORY, PRODUCT_LIST } from '@/query/product';
+import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST } from '@/query/product';
 import { useSetState } from '@/utils/functions';
 import Tippy from '@tippyjs/react';
 import IconEye from '@/components/Icon/IconEye';
@@ -24,9 +24,12 @@ import IconPencil from '@/components/Icon/IconPencil';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
 import sortBy from 'lodash/sortBy';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router';
+const ReactQuill = dynamic(import('react-quill'), { ssr: false });
 
 const Contacts = () => {
-    const dispatch = useDispatch();
+    const router = useRouter();
 
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
         columnAccessor: 'id',
@@ -41,10 +44,13 @@ const Contacts = () => {
         variables: { channel: 'india-channel', first: 20 }, // Pass variables here
     });
 
+    const [deleteCat] = useMutation(DELETE_CATEGORY);
+
     const [page, setPage] = useState(1);
     const PAGE_SIZES = [10, 20, 30, 50, 100];
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [categoryList, setCategoryList] = useState([]);
+    console.log('categoryList: ', categoryList);
     const [filteredItems, setFilteredItems] = useState<any>(categoryList);
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
     const [search, setSearch] = useState('');
@@ -60,7 +66,7 @@ const Contacts = () => {
                 ...item.node,
                 product: item?.node?.products?.totalCount,
             }));
-            const sorting:any=sortBy(newData,"id")
+            const sorting: any = sortBy(newData, 'id');
             setCategoryList(sorting);
             // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
         }
@@ -69,19 +75,12 @@ const Contacts = () => {
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
-    console.log("out: ", categoryList);
-
 
     useEffect(() => {
         const from = (page - 1) * pageSize;
         const to = from + pageSize;
-        console.log("from, to: ", from, to);
-        console.log("categoryList: ", [...categoryList.slice(from, to)]);
-
-        setCategoryList([...categoryList.slice(from, to)])
+        setCategoryList([...categoryList.slice(from, to)]);
     }, [page, pageSize]);
-
-   
 
     const [value, setValue] = useState<any>('list');
     const [defaultParams] = useState({
@@ -98,7 +97,6 @@ const Contacts = () => {
         const { value, id } = e.target;
         setParams({ ...params, [id]: value });
     };
-
 
     const searchContact = () => {
         setFilteredItems(() => {
@@ -190,9 +188,20 @@ const Contacts = () => {
 
     useEffect(() => {
         const data = sortBy(categoryList, sortStatus.columnAccessor);
-        console.log("data: ", data);
-        setCategoryList(sortStatus.direction === 'desc' ? data.reverse() : data)
+        setCategoryList(sortStatus.direction === 'desc' ? data.reverse() : data);
     }, [sortStatus]);
+
+    const deleteCategory = async (row: any) => {
+        console.log('data: ', row);
+        try {
+            const { data } = await deleteCat({
+                variables: { id: row.id },
+            });
+            console.log('response: ', data);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
     return (
         <div>
@@ -235,7 +244,7 @@ const Contacts = () => {
                         // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                         { accessor: 'name', sortable: true },
                         { accessor: 'product', sortable: true },
-                      
+
                         {
                             // Custom column for actions
                             accessor: 'actions', // You can use any accessor name you want
@@ -244,7 +253,7 @@ const Contacts = () => {
                             render: (row: any) => (
                                 <>
                                     <Tippy content="View">
-                                        <button type="button">
+                                        <button type="button" onClick={() => router.push(`/slug/categoryView/${row.id}`)}>
                                             <IconEye className="ltr:mr-2 rtl:ml-2" />
                                         </button>
                                     </Tippy>
@@ -254,7 +263,7 @@ const Contacts = () => {
                                         </button>
                                     </Tippy>
                                     <Tippy content="Delete">
-                                        <button type="button">
+                                        <button type="button" onClick={() => deleteCategory(row)}>
                                             <IconTrashLines />
                                         </button>
                                     </Tippy>
@@ -277,8 +286,9 @@ const Contacts = () => {
                         setSelectedRecords(selectedRecords);
                     }}
                     minHeight={200}
-                    paginationText={({ from, to, totalRecords }) =>{
-                        return `Showing  ${from} to ${to} of ${totalRecords} entries`}}
+                    paginationText={({ from, to, totalRecords }) => {
+                        return `Showing  ${from} to ${to} of ${totalRecords} entries`;
+                    }}
                 />
             </div>
 
@@ -468,14 +478,31 @@ const Contacts = () => {
                                             </div> */}
                                             <div className="mb-5">
                                                 <label htmlFor="address">Description</label>
-                                                <textarea
+                                                {/* <div className="h-fit"> */}
+                                                <ReactQuill
+                                                    theme="snow"
+                                                    value={params.description || ''}
+                                                    defaultValue={params.description || ''}
+                                                    onChange={(content, delta, source, editor) => {
+                                                        params.description = content;
+                                                        console.log('content: ', content);
+                                                        console.log('params: ', params);
+                                                        params.displayDescription = editor.getText();
+                                                        // setParams({
+                                                        //     ...params,
+                                                        // });
+                                                    }}
+                                                    style={{ minHeight: '200px' }}
+                                                />
+                                                {/* </div> */}
+                                                {/* <textarea
                                                     id="description"
                                                     rows={3}
                                                     placeholder="Enter description"
                                                     className="form-textarea min-h-[130px] resize-none"
                                                     value={params.description}
                                                     onChange={(e) => changeValue(e)}
-                                                ></textarea>
+                                                ></textarea> */}
                                             </div>
                                             <div className="mt-8 flex items-center justify-end">
                                                 <button type="button" className="btn btn-outline-danger" onClick={() => setAddContactModal(false)}>

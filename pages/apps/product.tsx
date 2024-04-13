@@ -8,7 +8,7 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import IconPencil from '@/components/Icon/IconPencil';
-import { Button } from '@mantine/core';
+import { Button, Loader, LoadingOverlay } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
 import { IRootState } from '../../store';
@@ -23,7 +23,9 @@ import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
 import { date } from 'yup/lib/locale';
 import { useQuery } from '@apollo/client';
-import {  PRODUCT_LIST } from '@/query/product';
+import { PRODUCT_LIST } from '@/query/product';
+import moment from 'moment';
+import IconLoader from '@/components/Icon/IconLoader';
 
 const rowData1 = [
     {
@@ -61,20 +63,40 @@ const rowData1 = [
     },
 ];
 const Product = () => {
-
-    const {
-        loading,
-        error,
-        data: productData,
-    } = useQuery(PRODUCT_LIST, {
+    const { error, data: productData } = useQuery(PRODUCT_LIST, {
         variables: { channel: 'india-channel', first: 20 }, // Pass variables here
     });
 
-    console.log("productData: ", productData);
+    const [productList, setProductList] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
+
+    useEffect(() => {
+        getProductList();
+    }, [productData]);
+
+    const getProductList = () => {
+        setLoading(true);
+        if (productData && productData.products && productData.products.edges?.length > 0) {
+            const newData = productData?.products?.edges.map((item) => ({
+                ...item.node,
+                product: item?.node?.products?.totalCount,
+                image: item?.node?.thumbnail?.url,
+                categories: item?.node?.category?.name,
+                date: moment(item?.node?.created).format('DD-MM-YYYY'),
+                price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+            }));
+            const sorting: any = sortBy(newData, 'id');
+            setProductList(sorting);
+            setLoading(false);
+
+            // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+        }
+    };
+
     useEffect(() => {
         dispatch(setPageTitle('Checkbox Table'));
     });
@@ -277,7 +299,7 @@ const Product = () => {
         setFilterFormData({
             category: '',
             stock: '',
-        })
+        });
     };
 
     return (
@@ -344,64 +366,79 @@ const Product = () => {
                         </div>
                     </form>
                 </div>
-
-                <div className="datatables">
-                    <DataTable
-                        className="table-hover whitespace-nowrap"
-                        records={recordsData}
-                        columns={[
-                            { accessor: 'id', sortable: true },
-                            { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                            { accessor: 'name', sortable: true },
-                            { accessor: 'sku', sortable: true },
-                            { accessor: 'stock', sortable: true },
-                            { accessor: 'price', sortable: true },
-                            { accessor: 'categories', sortable: true },
-                            { accessor: 'tags', sortable: true },
-                            { accessor: 'date', sortable: true },
-                            {
-                                // Custom column for actions
-                                accessor: 'actions', // You can use any accessor name you want
-                                title: 'Actions',
-                                // Render method for custom column
-                                render: (row: any) => (
-                                    <>
-                                        <Tippy content="View">
-                                            <button type="button" onClick={() => ViewProduct(row)}>
-                                                <IconEye className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy>
-                                        <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditProduct(row)}>
-                                                <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy>
-                                        <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteProduct(row)}>
-                                                <IconTrashLines />
-                                            </button>
-                                        </Tippy>
-                                    </>
-                                ),
-                            },
-                        ]}
-                        highlightOnHover
-                        totalRecords={initialRecords.length}
-                        recordsPerPage={pageSize}
-                        page={page}
-                        onPageChange={(p) => setPage(p)}
-                        recordsPerPageOptions={PAGE_SIZES}
-                        onRecordsPerPageChange={setPageSize}
-                        sortStatus={sortStatus}
-                        onSortStatusChange={setSortStatus}
-                        selectedRecords={selectedRecords}
-                        onSelectedRecordsChange={(selectedRecords) => {
-                            setSelectedRecords(selectedRecords);
-                        }}
-                        minHeight={200}
-                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                    />
-                </div>
+                {loading ? (
+                    <>
+                        <div className="screen_loader animate__animated fixed inset-0 z-[60] grid place-content-center bg-[#fafafa] dark:bg-[#060818]">
+                            <svg width="64" height="64" viewBox="0 0 135 135" xmlns="http://www.w3.org/2000/svg" fill="#4361ee">
+                                <path d="M67.447 58c5.523 0 10-4.477 10-10s-4.477-10-10-10-10 4.477-10 10 4.477 10 10 10zm9.448 9.447c0 5.523 4.477 10 10 10 5.522 0 10-4.477 10-10s-4.478-10-10-10c-5.523 0-10 4.477-10 10zm-9.448 9.448c-5.523 0-10 4.477-10 10 0 5.522 4.477 10 10 10s10-4.478 10-10c0-5.523-4.477-10-10-10zM58 67.447c0-5.523-4.477-10-10-10s-10 4.477-10 10 4.477 10 10 10 10-4.477 10-10z">
+                                    <animateTransform attributeName="transform" type="rotate" from="0 67 67" to="-360 67 67" dur="2.5s" repeatCount="indefinite" />
+                                </path>
+                                <path d="M28.19 40.31c6.627 0 12-5.374 12-12 0-6.628-5.373-12-12-12-6.628 0-12 5.372-12 12 0 6.626 5.372 12 12 12zm30.72-19.825c4.686 4.687 12.284 4.687 16.97 0 4.686-4.686 4.686-12.284 0-16.97-4.686-4.687-12.284-4.687-16.97 0-4.687 4.686-4.687 12.284 0 16.97zm35.74 7.705c0 6.627 5.37 12 12 12 6.626 0 12-5.373 12-12 0-6.628-5.374-12-12-12-6.63 0-12 5.372-12 12zm19.822 30.72c-4.686 4.686-4.686 12.284 0 16.97 4.687 4.686 12.285 4.686 16.97 0 4.687-4.686 4.687-12.284 0-16.97-4.685-4.687-12.283-4.687-16.97 0zm-7.704 35.74c-6.627 0-12 5.37-12 12 0 6.626 5.373 12 12 12s12-5.374 12-12c0-6.63-5.373-12-12-12zm-30.72 19.822c-4.686-4.686-12.284-4.686-16.97 0-4.686 4.687-4.686 12.285 0 16.97 4.686 4.687 12.284 4.687 16.97 0 4.687-4.685 4.687-12.283 0-16.97zm-35.74-7.704c0-6.627-5.372-12-12-12-6.626 0-12 5.373-12 12s5.374 12 12 12c6.628 0 12-5.373 12-12zm-19.823-30.72c4.687-4.686 4.687-12.284 0-16.97-4.686-4.686-12.284-4.686-16.97 0-4.687 4.686-4.687 12.284 0 16.97 4.686 4.687 12.284 4.687 16.97 0z">
+                                    <animateTransform attributeName="transform" type="rotate" from="0 67 67" to="360 67 67" dur="8s" repeatCount="indefinite" />
+                                </path>
+                            </svg>
+                        </div>
+                    </>
+                ) : (
+                    <div className="datatables">
+                        <DataTable
+                            className="table-hover whitespace-nowrap"
+                            records={productList}
+                            columns={[
+                                // { accessor: 'id', sortable: true },
+                                { accessor: 'image', render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                                { accessor: 'name', sortable: true },
+                                // { accessor: 'sku', sortable: true },
+                                // { accessor: 'stock', sortable: true },
+                                { accessor: 'price', sortable: true },
+                                { accessor: 'categories', sortable: true },
+                                // { accessor: 'tags', sortable: true },
+                                { accessor: 'date', sortable: true },
+                                {
+                                    // Custom column for actions
+                                    accessor: 'actions', // You can use any accessor name you want
+                                    title: 'Actions',
+                                    // Render method for custom column
+                                    render: (row: any) => (
+                                        <>
+                                            <Tippy content="View">
+                                                <button type="button" onClick={() => ViewProduct(row)}>
+                                                    <IconEye className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
+                                            <Tippy content="Edit">
+                                                <button type="button" onClick={() => EditProduct(row)}>
+                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
+                                            <Tippy content="Delete">
+                                                <button type="button" onClick={() => DeleteProduct(row)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </Tippy>
+                                        </>
+                                    ),
+                                },
+                            ]}
+                            highlightOnHover
+                            totalRecords={initialRecords.length}
+                            recordsPerPage={pageSize}
+                            page={page}
+                            onPageChange={(p) => setPage(p)}
+                            recordsPerPageOptions={PAGE_SIZES}
+                            onRecordsPerPageChange={setPageSize}
+                            sortStatus={sortStatus}
+                            onSortStatusChange={setSortStatus}
+                            selectedRecords={selectedRecords}
+                            onSelectedRecordsChange={(selectedRecords) => {
+                                console.log('selectedRecords: ', selectedRecords);
+                                setSelectedRecords(selectedRecords);
+                            }}
+                            minHeight={200}
+                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* CREATE AND EDIT Product FORM */}
