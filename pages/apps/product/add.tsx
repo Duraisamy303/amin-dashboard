@@ -1,9 +1,18 @@
-import React from 'react'
+import React from 'react';
 
 const add = () => {
-  return (
-    <div>add</div>
-  )
-}
+    return (
+        <div>
+            <div className="panel mt-6">
+               <div>
+                <form>
+                    <label>Product Name</label>
+                    <input/>
+                </form>
+                </div> 
+            </div>
+        </div>
+    );
+};
 
-export default add
+export default add;

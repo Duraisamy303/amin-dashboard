@@ -86,6 +86,7 @@ const ProductList = () => {
     const [filterFormData, setFilterFormData] = useState({
         category: '',
         stock: '',
+        productType: '',
     });
 
     useEffect(() => {
@@ -119,8 +120,6 @@ const ProductList = () => {
         const data = sortBy(initialRecords, sortStatus.columnAccessor);
         setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
     }, [sortStatus]);
-
-
 
     // form submit
     const onSubmit = (record: any, { resetForm }: any) => {
@@ -226,6 +225,15 @@ const ProductList = () => {
         }));
     };
 
+    const productTypeChange = (selectedProductType: string) => {
+        console.log('Selected Product Type:', selectedProductType);
+        // Update the state with the selected product type
+        setFilterFormData((prevState) => ({
+            ...prevState,
+            productType: selectedProductType,
+        }));
+    };
+
     const onFilterSubmit = (e: any) => {
         e.preventDefault();
         console.log('filterFormData', filterFormData);
@@ -233,6 +241,7 @@ const ProductList = () => {
         setFilterFormData({
             category: '',
             stock: '',
+            productType: '',
         });
     };
 
@@ -293,7 +302,11 @@ const ProductList = () => {
                                 <option value="In Stock">In Stock</option>
                                 <option value="Out Of Stock">Out Of Stock</option>
                             </select>
-
+                            
+                            <select className="form-select flex-1" onChange={(e) => productTypeChange(e.target.value)}>
+                                <option value="sample-product">Simple Product</option>
+                                <option value="variable-product">Variable Product</option>
+                            </select>
                             <button type="submit" className="btn btn-primary py-2.5">
                                 Filter
                             </button>
