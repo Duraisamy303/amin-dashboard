@@ -115,3 +115,119 @@ export const DELETE_CATEGORY = gql`
         }
     }
 `;
+
+export const FINISH_LIST = gql`
+    query GetProductFinished {
+        productFinishes(first: 100) {
+            edges {
+                node {
+                    name
+                    slug
+                    id
+                }
+            }
+            totalCount
+        }
+    }
+`;
+
+export const CREATE_FINISH = gql`
+    mutation ProductFinishCreate($input: ProductFinishInput!) {
+        productFinishCreate(input: $input) {
+            productFinish {
+                name
+                slug
+                id
+            }
+        }
+    }
+`;
+
+export const UPDATE_FINISH = gql`
+    mutation ProductFinishUpdate($id: ID!, $input: ProductFinishInput!) {
+        productFinishUpdate(id: $id, input: $input) {
+            productFinish {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const DELETE_FINISH = gql`
+    mutation ProductFinishDelete($id: ID!) {
+        productFinishDelete(id: $id) {
+            productFinish {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const DESIGN_LIST = gql`
+    query MyQuery {
+        productDesigns(first: 100) {
+            totalCount
+            edges {
+                node {
+                    id
+                    name
+                    slug
+                }
+            }
+        }
+    }
+`;
+
+export const CREATE_DESIGN = gql`
+    mutation ProductDesignCreate($input: ProductDesignInput!) {
+        productDesignCreate(input: $input) {
+            productDesign {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const UPDATE_DESIGN = gql`
+    mutation ProductDesignUpdate($id: ID!, $input: ProductDesignInput!) {
+        productDesignUpdate(id: $id, input: $input) {
+            productDesign {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const DELETE_DESIGN = gql`
+    mutation ProductDesignDelete($id: ID!) {
+        productDesignDelete(id: $id) {
+            ok
+            errors {
+                values
+                message
+            }
+        }
+    }
+`;
+
+export const STONE_LIST = gql`
+    query MyQuery {
+        productStoneTypes(first: 100) {
+            edges {
+                node {
+                    id
+                    name
+                    slug
+                }
+            }
+        }
+    }
+`;

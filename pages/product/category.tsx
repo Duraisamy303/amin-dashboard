@@ -50,7 +50,6 @@ const Contacts = () => {
     const PAGE_SIZES = [10, 20, 30, 50, 100];
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [categoryList, setCategoryList] = useState([]);
-    console.log('categoryList: ', categoryList);
     const [filteredItems, setFilteredItems] = useState<any>(categoryList);
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
     const [search, setSearch] = useState('');
@@ -67,6 +66,7 @@ const Contacts = () => {
                 product: item?.node?.products?.totalCount,
             }));
             const sorting: any = sortBy(newData, 'id');
+            console.log("sorting: ", sorting);
             setCategoryList(sorting);
             // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
         }

@@ -15,7 +15,7 @@ import IconFacebookCircle from '@/components/Icon/IconFacebookCircle';
 import IconTwitter from '@/components/Icon/IconTwitter';
 import IconGoogle from '@/components/Icon/IconGoogle';
 import { useMutation } from '@apollo/client';
-import { LOGIN } from '@/query/product';
+import { LOGIN } from '@/query/auth';
 
 const LoginCover = () => {
     const [formData, setFormData] = useState({

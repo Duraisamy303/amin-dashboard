@@ -58,6 +58,8 @@ const LoginBoxed = () => {
         if (data?.tokenCreate?.errors?.length > 0) {
             alert(data?.tokenCreate?.errors[0]?.message);
         } else {
+            console.log("data?.tokenCreate: ", data?.tokenCreate);
+
             localStorage.setItem('token', data?.tokenCreate?.token);
             localStorage.setItem('user', data?.tokenCreate?.user);
             localStorage.setItem('refreshToken', data?.tokenCreate?.refreshToken);

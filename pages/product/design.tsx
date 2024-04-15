@@ -11,7 +11,6 @@ import IconPencil from '@/components/Icon/IconPencil';
 import { Button, Loader, LoadingOverlay } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
-import { IRootState } from '../../store';
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -22,97 +21,26 @@ import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
 import { date } from 'yup/lib/locale';
-import { useQuery } from '@apollo/client';
-import { PRODUCT_LIST } from '@/query/product';
+import { useMutation, useQuery } from '@apollo/client';
+import { CREATE_DESIGN, DELETE_DESIGN, DESIGN_LIST, UPDATE_DESIGN } from '@/query/product';
 import moment from 'moment';
-import IconLoader from '@/components/Icon/IconLoader';
+import { showDeleteAlert } from '@/utils/functions';
+import { debounce } from 'lodash';
 
-const rowData1 = [
-    {
-        id: 1,
-        image: `${Image1.src}`,
-        name: 'Necklace Yazhu',
-        sku: 'PBS_NP_34',
-        stock: 'Out of stock',
-        price: 10800.0,
-        categories: 'Necklace',
-        tags: 'New',
-        date: '26-03-2022',
-    },
-    {
-        id: 2,
-        image: `${Image2.src}`,
-        name: 'Necklace Preetham',
-        sku: 'PBS_NP_31',
-        stock: 'In stock ',
-        price: 14450.0,
-        categories: 'Earings',
-        tags: 'New',
-        date: '09-10-2023',
-    },
-    {
-        id: 3,
-        image: `${Image3.src}`,
-        name: 'Necklace Shila',
-        sku: 'PBS_NP_32',
-        stock: 'Out of stock',
-        price: 18900.0,
-        categories: 'New Arrivals',
-        tags: 'New',
-        date: '01-01-2024',
-    },
-];
-const Product = () => {
-    const { error, data: productData } = useQuery(PRODUCT_LIST, {
-        variables: { channel: 'india-channel', first: 20 }, // Pass variables here
-    });
-
-    const [productList, setProductList] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
-
-    const dispatch = useDispatch();
-
-    useEffect(() => {
-        getProductList();
-    }, [productData]);
-
-    const getProductList = () => {
-        setLoading(true);
-        if (productData && productData.products && productData.products.edges?.length > 0) {
-            const newData = productData?.products?.edges.map((item) => ({
-                ...item.node,
-                product: item?.node?.products?.totalCount,
-                image: item?.node?.thumbnail?.url,
-                categories: item?.node?.category?.name,
-                date: moment(item?.node?.created).format('DD-MM-YYYY'),
-                price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
-            }));
-            const sorting: any = sortBy(newData, 'id');
-            setProductList(sorting);
-            setLoading(false);
-
-            // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
-        }
-    };
-
-    useEffect(() => {
-        dispatch(setPageTitle('Checkbox Table'));
-    });
-    const [page, setPage] = useState(1);
-    const PAGE_SIZES = [10, 20, 30, 50, 100];
-    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
-    const [initialRecords, setInitialRecords] = useState(sortBy(rowData1, 'id'));
-    const [recordsData, setRecordsData] = useState(initialRecords);
-
-    const [selectedRecords, setSelectedRecords] = useState<any>([]);
-
-    const [search, setSearch] = useState('');
+const Finish = () => {
+    //For Table
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
         columnAccessor: 'id',
         direction: 'asc',
     });
+
+    //UseState
+    const [page, setPage] = useState(1);
+    const PAGE_SIZES = [10, 20, 30, 50, 100];
+    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+    const [selectedRecords, setSelectedRecords] = useState<any>([]);
+    const [search, setSearch] = useState('');
+    const [addContactModal, setAddContactModal] = useState(false);
 
     const [modal1, setModal1] = useState(false);
     const [modalTitle, setModalTitle] = useState(null);
@@ -125,6 +53,26 @@ const Product = () => {
         stock: '',
     });
 
+    const { error, data: designData } = useQuery(DESIGN_LIST, {
+        variables: { channel: 'india-channel' }, // Pass variables here
+    });
+    const [designList, setDesignList] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    //RTL
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+
+    //Mutation
+    const [addDesign] = useMutation(CREATE_DESIGN);
+    const [updateDesign] = useMutation(UPDATE_DESIGN);
+    const [deleteDesign] = useMutation(DELETE_DESIGN);
+    const [bulkDelete] = useMutation(DELETE_DESIGN);
+
+    //UseEffect
+    useEffect(() => {
+        getDesignList();
+    }, [designData]);
+
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -132,61 +80,123 @@ const Product = () => {
     useEffect(() => {
         const from = (page - 1) * pageSize;
         const to = from + pageSize;
-        setRecordsData([...initialRecords.slice(from, to)]);
-    }, [page, pageSize, initialRecords]);
+        setDesignList([...designList.slice(from, to)]);
+    }, [page, pageSize]);
 
+    // For sorting
     useEffect(() => {
-        setInitialRecords(() => {
-            return rowData1.filter((item) => {
-                return (
-                    item.id.toString().includes(search.toLowerCase()) ||
-                    // item.image.toLowerCase().includes(search.toLowerCase()) ||
-                    item.name.toLowerCase().includes(search.toLowerCase()) ||
-                    item.sku.toLowerCase().includes(search.toLowerCase()) ||
-                    item.stock.toLowerCase().includes(search.toLowerCase()) ||
-                    item.price.toString().includes(search.toLowerCase()) ||
-                    item.categories.toLowerCase().includes(search.toLowerCase()) ||
-                    item.date.toString().includes(search.toLowerCase())
-                );
-            });
-        });
+        const data = sortBy(designList, sortStatus.columnAccessor);
+        setDesignList(sortStatus.direction === 'desc' ? data.reverse() : data);
+    }, [sortStatus]);
+
+    // For search
+    useEffect(() => {
+        if (search != null && search !== '') {
+            debouncedSearchData();
+        } else {
+            setDesignList(designList);
+            // getDesignList();
+        }
     }, [search]);
 
-    useEffect(() => {
-        const data = sortBy(initialRecords, sortStatus.columnAccessor);
-        setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
-    }, [sortStatus]);
+    const getDesignList = () => {
+        setLoading(true);
+        if (designData && designData.productDesigns && designData.productDesigns.edges?.length > 0) {
+            const newData = designData.productDesigns.edges.map((item) => ({
+                ...item.node,
+                name: item?.node?.name,
+            }));
+            const sorting: any = sortBy(newData, 'id');
+            setDesignList(sorting);
+            setLoading(false);
+
+            // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+        }
+    };
+
+    const searchData = () => {
+        setDesignList(() => {
+            return designList.filter((item: any) => {
+                return item.name.toLowerCase().includes(search.toLowerCase());
+            });
+        });
+    };
+
+    const debouncedSearchData = debounce(searchData, 500);
 
     // FORM VALIDATION
     const SubmittedForm = Yup.object().shape({
         name: Yup.string().required('Please fill the Name'),
-        sku: Yup.string().required('Please fill the SKU'),
-        stock: Yup.string().required('Please fill the Slug'),
-        price: Yup.string().required('Please fill the count'),
-        image: Yup.string().required('Please fill the Image'),
-        categories: Yup.string().required('Please fill the Parent categories'),
-        tags: Yup.string().required('Please fill the Tags'),
-        date: Yup.string().required('Please fill the Date'),
+        // sku: Yup.string().required('Please fill the SKU'),
+        // stock: Yup.string().required('Please fill the Slug'),
+        // price: Yup.string().required('Please fill the count'),
+        // image: Yup.string().required('Please fill the Image'),
+        // categories: Yup.string().required('Please fill the Parent categories'),
+        // tags: Yup.string().required('Please fill the Tags'),
+        // date: Yup.string().required('Please fill the Date'),
         // parentProduct: Yup.string().required('Please fill the Parent Product'),
     });
 
-    // form submit
-    const onSubmit = (record: any, { resetForm }: any) => {
-        console.log('record', record);
+    // Api
+    const onSubmit = async (record: any, { resetForm }: any) => {
+        try {
+            const variables = {
+                input: {
+                    name: record.name,
+                },
+            };
 
-        const toast = Swal.mixin({
-            toast: true,
-            position: 'top',
-            showConfirmButton: false,
-            timer: 3000,
-        });
-        toast.fire({
-            icon: 'success',
-            title: 'Form submitted successfully',
-            padding: '10px 20px',
-        });
-        setModal1(false);
-        resetForm();
+            const { data } = await (modalTitle ? updateDesign({ variables: { ...variables, id: modalContant.id } }) : addDesign({ variables }));
+
+            const newData = modalTitle ? data?.productDesignUpdate?.productDesign : data?.productDesignCreate?.productDesign;
+
+            if (!newData) {
+                console.error('Error: New data is undefined.');
+                return;
+            }
+            const updatedId = newData.id;
+            const index = designList.findIndex((design: any) => design && design.id === updatedId);
+
+            const updatedDesignList: any = [...designList];
+            if (index !== -1) {
+                updatedDesignList[index] = newData;
+            } else {
+                updatedDesignList.push(newData);
+            }
+
+            setDesignList(updatedDesignList);
+            const toast = Swal.mixin({
+                toast: true,
+                position: 'top',
+                showConfirmButton: false,
+                timer: 3000,
+            });
+            toast.fire({
+                icon: modalTitle ? 'success' : 'info',
+                title: modalTitle ? 'Data updated successfully' : 'New data added successfully',
+                padding: '10px 20px',
+            });
+
+            setModal1(false);
+            resetForm();
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const DeleteProduct = (record: any) => {
+        showDeleteAlert(
+            async () => {
+                const { data } = await deleteDesign({ variables: { id: record.id } });
+                const updatedRecordsData = designList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                setDesignList(updatedRecordsData);
+                // setSelectedRecords(updatedRecordsData);
+                Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
+            },
+            () => {
+                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
+            }
+        );
     };
 
     // Product table edit
@@ -208,37 +218,6 @@ const Product = () => {
         setViewModal(true);
     };
 
-    // delete Alert Message
-    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
-        const swalWithBootstrapButtons = Swal.mixin({
-            customClass: {
-                confirmButton: 'btn btn-secondary',
-                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
-                popup: 'sweet-alerts',
-            },
-            buttonsStyling: false,
-        });
-
-        swalWithBootstrapButtons
-            .fire({
-                title: 'Are you sure?',
-                text: "You won't be able to Delete this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, cancel!',
-                reverseButtons: true,
-                padding: '2em',
-            })
-            .then((result) => {
-                if (result.isConfirmed) {
-                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    onCancel(); // Call the onCancel function if the user cancels the deletion
-                }
-            });
-    };
-
     const BulkDeleteProduct = async () => {
         showDeleteAlert(
             () => {
@@ -246,8 +225,12 @@ const Product = () => {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
                 }
-                const updatedRecordsData = recordsData.filter((record) => !selectedRecords.includes(record));
-                setRecordsData(updatedRecordsData);
+                selectedRecords?.map(async (item: any) => {
+                    await bulkDelete({ variables: { id: item.id } });
+                });
+                const updatedRecordsData = designList.filter((record) => !selectedRecords.includes(record));
+                setDesignList(updatedRecordsData);
+                // setRecordsData(updatedRecordsData);
                 setSelectedRecords([]);
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
@@ -257,21 +240,7 @@ const Product = () => {
         );
     };
 
-    const DeleteProduct = (record: any) => {
-        showDeleteAlert(
-            () => {
-                const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
-                setRecordsData(updatedRecordsData);
-                Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
-            },
-            () => {
-                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
-            }
-        );
-    };
-
     // completed Product delete option
-    console.log('modalcontant', modalContant);
 
     // top Filter Category change
     const CategoryChange = (selectedCategory: string) => {
@@ -306,7 +275,7 @@ const Product = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Design</h5>
                     <button type="button" className="btn btn-outline-primary">
                         Import
                     </button>
@@ -343,7 +312,7 @@ const Product = () => {
                     </div>
                 </div>
 
-                <div className="mb-5 ">
+                {/* <div className="mb-5 ">
                     <form onSubmit={onFilterSubmit}>
                         <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 md:flex-row">
                             <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
@@ -353,7 +322,6 @@ const Product = () => {
                                 <option value="Palakka">Palakka</option>
                             </select>
 
-                            {/* New select dropdown for stock status */}
                             <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>
                                 <option value="">Filter By Stock Status</option>
                                 <option value="In Stock">In Stock</option>
@@ -365,7 +333,7 @@ const Product = () => {
                             </button>
                         </div>
                     </form>
-                </div>
+                </div> */}
                 {loading ? (
                     <>
                         <div className="screen_loader animate__animated fixed inset-0 z-[60] grid place-content-center bg-[#fafafa] dark:bg-[#060818]">
@@ -383,17 +351,17 @@ const Product = () => {
                     <div className="datatables">
                         <DataTable
                             className="table-hover whitespace-nowrap"
-                            records={productList}
+                            records={designList}
                             columns={[
                                 // { accessor: 'id', sortable: true },
-                                { accessor: 'image', render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                                // { accessor: 'image', render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                                 { accessor: 'name', sortable: true },
                                 // { accessor: 'sku', sortable: true },
                                 // { accessor: 'stock', sortable: true },
-                                { accessor: 'price', sortable: true },
-                                { accessor: 'categories', sortable: true },
+                                // { accessor: 'price', sortable: true },
+                                // { accessor: 'categories', sortable: true },
                                 // { accessor: 'tags', sortable: true },
-                                { accessor: 'date', sortable: true },
+                                // { accessor: 'date', sortable: true },
                                 {
                                     // Custom column for actions
                                     accessor: 'actions', // You can use any accessor name you want
@@ -401,11 +369,11 @@ const Product = () => {
                                     // Render method for custom column
                                     render: (row: any) => (
                                         <>
-                                            <Tippy content="View">
+                                            {/* <Tippy content="View">
                                                 <button type="button" onClick={() => ViewProduct(row)}>
                                                     <IconEye className="ltr:mr-2 rtl:ml-2" />
                                                 </button>
-                                            </Tippy>
+                                            </Tippy> */}
                                             <Tippy content="Edit">
                                                 <button type="button" onClick={() => EditProduct(row)}>
                                                     <IconPencil className="ltr:mr-2 rtl:ml-2" />
@@ -421,7 +389,7 @@ const Product = () => {
                                 },
                             ]}
                             highlightOnHover
-                            totalRecords={initialRecords.length}
+                            totalRecords={designList.length}
                             recordsPerPage={pageSize}
                             page={page}
                             onPageChange={(p) => setPage(p)}
@@ -460,7 +428,7 @@ const Product = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Product' : 'Edit Product'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Design' : 'Edit Design'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -469,15 +437,9 @@ const Product = () => {
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', sku: '', stock: '', image: '', price: '', categories: '', tags: '' }
+                                                    ? { name: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                          sku: modalContant?.sku,
-                                                          stock: modalContant?.stock,
-                                                          price: modalContant?.price,
-                                                          image: modalContant?.image,
-                                                          categories: modalContant?.categories,
-                                                          tags: modalContant?.tags,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
@@ -487,7 +449,7 @@ const Product = () => {
                                         >
                                             {({ errors, submitCount, touched, setFieldValue, values }: any) => (
                                                 <Form className="space-y-5">
-                                                    <div className={submitCount ? (errors.image ? 'has-error' : 'has-success') : ''}>
+                                                    {/* <div className={submitCount ? (errors.image ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="image">Image</label>
                                                         <input
                                                             id="image"
@@ -502,7 +464,7 @@ const Product = () => {
                                                             <img src={values.image} alt="Product Image" style={{ width: '30px', height: 'auto', paddingTop: '5px' }} />
                                                         )}
                                                         {submitCount ? errors.image ? <div className="mt-1 text-danger">{errors.image}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
+                                                    </div> */}
 
                                                     <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="fullName">Name </label>
@@ -511,7 +473,7 @@ const Product = () => {
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
-                                                    <div className={submitCount ? (errors.sku ? 'has-error' : 'has-success') : ''}>
+                                                    {/* <div className={submitCount ? (errors.sku ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="sku">SKU </label>
                                                         <Field name="sku" type="text" id="sku" placeholder="Enter SKU" className="form-input" />
 
@@ -544,7 +506,7 @@ const Product = () => {
                                                         <Field name="tags" type="text" id="tags" placeholder="Enter Tags" className="form-input" />
 
                                                         {submitCount ? errors.tags ? <div className="mt-1 text-danger">{errors.tags}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
+                                                    </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
                                                         {modalTitle === null ? 'Submit' : 'Update'}
@@ -595,4 +557,4 @@ const Product = () => {
     );
 };
 
-export default Product;
+export default Finish;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Swal from "sweetalert2";
 
 export const capitalizeFLetter = (string = "") => {
   if (string.length > 0) {
@@ -50,5 +51,36 @@ export const shortData = (selectValue:any, products:any) => {
   }
 
   return product_items;
+};
+
+
+export const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
+  const swalWithBootstrapButtons = Swal.mixin({
+      customClass: {
+          confirmButton: 'btn btn-secondary',
+          cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
+          popup: 'sweet-alerts',
+      },
+      buttonsStyling: false,
+  });
+
+  swalWithBootstrapButtons
+      .fire({
+          title: 'Are you sure?',
+          text: "You won't be able to Delete this!",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, delete it!',
+          cancelButtonText: 'No, cancel!',
+          reverseButtons: true,
+          padding: '2em',
+      })
+      .then((result) => {
+          if (result.isConfirmed) {
+              onConfirm(); // Call the onConfirm function if the user confirms the deletion
+          } else if (result.dismiss === Swal.DismissReason.cancel) {
+              onCancel(); // Call the onCancel function if the user cancels the deletion
+          }
+      });
 };
 

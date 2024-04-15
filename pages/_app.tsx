@@ -1,5 +1,5 @@
 import type { AppProps } from 'next/app';
-import { ReactElement, ReactNode, Suspense } from 'react';
+import { ReactElement, ReactNode, Suspense, useEffect } from 'react';
 import DefaultLayout from '../components/Layouts/DefaultLayout';
 import { Provider } from 'react-redux';
 import store from '../store/index';
@@ -14,7 +14,7 @@ import 'react-perfect-scrollbar/dist/css/styles.css';
 
 import '../styles/tailwind.css';
 import { NextPage } from 'next';
-import { ApolloClient, ApolloProvider, InMemoryCache, createHttpLink } from '@apollo/client';
+import { ApolloClient, ApolloLink, ApolloProvider, InMemoryCache, createHttpLink } from '@apollo/client';
 
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
     getLayout?: (page: ReactElement) => ReactNode;
@@ -25,25 +25,31 @@ type AppPropsWithLayout = AppProps & {
 };
 
 const App = ({ Component, pageProps }: AppPropsWithLayout) => {
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        // console.log('token: ', token);
+    }, []);
     const httpLink = createHttpLink({
         uri: 'http://file.prade.in/graphql/',
     });
 
-    const authLink = setContext((_, { headers }) => {
+    const authLink = new ApolloLink((operation, forward) => {
         const token = localStorage.getItem('token');
-
-        return {
+        operation.setContext({
             headers: {
-                ...headers,
                 Authorization: token ? `JWT ${token}` : '',
             },
-        };
+        });
+        // console.log('operation headers: ', operation.getContext().headers);
+
+        return forward(operation);
     });
 
     const client = new ApolloClient({
-        link: httpLink,
+        link: authLink.concat(httpLink),
         cache: new InMemoryCache(),
     });
+
     const getLayout = Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
 
     return (

@@ -152,7 +152,7 @@ const Sidebar = () => {
                                     <li className="menu nav-item">
                                         <button type="button" className={`${currentMenu === 'product' ? 'active' : ''} nav-link group w-full`} >
                                             <div className="flex items-center">
-                                            <Link href="/apps/product"className="flex items-center">
+                                            <Link href="/product/product"className="flex items-center">
                                                 <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
                                                 <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
                                           </Link>
@@ -166,16 +166,16 @@ const Sidebar = () => {
                                         <AnimateHeight duration={300} height={currentMenu === 'product' ? 'auto' : 0}>
                                             <ul className="sub-menu text-gray-500">
                                                 <li>
-                                                    <Link href="/apps/category">{t('Category')}</Link>
+                                                    <Link href="/product/category">{t('Category')}</Link>
                                                 </li>
                                                 <li>
-                                                    <Link href="/apps/invoice/preview">{t('Finish')}</Link>
+                                                    <Link href="/product/finish">{t('Finish')}</Link>
                                                 </li>
                                                 <li>
-                                                    <Link href="/apps/invoice/add">{t('Designs')}</Link>
+                                                    <Link href="/product/design">{t('Designs')}</Link>
                                                 </li>
                                                 <li>
-                                                    <Link href="/apps/invoice/edit">{t('Stone type')}</Link>
+                                                    <Link href="/product/stone">{t('Stone type')}</Link>
                                                 </li>
                                             </ul>
                                         </AnimateHeight>
