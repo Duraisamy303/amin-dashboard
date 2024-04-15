@@ -8,9 +8,10 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import IconPencil from '@/components/Icon/IconPencil';
-import { Button, Loader, LoadingOverlay } from '@mantine/core';
+import { Button } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
+import { IRootState } from '../../store';
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -20,37 +21,17 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
-import { date } from 'yup/lib/locale';
-import { useMutation, useQuery } from '@apollo/client';
 import { CREATE_DESIGN, DELETE_DESIGN, DESIGN_LIST, UPDATE_DESIGN } from '@/query/product';
-import moment from 'moment';
-import { showDeleteAlert } from '@/utils/functions';
-import { debounce } from 'lodash';
 
-const Finish = () => {
-    //For Table
-    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
-        columnAccessor: 'id',
-        direction: 'asc',
-    });
+import { useMutation, useQuery } from '@apollo/client';
 
-    //UseState
-    const [page, setPage] = useState(1);
-    const PAGE_SIZES = [10, 20, 30, 50, 100];
-    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
-    const [selectedRecords, setSelectedRecords] = useState<any>([]);
-    const [search, setSearch] = useState('');
-    const [addContactModal, setAddContactModal] = useState(false);
 
-    const [modal1, setModal1] = useState(false);
-    const [modalTitle, setModalTitle] = useState(null);
-    const [modalContant, setModalContant] = useState<any>(null);
+const Category = () => {
+    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
-    const [viewModal, setViewModal] = useState(false);
-
-    const [filterFormData, setFilterFormData] = useState({
-        category: '',
-        stock: '',
+    const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(setPageTitle('Checkbox Table'));
     });
 
     const { error, data: designData } = useQuery(DESIGN_LIST, {
@@ -59,45 +40,9 @@ const Finish = () => {
     const [designList, setDesignList] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    //RTL
-    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
-
-    //Mutation
-    const [addDesign] = useMutation(CREATE_DESIGN);
-    const [updateDesign] = useMutation(UPDATE_DESIGN);
-    const [deleteDesign] = useMutation(DELETE_DESIGN);
-    const [bulkDelete] = useMutation(DELETE_DESIGN);
-
-    //UseEffect
     useEffect(() => {
-        getDesignList();
+        getDesignList()
     }, [designData]);
-
-    useEffect(() => {
-        setPage(1);
-    }, [pageSize]);
-
-    useEffect(() => {
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize;
-        setDesignList([...designList.slice(from, to)]);
-    }, [page, pageSize]);
-
-    // For sorting
-    useEffect(() => {
-        const data = sortBy(designList, sortStatus.columnAccessor);
-        setDesignList(sortStatus.direction === 'desc' ? data.reverse() : data);
-    }, [sortStatus]);
-
-    // For search
-    useEffect(() => {
-        if (search != null && search !== '') {
-            debouncedSearchData();
-        } else {
-            setDesignList(designList);
-            // getDesignList();
-        }
-    }, [search]);
 
     const getDesignList = () => {
         setLoading(true);
@@ -106,39 +51,98 @@ const Finish = () => {
                 ...item.node,
                 name: item?.node?.name,
             }));
-            const sorting: any = sortBy(newData, 'id');
-            setDesignList(sorting);
+            // const sorting: any = sortBy(newData, 'id');
+            setDesignList(newData);
             setLoading(false);
 
             // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
         }
     };
 
-    const searchData = () => {
-        setDesignList(() => {
-            return designList.filter((item: any) => {
-                return item.name.toLowerCase().includes(search.toLowerCase());
+    const [page, setPage] = useState(1);
+    const PAGE_SIZES = [10, 20, 30, 50, 100];
+    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+    const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
+    const [recordsData, setRecordsData] = useState([]);
+
+    // Update initialRecords whenever finishList changes
+    useEffect(() => {
+        // Sort finishList by 'id' and update initialRecords
+        setInitialRecords(sortBy(designList, 'id'));
+    }, [designList]);
+
+    // Log initialRecords when it changes
+    useEffect(() => {
+        console.log("initialRecords: ", initialRecords);
+    }, [initialRecords]);
+
+    const [selectedRecords, setSelectedRecords] = useState<any>([]);
+
+    const [search, setSearch] = useState('');
+    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
+        columnAccessor: 'id',
+        direction: 'asc',
+    });
+
+
+
+    const [modal1, setModal1] = useState(false);
+    const [modalTitle, setModalTitle] = useState(null);
+    const [modalContant, setModalContant] = useState<any>(null);
+
+    // const [viewModal, setViewModal] = useState(false);
+   
+    //Mutation
+    const [addDesign] = useMutation(CREATE_DESIGN);
+    const [updateDesign] = useMutation(UPDATE_DESIGN);
+    const [deleteDesign] = useMutation(DELETE_DESIGN);
+    const [bulkDelete] = useMutation(DELETE_DESIGN);
+
+    console.log("finishList: ", designList);
+    useEffect(() => {
+        setPage(1);
+    }, [pageSize]);
+
+    useEffect(() => {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize;
+        setRecordsData([...initialRecords.slice(from, to)]);
+    }, [page, pageSize, initialRecords]);
+
+    useEffect(() => {
+        setInitialRecords(() => {
+            return designList.filter((item:any) => {
+console.log('✌️item --->', item);
+                return (
+                    item.id.toString().includes(search.toLowerCase()) ||
+                    // item.image.toLowerCase().includes(search.toLowerCase()) ||
+                    item.name.toLowerCase().includes(search.toLowerCase()) 
+                    // item.description.toLowerCase().includes(search.toLowerCase()) ||
+                    // item.slug.toLowerCase().includes(search.toLowerCase()) ||
+                    // item.count.toString().includes(search.toLowerCase())
+                );
             });
         });
-    };
+    }, [search]);
 
-    const debouncedSearchData = debounce(searchData, 500);
+    useEffect(() => {
+        const data = sortBy(initialRecords, sortStatus.columnAccessor);
+        setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
+    }, [sortStatus]);
 
     // FORM VALIDATION
     const SubmittedForm = Yup.object().shape({
         name: Yup.string().required('Please fill the Name'),
-        // sku: Yup.string().required('Please fill the SKU'),
-        // stock: Yup.string().required('Please fill the Slug'),
-        // price: Yup.string().required('Please fill the count'),
+        // description: Yup.string().required('Please fill the Description'),
+        // slug: Yup.string().required('Please fill the Slug'),
+        // count: Yup.string().required('Please fill the count'),
         // image: Yup.string().required('Please fill the Image'),
-        // categories: Yup.string().required('Please fill the Parent categories'),
-        // tags: Yup.string().required('Please fill the Tags'),
-        // date: Yup.string().required('Please fill the Date'),
-        // parentProduct: Yup.string().required('Please fill the Parent Product'),
+        // parentCategory: Yup.string().required('Please fill the Parent Category'),
     });
 
-    // Api
-    const onSubmit = async (record: any, { resetForm }: any) => {
+    // form submit
+    const onSubmit = async(record: any, { resetForm }: any) => {
+        console.log('record: ', record);
         try {
             const variables = {
                 input: {
@@ -155,16 +159,16 @@ const Finish = () => {
                 return;
             }
             const updatedId = newData.id;
-            const index = designList.findIndex((design: any) => design && design.id === updatedId);
+            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
-            const updatedDesignList: any = [...designList];
+            const updatedDesignList: any = [...recordsData];
             if (index !== -1) {
                 updatedDesignList[index] = newData;
             } else {
                 updatedDesignList.push(newData);
             }
 
-            setDesignList(updatedDesignList);
+            setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -184,41 +188,57 @@ const Finish = () => {
         }
     };
 
-    const DeleteProduct = (record: any) => {
-        showDeleteAlert(
-            async () => {
-                const { data } = await deleteDesign({ variables: { id: record.id } });
-                const updatedRecordsData = designList.filter((dataRecord: any) => dataRecord.id !== record.id);
-                setDesignList(updatedRecordsData);
-                // setSelectedRecords(updatedRecordsData);
-                Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
-            },
-            () => {
-                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
-            }
-        );
-    };
-
-    // Product table edit
-    const EditProduct = (record: any) => {
+    // category table edit
+    const EditCategory = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
-    // Product table create
-    const CreateProduct = () => {
+    // category table create
+    const CreateCategory = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
     };
 
     // view categotry
-    const ViewProduct = (record: any) => {
-        setViewModal(true);
+    // const ViewCategory = (record: any) => {
+    //     setViewModal(true);
+    // };
+
+    // delete Alert Message
+    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
+        const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: 'btn btn-secondary',
+                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
+                popup: 'sweet-alerts',
+            },
+            buttonsStyling: false,
+        });
+
+        swalWithBootstrapButtons
+            .fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'No, cancel!',
+                reverseButtons: true,
+                padding: '2em',
+            })
+            .then((result) => {
+                if (result.isConfirmed) {
+                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    onCancel(); // Call the onCancel function if the user cancels the deletion
+                }
+            });
     };
 
-    const BulkDeleteProduct = async () => {
+    const BulkDeleteCategory = async () => {
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -230,7 +250,6 @@ const Finish = () => {
                 });
                 const updatedRecordsData = designList.filter((record) => !selectedRecords.includes(record));
                 setDesignList(updatedRecordsData);
-                // setRecordsData(updatedRecordsData);
                 setSelectedRecords([]);
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
@@ -240,48 +259,32 @@ const Finish = () => {
         );
     };
 
-    // completed Product delete option
-
-    // top Filter Category change
-    const CategoryChange = (selectedCategory: string) => {
-        console.log('Selected Category:', selectedCategory);
-        // Update the state with the selected category
-        setFilterFormData((prevState) => ({
-            ...prevState,
-            category: selectedCategory,
-        }));
+    const DeleteCategory = (record: any) => {
+        showDeleteAlert(
+            async() => {
+                const { data } = await deleteDesign({ variables: { id: record.id } });
+                const updatedRecordsData = designList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                setRecordsData(updatedRecordsData);
+                setDesignList(updatedRecordsData);
+                // getFinishList()
+                setSelectedRecords([]);
+                // setFinishList(finishList)
+                Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
+            },
+            () => {
+                Swal.fire('Cancelled', 'Your Category List is safe :)', 'error');
+            }
+        );
     };
 
-    const StockStatusChange = (selectedStockStatus: string) => {
-        console.log('Selected Stock Status:', selectedStockStatus);
-        // Update the state with the selected stock status
-        setFilterFormData((prevState) => ({
-            ...prevState,
-            stock: selectedStockStatus,
-        }));
-    };
-
-    const onFilterSubmit = (e: any) => {
-        e.preventDefault();
-        console.log('filterFormData', filterFormData);
-
-        setFilterFormData({
-            category: '',
-            stock: '',
-        });
-    };
+    // completed category delete option
 
     return (
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Design</h5>
-                    <button type="button" className="btn btn-outline-primary">
-                        Import
-                    </button>
-                    <button type="button" className="btn btn-outline-primary">
-                        Export
-                    </button>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
+
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                         <div className="dropdown  mr-2 ">
@@ -299,117 +302,73 @@ const Finish = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteProduct()}>
+                                        <button type="button" onClick={() => BulkDeleteCategory()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateProduct()}>
+                        <button type="button" className="btn btn-primary" onClick={() => CreateCategory()}>
                             + Create
                         </button>
                     </div>
                 </div>
-
-                {/* <div className="mb-5 ">
-                    <form onSubmit={onFilterSubmit}>
-                        <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 md:flex-row">
-                            <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
-                                <option value="">Select a Categories </option>
-                                <option value="Anklets">Anklets</option>
-                                <option value="Earings">Earings</option>
-                                <option value="Palakka">Palakka</option>
-                            </select>
-
-                            <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>
-                                <option value="">Filter By Stock Status</option>
-                                <option value="In Stock">In Stock</option>
-                                <option value="Out Of Stock">Out Of Stock</option>
-                            </select>
-
-                            <button type="submit" className="btn btn-primary py-2.5">
-                                Filter
-                            </button>
-                        </div>
-                    </form>
-                </div> */}
-                {loading ? (
-                    <>
-                        <div className="screen_loader animate__animated fixed inset-0 z-[60] grid place-content-center bg-[#fafafa] dark:bg-[#060818]">
-                            <svg width="64" height="64" viewBox="0 0 135 135" xmlns="http://www.w3.org/2000/svg" fill="#4361ee">
-                                <path d="M67.447 58c5.523 0 10-4.477 10-10s-4.477-10-10-10-10 4.477-10 10 4.477 10 10 10zm9.448 9.447c0 5.523 4.477 10 10 10 5.522 0 10-4.477 10-10s-4.478-10-10-10c-5.523 0-10 4.477-10 10zm-9.448 9.448c-5.523 0-10 4.477-10 10 0 5.522 4.477 10 10 10s10-4.478 10-10c0-5.523-4.477-10-10-10zM58 67.447c0-5.523-4.477-10-10-10s-10 4.477-10 10 4.477 10 10 10 10-4.477 10-10z">
-                                    <animateTransform attributeName="transform" type="rotate" from="0 67 67" to="-360 67 67" dur="2.5s" repeatCount="indefinite" />
-                                </path>
-                                <path d="M28.19 40.31c6.627 0 12-5.374 12-12 0-6.628-5.373-12-12-12-6.628 0-12 5.372-12 12 0 6.626 5.372 12 12 12zm30.72-19.825c4.686 4.687 12.284 4.687 16.97 0 4.686-4.686 4.686-12.284 0-16.97-4.686-4.687-12.284-4.687-16.97 0-4.687 4.686-4.687 12.284 0 16.97zm35.74 7.705c0 6.627 5.37 12 12 12 6.626 0 12-5.373 12-12 0-6.628-5.374-12-12-12-6.63 0-12 5.372-12 12zm19.822 30.72c-4.686 4.686-4.686 12.284 0 16.97 4.687 4.686 12.285 4.686 16.97 0 4.687-4.686 4.687-12.284 0-16.97-4.685-4.687-12.283-4.687-16.97 0zm-7.704 35.74c-6.627 0-12 5.37-12 12 0 6.626 5.373 12 12 12s12-5.374 12-12c0-6.63-5.373-12-12-12zm-30.72 19.822c-4.686-4.686-12.284-4.686-16.97 0-4.686 4.687-4.686 12.285 0 16.97 4.686 4.687 12.284 4.687 16.97 0 4.687-4.685 4.687-12.283 0-16.97zm-35.74-7.704c0-6.627-5.372-12-12-12-6.626 0-12 5.373-12 12s5.374 12 12 12c6.628 0 12-5.373 12-12zm-19.823-30.72c4.687-4.686 4.687-12.284 0-16.97-4.686-4.686-12.284-4.686-16.97 0-4.687 4.686-4.687 12.284 0 16.97 4.686 4.687 12.284 4.687 16.97 0z">
-                                    <animateTransform attributeName="transform" type="rotate" from="0 67 67" to="360 67 67" dur="8s" repeatCount="indefinite" />
-                                </path>
-                            </svg>
-                        </div>
-                    </>
-                ) : (
-                    <div className="datatables">
-                        <DataTable
-                            className="table-hover whitespace-nowrap"
-                            records={designList}
-                            columns={[
-                                // { accessor: 'id', sortable: true },
-                                // { accessor: 'image', render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                                { accessor: 'name', sortable: true },
-                                // { accessor: 'sku', sortable: true },
-                                // { accessor: 'stock', sortable: true },
-                                // { accessor: 'price', sortable: true },
-                                // { accessor: 'categories', sortable: true },
-                                // { accessor: 'tags', sortable: true },
-                                // { accessor: 'date', sortable: true },
-                                {
-                                    // Custom column for actions
-                                    accessor: 'actions', // You can use any accessor name you want
-                                    title: 'Actions',
-                                    // Render method for custom column
-                                    render: (row: any) => (
-                                        <>
-                                            {/* <Tippy content="View">
-                                                <button type="button" onClick={() => ViewProduct(row)}>
-                                                    <IconEye className="ltr:mr-2 rtl:ml-2" />
-                                                </button>
-                                            </Tippy> */}
-                                            <Tippy content="Edit">
-                                                <button type="button" onClick={() => EditProduct(row)}>
-                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                                </button>
-                                            </Tippy>
-                                            <Tippy content="Delete">
-                                                <button type="button" onClick={() => DeleteProduct(row)}>
-                                                    <IconTrashLines />
-                                                </button>
-                                            </Tippy>
-                                        </>
-                                    ),
-                                },
-                            ]}
-                            highlightOnHover
-                            totalRecords={designList.length}
-                            recordsPerPage={pageSize}
-                            page={page}
-                            onPageChange={(p) => setPage(p)}
-                            recordsPerPageOptions={PAGE_SIZES}
-                            onRecordsPerPageChange={setPageSize}
-                            sortStatus={sortStatus}
-                            onSortStatusChange={setSortStatus}
-                            selectedRecords={selectedRecords}
-                            onSelectedRecordsChange={(selectedRecords) => {
-                                console.log('selectedRecords: ', selectedRecords);
-                                setSelectedRecords(selectedRecords);
-                            }}
-                            minHeight={200}
-                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                        />
-                    </div>
-                )}
+                <div className="datatables">
+                    <DataTable
+                        className="table-hover whitespace-nowrap"
+                        records={recordsData}
+                        columns={[
+                            // { accessor: 'id', sortable: true },
+                            // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                            { accessor: 'name', sortable: true },
+                          
+                            {
+                                // Custom column for actions
+                                accessor: 'actions', // You can use any accessor name you want
+                                title: 'Actions',
+                                // Render method for custom column
+                                render: (row: any) => (
+                                    <>
+                                        {/* <Tippy content="View">
+                                            <button type="button" onClick={() => ViewCategory(row)}>
+                                                <IconEye className="ltr:mr-2 rtl:ml-2" />
+                                            </button>
+                                        </Tippy> */}
+                                        <Tippy content="Edit">
+                                            <button type="button" onClick={() => EditCategory(row)}>
+                                                <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                            </button>
+                                        </Tippy>
+                                        <Tippy content="Delete">
+                                            <button type="button" onClick={() => DeleteCategory(row)}>
+                                                <IconTrashLines />
+                                            </button>
+                                        </Tippy>
+                                    </>
+                                ),
+                            },
+                        ]}
+                        highlightOnHover
+                        totalRecords={initialRecords.length}
+                        recordsPerPage={pageSize}
+                        page={page}
+                        onPageChange={(p) => setPage(p)}
+                        recordsPerPageOptions={PAGE_SIZES}
+                        onRecordsPerPageChange={setPageSize}
+                        sortStatus={sortStatus}
+                        onSortStatusChange={setSortStatus}
+                        selectedRecords={selectedRecords}
+                        onSelectedRecordsChange={(selectedRecords) => {
+                            setSelectedRecords(selectedRecords);
+                        }}
+                        minHeight={200}
+                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                    />
+                </div>
             </div>
 
-            {/* CREATE AND EDIT Product FORM */}
+            {/* CREATE AND EDIT CATEGORY FORM */}
             <Transition appear show={modal1} as={Fragment}>
                 <Dialog as="div" open={modal1} onClose={() => setModal1(false)}>
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
@@ -428,7 +387,7 @@ const Finish = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Design' : 'Edit Design'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Category' : 'Edit Category'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -440,6 +399,11 @@ const Finish = () => {
                                                     ? { name: '' }
                                                     : {
                                                           name: modalContant?.name,
+                                                        //   description: modalContant?.description,
+                                                         
+                                                          //   count: modalContant?.count,
+                                                        //   image: modalContant?.image,
+                                                        //   parentCategory: modalContant?.name,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
@@ -468,44 +432,57 @@ const Finish = () => {
 
                                                     <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="fullName">Name </label>
-                                                        <Field name="name" type="text" id="name" placeholder="Enter Name" className="form-input" />
+                                                        <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
 
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
-                                                    {/* <div className={submitCount ? (errors.sku ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="sku">SKU </label>
-                                                        <Field name="sku" type="text" id="sku" placeholder="Enter SKU" className="form-input" />
+                                                    {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="description">description </label>
+                                                        <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
 
-                                                        {submitCount ? errors.sku ? <div className="mt-1 text-danger">{errors.sku}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
+                                                        {submitCount ? (
+                                                            errors.description ? (
+                                                                <div className="mt-1 text-danger">{errors.description}</div>
+                                                            ) : (
+                                                                <div className="mt-1 text-success"></div>
+                                                            )
+                                                        ) : (
+                                                            ''
+                                                        )}
+                                                    </div> */}
 
-                                                    <div className={submitCount ? (errors.stock ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="stock">Stock </label>
-                                                        <Field name="stock" type="text" id="stock" placeholder="Enter Stock" className="form-input" />
+                                                    {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="slug">Slug </label>
+                                                        <Field name="slug" type="text" id="slug" placeholder="Enter Description" className="form-input" />
 
-                                                        {submitCount ? errors.stock ? <div className="mt-1 text-danger">{errors.stock}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
+                                                        {submitCount ? errors.slug ? <div className="mt-1 text-danger">{errors.slug}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div> */}
 
-                                                    <div className={submitCount ? (errors.price ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="price">Price</label>
-                                                        <Field name="price" type="number" id="price" placeholder="Enter Price" className="form-input" />
+                                                    {/* <div className={submitCount ? (errors.count ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="count">Count</label>
+                                                        <Field name="count" type="number" id="count" placeholder="Enter Count" className="form-input" />
 
-                                                        {submitCount ? errors.price ? <div className="mt-1 text-danger">{errors.price}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
+                                                        {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div> */}
 
-                                                    <div className={submitCount ? (errors.categories ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="categories">Categories</label>
-                                                        <Field name="categories" type="text" id="categories" placeholder="Enter categories" className="form-input" />
-
-                                                        {submitCount ? errors.categories ? <div className="mt-1 text-danger">{errors.categories}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div>
-
-                                                    <div className={submitCount ? (errors.tags ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="tags">Tags</label>
-                                                        <Field name="tags" type="text" id="tags" placeholder="Enter Tags" className="form-input" />
-
-                                                        {submitCount ? errors.tags ? <div className="mt-1 text-danger">{errors.tags}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    {/* <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="parentCategory">Parent Category</label>
+                                                        <Field as="select" name="parentCategory" className="form-select">
+                                                            <option value="">Open this select menu</option>
+                                                            <option value="Anklets">Anklets</option>
+                                                            <option value="BlackThread">__Black Thread</option>
+                                                            <option value="Kada">__Kada</option>
+                                                        </Field>
+                                                        {submitCount ? (
+                                                            errors.parentCategory ? (
+                                                                <div className=" mt-1 text-danger">{errors.parentCategory}</div>
+                                                            ) : (
+                                                                <div className=" mt-1 text-[#1abc9c]"></div>
+                                                            )
+                                                        ) : (
+                                                            ''
+                                                        )}
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
@@ -522,8 +499,8 @@ const Finish = () => {
                 </Dialog>
             </Transition>
 
-            {/* Full View Product data*/}
-            <Transition appear show={viewModal} as={Fragment}>
+            {/* Full View Category data*/}
+            {/* <Transition appear show={viewModal} as={Fragment}>
                 <Dialog as="div" open={viewModal} onClose={() => setViewModal(false)}>
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
                         <div className="fixed inset-0" />
@@ -541,7 +518,7 @@ const Finish = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">View Product</div>
+                                        <div className="text-lg font-bold">View Category</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setViewModal(false)}>
                                             <IconX />
                                         </button>
@@ -552,9 +529,9 @@ const Finish = () => {
                         </div>
                     </div>
                 </Dialog>
-            </Transition>
+            </Transition> */}
         </div>
     );
 };
 
-export default Finish;
+export default Category;

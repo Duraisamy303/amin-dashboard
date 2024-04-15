@@ -231,3 +231,35 @@ export const STONE_LIST = gql`
         }
     }
 `;
+
+export const CREATE_STONE = gql`
+    mutation CreateStoneType($input: ProductStoneTypeInput!) {
+        productStoneTypeCreate(input: $input) {
+            productStoneType {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const UPDATE_STONE = gql`
+    mutation UpdateStoneType($id: ID!, $input: ProductStoneTypeInput!) {
+        productStoneTypeUpdate(id: $id, input: $input) {
+            productStoneType {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const DELETE_STONE = gql`
+    mutation ProductStoneTypeDelete($id: ID!) {
+        productStoneTypeDelete(id: $id) {
+            ok
+        }
+    }
+`;
