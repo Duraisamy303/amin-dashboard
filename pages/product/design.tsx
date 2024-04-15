@@ -24,7 +24,7 @@ import IconEye from '@/components/Icon/IconEye';
 import { CREATE_DESIGN, DELETE_DESIGN, DESIGN_LIST, UPDATE_DESIGN } from '@/query/product';
 
 import { useMutation, useQuery } from '@apollo/client';
-
+import Loader from '../elements/loader';
 
 const Category = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -41,21 +41,25 @@ const Category = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        getDesignList()
+        getDesignList();
     }, [designData]);
 
     const getDesignList = () => {
         setLoading(true);
-        if (designData && designData.productDesigns && designData.productDesigns.edges?.length > 0) {
-            const newData = designData.productDesigns.edges.map((item) => ({
-                ...item.node,
-                name: item?.node?.name,
-            }));
-            // const sorting: any = sortBy(newData, 'id');
-            setDesignList(newData);
-            setLoading(false);
+        if (designData) {
+            if (designData && designData.productDesigns && designData.productDesigns.edges?.length > 0) {
+                const newData = designData.productDesigns.edges.map((item) => ({
+                    ...item.node,
+                    name: item?.node?.name,
+                }));
+                // const sorting: any = sortBy(newData, 'id');
+                setDesignList(newData);
+                setLoading(false);
 
-            // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+                // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+            }
+        } else {
+            setLoading(false);
         }
     };
 
@@ -73,7 +77,7 @@ const Category = () => {
 
     // Log initialRecords when it changes
     useEffect(() => {
-        console.log("initialRecords: ", initialRecords);
+        console.log('initialRecords: ', initialRecords);
     }, [initialRecords]);
 
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
@@ -84,21 +88,19 @@ const Category = () => {
         direction: 'asc',
     });
 
-
-
     const [modal1, setModal1] = useState(false);
     const [modalTitle, setModalTitle] = useState(null);
     const [modalContant, setModalContant] = useState<any>(null);
 
     // const [viewModal, setViewModal] = useState(false);
-   
+
     //Mutation
     const [addDesign] = useMutation(CREATE_DESIGN);
     const [updateDesign] = useMutation(UPDATE_DESIGN);
     const [deleteDesign] = useMutation(DELETE_DESIGN);
     const [bulkDelete] = useMutation(DELETE_DESIGN);
 
-    console.log("finishList: ", designList);
+    console.log('finishList: ', designList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -111,12 +113,12 @@ const Category = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return designList.filter((item:any) => {
-console.log('✌️item --->', item);
+            return designList.filter((item: any) => {
+                console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
-                    item.name.toLowerCase().includes(search.toLowerCase()) 
+                    item.name.toLowerCase().includes(search.toLowerCase())
                     // item.description.toLowerCase().includes(search.toLowerCase()) ||
                     // item.slug.toLowerCase().includes(search.toLowerCase()) ||
                     // item.count.toString().includes(search.toLowerCase())
@@ -141,7 +143,7 @@ console.log('✌️item --->', item);
     });
 
     // form submit
-    const onSubmit = async(record: any, { resetForm }: any) => {
+    const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
         try {
             const variables = {
@@ -261,14 +263,12 @@ console.log('✌️item --->', item);
 
     const DeleteCategory = (record: any) => {
         showDeleteAlert(
-            async() => {
+            async () => {
                 const { data } = await deleteDesign({ variables: { id: record.id } });
                 const updatedRecordsData = designList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
                 setDesignList(updatedRecordsData);
-                // getFinishList()
                 setSelectedRecords([]);
-                // setFinishList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
@@ -314,58 +314,73 @@ console.log('✌️item --->', item);
                         </button>
                     </div>
                 </div>
-                <div className="datatables">
-                    <DataTable
-                        className="table-hover whitespace-nowrap"
-                        records={recordsData}
-                        columns={[
-                            // { accessor: 'id', sortable: true },
-                            // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                            { accessor: 'name', sortable: true },
-                          
-                            {
-                                // Custom column for actions
-                                accessor: 'actions', // You can use any accessor name you want
-                                title: 'Actions',
-                                // Render method for custom column
-                                render: (row: any) => (
-                                    <>
-                                        {/* <Tippy content="View">
+                {loading ? (
+                    <>
+                        <div className="screen_loader animate__animated fixed inset-0 z-[60] grid place-content-center bg-[#fafafa] dark:bg-[#060818]">
+                            <svg width="64" height="64" viewBox="0 0 135 135" xmlns="http://www.w3.org/2000/svg" fill="#4361ee">
+                                <path d="M67.447 58c5.523 0 10-4.477 10-10s-4.477-10-10-10-10 4.477-10 10 4.477 10 10 10zm9.448 9.447c0 5.523 4.477 10 10 10 5.522 0 10-4.477 10-10s-4.478-10-10-10c-5.523 0-10 4.477-10 10zm-9.448 9.448c-5.523 0-10 4.477-10 10 0 5.522 4.477 10 10 10s10-4.478 10-10c0-5.523-4.477-10-10-10zM58 67.447c0-5.523-4.477-10-10-10s-10 4.477-10 10 4.477 10 10 10 10-4.477 10-10z">
+                                    <animateTransform attributeName="transform" type="rotate" from="0 67 67" to="-360 67 67" dur="2.5s" repeatCount="indefinite" />
+                                </path>
+                                <path d="M28.19 40.31c6.627 0 12-5.374 12-12 0-6.628-5.373-12-12-12-6.628 0-12 5.372-12 12 0 6.626 5.372 12 12 12zm30.72-19.825c4.686 4.687 12.284 4.687 16.97 0 4.686-4.686 4.686-12.284 0-16.97-4.686-4.687-12.284-4.687-16.97 0-4.687 4.686-4.687 12.284 0 16.97zm35.74 7.705c0 6.627 5.37 12 12 12 6.626 0 12-5.373 12-12 0-6.628-5.374-12-12-12-6.63 0-12 5.372-12 12zm19.822 30.72c-4.686 4.686-4.686 12.284 0 16.97 4.687 4.686 12.285 4.686 16.97 0 4.687-4.686 4.687-12.284 0-16.97-4.685-4.687-12.283-4.687-16.97 0zm-7.704 35.74c-6.627 0-12 5.37-12 12 0 6.626 5.373 12 12 12s12-5.374 12-12c0-6.63-5.373-12-12-12zm-30.72 19.822c-4.686-4.686-12.284-4.686-16.97 0-4.686 4.687-4.686 12.285 0 16.97 4.686 4.687 12.284 4.687 16.97 0 4.687-4.685 4.687-12.283 0-16.97zm-35.74-7.704c0-6.627-5.372-12-12-12-6.626 0-12 5.373-12 12s5.374 12 12 12c6.628 0 12-5.373 12-12zm-19.823-30.72c4.687-4.686 4.687-12.284 0-16.97-4.686-4.686-12.284-4.686-16.97 0-4.687 4.686-4.687 12.284 0 16.97 4.686 4.687 12.284 4.687 16.97 0z">
+                                    <animateTransform attributeName="transform" type="rotate" from="0 67 67" to="360 67 67" dur="8s" repeatCount="indefinite" />
+                                </path>
+                            </svg>
+                        </div>
+                    </>
+                ) : (
+                    <div className="datatables">
+                        <DataTable
+                            className="table-hover whitespace-nowrap"
+                            records={recordsData}
+                            columns={[
+                                // { accessor: 'id', sortable: true },
+                                // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                                { accessor: 'name', sortable: true },
+
+                                {
+                                    // Custom column for actions
+                                    accessor: 'actions', // You can use any accessor name you want
+                                    title: 'Actions',
+                                    // Render method for custom column
+                                    render: (row: any) => (
+                                        <>
+                                            {/* <Tippy content="View">
                                             <button type="button" onClick={() => ViewCategory(row)}>
                                                 <IconEye className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy> */}
-                                        <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditCategory(row)}>
-                                                <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy>
-                                        <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteCategory(row)}>
-                                                <IconTrashLines />
-                                            </button>
-                                        </Tippy>
-                                    </>
-                                ),
-                            },
-                        ]}
-                        highlightOnHover
-                        totalRecords={initialRecords.length}
-                        recordsPerPage={pageSize}
-                        page={page}
-                        onPageChange={(p) => setPage(p)}
-                        recordsPerPageOptions={PAGE_SIZES}
-                        onRecordsPerPageChange={setPageSize}
-                        sortStatus={sortStatus}
-                        onSortStatusChange={setSortStatus}
-                        selectedRecords={selectedRecords}
-                        onSelectedRecordsChange={(selectedRecords) => {
-                            setSelectedRecords(selectedRecords);
-                        }}
-                        minHeight={200}
-                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                    />
-                </div>
+                                            <Tippy content="Edit">
+                                                <button type="button" onClick={() => EditCategory(row)}>
+                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
+                                            <Tippy content="Delete">
+                                                <button type="button" onClick={() => DeleteCategory(row)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </Tippy>
+                                        </>
+                                    ),
+                                },
+                            ]}
+                            highlightOnHover
+                            totalRecords={initialRecords.length}
+                            recordsPerPage={pageSize}
+                            page={page}
+                            onPageChange={(p) => setPage(p)}
+                            recordsPerPageOptions={PAGE_SIZES}
+                            onRecordsPerPageChange={setPageSize}
+                            sortStatus={sortStatus}
+                            onSortStatusChange={setSortStatus}
+                            selectedRecords={selectedRecords}
+                            onSelectedRecordsChange={(selectedRecords) => {
+                                setSelectedRecords(selectedRecords);
+                            }}
+                            minHeight={200}
+                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* CREATE AND EDIT CATEGORY FORM */}
@@ -399,11 +414,11 @@ console.log('✌️item --->', item);
                                                     ? { name: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                        //   description: modalContant?.description,
-                                                         
+                                                          //   description: modalContant?.description,
+
                                                           //   count: modalContant?.count,
-                                                        //   image: modalContant?.image,
-                                                        //   parentCategory: modalContant?.name,
+                                                          //   image: modalContant?.image,
+                                                          //   parentCategory: modalContant?.name,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}

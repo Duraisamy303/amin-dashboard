@@ -48,17 +48,22 @@ const Stone = () => {
 
     const getDesignList = () => {
         setLoading(true);
-        if (stoneData && stoneData.productStoneTypes && stoneData.productStoneTypes.edges?.length > 0) {
-            const newData = stoneData.productStoneTypes.edges.map((item: any) => ({
-                ...item.node,
-                name: item?.node?.name,
-            }));
-            // const sorting: any = sortBy(newData, 'id');
-            setStonList(newData);
+        if(stoneData){
+            if (stoneData && stoneData.productStoneTypes && stoneData.productStoneTypes.edges?.length > 0) {
+                const newData = stoneData.productStoneTypes.edges.map((item: any) => ({
+                    ...item.node,
+                    name: item?.node?.name,
+                }));
+                // const sorting: any = sortBy(newData, 'id');
+                setStonList(newData);
+                setLoading(false);
+    
+                // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+            }
+        }else{
             setLoading(false);
-
-            // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
         }
+       
     };
 
     const [page, setPage] = useState(1);

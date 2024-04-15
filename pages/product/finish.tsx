@@ -8,7 +8,7 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import IconPencil from '@/components/Icon/IconPencil';
-import { Button } from '@mantine/core';
+import { Button, Loader } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
 import { IRootState } from '../../store';
@@ -24,7 +24,6 @@ import IconEye from '@/components/Icon/IconEye';
 import { CREATE_DESIGN, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
 
-
 const Category = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
@@ -33,7 +32,7 @@ const Category = () => {
         dispatch(setPageTitle('Checkbox Table'));
     });
 
-  const { error, data: finishData } = useQuery(FINISH_LIST, {
+    const { error, data: finishData } = useQuery(FINISH_LIST, {
         variables: { channel: 'india-channel', first: 20 },
     });
 
@@ -41,18 +40,24 @@ const Category = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        getFinishList()
+        getFinishList();
     }, [finishData]);
 
     const getFinishList = () => {
-        if (finishData && finishData.productFinishes && finishData.productFinishes.edges?.length > 0) {
-            const newData = finishData.productFinishes.edges.map((item) => ({
-                ...item.node,
-                name: item?.node?.name,
-            }));
-            setFinishList(newData);
+        setLoading(true);
+        if (finishData) {
+            if (finishData && finishData.productFinishes && finishData.productFinishes.edges?.length > 0) {
+                const newData = finishData.productFinishes.edges.map((item) => ({
+                    ...item.node,
+                    name: item?.node?.name,
+                }));
+                setFinishList(newData);
+                setLoading(false);
+            }
+        } else {
+            setLoading(false);
         }
-    }
+    };
 
     const [page, setPage] = useState(1);
     const PAGE_SIZES = [10, 20, 30, 50, 100];
@@ -68,7 +73,7 @@ const Category = () => {
 
     // Log initialRecords when it changes
     useEffect(() => {
-        console.log("initialRecords: ", initialRecords);
+        console.log('initialRecords: ', initialRecords);
     }, [initialRecords]);
 
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
@@ -79,21 +84,19 @@ const Category = () => {
         direction: 'asc',
     });
 
-
-
     const [modal1, setModal1] = useState(false);
     const [modalTitle, setModalTitle] = useState(null);
     const [modalContant, setModalContant] = useState<any>(null);
 
     // const [viewModal, setViewModal] = useState(false);
-   
+
     //Mutation
     const [addFinish] = useMutation(CREATE_FINISH);
     const [updateFinish] = useMutation(UPDATE_FINISH);
     const [deleteDesign] = useMutation(DELETE_FINISH);
     const [bulkDelete] = useMutation(DELETE_FINISH);
 
-    console.log("finishList: ", finishList);
+    console.log('finishList: ', finishList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -106,12 +109,12 @@ const Category = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return finishList.filter((item:any) => {
-console.log('✌️item --->', item);
+            return finishList.filter((item: any) => {
+                console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
-                    item.name.toLowerCase().includes(search.toLowerCase()) 
+                    item.name.toLowerCase().includes(search.toLowerCase())
                     // item.description.toLowerCase().includes(search.toLowerCase()) ||
                     // item.slug.toLowerCase().includes(search.toLowerCase()) ||
                     // item.count.toString().includes(search.toLowerCase())
@@ -136,7 +139,7 @@ console.log('✌️item --->', item);
     });
 
     // form submit
-    const onSubmit = async(record: any, { resetForm }: any) => {
+    const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
         try {
             const variables = {
@@ -259,7 +262,7 @@ console.log('✌️item --->', item);
 
     const DeleteCategory = (record: any) => {
         showDeleteAlert(
-            async() => {
+            async () => {
                 const { data } = await deleteDesign({ variables: { id: record.id } });
                 const updatedRecordsData = finishList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
@@ -312,58 +315,62 @@ console.log('✌️item --->', item);
                         </button>
                     </div>
                 </div>
-                <div className="datatables">
-                    <DataTable
-                        className="table-hover whitespace-nowrap"
-                        records={recordsData}
-                        columns={[
-                            // { accessor: 'id', sortable: true },
-                            // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                            { accessor: 'name', sortable: true },
-                          
-                            {
-                                // Custom column for actions
-                                accessor: 'actions', // You can use any accessor name you want
-                                title: 'Actions',
-                                // Render method for custom column
-                                render: (row: any) => (
-                                    <>
-                                        {/* <Tippy content="View">
+                {loading ? (
+                    <Loader />
+                ) : (
+                    <div className="datatables">
+                        <DataTable
+                            className="table-hover whitespace-nowrap"
+                            records={recordsData}
+                            columns={[
+                                // { accessor: 'id', sortable: true },
+                                // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                                { accessor: 'name', sortable: true },
+
+                                {
+                                    // Custom column for actions
+                                    accessor: 'actions', // You can use any accessor name you want
+                                    title: 'Actions',
+                                    // Render method for custom column
+                                    render: (row: any) => (
+                                        <>
+                                            {/* <Tippy content="View">
                                             <button type="button" onClick={() => ViewCategory(row)}>
                                                 <IconEye className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy> */}
-                                        <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditCategory(row)}>
-                                                <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy>
-                                        <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteCategory(row)}>
-                                                <IconTrashLines />
-                                            </button>
-                                        </Tippy>
-                                    </>
-                                ),
-                            },
-                        ]}
-                        highlightOnHover
-                        totalRecords={initialRecords.length}
-                        recordsPerPage={pageSize}
-                        page={page}
-                        onPageChange={(p) => setPage(p)}
-                        recordsPerPageOptions={PAGE_SIZES}
-                        onRecordsPerPageChange={setPageSize}
-                        sortStatus={sortStatus}
-                        onSortStatusChange={setSortStatus}
-                        selectedRecords={selectedRecords}
-                        onSelectedRecordsChange={(selectedRecords) => {
-                            setSelectedRecords(selectedRecords);
-                        }}
-                        minHeight={200}
-                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                    />
-                </div>
+                                            <Tippy content="Edit">
+                                                <button type="button" onClick={() => EditCategory(row)}>
+                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
+                                            <Tippy content="Delete">
+                                                <button type="button" onClick={() => DeleteCategory(row)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </Tippy>
+                                        </>
+                                    ),
+                                },
+                            ]}
+                            highlightOnHover
+                            totalRecords={initialRecords.length}
+                            recordsPerPage={pageSize}
+                            page={page}
+                            onPageChange={(p) => setPage(p)}
+                            recordsPerPageOptions={PAGE_SIZES}
+                            onRecordsPerPageChange={setPageSize}
+                            sortStatus={sortStatus}
+                            onSortStatusChange={setSortStatus}
+                            selectedRecords={selectedRecords}
+                            onSelectedRecordsChange={(selectedRecords) => {
+                                setSelectedRecords(selectedRecords);
+                            }}
+                            minHeight={200}
+                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* CREATE AND EDIT CATEGORY FORM */}
@@ -397,11 +404,11 @@ console.log('✌️item --->', item);
                                                     ? { name: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                        //   description: modalContant?.description,
-                                                         
+                                                          //   description: modalContant?.description,
+
                                                           //   count: modalContant?.count,
-                                                        //   image: modalContant?.image,
-                                                        //   parentCategory: modalContant?.name,
+                                                          //   image: modalContant?.image,
+                                                          //   parentCategory: modalContant?.name,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
