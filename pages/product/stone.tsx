@@ -196,14 +196,14 @@ const Stone = () => {
     };
 
     // category table edit
-    const EditCategory = (record: any) => {
+    const EditStone = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
     // category table create
-    const CreateCategory = () => {
+    const CreateStone = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
@@ -245,7 +245,7 @@ const Stone = () => {
             });
     };
 
-    const BulkDeleteCategory = async () => {
+    const BulkDeleteStone = async () => {
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -266,7 +266,7 @@ const Stone = () => {
         );
     };
 
-    const DeleteCategory = (record: any) => {
+    const DeleteStone = (record: any) => {
         showDeleteAlert(
             async () => {
                 const { data } = await deleteStone({ variables: { id: record.id } });
@@ -279,7 +279,7 @@ const Stone = () => {
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Category List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Stone Type List is safe :)', 'error');
             }
         );
     };
@@ -290,7 +290,7 @@ const Stone = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Stone Type</h5>
 
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -309,14 +309,14 @@ const Stone = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteCategory()}>
+                                        <button type="button" onClick={() => BulkDeleteStone()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateCategory()}>
+                        <button type="button" className="btn btn-primary" onClick={() => CreateStone()}>
                             + Create
                         </button>
                     </div>
@@ -343,12 +343,12 @@ const Stone = () => {
                                             </button>
                                         </Tippy> */}
                                         <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditCategory(row)}>
+                                            <button type="button" onClick={() => EditStone(row)}>
                                                 <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy>
                                         <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteCategory(row)}>
+                                            <button type="button" onClick={() => DeleteStone(row)}>
                                                 <IconTrashLines />
                                             </button>
                                         </Tippy>
@@ -394,7 +394,7 @@ const Stone = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Category' : 'Edit Category'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Stone' : 'Edit Stone'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
