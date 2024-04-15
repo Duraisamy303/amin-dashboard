@@ -26,7 +26,7 @@ import { CREATE_DESIGN, DELETE_DESIGN, DESIGN_LIST, UPDATE_DESIGN } from '@/quer
 import { useMutation, useQuery } from '@apollo/client';
 import Loader from '../elements/loader';
 
-const Category = () => {
+const Design = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
@@ -48,7 +48,7 @@ const Category = () => {
         setLoading(true);
         if (designData) {
             if (designData && designData.productDesigns && designData.productDesigns.edges?.length > 0) {
-                const newData = designData.productDesigns.edges.map((item) => ({
+                const newData = designData.productDesigns.edges.map((item:any) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
@@ -191,14 +191,14 @@ const Category = () => {
     };
 
     // category table edit
-    const EditCategory = (record: any) => {
+    const EditDesign = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
     // category table create
-    const CreateCategory = () => {
+    const CreateDesign = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
@@ -240,7 +240,7 @@ const Category = () => {
             });
     };
 
-    const BulkDeleteCategory = async () => {
+    const BulkDeleteDesign = async () => {
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -261,7 +261,7 @@ const Category = () => {
         );
     };
 
-    const DeleteCategory = (record: any) => {
+    const DeleteDesign = (record: any) => {
         showDeleteAlert(
             async () => {
                 const { data } = await deleteDesign({ variables: { id: record.id } });
@@ -272,7 +272,7 @@ const Category = () => {
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Category List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Design List is safe :)', 'error');
             }
         );
     };
@@ -283,7 +283,7 @@ const Category = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Design</h5>
 
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -302,14 +302,14 @@ const Category = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteCategory()}>
+                                        <button type="button" onClick={() => BulkDeleteDesign()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateCategory()}>
+                        <button type="button" className="btn btn-primary" onClick={() => CreateDesign()}>
                             + Create
                         </button>
                     </div>
@@ -350,12 +350,12 @@ const Category = () => {
                                             </button>
                                         </Tippy> */}
                                             <Tippy content="Edit">
-                                                <button type="button" onClick={() => EditCategory(row)}>
+                                                <button type="button" onClick={() => EditDesign(row)}>
                                                     <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                                 </button>
                                             </Tippy>
                                             <Tippy content="Delete">
-                                                <button type="button" onClick={() => DeleteCategory(row)}>
+                                                <button type="button" onClick={() => DeleteDesign(row)}>
                                                     <IconTrashLines />
                                                 </button>
                                             </Tippy>
@@ -402,7 +402,7 @@ const Category = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Category' : 'Edit Category'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Design' : 'Edit Design'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -549,4 +549,4 @@ const Category = () => {
     );
 };
 
-export default Category;
+export default Design;
