@@ -37,6 +37,8 @@ const ProductEdit = () => {
     const dispatch = useDispatch();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
+    const [modal1, setModal1] = useState(false);
+
     const [value, setValue] = useState('demo content'); // quill text editor
     const [isMounted, setIsMounted] = useState(false); //tabs
     useEffect(() => {
@@ -138,6 +140,10 @@ const ProductEdit = () => {
         setAddCategory(!addCategory);
     };
 
+    const setproductVideoPopup = () => {
+        setModal1(true);
+    };
+
     return (
         <div>
             <div className="  mt-6">
@@ -172,11 +178,11 @@ const ProductEdit = () => {
                             <textarea id="ctnTextarea" rows={3} className="form-textarea" placeholder="Enter Short Description" required></textarea>
                         </div>
                         <div className="panel mb-5 ">
-                            <div className="mb-5 flex flex-col sm:flex-row border-b border-gray-200 pb-5 pl-10">
-                                <label htmlFor="name" className="block text-sm  font-semibold mt-2 pr-5 text-gray-700">
+                            <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
+                                <label htmlFor="name" className="mt-2 block  pr-5 text-sm font-semibold text-gray-700">
                                     Product Data
                                 </label>
-                               <select className="form-select" style={{ width: '200px' }}>
+                                <select className="form-select" style={{ width: '200px' }}>
                                     <option value="1">Simple Product</option>
                                     <option value="2">Variable Product</option>
                                 </select>
@@ -829,9 +835,6 @@ const ProductEdit = () => {
                             <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
 
                             <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
-                            <button type="button" className="btn btn-primary mt-5">
-                                + Video
-                            </button>
                         </div>
 
                         <div className="panel mt-5">
@@ -843,7 +846,7 @@ const ProductEdit = () => {
                             </div>
 
                             <p className="mt-5 cursor-pointer text-primary underline">Add product gallery images</p>
-                            <button type="button" className="btn btn-primary mt-5">
+                            <button type="button" className="btn btn-primary mt-5" onClick={() => setproductVideoPopup()}>
                                 + Video
                             </button>
                         </div>
@@ -989,6 +992,88 @@ const ProductEdit = () => {
                     </div>
                 </div>
             </div>
+            {/* product video popup */}
+            <Transition appear show={modal1} as={Fragment}>
+                <Dialog as="div" open={modal1} onClose={() => setModal1(false)}>
+                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0" />
+                    </Transition.Child>
+                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <div className="text-lg font-bold">Product gallery video</div>
+                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
+                                            <IconX />
+                                        </button>
+                                    </div>
+                                    <div className="m-5">
+                                        {isMounted && (
+                                            <Tab.Group>
+                                                <Tab.List className="mt-3 flex flex-wrap justify-start space-x-2 border p-1 w-44  rtl:space-x-reverse">
+                                                    <Tab as={Fragment}>
+                                                        {({ selected }) => (
+                                                            <button
+                                                                className={`${selected ? 'bg-primary text-white !outline-none' : ''}
+                                                    ' -mb-[1px] block rounded p-3.5 py-2 hover:bg-primary hover:text-white`}
+                                                            >
+                                                                MP4
+                                                            </button>
+                                                        )}
+                                                    </Tab>
+                                                    <Tab as={Fragment}>
+                                                        {({ selected }) => (
+                                                            <button
+                                                                className={`${selected ? 'bg-primary text-white !outline-none' : ''}
+                                                    ' -mb-[1px] block rounded p-3.5 py-2 hover:bg-primary hover:text-white`}
+                                                            >
+                                                                Youtube
+                                                            </button>
+                                                        )}
+                                                    </Tab>
+                                                </Tab.List>
+                                                <Tab.Panels>
+                                                    <Tab.Panel>
+                                                        <div className="active pt-5">
+                                                            <label htmlFor="product-gallery-video" className="form-label mb-5 border-b  pb-3 text-gray-600">
+                                                                MP4 video file
+                                                            </label>
+                                                            <input type="file" id="product-gallery-video" className="form-input" />
+                                                            <span className='text-gray-600 text-sm pt-5'>Upload a new or select (.mp4) video file from the media library.</span>
+                                                        </div>
+                                                        <button className="btn btn-primary mt-5">Save</button>
+                                                    </Tab.Panel>
+                                                    <Tab.Panel>
+                                                    <div className="active pt-5">
+                                                            <label htmlFor="product-gallery-video" className="form-label mb-5 border-b  pb-3 text-gray-600">
+                                                            YouTube video URL
+                                                            </label>
+                                                            <input type="text" id="product-gallery-video" className="form-input" />
+                                                            <span className='text-gray-600 text-sm pt-5'>Example: https://youtu.be/LXb3EKWsInQ</span>
+                                                        </div>
+                                                        <button className="btn btn-primary mt-5">Save</button>
+                                                    </Tab.Panel>
+
+                                                    <Tab.Panel>Disabled</Tab.Panel>
+                                                </Tab.Panels>
+                                            </Tab.Group>
+                                        )}
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
         </div>
     );
 };
