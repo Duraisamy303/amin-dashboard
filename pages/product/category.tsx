@@ -47,11 +47,19 @@ const Category = () => {
     const getCategoryList = () => {
         setLoading(true);
         if (categoryData) {
-            if (categoryData && categoryData.categories && categoryData.categories.edges) {
-                const newData = categoryData.categories.edges.map((item) => ({
-                    ...item.node,
-                    product: item?.node?.products?.totalCount,
-                }));
+            if (categoryData.categories && categoryData.categories.edges) {
+                const newData = categoryData.categories.edges.map((item) => {
+                    const jsonObject = JSON.parse(item.node.description || item.node.description);
+                    // Extract the text value
+                    const textValue = jsonObject?.blocks[0]?.data?.text;
+
+                    return {
+                        ...item.node,
+
+                        product: item.node.products?.totalCount,
+                        textdiscription: textValue || '', // Set textValue or empty string if it doesn't exist
+                    };
+                });
                 setCategoryList(newData);
                 setLoading(false);
             }
@@ -143,9 +151,13 @@ const Category = () => {
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
         try {
+            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id' , data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
+            console.log('✌️Description --->', Description);
+
             const variables = {
                 input: {
                     name: record.name,
+                    description: Description,
                 },
             };
 
@@ -280,7 +292,15 @@ const Category = () => {
     };
 
     // completed category delete option
+    // if (productItem?.description || productItem?.node?.description) {
+    //     const jsonObject = JSON.parse(
+    //       productItem?.description || productItem?.node?.description
+    //     );
+    //     // Extract the text value
+    //     textValue = jsonObject?.blocks[0]?.data?.text;
+    //   }
 
+    console.log('recordsData', recordsData);
     return (
         <div>
             <div className="panel mt-6">
@@ -327,10 +347,11 @@ const Category = () => {
                                 // { accessor: 'id', sortable: true },
                                 // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                                 { accessor: 'name', sortable: true },
-                                // {
-                                //     accessor: 'description',
-                                //     sortable: true,
-                                // },  
+                                {
+                                    accessor: 'textdiscription',
+                                    sortable: true,
+                                    title: 'Description',
+                                },
                                 {
                                     accessor: 'product',
                                     sortable: true,
@@ -410,10 +431,10 @@ const Category = () => {
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', description: '' }
+                                                    ? { name: '', textdiscription: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                          description: modalContant?.description,
+                                                          description: modalContant?.textdiscription,
 
                                                           //   count: modalContant?.count,
                                                           //   image: modalContant?.image,
@@ -450,20 +471,19 @@ const Category = () => {
 
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
-                                                    <div className="mb-5">
-                                                        <label htmlFor="address">Description</label>
+                                                    {/* <div className="mb-5">
+                                                        <label htmlFor="description">Description</label>
 
                                                         <textarea
                                                             id="description"
                                                             rows={3}
                                                             placeholder="Enter description"
                                                             name="description"
-                                                            value={values.description}
                                                             className="form-textarea min-h-[130px] resize-none"
                                                         ></textarea>
-                                                    </div>
+                                                    </div> */}
 
-                                                    {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
+                                                    <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="description">description </label>
                                                         <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
 
@@ -476,7 +496,7 @@ const Category = () => {
                                                         ) : (
                                                             ''
                                                         )}
-                                                    </div> */}
+                                                    </div>
 
                                                     {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="slug">Slug </label>
