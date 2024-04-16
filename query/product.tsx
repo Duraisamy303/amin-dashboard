@@ -105,6 +105,19 @@ export const CREATE_CATEGORY = gql`
     }
 `;
 
+export const UPDATE_CATEGORY = gql`
+    mutation updateCategory($id: ID!, $input: CategoryInput!) {
+        categoryUpdate(id: $id, input: $input) {
+            category {
+                id
+                name
+                description
+                slug
+            }
+        }
+    }
+`;
+
 export const DELETE_CATEGORY = gql`
     mutation deleteCategory($id: ID!) {
         categoryDelete(id: $id) {

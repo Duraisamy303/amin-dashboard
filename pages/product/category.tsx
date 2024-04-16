@@ -1,77 +1,103 @@
-import Link from 'next/link';
-import { useState, Fragment, useEffect } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import Swal from 'sweetalert2';
+import { DataTable, DataTableSortStatus } from 'mantine-datatable';
+import { useEffect, useState, Fragment } from 'react';
+import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../store/themeConfigSlice';
-import IconUserPlus from '@/components/Icon/IconUserPlus';
-import IconListCheck from '@/components/Icon/IconListCheck';
-import IconLayoutGrid from '@/components/Icon/IconLayoutGrid';
-import IconSearch from '@/components/Icon/IconSearch';
-import IconUser from '@/components/Icon/IconUser';
-import IconFacebook from '@/components/Icon/IconFacebook';
-import IconInstagram from '@/components/Icon/IconInstagram';
-import IconLinkedin from '@/components/Icon/IconLinkedin';
-import IconTwitter from '@/components/Icon/IconTwitter';
-import IconX from '@/components/Icon/IconX';
-import { useGetAllProductsQuery } from '@/Api/categoryApi';
-import { useMutation, useQuery } from '@apollo/client';
-import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST } from '@/query/product';
-import { useSetState } from '@/utils/functions';
+import IconBell from '@/components/Icon/IconBell';
 import Tippy from '@tippyjs/react';
-import IconEye from '@/components/Icon/IconEye';
-import IconPencil from '@/components/Icon/IconPencil';
+import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
-import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import sortBy from 'lodash/sortBy';
-import dynamic from 'next/dynamic';
-import { useRouter } from 'next/router';
-const ReactQuill = dynamic(import('react-quill'), { ssr: false });
+import IconPencil from '@/components/Icon/IconPencil';
+import { Button, Loader } from '@mantine/core';
+import Dropdown from '../../components/Dropdown';
+import IconCaretDown from '@/components/Icon/IconCaretDown';
+import { IRootState } from '../../store';
+import { Dialog, Transition } from '@headlessui/react';
+import IconX from '@/components/Icon/IconX';
+import Image1 from '@/public/assets/images/profile-1.jpeg';
+import Image2 from '@/public/assets/images/profile-2.jpeg';
+import Image3 from '@/public/assets/images/profile-3.jpeg';
+import { Field, Form, Formik } from 'formik';
+import * as Yup from 'yup';
+import Swal from 'sweetalert2';
+import IconEye from '@/components/Icon/IconEye';
+import { useMutation, useQuery } from '@apollo/client';
+import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY } from '@/query/product';
+import ReactQuill from 'react-quill';
 
-const Contacts = () => {
-    const router = useRouter();
+const Category = () => {
+    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
-    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
-        columnAccessor: 'id',
-        direction: 'asc',
+    const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(setPageTitle('Checkbox Table'));
     });
 
-    const {
-        loading,
-        error,
-        data: categoryData,
-    } = useQuery(CATEGORY_LIST, {
-        variables: { channel: 'india-channel', first: 20 }, // Pass variables here
+    const { error, data: categoryData } = useQuery(CATEGORY_LIST, {
+        variables: { channel: 'india-channel', first: 20 },
     });
 
-    const [deleteCat] = useMutation(DELETE_CATEGORY);
-
-    const [page, setPage] = useState(1);
-    const PAGE_SIZES = [10, 20, 30, 50, 100];
-    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [categoryList, setCategoryList] = useState([]);
-    const [filteredItems, setFilteredItems] = useState<any>(categoryList);
-    const [selectedRecords, setSelectedRecords] = useState<any>([]);
-    const [search, setSearch] = useState('');
-    const [addContactModal, setAddContactModal] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         getCategoryList();
     }, [categoryData]);
 
     const getCategoryList = () => {
-        if (categoryData && categoryData.categories && categoryData.categories.edges) {
-            const newData = categoryData.categories.edges.map((item) => ({
-                ...item.node,
-                product: item?.node?.products?.totalCount,
-            }));
-            const sorting: any = sortBy(newData, 'id');
-            console.log("sorting: ", sorting);
-            setCategoryList(sorting);
-            // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+        setLoading(true);
+        if (categoryData) {
+            if (categoryData && categoryData.categories && categoryData.categories.edges) {
+                const newData = categoryData.categories.edges.map((item) => ({
+                    ...item.node,
+                    product: item?.node?.products?.totalCount,
+                }));
+                setCategoryList(newData);
+                setLoading(false);
+            }
+        } else {
+            setLoading(false);
         }
     };
 
+    const [page, setPage] = useState(1);
+    const PAGE_SIZES = [10, 20, 30, 50, 100];
+    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+    const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
+    const [recordsData, setRecordsData] = useState([]);
+
+    // Update initialRecords whenever finishList changes
+    useEffect(() => {
+        // Sort finishList by 'id' and update initialRecords
+        setInitialRecords(sortBy(categoryList, 'id'));
+    }, [categoryList]);
+
+    // Log initialRecords when it changes
+    useEffect(() => {
+        console.log('initialRecords: ', initialRecords);
+    }, [initialRecords]);
+
+    const [selectedRecords, setSelectedRecords] = useState<any>([]);
+
+    const [search, setSearch] = useState('');
+    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
+        columnAccessor: 'id',
+        direction: 'asc',
+    });
+
+    const [modal1, setModal1] = useState(false);
+    const [modalTitle, setModalTitle] = useState(null);
+    const [modalContant, setModalContant] = useState<any>(null);
+
+    // const [viewModal, setViewModal] = useState(false);
+
+    //Mutation
+    const [addCategory] = useMutation(CREATE_CATEGORY);
+    const [updateCategory] = useMutation(UPDATE_CATEGORY);
+    const [deleteCategory] = useMutation(DELETE_CATEGORY);
+    const [bulkDelete] = useMutation(DELETE_CATEGORY);
+
+    console.log('categoryList: ', categoryList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -79,365 +105,291 @@ const Contacts = () => {
     useEffect(() => {
         const from = (page - 1) * pageSize;
         const to = from + pageSize;
-        setCategoryList([...categoryList.slice(from, to)]);
-    }, [page, pageSize]);
-
-    const [value, setValue] = useState<any>('list');
-    const [defaultParams] = useState({
-        id: null,
-        name: '',
-        description: '',
-    });
-
-    const [params, setParams] = useState<any>(JSON.parse(JSON.stringify(defaultParams)));
-
-    const [addCategory] = useMutation(CREATE_CATEGORY);
-
-    const changeValue = (e: any) => {
-        const { value, id } = e.target;
-        setParams({ ...params, [id]: value });
-    };
-
-    const searchContact = () => {
-        setFilteredItems(() => {
-            return categoryList.filter((item: any) => {
-                return item.name.toLowerCase().includes(search.toLowerCase());
-            });
-        });
-    };
-
-    // useEffect(() => {
-    //     searchContact();
-    // }, [search]);
-
-    const saveUser = async () => {
-        if (!params.name) {
-            showMessage('Name is required.', 'error');
-            return true;
-        }
-        if (!params.description) {
-            showMessage('Description is required.', 'error');
-            return true;
-        }
-
-        const { data } = await addCategory({
-            variables: { email: params.name, password: params.description },
-        });
-
-        // if (params.id) {
-        //     //update user
-        //     let user: any = filteredItems.find((d: any) => d.id === params.id);
-        //     user.name = params.name;
-        //     user.email = params.email;
-        //     user.phone = params.phone;
-        //     user.role = params.role;
-        //     user.location = params.location;
-        // } else {
-        //     //add user
-        //     let maxUserId = filteredItems.length ? filteredItems.reduce((max: any, character: any) => (character.id > max ? character.id : max), filteredItems[0].id) : 0;
-
-        //     let user = {
-        //         id: maxUserId + 1,
-        //         path: 'profile-35.png',
-        //         name: params.name,
-        //         email: params.email,
-        //         phone: params.phone,
-        //         role: params.role,
-        //         location: params.location,
-        //         posts: 20,
-        //         followers: '5K',
-        //         following: 500,
-        //     };
-        //     filteredItems.splice(0, 0, user);
-        //     //   searchContacts();
-        // }
-
-        showMessage('User has been saved successfully.');
-        setAddContactModal(false);
-    };
-
-    const editUser = (user: any = null) => {
-        const json = JSON.parse(JSON.stringify(defaultParams));
-        setParams(json);
-        if (user) {
-            let json1 = JSON.parse(JSON.stringify(user));
-            setParams(json1);
-        }
-        setAddContactModal(true);
-    };
-
-    const deleteUser = (user: any = null) => {
-        setFilteredItems(filteredItems.filter((d: any) => d.id !== user.id));
-        showMessage('User has been deleted successfully.');
-    };
-
-    const showMessage = (msg = '', type = 'success') => {
-        const toast: any = Swal.mixin({
-            toast: true,
-            position: 'top',
-            showConfirmButton: false,
-            timer: 3000,
-            customClass: { container: 'toast' },
-        });
-        toast.fire({
-            icon: type,
-            title: msg,
-            padding: '10px 20px',
-        });
-    };
+        setRecordsData([...initialRecords.slice(from, to)]);
+    }, [page, pageSize, initialRecords]);
 
     useEffect(() => {
-        const data = sortBy(categoryList, sortStatus.columnAccessor);
-        setCategoryList(sortStatus.direction === 'desc' ? data.reverse() : data);
+        setInitialRecords(() => {
+            return categoryList.filter((item: any) => {
+                console.log('✌️item --->', item);
+                return (
+                    item.id.toString().includes(search.toLowerCase()) ||
+                    // item.image.toLowerCase().includes(search.toLowerCase()) ||
+                    item.name.toLowerCase().includes(search.toLowerCase())
+                    // item.description.toLowerCase().includes(search.toLowerCase()) ||
+                    // item.slug.toLowerCase().includes(search.toLowerCase()) ||
+                    // item.count.toString().includes(search.toLowerCase())
+                );
+            });
+        });
+    }, [search]);
+
+    useEffect(() => {
+        const data = sortBy(initialRecords, sortStatus.columnAccessor);
+        setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
     }, [sortStatus]);
 
-    const deleteCategory = async (row: any) => {
-        console.log('data: ', row);
+    // FORM VALIDATION
+    const SubmittedForm = Yup.object().shape({
+        name: Yup.string().required('Please fill the Name'),
+        // description: Yup.string().required('Please fill the Description'),
+        // slug: Yup.string().required('Please fill the Slug'),
+        // count: Yup.string().required('Please fill the count'),
+        // image: Yup.string().required('Please fill the Image'),
+        // parentCategory: Yup.string().required('Please fill the Parent Category'),
+    });
+
+    // form submit
+    const onSubmit = async (record: any, { resetForm }: any) => {
+        console.log('record: ', record);
         try {
-            const { data } = await deleteCat({
-                variables: { id: row.id },
+            const variables = {
+                input: {
+                    name: record.name,
+                },
+            };
+
+            const { data } = await (modalTitle ? updateCategory({ variables: { ...variables, id: modalContant.id } }) : addCategory({ variables }));
+            console.log('data: ', data);
+
+            const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
+            console.log('newData: ', newData);
+            if (!newData) {
+                console.error('Error: New data is undefined.');
+                return;
+            }
+            const updatedId = newData.id;
+            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
+
+            const updatedDesignList: any = [...recordsData];
+            if (index !== -1) {
+                updatedDesignList[index] = newData;
+            } else {
+                updatedDesignList.push(newData);
+            }
+
+            // setCategoryList(updatedDesignList);
+            setRecordsData(updatedDesignList);
+            const toast = Swal.mixin({
+                toast: true,
+                position: 'top',
+                showConfirmButton: false,
+                timer: 3000,
             });
-            console.log('response: ', data);
+            toast.fire({
+                icon: modalTitle ? 'success' : 'info',
+                title: modalTitle ? 'Data updated successfully' : 'New data added successfully',
+                padding: '10px 20px',
+            });
+
+            setModal1(false);
+            resetForm();
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
+    // category table edit
+    const EditCategory = (record: any) => {
+        setModal1(true);
+        setModalTitle(record);
+        setModalContant(record);
+    };
+
+    // category table create
+    const CreateCategory = () => {
+        setModal1(true);
+        setModalTitle(null);
+        setModalContant(null);
+    };
+
+    // view categotry
+    // const ViewCategory = (record: any) => {
+    //     setViewModal(true);
+    // };
+
+    // delete Alert Message
+    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
+        const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: 'btn btn-secondary',
+                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
+                popup: 'sweet-alerts',
+            },
+            buttonsStyling: false,
+        });
+
+        swalWithBootstrapButtons
+            .fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'No, cancel!',
+                reverseButtons: true,
+                padding: '2em',
+            })
+            .then((result) => {
+                if (result.isConfirmed) {
+                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    onCancel(); // Call the onCancel function if the user cancels the deletion
+                }
+            });
+    };
+    console.log('mordelContentt', modalContant);
+
+    const BulkDeleteCategory = async () => {
+        showDeleteAlert(
+            () => {
+                if (selectedRecords.length === 0) {
+                    Swal.fire('Cancelled', 'Please select at least one record!', 'error');
+                    return;
+                }
+                selectedRecords?.map(async (item: any) => {
+                    await bulkDelete({ variables: { id: item.id } });
+                });
+                const updatedRecordsData = categoryList.filter((record) => !selectedRecords.includes(record));
+                setCategoryList(updatedRecordsData);
+                setSelectedRecords([]);
+                Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
+            },
+            () => {
+                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
+            }
+        );
+    };
+
+    const DeleteCategory = (record: any) => {
+        showDeleteAlert(
+            async () => {
+                const { data } = await deleteCategory({ variables: { id: record.id } });
+                const updatedRecordsData = categoryList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                setRecordsData(updatedRecordsData);
+                setCategoryList(updatedRecordsData);
+                // getCategoryList()
+                setSelectedRecords([]);
+                // setCategoryList(finishList)
+                Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
+            },
+            () => {
+                Swal.fire('Cancelled', 'Your Finish List is safe :)', 'error');
+            }
+        );
+    };
+
+    // completed category delete option
+
     return (
         <div>
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <h2 className="text-xl">Category</h2>
-                <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
-                    <div className="flex gap-3">
-                        <div>
-                            <button type="button" className="btn btn-primary" onClick={() => editUser()}>
-                                <IconUserPlus className="ltr:mr-2 rtl:ml-2" />
-                                Add Category
-                            </button>
+            <div className="panel mt-6">
+                <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
+                    <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
+
+                    <div className="flex ltr:ml-auto rtl:mr-auto">
+                        <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown  mr-2 ">
+                            <Dropdown
+                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
+                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                button={
+                                    <>
+                                        Bulk Actions
+                                        <span>
+                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
+                                        </span>
+                                    </>
+                                }
+                            >
+                                <ul className="!min-w-[170px]">
+                                    <li>
+                                        <button type="button" onClick={() => BulkDeleteCategory()}>
+                                            Delete
+                                        </button>
+                                    </li>
+                                </ul>
+                            </Dropdown>
                         </div>
-                        <div>
-                            <button type="button" className={`btn btn-outline-primary p-2 ${value === 'list' && 'bg-primary text-white'}`} onClick={() => setValue('list')}>
-                                <IconListCheck />
-                            </button>
-                        </div>
-                        <div>
-                            <button type="button" className={`btn btn-outline-primary p-2 ${value === 'grid' && 'bg-primary text-white'}`} onClick={() => setValue('grid')}>
-                                <IconLayoutGrid />
-                            </button>
-                        </div>
-                    </div>
-                    <div className="relative">
-                        <input type="text" placeholder="Search Contacts" className="peer form-input py-2 ltr:pr-11 rtl:pl-11" value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <button type="button" className="absolute top-1/2 -translate-y-1/2 peer-focus:text-primary ltr:right-[11px] rtl:left-[11px]">
-                            <IconSearch className="mx-auto" />
+                        <button type="button" className="btn btn-primary" onClick={() => CreateCategory()}>
+                            + Create
                         </button>
                     </div>
                 </div>
-            </div>
+                {loading ? (
+                    <Loader />
+                ) : (
+                    <div className="datatables">
+                        <DataTable
+                            className="table-hover whitespace-nowrap"
+                            records={recordsData}
+                            columns={[
+                                // { accessor: 'id', sortable: true },
+                                // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                                { accessor: 'name', sortable: true },
+                                // {
+                                //     accessor: 'description',
+                                //     sortable: true,
+                                // },  
+                                {
+                                    accessor: 'product',
+                                    sortable: true,
+                                },
 
-            <div className="datatables pt-5">
-                <DataTable
-                    className="table-hover whitespace-nowrap"
-                    records={categoryList}
-                    columns={[
-                        // { accessor: 'id', sortable: true },
-                        // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                        { accessor: 'name', sortable: true },
-                        { accessor: 'product', sortable: true },
-
-                        {
-                            // Custom column for actions
-                            accessor: 'actions', // You can use any accessor name you want
-                            title: 'Actions',
-                            // Render method for custom column
-                            render: (row: any) => (
-                                <>
-                                    <Tippy content="View">
-                                        <button type="button" onClick={() => router.push(`/slug/categoryView/${row.id}`)}>
-                                            <IconEye className="ltr:mr-2 rtl:ml-2" />
-                                        </button>
-                                    </Tippy>
-                                    <Tippy content="Edit">
-                                        <button type="button">
-                                            <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                        </button>
-                                    </Tippy>
-                                    <Tippy content="Delete">
-                                        <button type="button" onClick={() => deleteCategory(row)}>
-                                            <IconTrashLines />
-                                        </button>
-                                    </Tippy>
-                                </>
-                            ),
-                        },
-                    ]}
-                    highlightOnHover
-                    totalRecords={categoryList.length}
-                    recordsPerPage={pageSize}
-                    page={page}
-                    onPageChange={(p) => setPage(p)}
-                    recordsPerPageOptions={PAGE_SIZES}
-                    onRecordsPerPageChange={setPageSize}
-                    sortStatus={sortStatus}
-                    onSortStatusChange={setSortStatus}
-                    selectedRecords={selectedRecords}
-                    onSelectedRecordsChange={(selectedRecords: any) => {
-                        console.log('selectedRecords: ', selectedRecords);
-                        setSelectedRecords(selectedRecords);
-                    }}
-                    minHeight={200}
-                    paginationText={({ from, to, totalRecords }) => {
-                        return `Showing  ${from} to ${to} of ${totalRecords} entries`;
-                    }}
-                />
-            </div>
-
-            {/* {value === 'list' && (
-                <div className="panel mt-5 overflow-hidden border-0 p-0">
-                    <div className="table-responsive">
-                        <table className="table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Location</th>
-                                    <th>Phone</th>
-                                    <th className="!text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredItems.map((contact: any) => {
-                                    return (
-                                        <tr key={contact.id}>
-                                            <td>
-                                                <div className="flex w-max items-center">
-                                                    {contact.path && (
-                                                        <div className="w-max">
-                                                            <img src={`/assets/images/${contact.path}`} className="h-8 w-8 rounded-full object-cover ltr:mr-2 rtl:ml-2" alt="avatar" />
-                                                        </div>
-                                                    )}
-                                                    {!contact.path && contact.name && (
-                                                        <div className="grid h-8 w-8 place-content-center rounded-full bg-primary text-sm font-semibold text-white ltr:mr-2 rtl:ml-2"></div>
-                                                    )}
-                                                    {!contact.path && !contact.name && (
-                                                        <div className="rounded-full border border-gray-300 p-2 ltr:mr-2 rtl:ml-2 dark:border-gray-800">
-                                                            <IconUser className="h-4.5 w-4.5" />
-                                                        </div>
-                                                    )}
-                                                    <div>{contact.name}</div>
-                                                </div>
-                                            </td>
-                                            <td>{contact.email}</td>
-                                            <td className="whitespace-nowrap">{contact.location}</td>
-                                            <td className="whitespace-nowrap">{contact.phone}</td>
-                                            <td>
-                                                <div className="flex items-center justify-center gap-4">
-                                                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => editUser(contact)}>
-                                                        Edit
-                                                    </button>
-                                                    <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => deleteUser(contact)}>
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                {
+                                    // Custom column for actions
+                                    accessor: 'actions', // You can use any accessor name you want
+                                    title: 'Actions',
+                                    // Render method for custom column
+                                    render: (row: any) => (
+                                        <>
+                                            {/* <Tippy content="View">
+                                            <button type="button" onClick={() => ViewCategory(row)}>
+                                                <IconEye className="ltr:mr-2 rtl:ml-2" />
+                                            </button>
+                                        </Tippy> */}
+                                            <Tippy content="Edit">
+                                                <button type="button" onClick={() => EditCategory(row)}>
+                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
+                                            <Tippy content="Delete">
+                                                <button type="button" onClick={() => DeleteCategory(row)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </Tippy>
+                                        </>
+                                    ),
+                                },
+                            ]}
+                            highlightOnHover
+                            totalRecords={initialRecords.length}
+                            recordsPerPage={pageSize}
+                            page={page}
+                            onPageChange={(p) => setPage(p)}
+                            recordsPerPageOptions={PAGE_SIZES}
+                            onRecordsPerPageChange={setPageSize}
+                            sortStatus={sortStatus}
+                            onSortStatusChange={setSortStatus}
+                            selectedRecords={selectedRecords}
+                            onSelectedRecordsChange={(selectedRecords) => {
+                                setSelectedRecords(selectedRecords);
+                            }}
+                            minHeight={200}
+                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                        />
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
-            {value === 'grid' && (
-                <div className="mt-5 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                    {filteredItems.map((contact: any) => {
-                        return (
-                            <div className="relative overflow-hidden rounded-md bg-white text-center shadow dark:bg-[#1c232f]" key={contact.id}>
-                                <div className="relative overflow-hidden rounded-md bg-white text-center shadow dark:bg-[#1c232f]">
-                                    <div className="rounded-t-md bg-white/40 bg-[url('/assets/images/notification-bg.png')] bg-cover bg-center p-6 pb-0">
-                                        <img className="mx-auto max-h-40 w-4/5 object-contain" src={`/assets/images/${contact.path}`} alt="contact_image" />
-                                    </div>
-                                    <div className="relative -mt-10 px-6 pb-24">
-                                        <div className="rounded-md bg-white px-2 py-4 shadow-md dark:bg-gray-900">
-                                            <div className="text-xl">{contact.name}</div>
-                                            <div className="text-white-dark">{contact.role}</div>
-                                            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-                                                <div className="flex-auto">
-                                                    <div className="text-info">{contact.posts}</div>
-                                                    <div>Posts</div>
-                                                </div>
-                                                <div className="flex-auto">
-                                                    <div className="text-info">{contact.following}</div>
-                                                    <div>Following</div>
-                                                </div>
-                                                <div className="flex-auto">
-                                                    <div className="text-info">{contact.followers}</div>
-                                                    <div>Followers</div>
-                                                </div>
-                                            </div>
-                                            <div className="mt-4">
-                                                <ul className="flex items-center justify-center space-x-4 rtl:space-x-reverse">
-                                                    <li>
-                                                        <button type="button" className="btn btn-outline-primary h-7 w-7 rounded-full p-0">
-                                                            <IconFacebook />
-                                                        </button>
-                                                    </li>
-                                                    <li>
-                                                        <button type="button" className="btn btn-outline-primary h-7 w-7 rounded-full p-0">
-                                                            <IconInstagram />
-                                                        </button>
-                                                    </li>
-                                                    <li>
-                                                        <button type="button" className="btn btn-outline-primary h-7 w-7 rounded-full p-0">
-                                                            <IconLinkedin />
-                                                        </button>
-                                                    </li>
-                                                    <li>
-                                                        <button type="button" className="btn btn-outline-primary h-7 w-7 rounded-full p-0">
-                                                            <IconTwitter />
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        <div className="mt-6 grid grid-cols-1 gap-4 ltr:text-left rtl:text-right">
-                                            <div className="flex items-center">
-                                                <div className="flex-none ltr:mr-2 rtl:ml-2">Email :</div>
-                                                <div className="truncate text-white-dark">{contact.email}</div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <div className="flex-none ltr:mr-2 rtl:ml-2">Phone :</div>
-                                                <div className="text-white-dark">{contact.phone}</div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <div className="flex-none ltr:mr-2 rtl:ml-2">Address :</div>
-                                                <div className="text-white-dark">{contact.location}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="absolute bottom-0 mt-6 flex w-full gap-4 p-6 ltr:left-0 rtl:right-0">
-                                        <button type="button" className="btn btn-outline-primary w-1/2" onClick={() => editUser(contact)}>
-                                            Edit
-                                        </button>
-                                        <button type="button" className="btn btn-outline-danger w-1/2" onClick={() => deleteUser(contact)}>
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )} */}
-
-            <Transition appear show={addContactModal} as={Fragment}>
-                <Dialog as="div" open={addContactModal} onClose={() => setAddContactModal(false)} className="relative z-50">
+            {/* CREATE AND EDIT CATEGORY FORM */}
+            <Transition appear show={modal1} as={Fragment}>
+                <Dialog as="div" open={modal1} onClose={() => setModal1(false)}>
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-                        <div className="fixed inset-0 bg-[black]/60" />
+                        <div className="fixed inset-0" />
                     </Transition.Child>
-                    <div className="fixed inset-0 overflow-y-auto">
-                        <div className="flex min-h-full items-center justify-center px-4 py-8">
+                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
                             <Transition.Child
                                 as={Fragment}
                                 enter="ease-out duration-300"
@@ -447,72 +399,124 @@ const Contacts = () => {
                                 leaveFrom="opacity-100 scale-100"
                                 leaveTo="opacity-0 scale-95"
                             >
-                                <Dialog.Panel className="panel w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
-                                    <button
-                                        type="button"
-                                        onClick={() => setAddContactModal(false)}
-                                        className="absolute top-4 text-gray-400 outline-none hover:text-gray-800 ltr:right-4 rtl:left-4 dark:hover:text-gray-600"
-                                    >
-                                        <IconX />
-                                    </button>
-                                    <div className="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]">
-                                        {params.id ? 'Edit Contact' : 'Add Category'}
+                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Category' : 'Edit Category'}</div>
+                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
+                                            <IconX />
+                                        </button>
                                     </div>
-                                    <div className="p-5">
-                                        <form>
-                                            <div className="mb-5">
-                                                <label htmlFor="name">Name</label>
-                                                <input id="name" type="text" placeholder="Enter Name" className="form-input" value={params.name} onChange={(e) => changeValue(e)} />
-                                            </div>
-                                            {/* <div className="mb-5">
-                                                <label htmlFor="email">Email</label>
-                                                <input id="email" type="email" placeholder="Enter Email" className="form-input" value={params.email} onChange={(e) => changeValue(e)} />
-                                            </div>
-                                            <div className="mb-5">
-                                                <label htmlFor="number">Phone Number</label>
-                                                <input id="phone" type="text" placeholder="Enter Phone Number" className="form-input" value={params.phone} onChange={(e) => changeValue(e)} />
-                                            </div>
-                                            <div className="mb-5">
-                                                <label htmlFor="occupation">Occupation</label>
-                                                <input id="role" type="text" placeholder="Enter Occupation" className="form-input" value={params.role} onChange={(e) => changeValue(e)} />
-                                            </div> */}
-                                            <div className="mb-5">
-                                                <label htmlFor="address">Description</label>
-                                                {/* <div className="h-fit"> */}
-                                                <ReactQuill
-                                                    theme="snow"
-                                                    value={params.description || ''}
-                                                    defaultValue={params.description || ''}
-                                                    onChange={(content, delta, source, editor) => {
-                                                        params.description = content;
-                                                        console.log('content: ', content);
-                                                        console.log('params: ', params);
-                                                        params.displayDescription = editor.getText();
-                                                        // setParams({
-                                                        //     ...params,
-                                                        // });
-                                                    }}
-                                                    style={{ minHeight: '200px' }}
-                                                />
-                                                {/* </div> */}
-                                                {/* <textarea
-                                                    id="description"
-                                                    rows={3}
-                                                    placeholder="Enter description"
-                                                    className="form-textarea min-h-[130px] resize-none"
-                                                    value={params.description}
-                                                    onChange={(e) => changeValue(e)}
-                                                ></textarea> */}
-                                            </div>
-                                            <div className="mt-8 flex items-center justify-end">
-                                                <button type="button" className="btn btn-outline-danger" onClick={() => setAddContactModal(false)}>
-                                                    Cancel
-                                                </button>
-                                                <button type="button" className="btn btn-primary ltr:ml-4 rtl:mr-4" onClick={saveUser}>
-                                                    {params.id ? 'Update' : 'Add'}
-                                                </button>
-                                            </div>
-                                        </form>
+                                    <div className="mb-5 p-5">
+                                        <Formik
+                                            initialValues={
+                                                modalContant === null
+                                                    ? { name: '', description: '' }
+                                                    : {
+                                                          name: modalContant?.name,
+                                                          description: modalContant?.description,
+
+                                                          //   count: modalContant?.count,
+                                                          //   image: modalContant?.image,
+                                                          //   parentCategory: modalContant?.name,
+                                                      }
+                                            }
+                                            validationSchema={SubmittedForm}
+                                            onSubmit={(values, { resetForm }) => {
+                                                onSubmit(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
+                                            }}
+                                        >
+                                            {({ errors, submitCount, touched, setFieldValue, values }: any) => (
+                                                <Form className="space-y-5">
+                                                    {/* <div className={submitCount ? (errors.image ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="image">Image</label>
+                                                        <input
+                                                            id="image"
+                                                            name="image"
+                                                            type="file"
+                                                            onChange={(event: any) => {
+                                                                setFieldValue('image', event.currentTarget.files[0]);
+                                                            }}
+                                                            className="form-input"
+                                                        />
+                                                        {values.image && typeof values.image === 'string' && (
+                                                            <img src={values.image} alt="Product Image" style={{ width: '30px', height: 'auto', paddingTop: '5px' }} />
+                                                        )}
+                                                        {submitCount ? errors.image ? <div className="mt-1 text-danger">{errors.image}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div> */}
+
+                                                    <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="fullName">Name </label>
+                                                        <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
+
+                                                        {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <label htmlFor="address">Description</label>
+
+                                                        <textarea
+                                                            id="description"
+                                                            rows={3}
+                                                            placeholder="Enter description"
+                                                            name="description"
+                                                            value={values.description}
+                                                            className="form-textarea min-h-[130px] resize-none"
+                                                        ></textarea>
+                                                    </div>
+
+                                                    {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="description">description </label>
+                                                        <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
+
+                                                        {submitCount ? (
+                                                            errors.description ? (
+                                                                <div className="mt-1 text-danger">{errors.description}</div>
+                                                            ) : (
+                                                                <div className="mt-1 text-success"></div>
+                                                            )
+                                                        ) : (
+                                                            ''
+                                                        )}
+                                                    </div> */}
+
+                                                    {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="slug">Slug </label>
+                                                        <Field name="slug" type="text" id="slug" placeholder="Enter Description" className="form-input" />
+
+                                                        {submitCount ? errors.slug ? <div className="mt-1 text-danger">{errors.slug}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div> */}
+
+                                                    {/* <div className={submitCount ? (errors.count ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="count">Count</label>
+                                                        <Field name="count" type="number" id="count" placeholder="Enter Count" className="form-input" />
+
+                                                        {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div> */}
+
+                                                    {/* <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="parentCategory">Parent Category</label>
+                                                        <Field as="select" name="parentCategory" className="form-select">
+                                                            <option value="">Open this select menu</option>
+                                                            <option value="Anklets">Anklets</option>
+                                                            <option value="BlackThread">__Black Thread</option>
+                                                            <option value="Kada">__Kada</option>
+                                                        </Field>
+                                                        {submitCount ? (
+                                                            errors.parentCategory ? (
+                                                                <div className=" mt-1 text-danger">{errors.parentCategory}</div>
+                                                            ) : (
+                                                                <div className=" mt-1 text-[#1abc9c]"></div>
+                                                            )
+                                                        ) : (
+                                                            ''
+                                                        )}
+                                                    </div> */}
+
+                                                    <button type="submit" className="btn btn-primary !mt-6">
+                                                        {modalTitle === null ? 'Submit' : 'Update'}
+                                                    </button>
+                                                </Form>
+                                            )}
+                                        </Formik>
                                     </div>
                                 </Dialog.Panel>
                             </Transition.Child>
@@ -520,8 +524,40 @@ const Contacts = () => {
                     </div>
                 </Dialog>
             </Transition>
+
+            {/* Full View Category data*/}
+            {/* <Transition appear show={viewModal} as={Fragment}>
+                <Dialog as="div" open={viewModal} onClose={() => setViewModal(false)}>
+                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0" />
+                    </Transition.Child>
+                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <div className="text-lg font-bold">View Category</div>
+                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setViewModal(false)}>
+                                            <IconX />
+                                        </button>
+                                    </div>
+                                    <div className="mb-5 p-5"></div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition> */}
         </div>
     );
 };
 
-export default Contacts;
+export default Category;
