@@ -57,7 +57,7 @@ const Category = () => {
                         ...item.node,
 
                         product: item.node.products?.totalCount,
-                        textdiscription: textValue || '', // Set textValue or empty string if it doesn't exist
+                        textdescription: textValue || '', // Set textValue or empty string if it doesn't exist
                     };
                 });
                 setCategoryList(newData);
@@ -151,7 +151,7 @@ const Category = () => {
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
         try {
-            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id' , data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
+            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
             console.log('✌️Description --->', Description);
 
             const variables = {
@@ -170,16 +170,28 @@ const Category = () => {
                 console.error('Error: New data is undefined.');
                 return;
             }
-            const updatedId = newData.id;
+
+            const jsonObject = JSON.parse(newData.description || newData.description);
+            // Extract the text value
+            const textValue = jsonObject?.blocks[0]?.data?.text;
+            console.log('✌️textValue --->', textValue);
+
+            const finalData = {
+                ...newData,
+                textdescription: textValue || '',
+            };
+            console.log("finalData", finalData)
+
+            const updatedId = finalData.id;
             const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
             const updatedDesignList: any = [...recordsData];
             if (index !== -1) {
-                updatedDesignList[index] = newData;
+                updatedDesignList[index] = finalData;
             } else {
-                updatedDesignList.push(newData);
+                updatedDesignList.push(finalData);
             }
-
+console.log("updatedDesignList", updatedDesignList)
             // setCategoryList(updatedDesignList);
             setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
@@ -348,7 +360,7 @@ const Category = () => {
                                 // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                                 { accessor: 'name', sortable: true },
                                 {
-                                    accessor: 'textdiscription',
+                                    accessor: 'textdescription',
                                     sortable: true,
                                     title: 'Description',
                                 },
@@ -431,10 +443,10 @@ const Category = () => {
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', textdiscription: '' }
+                                                    ? { name: '', textdescription: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                          description: modalContant?.textdiscription,
+                                                          description: modalContant?.textdescription,
 
                                                           //   count: modalContant?.count,
                                                           //   image: modalContant?.image,
