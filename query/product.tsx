@@ -263,3 +263,52 @@ export const DELETE_STONE = gql`
         }
     }
 `;
+
+export const STYLE_LIST = gql`
+    query GetProductStyles {
+        productStyles(first: 100) {
+            edges {
+                node {
+                    id
+                    name
+                    slug
+                }
+            }
+            totalCount
+        }
+    }
+`;
+
+export const CREATE_STYLE = gql`
+    mutation ProductStyleCreate($input: ProductStyleInput!) {
+        productStyleCreate(input: $input) {
+            productStyle {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const UPDATE_STYLE = gql`
+    mutation ProductStyleUpdate($id: ID!, $input: ProductStyleInput!) {
+        productStyleUpdate(id: $id, input: $input) {
+            productStyle {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const DELETE_STYLE = gql`
+    mutation ProductStyleDelete($id: ID!) {
+        productStyleDelete(id: $id) {
+            errors {
+                message
+            }
+        }
+    }
+`;

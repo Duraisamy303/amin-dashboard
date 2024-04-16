@@ -171,6 +171,9 @@ const Sidebar = () => {
                                                     <Link href="/product/finish">{t('Finish')}</Link>
                                                 </li>
                                                 <li>
+                                                    <Link href="/product/style">{t('Style')}</Link>
+                                                </li>
+                                                <li>
                                                     <Link href="/product/design">{t('Designs')}</Link>
                                                 </li>
                                                 <li>
