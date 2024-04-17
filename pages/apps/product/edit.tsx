@@ -195,8 +195,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             General
                                                         </button>
@@ -205,8 +205,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Inventory
                                                         </button>
@@ -215,8 +215,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Linked Products
                                                         </button>
@@ -225,8 +225,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Attributes
                                                         </button>
@@ -235,8 +235,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Advanced
                                                         </button>
@@ -1019,7 +1019,7 @@ const ProductEdit = () => {
                                     <div className="m-5">
                                         {isMounted && (
                                             <Tab.Group>
-                                                <Tab.List className="mt-3 flex flex-wrap justify-start space-x-2 border p-1 w-44  rtl:space-x-reverse">
+                                                <Tab.List className="mt-3 flex w-44 flex-wrap justify-start space-x-2 border p-1  rtl:space-x-reverse">
                                                     <Tab as={Fragment}>
                                                         {({ selected }) => (
                                                             <button
@@ -1048,17 +1048,17 @@ const ProductEdit = () => {
                                                                 MP4 video file
                                                             </label>
                                                             <input type="file" id="product-gallery-video" className="form-input" />
-                                                            <span className='text-gray-600 text-sm pt-5'>Upload a new or select (.mp4) video file from the media library.</span>
+                                                            <span className="pt-5 text-sm text-gray-600">Upload a new or select (.mp4) video file from the media library.</span>
                                                         </div>
                                                         <button className="btn btn-primary mt-5">Save</button>
                                                     </Tab.Panel>
                                                     <Tab.Panel>
-                                                    <div className="active pt-5">
+                                                        <div className="active pt-5">
                                                             <label htmlFor="product-gallery-video" className="form-label mb-5 border-b  pb-3 text-gray-600">
-                                                            YouTube video URL
+                                                                YouTube video URL
                                                             </label>
                                                             <input type="text" id="product-gallery-video" className="form-input" />
-                                                            <span className='text-gray-600 text-sm pt-5'>Example: https://youtu.be/LXb3EKWsInQ</span>
+                                                            <span className="pt-5 text-sm text-gray-600">Example: https://youtu.be/LXb3EKWsInQ</span>
                                                         </div>
                                                         <button className="btn btn-primary mt-5">Save</button>
                                                     </Tab.Panel>
