@@ -83,21 +83,24 @@ const ProductList = () => {
 
     const getProductList = () => {
         setLoading(true);
+        if (productData) {
+            if (productData && productData.products && productData.products.edges?.length > 0) {
+                const newData = productData?.products?.edges.map((item: any) => ({
+                    ...item.node,
+                    product: item?.node?.products?.totalCount,
+                    image: item?.node?.thumbnail?.url,
+                    categories: item?.node?.category?.name,
+                    date: moment(item?.node?.created).format('DD-MM-YYYY'),
+                    price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                }));
+                // const sorting: any = sortBy(newData, 'id');
+                setProductList(newData);
+                setLoading(false);
 
-        if (productData && productData.products && productData.products.edges?.length > 0) {
-            const newData = productData?.products?.edges.map((item:any) => ({
-                ...item.node,
-                product: item?.node?.products?.totalCount,
-                image: item?.node?.thumbnail?.url,
-                categories: item?.node?.category?.name,
-                date: moment(item?.node?.created).format('DD-MM-YYYY'),
-                price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
-            }));
-            // const sorting: any = sortBy(newData, 'id');
-            setProductList(newData);
-            setLoading(false);
-
-            // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+                // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+            } else {
+                setLoading(false);
+            }
         } else {
             setLoading(false);
         }
@@ -150,7 +153,7 @@ const ProductList = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return productList.filter((item:any) => {
+            return productList.filter((item: any) => {
                 return (
                     // item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -385,7 +388,7 @@ const ProductList = () => {
                                 render: (row: any) => (
                                     <>
                                         <div className="mx-auto flex w-max items-center gap-4">
-                                            <Link href="/apps/product/edit" className="flex hover:text-info">
+                                            <Link href={`/apps/product/edit/${row.id}`} className="flex hover:text-info">
                                                 <IconEdit className="h-4.5 w-4.5" />
                                             </Link>
 

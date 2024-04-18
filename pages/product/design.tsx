@@ -48,7 +48,7 @@ const Design = () => {
         setLoading(true);
         if (designData) {
             if (designData && designData.productDesigns && designData.productDesigns.edges?.length > 0) {
-                const newData = designData.productDesigns.edges.map((item:any) => ({
+                const newData = designData.productDesigns.edges.map((item: any) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
@@ -57,6 +57,8 @@ const Design = () => {
                 setLoading(false);
 
                 // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+            } else {
+                setLoading(false);
             }
         } else {
             setLoading(false);

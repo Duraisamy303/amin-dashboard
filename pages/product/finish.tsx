@@ -53,6 +53,8 @@ const Finish = () => {
                 }));
                 setFinishList(newData);
                 setLoading(false);
+            } else {
+                setLoading(false);
             }
         } else {
             setLoading(false);

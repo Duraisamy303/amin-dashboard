@@ -24,7 +24,7 @@ import { CREATE_DESIGN, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, ORDER_LIST, U
 import { useMutation, useQuery } from '@apollo/client';
 import moment from 'moment';
 
-const Finish = () => {
+const Orders = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
@@ -51,15 +51,15 @@ const Finish = () => {
             if (finishData && finishData.orders && finishData.orders?.edges?.length > 0) {
                 const newData = finishData.orders?.edges.map((item: any) => ({
                     ...item.node,
-                    // name: item?.node?.name,
                     order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
                     date: moment(item?.node?.updatedAt).format('MMM d, yyyy'),
                     status: item?.node?.paymentStatus,
                     total: item?.node?.total.gross.amount,
                 }));
                 console.log('newData: ', newData);
-
                 setFinishList(newData);
+                setLoading(false);
+            } else {
                 setLoading(false);
             }
         } else {
@@ -99,12 +99,11 @@ const Finish = () => {
     // const [viewModal, setViewModal] = useState(false);
 
     //Mutation
-    const [addFinish] = useMutation(CREATE_FINISH);
-    const [updateFinish] = useMutation(UPDATE_FINISH);
+    const [addOrder] = useMutation(CREATE_FINISH);
+    const [updateOrder] = useMutation(UPDATE_FINISH);
     const [deleteDesign] = useMutation(DELETE_FINISH);
     const [bulkDelete] = useMutation(DELETE_FINISH);
 
-    console.log('finishList: ', finishList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -118,7 +117,6 @@ const Finish = () => {
     useEffect(() => {
         setInitialRecords(() => {
             return finishList.filter((item: any) => {
-                console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -148,7 +146,6 @@ const Finish = () => {
 
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
-        console.log('record: ', record);
         try {
             const variables = {
                 input: {
@@ -156,7 +153,7 @@ const Finish = () => {
                 },
             };
 
-            const { data } = await (modalTitle ? updateFinish({ variables: { ...variables, id: modalContant.id } }) : addFinish({ variables }));
+            const { data } = await (modalTitle ? updateOrder({ variables: { ...variables, id: modalContant.id } }) : addOrder({ variables }));
             console.log('data: ', data);
 
             const newData = modalTitle ? data?.productFinishUpdate?.productFinish : data?.productFinishCreate?.productFinish;
@@ -295,7 +292,7 @@ const Finish = () => {
                     <h5 className="text-lg font-semibold dark:text-white-light">Orders</h5>
 
                     <div className="flex ltr:ml-auto rtl:mr-auto">
-                    <div className="dropdown  mr-2 ">
+                        <div className="dropdown  mr-2 ">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="btn btn-outline-primary dropdown-toggle"
@@ -344,7 +341,6 @@ const Finish = () => {
                             + Create
                         </button>
                     </div>
-                    
                 </div>
                 {loading ? (
                     <Loader />
@@ -368,10 +364,10 @@ const Finish = () => {
                                     render: (row: any) => (
                                         <>
                                             <Tippy content="View">
-                                            <button type="button" onClick={() => ViewCategory(row)}>
-                                                <IconEye className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy> 
+                                                <button type="button" onClick={() => ViewCategory(row)}>
+                                                    <IconEye className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
                                             <Tippy content="Edit">
                                                 <button type="button" onClick={() => EditFinish(row)}>
                                                     <IconPencil className="ltr:mr-2 rtl:ml-2" />
@@ -572,4 +568,4 @@ const Finish = () => {
     );
 };
 
-export default Finish;
+export default Orders;

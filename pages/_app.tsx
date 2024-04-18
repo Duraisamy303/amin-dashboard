@@ -27,7 +27,6 @@ type AppPropsWithLayout = AppProps & {
 const App = ({ Component, pageProps }: AppPropsWithLayout) => {
     useEffect(() => {
         const token = localStorage.getItem('token');
-        // console.log('token: ', token);
     }, []);
     const httpLink = createHttpLink({
         uri: 'http://file.prade.in/graphql/',
