@@ -325,3 +325,36 @@ export const DELETE_STYLE = gql`
         }
     }
 `;
+
+export const ORDER_LIST = gql`
+    query GetOrdersList {
+        orders(first: 10) {
+            edges {
+                node {
+                    id
+                    total {
+                        gross {
+                            currency
+                            amount
+                        }
+                    }
+                    user {
+                        email
+                        firstName
+                        lastName
+                        id
+                    }
+                    updatedAt
+                    number
+                    paymentStatus
+                }
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+            }
+        }
+    }
+`;
