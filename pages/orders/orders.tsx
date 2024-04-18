@@ -360,6 +360,31 @@ const Finish = () => {
                                 { accessor: 'date', sortable: true },
                                 { accessor: 'status', sortable: true },
                                 { accessor: 'total', sortable: true },
+                                {
+                                    // Custom column for actions
+                                    accessor: 'actions', // You can use any accessor name you want
+                                    title: 'Actions',
+                                    // Render method for custom column
+                                    render: (row: any) => (
+                                        <>
+                                            <Tippy content="View">
+                                            <button type="button" onClick={() => ViewCategory(row)}>
+                                                <IconEye className="ltr:mr-2 rtl:ml-2" />
+                                            </button>
+                                        </Tippy> 
+                                            <Tippy content="Edit">
+                                                <button type="button" onClick={() => EditFinish(row)}>
+                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
+                                            <Tippy content="Delete">
+                                                <button type="button" onClick={() => DeleteFinish(row)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </Tippy>
+                                        </>
+                                    ),
+                                },
                             ]}
                             highlightOnHover
                             totalRecords={initialRecords.length}
