@@ -34,7 +34,7 @@ const Category = () => {
     });
 
     const { error, data: categoryData } = useQuery(CATEGORY_LIST, {
-        variables: { channel: 'india-channel', first: 20 },
+        variables: { channel: 'india-channel', first: 100 },
     });
 
     const [categoryList, setCategoryList] = useState([]);

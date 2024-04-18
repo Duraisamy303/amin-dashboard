@@ -38,6 +38,7 @@ const ProductEdit = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [modal1, setModal1] = useState(false);
+    const [modal2, setModal2] = useState(false);
 
     const [value, setValue] = useState('demo content'); // quill text editor
     const [isMounted, setIsMounted] = useState(false); //tabs
@@ -140,7 +141,11 @@ const ProductEdit = () => {
         setAddCategory(!addCategory);
     };
 
-    const setproductVideoPopup = () => {
+    const productImagePopup = () => {
+        setModal2(true);
+    };
+
+    const productVideoPopup = () => {
         setModal1(true);
     };
 
@@ -195,8 +200,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             General
                                                         </button>
@@ -205,8 +210,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Inventory
                                                         </button>
@@ -215,8 +220,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Linked Products
                                                         </button>
@@ -225,8 +230,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Attributes
                                                         </button>
@@ -235,8 +240,8 @@ const ProductEdit = () => {
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
-                                                            className={`${selected ? 'text-secondary !outline-none before:!h-[80%]' : ''}
-                                                    relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-secondary before:transition-all before:duration-700 hover:text-secondary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Advanced
                                                         </button>
@@ -829,7 +834,7 @@ const ProductEdit = () => {
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Image</h5>
                             </div>
-                            <div>
+                            <div onClick={() => productImagePopup()}>
                                 <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" />
                             </div>
                             <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
@@ -846,7 +851,7 @@ const ProductEdit = () => {
                             </div>
 
                             <p className="mt-5 cursor-pointer text-primary underline">Add product gallery images</p>
-                            <button type="button" className="btn btn-primary mt-5" onClick={() => setproductVideoPopup()}>
+                            <button type="button" className="btn btn-primary mt-5" onClick={() => productVideoPopup()}>
                                 + Video
                             </button>
                         </div>
@@ -992,6 +997,197 @@ const ProductEdit = () => {
                     </div>
                 </div>
             </div>
+            {/* PRODUCT SECTION IMAGE POPUP */}{' '}
+            <Transition appear show={modal2} as={Fragment}>
+                <Dialog as="div" open={modal2} onClose={() => setModal2(false)}>
+                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0" />
+                    </Transition.Child>
+                    <div className="fixed inset-0 z-[999] bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="panel max-w-8xl my-8 w-full overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <h5 className="text-lg font-bold">Product Image</h5>
+                                        <button onClick={() => setModal2(false)} type="button" className="text-white-dark hover:text-dark">
+                                            <IconX />
+                                        </button>
+                                    </div>
+                                    <div className="m-5">
+                                        {isMounted && (
+                                            <Tab.Group>
+                                                <Tab.List className="mt-3 flex flex-wrap gap-2 border-b border-gray-200 pb-5">
+                                                    <Tab as={Fragment}>
+                                                        {({ selected }) => (
+                                                            <button
+                                                                className={`${selected ? 'bg-primary text-white !outline-none' : ''}
+                                                    -mb-[1px] flex items-center rounded p-3.5 py-2 before:inline-block hover:bg-primary hover:text-white`}
+                                                            >
+                                                                Upload Files
+                                                            </button>
+                                                        )}
+                                                    </Tab>
+                                                    <Tab as={Fragment}>
+                                                        {({ selected }) => (
+                                                            <button
+                                                                className={`${selected ? 'bg-primary text-white !outline-none' : ''}
+                                                    -mb-[1px] flex items-center rounded p-3.5 py-2 before:inline-block hover:bg-primary hover:text-white`}
+                                                            >
+                                                                Media Library
+                                                            </button>
+                                                        )}
+                                                    </Tab>
+                                                </Tab.List>
+                                                <Tab.Panels>
+                                                    <Tab.Panel>
+                                                        <div className="active  pt-5">
+                                                            <div className="flex h-[500px] items-center justify-center">
+                                                                <div className="w-1/2 text-center">
+                                                                    <h3 className="mb-2 text-xl font-semibold">Drag and drop files to upload</h3>
+                                                                    <p className="mb-2 text-sm ">or</p>
+                                                                    <input type="file" className="mb-2 ml-32" />
+                                                                    <p className="mb-2 text-sm">Maximum upload file size: 30 MB.</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </Tab.Panel>
+
+                                                    <Tab.Panel>
+                                                        <div className="grid grid-cols-12 pt-5">
+                                                            <div className="col-span-9 h-[450px] overflow-y-scroll border-r border-gray-200 pr-5">
+                                                                <div>
+                                                                    <div>Filter mediaFilter by type</div>
+                                                                </div>
+                                                                <div className="flex justify-between gap-3 pt-3">
+                                                                    <div className="flex gap-3">
+                                                                        {/* <select className="form-select flex-1">
+                                                                            <option value=""> </option>
+                                                                            <option value="Anklets">Anklets</option>
+                                                                            <option value="Earings">Earings</option>
+                                                                            <option value="Palakka">Palakka</option>
+                                                                        </select>{' '} */}
+                                                                        <select className="form-select w-40 flex-1">
+                                                                            <option value="">All Datas </option>
+                                                                            <option value="June2023">June2023</option>
+                                                                            <option value="july2023">july2023</option>
+                                                                            <option value="aug2023">aug2023</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="form-input mr-2 w-auto"
+                                                                            placeholder="Search..."
+                                                                            // value={search}
+                                                                            // onChange={(e) => setSearch(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-12 gap-3 pt-5">
+                                                                    <div className="col-span-2">
+                                                                        <img src="https://via.placeholder.com/150x150" alt="" />
+                                                                    </div>
+
+                                                                    <div className="col-span-2">
+                                                                        <img src="https://via.placeholder.com/150x150" alt="" />
+                                                                    </div>
+
+                                                                    <div className="col-span-2">
+                                                                        <img src="https://via.placeholder.com/150x150" alt="" />
+                                                                    </div>
+                                                                    <div className="col-span-2">
+                                                                        <img src="https://via.placeholder.com/150x150" alt="" />
+                                                                    </div>
+                                                                    <div className="col-span-2">
+                                                                        <img src="https://via.placeholder.com/150x150" alt="" />
+                                                                    </div>
+                                                                    <div className="col-span-2">
+                                                                        <img src="https://via.placeholder.com/150x150" alt="" />
+                                                                    </div>
+                                                                    <div className="col-span-2">
+                                                                        <img src="https://via.placeholder.com/150x150" alt="" />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex justify-center pt-5">
+                                                                    <div className=" text-center">
+                                                                        <p>Showing 80 of 2484 media items</p>
+                                                                        <div className="flex justify-center">
+                                                                            <button className="btn btn-primary mt-2">Load more</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-span-3 h-[450px] overflow-y-scroll pl-5">
+                                                                <div className="border-b border-gray-200 pb-5">
+                                                                    <div>
+                                                                        <p className="mb-2 text-lg font-semibold">ATTACHMENT DETAILS</p>
+                                                                    </div>
+                                                                    <div>
+                                                                        <img src="https://via.placeholder.com/250x300" alt="" />
+                                                                    </div>
+                                                                    <p className="mt-2 font-semibold">PraDeJewels_Necklace_Yazhu-scaled-2.jpg</p>
+                                                                    <p className="text-sm">May 19, 2023</p>
+                                                                    <p className="text-sm">619 KB</p>
+                                                                    <p className="text-sm">1707 by 2560 pixels</p>
+                                                                    <a href="#" className="text-danger underline">
+                                                                        Delete permanently
+                                                                    </a>
+                                                                </div>
+                                                                <div className="pr-5">
+                                                                    <div className="mt-5">
+                                                                        <label className="mb-2">Alt Text</label>
+                                                                        <textarea className="form-input" placeholder="Enter Alt Text"></textarea>
+                                                                        <span>
+                                                                            <a href="#" className="text-primary underline">
+                                                                                Learn how to describe the purpose of the image
+                                                                            </a>
+                                                                            . Leave empty if the image is purely decorative.
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="mt-5">
+                                                                        <label className="mb-2">Title</label>
+                                                                        <input type="text" className="form-input" placeholder="Enter Title" />
+                                                                    </div>
+
+                                                                    <div className="mt-5">
+                                                                        <label className="mb-2">Caption</label>
+                                                                        <textarea className="form-input" placeholder="Enter Caption"></textarea>
+                                                                    </div>
+
+                                                                    <div className="mt-5">
+                                                                        <label className="mb-2">File URL</label>
+                                                                        <input type="text" className="form-input" placeholder="Enter Title" />
+                                                                        <button className="btn btn-primary-outline mt-2 text-sm">Copy URL to Clipboard</button>
+                                                                    </div>
+                                                                    <div className="mt-5">
+                                                                        <p>Required fields are marked *</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-5 flex justify-end border-t border-gray-200 pt-5">
+                                                            <button className="btn btn-primary">Set Product Image</button>
+                                                        </div>
+                                                    </Tab.Panel>
+                                                </Tab.Panels>
+                                            </Tab.Group>
+                                        )}
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
             {/* product video popup */}
             <Transition appear show={modal1} as={Fragment}>
                 <Dialog as="div" open={modal1} onClose={() => setModal1(false)}>
@@ -1019,7 +1215,7 @@ const ProductEdit = () => {
                                     <div className="m-5">
                                         {isMounted && (
                                             <Tab.Group>
-                                                <Tab.List className="mt-3 flex flex-wrap justify-start space-x-2 border p-1 w-44  rtl:space-x-reverse">
+                                                <Tab.List className="mt-3 flex w-44 flex-wrap justify-start space-x-2 border p-1  rtl:space-x-reverse">
                                                     <Tab as={Fragment}>
                                                         {({ selected }) => (
                                                             <button
@@ -1048,22 +1244,20 @@ const ProductEdit = () => {
                                                                 MP4 video file
                                                             </label>
                                                             <input type="file" id="product-gallery-video" className="form-input" />
-                                                            <span className='text-gray-600 text-sm pt-5'>Upload a new or select (.mp4) video file from the media library.</span>
+                                                            <span className="pt-5 text-sm text-gray-600">Upload a new or select (.mp4) video file from the media library.</span>
                                                         </div>
                                                         <button className="btn btn-primary mt-5">Save</button>
                                                     </Tab.Panel>
                                                     <Tab.Panel>
-                                                    <div className="active pt-5">
+                                                        <div className="active pt-5">
                                                             <label htmlFor="product-gallery-video" className="form-label mb-5 border-b  pb-3 text-gray-600">
-                                                            YouTube video URL
+                                                                YouTube video URL
                                                             </label>
                                                             <input type="text" id="product-gallery-video" className="form-input" />
-                                                            <span className='text-gray-600 text-sm pt-5'>Example: https://youtu.be/LXb3EKWsInQ</span>
+                                                            <span className="pt-5 text-sm text-gray-600">Example: https://youtu.be/LXb3EKWsInQ</span>
                                                         </div>
                                                         <button className="btn btn-primary mt-5">Save</button>
                                                     </Tab.Panel>
-
-                                                    <Tab.Panel>Disabled</Tab.Panel>
                                                 </Tab.Panels>
                                             </Tab.Group>
                                         )}
