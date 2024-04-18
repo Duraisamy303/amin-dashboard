@@ -23,6 +23,7 @@ import IconEye from '@/components/Icon/IconEye';
 import { CREATE_DESIGN, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, ORDER_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
 import moment from 'moment';
+import { useRouter } from 'next/router';
 
 const Finish = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -31,6 +32,7 @@ const Finish = () => {
     useEffect(() => {
         dispatch(setPageTitle('Checkbox Table'));
     });
+const router = useRouter()
 
     const { error, data: finishData } = useQuery(ORDER_LIST, {
         variables: { channel: 'india-channel', first: 20 },
@@ -40,6 +42,7 @@ const Finish = () => {
 
     const [finishList, setFinishList] = useState([]);
     const [loading, setLoading] = useState(false);
+    console.log("finishList: ", finishList);
 
     useEffect(() => {
         getFinishList();
@@ -198,21 +201,20 @@ const Finish = () => {
     };
 
     // category table edit
-    const EditFinish = (record: any) => {
-        setModal1(true);
-        setModalTitle(record);
-        setModalContant(record);
+    const EditOrder = (record: any) => {
+        router.push(`/orders/editorder?id=${record.id}`);
     };
 
+   
     // category table create
-    const CreateFinish = () => {
+    const CreateOrder = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
     };
 
     // view categotry
-    // const ViewCategory = (record: any) => {
+    // const ViewOrder = (record: any) => {
     //     setViewModal(true);
     // };
 
@@ -247,7 +249,7 @@ const Finish = () => {
             });
     };
 
-    const BulkDeleteFinish = async () => {
+    const BulkDeleteOrder = async () => {
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -268,7 +270,7 @@ const Finish = () => {
         );
     };
 
-    const DeleteFinish = (record: any) => {
+    const DeleteOrder = (record: any) => {
         showDeleteAlert(
             async () => {
                 const { data } = await deleteDesign({ variables: { id: record.id } });
@@ -281,7 +283,7 @@ const Finish = () => {
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Finish List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Order List is safe :)', 'error');
             }
         );
     };
@@ -295,28 +297,6 @@ const Finish = () => {
                     <h5 className="text-lg font-semibold dark:text-white-light">Orders</h5>
 
                     <div className="flex ltr:ml-auto rtl:mr-auto">
-                    <div className="dropdown  mr-2 ">
-                            <Dropdown
-                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
-                                button={
-                                    <>
-                                        All dates
-                                        <span>
-                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
-                                        </span>
-                                    </>
-                                }
-                            >
-                                <ul className="!min-w-[120px]">
-                                    <li>
-                                        <button type="button" onClick={() => BulkDeleteFinish()}>
-                                            Delete
-                                        </button>
-                                    </li>
-                                </ul>
-                            </Dropdown>
-                        </div>
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                         <div className="dropdown  mr-2 ">
                             <Dropdown
@@ -333,18 +313,81 @@ const Finish = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteFinish()}>
+                                        <button type="button" onClick={() => BulkDeleteOrder()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateFinish()}>
+                        <button type="button" className="btn btn-primary" onClick={() => CreateOrder()}>
                             + Create
                         </button>
                     </div>
-                    
+                </div>
+
+                <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
+                    <div className="dropdown  mr-2 ">
+                        <Dropdown
+                            placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
+                            btnClassName="btn btn-outline-primary dropdown-toggle"
+                            button={
+                                <>
+                                    All dates
+                                    <span>
+                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
+                                    </span>
+                                </>
+                            }
+                        >
+                            <ul className="!min-w-[120px]">
+                                <li>
+                                    <button type="button">
+                                       All dates
+                                    </button>
+                                </li>
+
+                                <li>
+                                    <button type="button">
+                                       April 2024
+                                    </button>
+                                </li>
+
+                                <li>
+                                    <button type="button">
+                                       March 2024
+                                    </button>
+                                </li>
+                            </ul>
+                        </Dropdown>
+                    </div>
+                    <div className="dropdown  mr-2 ">
+                        <Dropdown
+                            placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
+                            btnClassName="btn btn-outline-primary dropdown-toggle"
+                            button={
+                                <>
+                                   Filter by Registered Customer
+                                    <span>
+                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
+                                    </span>
+                                </>
+                            }
+                        >
+                            <ul className="!min-w-[120px]">
+                                <li>
+                                    <button type="button">
+                                       Customer Name
+                                    </button>
+                                </li>
+                            </ul>
+                        </Dropdown>
+                    </div>
+                    <div>
+                        <button type="button" className="btn btn-primary" onClick={() => CreateOrder()}>
+                            Filter
+                        </button>
+                    </div>
                 </div>
                 {loading ? (
                     <Loader />
@@ -368,17 +411,17 @@ const Finish = () => {
                                     render: (row: any) => (
                                         <>
                                             <Tippy content="View">
-                                            <button type="button" onClick={() => ViewCategory(row)}>
-                                                <IconEye className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy> 
+                                                <button type="button" onClick={() => ViewOrder(row)}>
+                                                    <IconEye className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
                                             <Tippy content="Edit">
-                                                <button type="button" onClick={() => EditFinish(row)}>
+                                                <button type="button" onClick={() => EditOrder(row)}>
                                                     <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                                 </button>
                                             </Tippy>
                                             <Tippy content="Delete">
-                                                <button type="button" onClick={() => DeleteFinish(row)}>
+                                                <button type="button" onClick={() => DeleteOrder(row)}>
                                                     <IconTrashLines />
                                                 </button>
                                             </Tippy>
@@ -425,7 +468,7 @@ const Finish = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Finish' : 'Edit Finish'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Order' : 'Edit Order'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
