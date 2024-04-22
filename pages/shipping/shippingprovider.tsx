@@ -11,7 +11,6 @@ import IconPencil from '@/components/Icon/IconPencil';
 import { Button, Loader } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
-import { IRootState } from '../../store';
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -21,37 +20,38 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
-import { CREATE_DESIGN, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, SHIPPING_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
+import { CREATE_DESIGN, CREATE_FINISH, CREATE_SHIPPING, DELETE_FINISH, DELETE_SHIPPING, FINISH_LIST, SHIPPING_LIST, UPDATE_DESIGN, UPDATE_FINISH, UPDATE_SHIPPING } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
+import { showDeleteAlert } from '@/utils/functions';
 
-const Shipping = () => {
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const Finish = () => {
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(setPageTitle('Checkbox Table'));
     });
 
-    const { error, data: finishData } = useQuery(SHIPPING_LIST, {
+    const { error, data: shippingData } = useQuery(SHIPPING_LIST, {
         variables: { channel: 'india-channel', first: 20 },
     });
 
-    const [finishList, setFinishList] = useState([]);
+    const [shippingList, setShippingList] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        getFinishList();
-    }, [finishData]);
+        getShippingList();
+    }, [shippingData]);
 
-    const getFinishList = () => {
+    const getShippingList = () => {
         setLoading(true);
-        if (finishData) {
-            if (finishData && finishData.shippingCarriers && finishData.shippingCarriers.edges?.length > 0) {
-                const newData = finishData.shippingCarriers.edges.map((item) => ({
+        if (shippingData) {
+            if (shippingData && shippingData.shippingCarriers && shippingData.shippingCarriers.edges?.length > 0) {
+                const newData = shippingData.shippingCarriers.edges.map((item) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
-                setFinishList(newData);
+                setShippingList(newData);
                 setLoading(false);
             } else {
                 setLoading(false);
@@ -67,11 +67,11 @@ const Shipping = () => {
     const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
     const [recordsData, setRecordsData] = useState([]);
 
-    // Update initialRecords whenever finishList changes
+    // Update initialRecords whenever shippingList changes
     useEffect(() => {
-        // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(finishList, 'id'));
-    }, [finishList]);
+        // Sort shippingList by 'id' and update initialRecords
+        setInitialRecords(sortBy(shippingList, 'id'));
+    }, [shippingList]);
 
     // Log initialRecords when it changes
     useEffect(() => {
@@ -93,12 +93,11 @@ const Shipping = () => {
     // const [viewModal, setViewModal] = useState(false);
 
     //Mutation
-    const [addFinish] = useMutation(CREATE_FINISH);
-    const [updateFinish] = useMutation(UPDATE_FINISH);
-    const [deleteDesign] = useMutation(DELETE_FINISH);
-    const [bulkDelete] = useMutation(DELETE_FINISH);
+    const [addShipping] = useMutation(CREATE_SHIPPING);
+    const [updateShipping] = useMutation(UPDATE_SHIPPING);
+    const [deleteShipping] = useMutation(DELETE_SHIPPING);
+    const [bulkDelete] = useMutation(DELETE_SHIPPING);
 
-    console.log('finishList: ', finishList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -111,8 +110,7 @@ const Shipping = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return finishList.filter((item: any) => {
-                console.log('✌️item --->', item);
+            return shippingList?.filter((item: any) => {
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -133,12 +131,7 @@ const Shipping = () => {
     // FORM VALIDATION
     const SubmittedForm = Yup.object().shape({
         name: Yup.string().required('Please fill the Name'),
-        trackingUrl:Yup.string().required('Please fill the valid tracking url'),
-        // description: Yup.string().required('Please fill the Description'),
-        // slug: Yup.string().required('Please fill the Slug'),
-        // count: Yup.string().required('Please fill the count'),
-        // image: Yup.string().required('Please fill the Image'),
-        // parentCategory: Yup.string().required('Please fill the Parent Category'),
+        trackingUrl: Yup.string().url('Invalid tracking Url').required('Please fill the tracking Url'),
     });
 
     // form submit
@@ -148,14 +141,13 @@ const Shipping = () => {
             const variables = {
                 input: {
                     name: record.name,
+                    trackingUrl: record.trackingUrl,
                 },
             };
 
-            const { data } = await (modalTitle ? updateFinish({ variables: { ...variables, id: modalContant.id } }) : addFinish({ variables }));
-            console.log('data: ', data);
+            const { data } = await (modalTitle ? updateShipping({ variables: { ...variables, id: modalContant.id } }) : addShipping({ variables }));
 
-            const newData = modalTitle ? data?.productFinishUpdate?.productFinish : data?.productFinishCreate?.productFinish;
-            console.log('newData: ', newData);
+            const newData = modalTitle ? data?.shippingCarrierUpdate?.shippingCarrier : data?.shippingCarrierCreate?.shippingCarrier;
 
             if (!newData) {
                 console.error('Error: New data is undefined.');
@@ -171,7 +163,7 @@ const Shipping = () => {
                 updatedDesignList.push(newData);
             }
 
-            // setFinishList(updatedDesignList);
+            // setShippingList(updatedDesignList);
             setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
@@ -193,14 +185,14 @@ const Shipping = () => {
     };
 
     // category table edit
-    const EditFinish = (record: any) => {
+    const EditShipping = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
     // category table create
-    const CreateFinish = () => {
+    const CreateShipping = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
@@ -212,37 +204,8 @@ const Shipping = () => {
     // };
 
     // delete Alert Message
-    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
-        const swalWithBootstrapButtons = Swal.mixin({
-            customClass: {
-                confirmButton: 'btn btn-secondary',
-                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
-                popup: 'sweet-alerts',
-            },
-            buttonsStyling: false,
-        });
 
-        swalWithBootstrapButtons
-            .fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, cancel!',
-                reverseButtons: true,
-                padding: '2em',
-            })
-            .then((result) => {
-                if (result.isConfirmed) {
-                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    onCancel(); // Call the onCancel function if the user cancels the deletion
-                }
-            });
-    };
-
-    const BulkDeleteFinish = async () => {
+    const BulkDeleteShipping = async () => {
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -252,8 +215,8 @@ const Shipping = () => {
                 selectedRecords?.map(async (item: any) => {
                     await bulkDelete({ variables: { id: item.id } });
                 });
-                const updatedRecordsData = finishList.filter((record) => !selectedRecords.includes(record));
-                setFinishList(updatedRecordsData);
+                const updatedRecordsData = shippingList.filter((record) => !selectedRecords.includes(record));
+                setShippingList(updatedRecordsData);
                 setSelectedRecords([]);
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
@@ -263,16 +226,16 @@ const Shipping = () => {
         );
     };
 
-    const DeleteFinish = (record: any) => {
+    const DeleteShipping = (record: any) => {
         showDeleteAlert(
             async () => {
-                const { data } = await deleteDesign({ variables: { id: record.id } });
-                const updatedRecordsData = finishList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                const { data } = await deleteShipping({ variables: { id: record.id } });
+                const updatedRecordsData = shippingList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
-                setFinishList(updatedRecordsData);
-                // getFinishList()
+                setShippingList(updatedRecordsData);
+                // getshippingList()
                 setSelectedRecords([]);
-                // setFinishList(finishList)
+                // setShippingList(shippingList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
@@ -306,14 +269,14 @@ const Shipping = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteFinish()}>
+                                        <button type="button" onClick={() => BulkDeleteShipping()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateFinish()}>
+                        <button type="button" className="btn btn-primary" onClick={() => CreateShipping()}>
                             + Create
                         </button>
                     </div>
@@ -343,12 +306,12 @@ const Shipping = () => {
                                             </button>
                                         </Tippy> */}
                                             <Tippy content="Edit">
-                                                <button type="button" onClick={() => EditFinish(row)}>
+                                                <button type="button" onClick={() => EditShipping(row)}>
                                                     <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                                 </button>
                                             </Tippy>
                                             <Tippy content="Delete">
-                                                <button type="button" onClick={() => DeleteFinish(row)}>
+                                                <button type="button" onClick={() => DeleteShipping(row)}>
                                                     <IconTrashLines />
                                                 </button>
                                             </Tippy>
@@ -395,7 +358,7 @@ const Shipping = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Shipping provider' : 'Edit Shipping provider'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Shipping Provider' : 'Edit Shipping Provider'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -404,10 +367,10 @@ const Shipping = () => {
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '',trackingUrl:"" }
+                                                    ? { name: '', trackingUrl: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                          trackingUrl: modalContant.trackingUrl
+                                                          trackingUrl: modalContant.trackingUrl,
                                                           //   description: modalContant?.description,
 
                                                           //   count: modalContant?.count,
@@ -420,10 +383,7 @@ const Shipping = () => {
                                                 onSubmit(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
                                             }}
                                         >
-                                            {({ errors, submitCount, touched, setFieldValue, values }: any) => {
-                                                console.log("errors: ", errors);
-                                            
-                                            return (
+                                            {({ errors, submitCount, touched, setFieldValue, values }: any) => (
                                                 <Form className="space-y-5">
                                                     {/* <div className={submitCount ? (errors.image ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="image">Image</label>
@@ -449,18 +409,19 @@ const Shipping = () => {
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
-                                                    <div className={submitCount ? (errors.trackingUrl ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="trackingUrl">Tracking URL</label>
-                                                        <div className="flex">
-                                                            <div className="flex items-center justify-center border border-white-light bg-[#eee] px-3 font-semibold ltr:rounded-l-md ltr:border-r-0 rtl:rounded-r-md rtl:border-l-0 dark:border-[#17263c] dark:bg-[#1b2e4b]">
-                                                                https://
-                                                            </div>
-                                                        <Field name="trackingUrl" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
+                                                    <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="fullName">Tracking url </label>
+                                                        <Field name="trackingUrl" type="text" id="trackingUrl" placeholder="Enter Tracking Url" className="form-input" />
 
-                                                            {/* <input id="trackingUrl" type="text" name="trackingUrl" placeholder="example.com/users/" className="form-input ltr:rounded-l-none rtl:rounded-r-none" /> */}
-                                                        </div>
-                                                        {submitCount ? errors.trackingUrl ? <div className="mt-1 text-danger">{errors.trackingUrl}</div> : <div className="mt-1 text-success"></div> : ''}
-
+                                                        {submitCount ? (
+                                                            errors.trackingUrl ? (
+                                                                <div className="mt-1 text-danger">{errors.trackingUrl}</div>
+                                                            ) : (
+                                                                <div className="mt-1 text-success"></div>
+                                                            )
+                                                        ) : (
+                                                            ''
+                                                        )}
                                                     </div>
 
                                                     {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
@@ -516,7 +477,6 @@ const Shipping = () => {
                                                     </button>
                                                 </Form>
                                             )}
-                                        }
                                         </Formik>
                                     </div>
                                 </Dialog.Panel>
@@ -561,4 +521,4 @@ const Shipping = () => {
     );
 };
 
-export default Shipping;
+export default Finish;
