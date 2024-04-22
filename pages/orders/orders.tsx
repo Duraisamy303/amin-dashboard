@@ -25,7 +25,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 
-const Finish = () => {
+const Orders = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
@@ -54,15 +54,15 @@ const router = useRouter()
             if (finishData && finishData.orders && finishData.orders?.edges?.length > 0) {
                 const newData = finishData.orders?.edges.map((item: any) => ({
                     ...item.node,
-                    // name: item?.node?.name,
                     order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
                     date: moment(item?.node?.updatedAt).format('MMM d, yyyy'),
                     status: item?.node?.paymentStatus,
                     total: item?.node?.total.gross.amount,
                 }));
                 console.log('newData: ', newData);
-
                 setFinishList(newData);
+                setLoading(false);
+            } else {
                 setLoading(false);
             }
         } else {
@@ -102,12 +102,11 @@ const router = useRouter()
     // const [viewModal, setViewModal] = useState(false);
 
     //Mutation
-    const [addFinish] = useMutation(CREATE_FINISH);
-    const [updateFinish] = useMutation(UPDATE_FINISH);
+    const [addOrder] = useMutation(CREATE_FINISH);
+    const [updateOrder] = useMutation(UPDATE_FINISH);
     const [deleteDesign] = useMutation(DELETE_FINISH);
     const [bulkDelete] = useMutation(DELETE_FINISH);
 
-    console.log('finishList: ', finishList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -121,7 +120,6 @@ const router = useRouter()
     useEffect(() => {
         setInitialRecords(() => {
             return finishList.filter((item: any) => {
-                console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -151,7 +149,6 @@ const router = useRouter()
 
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
-        console.log('record: ', record);
         try {
             const variables = {
                 input: {
@@ -159,7 +156,7 @@ const router = useRouter()
                 },
             };
 
-            const { data } = await (modalTitle ? updateFinish({ variables: { ...variables, id: modalContant.id } }) : addFinish({ variables }));
+            const { data } = await (modalTitle ? updateOrder({ variables: { ...variables, id: modalContant.id } }) : addOrder({ variables }));
             console.log('data: ', data);
 
             const newData = modalTitle ? data?.productFinishUpdate?.productFinish : data?.productFinishCreate?.productFinish;
@@ -615,4 +612,4 @@ const router = useRouter()
     );
 };
 
-export default Finish;
+export default Orders;

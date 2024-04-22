@@ -358,3 +358,54 @@ export const ORDER_LIST = gql`
         }
     }
 `;
+
+export const SHIPPING_LIST = gql`
+    query GetShippingCarrier {
+        shippingCarriers(first: 100) {
+            edges {
+                node {
+                    id
+                    name
+                    trackingUrl
+                }
+            }
+        }
+    }
+`;
+
+export const CREATE_SHIPPING = gql`
+    mutation Shipping_CarrierCreate($input: Shipping_CarrierInput!) {
+        shippingCarrierCreate(input: $input) {
+            shippingCarrier {
+                id
+                name
+                trackingUrl
+            }
+            errors {
+                message
+            }
+        }
+    }
+`;
+
+export const UPDATE_SHIPPING = gql`
+    mutation Shipping_CarrierUpdate($id: ID!, $input: Shipping_CarrierInput!) {
+        shippingCarrierUpdate(id: $id, input: $input) {
+            shippingCarrier {
+                id
+                name
+                trackingUrl
+            }
+        }
+    }
+`;
+
+export const DELETE_SHIPPING = gql`
+    mutation Shipping_CarrierDelete($id: ID!) {
+        shippingCarrierDelete(id: $id) {
+            errors {
+                message
+            }
+        }
+    }
+`;

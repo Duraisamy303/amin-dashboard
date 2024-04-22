@@ -8,10 +8,9 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import IconPencil from '@/components/Icon/IconPencil';
-import { Button } from '@mantine/core';
+import { Button, Loader } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
-import { IRootState } from '../../store';
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -21,44 +20,39 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
-import { CREATE_STONE, DELETE_STONE, STONE_LIST, UPDATE_STONE } from '@/query/product';
-
+import { CREATE_DESIGN, CREATE_FINISH, CREATE_SHIPPING, DELETE_FINISH, DELETE_SHIPPING, FINISH_LIST, SHIPPING_LIST, UPDATE_DESIGN, UPDATE_FINISH, UPDATE_SHIPPING } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
+import { showDeleteAlert } from '@/utils/functions';
 
-const Stone = () => {
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const Finish = () => {
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(setPageTitle('Checkbox Table'));
     });
 
-    const { error, data: stoneData } = useQuery(STONE_LIST, {
-        variables: { channel: 'india-channel' }, // Pass variables here
+    const { error, data: shippingData } = useQuery(SHIPPING_LIST, {
+        variables: { channel: 'india-channel', first: 20 },
     });
-    console.log('stoneData: ', stoneData);
-    // const [designList, setStonList] = useState([]);
-    const [stonList, setStonList] = useState([]);
+
+    const [shippingList, setShippingList] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        getDesignList();
-    }, [stoneData]);
-    console.log('designList: ', stonList);
+        getShippingList();
+    }, [shippingData]);
 
-    const getDesignList = () => {
+    const getShippingList = () => {
         setLoading(true);
-        if (stoneData) {
-            if (stoneData && stoneData.productStoneTypes && stoneData.productStoneTypes.edges?.length > 0) {
-                const newData = stoneData.productStoneTypes.edges.map((item: any) => ({
+        if (shippingData) {
+            if (shippingData && shippingData.shippingCarriers && shippingData.shippingCarriers.edges?.length > 0) {
+                const newData = shippingData.shippingCarriers.edges.map((item) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
-                // const sorting: any = sortBy(newData, 'id');
-                setStonList(newData);
+                setShippingList(newData);
                 setLoading(false);
-
-                // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
             } else {
                 setLoading(false);
             }
@@ -73,11 +67,11 @@ const Stone = () => {
     const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
     const [recordsData, setRecordsData] = useState([]);
 
-    // Update initialRecords whenever finishList changes
+    // Update initialRecords whenever shippingList changes
     useEffect(() => {
-        // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(stonList, 'id'));
-    }, [stonList]);
+        // Sort shippingList by 'id' and update initialRecords
+        setInitialRecords(sortBy(shippingList, 'id'));
+    }, [shippingList]);
 
     // Log initialRecords when it changes
     useEffect(() => {
@@ -99,12 +93,11 @@ const Stone = () => {
     // const [viewModal, setViewModal] = useState(false);
 
     //Mutation
-    const [addStone] = useMutation(CREATE_STONE);
-    const [updateStone] = useMutation(UPDATE_STONE);
-    const [deleteStone] = useMutation(DELETE_STONE);
-    const [bulkDelete] = useMutation(DELETE_STONE);
+    const [addShipping] = useMutation(CREATE_SHIPPING);
+    const [updateShipping] = useMutation(UPDATE_SHIPPING);
+    const [deleteShipping] = useMutation(DELETE_SHIPPING);
+    const [bulkDelete] = useMutation(DELETE_SHIPPING);
 
-    console.log('finishList: ', stonList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -117,8 +110,7 @@ const Stone = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return stonList.filter((item: any) => {
-                console.log('✌️item --->', item);
+            return shippingList?.filter((item: any) => {
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -139,11 +131,7 @@ const Stone = () => {
     // FORM VALIDATION
     const SubmittedForm = Yup.object().shape({
         name: Yup.string().required('Please fill the Name'),
-        // description: Yup.string().required('Please fill the Description'),
-        // slug: Yup.string().required('Please fill the Slug'),
-        // count: Yup.string().required('Please fill the count'),
-        // image: Yup.string().required('Please fill the Image'),
-        // parentCategory: Yup.string().required('Please fill the Parent Category'),
+        trackingUrl: Yup.string().url('Invalid tracking Url').required('Please fill the tracking Url'),
     });
 
     // form submit
@@ -153,14 +141,13 @@ const Stone = () => {
             const variables = {
                 input: {
                     name: record.name,
+                    trackingUrl: record.trackingUrl,
                 },
             };
 
-            const { data } = await (modalTitle ? updateStone({ variables: { ...variables, id: modalContant.id } }) : addStone({ variables }));
-            console.log('✌️data --->', data);
+            const { data } = await (modalTitle ? updateShipping({ variables: { ...variables, id: modalContant.id } }) : addShipping({ variables }));
 
-            const newData = modalTitle ? data?.productStoneTypeUpdate?.productStoneType : data?.productStoneTypeCreate?.productStoneType;
-            console.log('✌️newData --->', newData);
+            const newData = modalTitle ? data?.shippingCarrierUpdate?.shippingCarrier : data?.shippingCarrierCreate?.shippingCarrier;
 
             if (!newData) {
                 console.error('Error: New data is undefined.');
@@ -176,6 +163,7 @@ const Stone = () => {
                 updatedDesignList.push(newData);
             }
 
+            // setShippingList(updatedDesignList);
             setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
@@ -197,14 +185,14 @@ const Stone = () => {
     };
 
     // category table edit
-    const EditStone = (record: any) => {
+    const EditShipping = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
     // category table create
-    const CreateStone = () => {
+    const CreateShipping = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
@@ -216,37 +204,8 @@ const Stone = () => {
     // };
 
     // delete Alert Message
-    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
-        const swalWithBootstrapButtons = Swal.mixin({
-            customClass: {
-                confirmButton: 'btn btn-secondary',
-                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
-                popup: 'sweet-alerts',
-            },
-            buttonsStyling: false,
-        });
 
-        swalWithBootstrapButtons
-            .fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, cancel!',
-                reverseButtons: true,
-                padding: '2em',
-            })
-            .then((result) => {
-                if (result.isConfirmed) {
-                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    onCancel(); // Call the onCancel function if the user cancels the deletion
-                }
-            });
-    };
-
-    const BulkDeleteStone = async () => {
+    const BulkDeleteShipping = async () => {
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -256,8 +215,8 @@ const Stone = () => {
                 selectedRecords?.map(async (item: any) => {
                     await bulkDelete({ variables: { id: item.id } });
                 });
-                const updatedRecordsData = stonList.filter((record) => !selectedRecords.includes(record));
-                setStonList(updatedRecordsData);
+                const updatedRecordsData = shippingList.filter((record) => !selectedRecords.includes(record));
+                setShippingList(updatedRecordsData);
                 setSelectedRecords([]);
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
@@ -267,20 +226,20 @@ const Stone = () => {
         );
     };
 
-    const DeleteStone = (record: any) => {
+    const DeleteShipping = (record: any) => {
         showDeleteAlert(
             async () => {
-                const { data } = await deleteStone({ variables: { id: record.id } });
-                const updatedRecordsData = stonList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                const { data } = await deleteShipping({ variables: { id: record.id } });
+                const updatedRecordsData = shippingList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
-                setStonList(updatedRecordsData);
-                // getFinishList()
+                setShippingList(updatedRecordsData);
+                // getshippingList()
                 setSelectedRecords([]);
-                // setFinishList(finishList)
+                // setShippingList(shippingList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Stone Type List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Finish List is safe :)', 'error');
             }
         );
     };
@@ -291,7 +250,7 @@ const Stone = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Stone Type</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Shipping Provider</h5>
 
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -310,70 +269,74 @@ const Stone = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteStone()}>
+                                        <button type="button" onClick={() => BulkDeleteShipping()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateStone()}>
+                        <button type="button" className="btn btn-primary" onClick={() => CreateShipping()}>
                             + Create
                         </button>
                     </div>
                 </div>
-                <div className="datatables">
-                    <DataTable
-                        className="table-hover whitespace-nowrap"
-                        records={recordsData}
-                        columns={[
-                            // { accessor: 'id', sortable: true },
-                            // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                            { accessor: 'name', sortable: true },
+                {loading ? (
+                    <Loader />
+                ) : (
+                    <div className="datatables">
+                        <DataTable
+                            className="table-hover whitespace-nowrap"
+                            records={recordsData}
+                            columns={[
+                                // { accessor: 'id', sortable: true },
+                                // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                                { accessor: 'name', sortable: true },
 
-                            {
-                                // Custom column for actions
-                                accessor: 'actions', // You can use any accessor name you want
-                                title: 'Actions',
-                                // Render method for custom column
-                                render: (row: any) => (
-                                    <>
-                                        {/* <Tippy content="View">
+                                {
+                                    // Custom column for actions
+                                    accessor: 'actions', // You can use any accessor name you want
+                                    title: 'Actions',
+                                    // Render method for custom column
+                                    render: (row: any) => (
+                                        <>
+                                            {/* <Tippy content="View">
                                             <button type="button" onClick={() => ViewCategory(row)}>
                                                 <IconEye className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy> */}
-                                        <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditStone(row)}>
-                                                <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy>
-                                        <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteStone(row)}>
-                                                <IconTrashLines />
-                                            </button>
-                                        </Tippy>
-                                    </>
-                                ),
-                            },
-                        ]}
-                        highlightOnHover
-                        totalRecords={initialRecords.length}
-                        recordsPerPage={pageSize}
-                        page={page}
-                        onPageChange={(p) => setPage(p)}
-                        recordsPerPageOptions={PAGE_SIZES}
-                        onRecordsPerPageChange={setPageSize}
-                        sortStatus={sortStatus}
-                        onSortStatusChange={setSortStatus}
-                        selectedRecords={selectedRecords}
-                        onSelectedRecordsChange={(selectedRecords) => {
-                            setSelectedRecords(selectedRecords);
-                        }}
-                        minHeight={200}
-                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                    />
-                </div>
+                                            <Tippy content="Edit">
+                                                <button type="button" onClick={() => EditShipping(row)}>
+                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
+                                            <Tippy content="Delete">
+                                                <button type="button" onClick={() => DeleteShipping(row)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </Tippy>
+                                        </>
+                                    ),
+                                },
+                            ]}
+                            highlightOnHover
+                            totalRecords={initialRecords.length}
+                            recordsPerPage={pageSize}
+                            page={page}
+                            onPageChange={(p) => setPage(p)}
+                            recordsPerPageOptions={PAGE_SIZES}
+                            onRecordsPerPageChange={setPageSize}
+                            sortStatus={sortStatus}
+                            onSortStatusChange={setSortStatus}
+                            selectedRecords={selectedRecords}
+                            onSelectedRecordsChange={(selectedRecords) => {
+                                setSelectedRecords(selectedRecords);
+                            }}
+                            minHeight={200}
+                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* CREATE AND EDIT CATEGORY FORM */}
@@ -395,7 +358,7 @@ const Stone = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Stone' : 'Edit Stone'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Shipping Provider' : 'Edit Shipping Provider'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -404,9 +367,10 @@ const Stone = () => {
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '' }
+                                                    ? { name: '', trackingUrl: '' }
                                                     : {
                                                           name: modalContant?.name,
+                                                          trackingUrl: modalContant.trackingUrl,
                                                           //   description: modalContant?.description,
 
                                                           //   count: modalContant?.count,
@@ -443,6 +407,21 @@ const Stone = () => {
                                                         <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
 
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div>
+
+                                                    <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="fullName">Tracking url </label>
+                                                        <Field name="trackingUrl" type="text" id="trackingUrl" placeholder="Enter Tracking Url" className="form-input" />
+
+                                                        {submitCount ? (
+                                                            errors.trackingUrl ? (
+                                                                <div className="mt-1 text-danger">{errors.trackingUrl}</div>
+                                                            ) : (
+                                                                <div className="mt-1 text-success"></div>
+                                                            )
+                                                        ) : (
+                                                            ''
+                                                        )}
                                                     </div>
 
                                                     {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
@@ -542,4 +521,4 @@ const Stone = () => {
     );
 };
 
-export default Stone;
+export default Finish;

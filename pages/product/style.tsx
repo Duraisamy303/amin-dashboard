@@ -46,11 +46,13 @@ const Style = () => {
         setLoading(true);
         if (finishData) {
             if (finishData && finishData.productStyles && finishData.productStyles?.edges?.length > 0) {
-                const newData = finishData.productStyles.edges.map((item:any) => ({
+                const newData = finishData.productStyles.edges.map((item: any) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
                 setFinishList(newData);
+                setLoading(false);
+            } else {
                 setLoading(false);
             }
         } else {
