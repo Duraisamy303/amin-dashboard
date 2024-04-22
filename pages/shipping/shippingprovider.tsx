@@ -13,14 +13,10 @@ import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
-import Image1 from '@/public/assets/images/profile-1.jpeg';
-import Image2 from '@/public/assets/images/profile-2.jpeg';
-import Image3 from '@/public/assets/images/profile-3.jpeg';
 import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
-import IconEye from '@/components/Icon/IconEye';
-import { CREATE_DESIGN, CREATE_FINISH, CREATE_SHIPPING, DELETE_FINISH, DELETE_SHIPPING, FINISH_LIST, SHIPPING_LIST, UPDATE_DESIGN, UPDATE_FINISH, UPDATE_SHIPPING } from '@/query/product';
+import { CREATE_SHIPPING, DELETE_SHIPPING, SHIPPING_LIST, UPDATE_SHIPPING } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
 import { showDeleteAlert } from '@/utils/functions';
 
@@ -239,7 +235,7 @@ const Finish = () => {
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Finish List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your shiiping List is safe :)', 'error');
             }
         );
     };

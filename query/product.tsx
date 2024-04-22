@@ -409,3 +409,126 @@ export const DELETE_SHIPPING = gql`
         }
     }
 `;
+
+export const GET_ORDER_DETAILS = gql`
+    query GetOrderDetails($id: ID!) {
+        order(id: $id) {
+            id
+            isPaid
+            isShippingRequired
+            number
+            shippingAddress {
+                firstName
+                lastName
+                companyName
+                streetAddress1
+                streetAddress2
+                phone
+                postalCode
+                city
+                countryArea
+                country {
+                    code
+                    country
+                }
+            }
+            status
+            billingAddress {
+                city
+                cityArea
+                companyName
+                country {
+                    code
+                    country
+                }
+                countryArea
+                firstName
+                lastName
+                phone
+                streetAddress2
+                streetAddress1
+            }
+            lines {
+                productName
+                productSku
+                allocations {
+                    id
+                    quantity
+                }
+                quantity
+                thumbnail {
+                    url
+                    alt
+                }
+                totalPrice {
+                    gross {
+                        amount
+                        currency
+                    }
+                }
+            }
+            paymentStatus
+            paymentStatusDisplay
+            events {
+                id
+                message
+                type
+                date
+                user {
+                    firstName
+                    lastName
+                    email
+                }
+            }
+        }
+    }
+`;
+
+export const CREATE_NOTES = gql`
+    mutation OrderNoteAdd($input: OrderNoteInput!, $orderId: ID!) {
+        orderNoteAdd(input: $input, order: $orderId) {
+            order {
+                id
+                number
+                user {
+                    email
+                    firstName
+                    lastName
+                }
+                events {
+                    id
+                    message
+                    type
+                    date
+                    user {
+                        firstName
+                        lastName
+                        email
+                    }
+                }
+            }
+        }
+    }
+`;
+
+export const UPDATE_NOTES = gql`
+    mutation Shipping_CarrierUpdate($id: ID!, $input: Shipping_CarrierInput!) {
+        shippingCarrierUpdate(id: $id, input: $input) {
+            shippingCarrier {
+                id
+                name
+                trackingUrl
+            }
+        }
+    }
+`;
+
+export const DELETE_NOTES = gql`
+    mutation OrderNoteDelete($noteId: ID!) {
+        orderNoteDelete(id: $noteId) {
+            errors {
+                message
+            }
+        }
+    }
+`;
