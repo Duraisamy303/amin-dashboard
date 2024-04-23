@@ -485,8 +485,8 @@ export const GET_ORDER_DETAILS = gql`
 `;
 
 export const CREATE_NOTES = gql`
-    mutation OrderNoteAdd($input: OrderNoteInput!, $orderId: ID!) {
-        orderNoteAdd(input: $input, order: $orderId) {
+    mutation OrderNoteAdd($input: OrderNoteInput!, $orderId: ID!, $private_note: Boolean!) {
+        orderNoteAdd(input: $input, order: $orderId, private_note: $private_note) {
             order {
                 id
                 number
