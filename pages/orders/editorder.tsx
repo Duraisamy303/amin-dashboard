@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery } from '@apollo/client';
-import { CREATE_NOTES, DELETE_NOTES, GET_ORDER_DETAILS, SHIPPING_LIST } from '@/query/product';
+import { COUNTRY_LIST, CREATE_NOTES, DELETE_NOTES, GET_ORDER_DETAILS, SHIPPING_LIST, STATES_LIST } from '@/query/product';
 import { Loader } from '@mantine/core';
 import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
@@ -17,25 +17,76 @@ import Modal from '@/components/Modal';
 
 const Editorder = () => {
     const router = useRouter();
+    const { id } = router.query;
+
+    const initialValues = {
+        billing: {
+            firstName: '',
+            lastName: '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            country: '',
+            email: '',
+            phone: '',
+            paymentMethod: '',
+            transactionId: '',
+        },
+        shipping: {
+            firstName: '',
+            lastName: '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            country: '',
+            email: '',
+            phone: '',
+            paymentMethod: '',
+            transactionId: '',
+        },
+    };
+
+    const [formData, setFormData] = useState(initialValues);
+    console.log('formData: ', formData);
+    const [errors, setErrors] = useState({});
 
     const [addNotes] = useMutation(CREATE_NOTES);
     const [deleteNotes] = useMutation(DELETE_NOTES);
-
-    const { id } = router.query;
 
     const { error, data: orderDetails } = useQuery(GET_ORDER_DETAILS, {
         variables: { id },
     });
 
+    const { data: countryData } = useQuery(COUNTRY_LIST);
+    console.log('countryData: ', countryData);
+
     const { data: shippingProvider } = useQuery(SHIPPING_LIST);
 
     const [orderData, setOrderData] = useState({});
     const [customerData, setCustomerData] = useState([]);
+
+    //CountryList
+    const [countryList, setCountryList] = useState([]);
+    const [selectedCountry, setSelectedCountry] = useState('');
+    console.log('selectedCountry: ', selectedCountry);
+
+    const { data: stateData } = useQuery(STATES_LIST, {
+        variables: { code: formData.billing.country },
+    });
+
+    console.log('stateData: ', stateData);
+
+    const [stateList, setStateList] = useState([]);
+    const [selectedState, setSelectedState] = useState('');
+
     const [loading, setLoading] = useState(false);
 
     //List data
     const [data, setData] = useState([]);
-    console.log('data: ', data);
 
     const [btnOpen, setbtnOpen] = useState(false);
 
@@ -69,6 +120,16 @@ const Editorder = () => {
         getCustomer();
     }, [shippingProvider]);
 
+    useEffect(() => {
+        getCountryList();
+    }, [countryData]);
+
+    useEffect(() => {
+        if (formData.billing.country) {
+            setStateList(stateData?.addressValidationRules?.countryAreaChoices);
+        }
+    }, [stateData]);
+
     const getOrderData = () => {
         console.log('getOrderData: ');
         setLoading(true);
@@ -89,6 +150,20 @@ const Editorder = () => {
         if (shippingProvider) {
             if (shippingProvider && shippingProvider?.shippingCarriers?.edges?.length > 0) {
                 setCustomerData(shippingProvider?.shippingCarriers?.edges);
+                setLoading(false);
+            } else {
+                setLoading(false);
+            }
+        } else {
+            setLoading(false);
+        }
+    };
+
+    const getCountryList = () => {
+        setLoading(true);
+        if (countryData) {
+            if (countryData && countryData?.shop && countryData?.shop?.countries?.length > 0) {
+                setCountryList(countryData?.shop?.countries);
                 setLoading(false);
             } else {
                 setLoading(false);
@@ -277,6 +352,41 @@ const Editorder = () => {
         setShippingIsEdit(false);
     };
 
+    const validationSchema = Yup.object().shape({
+        billing: Yup.object().shape({
+            firstName: Yup.string().required('First Name is required'),
+            lastName: Yup.string().required('Last Name is required'),
+            // Add validation for other billing address fields here
+        }),
+        shipping: Yup.object().shape({
+            firstName: Yup.string().required('First Name is required'),
+            lastName: Yup.string().required('Last Name is required'),
+            // Add validation for other shipping address fields here
+        }),
+    });
+
+    const handleChange = (e: any) => {
+        const { name, value } = e.target;
+        const [section, field] = name.split('.');
+        setFormData((prevData: any) => ({
+            ...prevData,
+            [section]: {
+                ...prevData[section],
+                [field]: value,
+            },
+        }));
+        Yup.reach(validationSchema, name)
+            .validate(value)
+            .then(() => {
+                // No validation error, clear the error message
+                setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
+            })
+            .catch((error) => {
+                // Validation error, set the error message
+                setErrors((prevErrors) => ({ ...prevErrors, [name]: error.message }));
+            });
+    };
+
     return (
         <>
             {loading ? (
@@ -395,13 +505,22 @@ const Editorder = () => {
                                                         <label htmlFor="firstname" className=" text-sm font-medium text-gray-700">
                                                             First Name
                                                         </label>
-                                                        <input type="text" id="billingfname" name="billingfname" className="form-input" required />
+
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.firstName'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.firstName"
+                                                            value={formData.billing.firstName}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.firstName'] && <div className="mt-1 text-danger">{errors['billing.firstName']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
                                                             Last Name
                                                         </label>
-                                                        <input type="text" id="billinglname" name="billinglname" className="form-input" required />
+                                                        {/* <input type="text" id="billinglname" name="billinglname" className="form-input" required /> */}
+                                                        <input type="text" className="form-input" name="billing.lastName" value={formData.billing.lastName} onChange={handleChange} />
                                                     </div>
                                                 </div>
 
@@ -410,7 +529,9 @@ const Editorder = () => {
                                                         <label htmlFor="company" className=" text-sm font-medium text-gray-700">
                                                             Company
                                                         </label>
-                                                        <input type="text" id="billingcompany" name="billingcompany" className="form-input" required />
+                                                        <input type="text" className="form-input" name="billing.company" value={formData.billing.company} onChange={handleChange} />
+
+                                                        {/* <input type="text" id="billingcompany" name="billingcompany" className="form-input" required /> */}
                                                     </div>
                                                 </div>
 
@@ -419,13 +540,17 @@ const Editorder = () => {
                                                         <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 1
                                                         </label>
-                                                        <input type="text" id="billingaddress1" name="billingaddress1" className="form-input" required />
+                                                        <input type="text" className="form-input" name="billing.address_1" value={formData.billing.address_1} onChange={handleChange} />
+
+                                                        {/* <input type="text" id="billingaddress1" name="billingaddress1" className="form-input" required /> */}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 2
                                                         </label>
-                                                        <input type="text" id="billingaddress2" name="billingaddress2" className="form-input" required />
+                                                        <input type="text" className="form-input" name="billing.address_2" value={formData.billing.address_2} onChange={handleChange} />
+
+                                                        {/* <input type="text" id="billingaddress2" name="billingaddress2" className="form-input" required /> */}
                                                     </div>
                                                 </div>
 
@@ -434,13 +559,17 @@ const Editorder = () => {
                                                         <label htmlFor="city" className=" text-sm font-medium text-gray-700">
                                                             City
                                                         </label>
-                                                        <input type="text" id="billingcity" name="billingcity" className="form-input" required />
+                                                        <input type="text" className="form-input" name="billing.city" value={formData.billing.city} onChange={handleChange} />
+
+                                                        {/* <input type="text" id="billingcity" name="billingcity" className="form-input" required /> */}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
                                                             Post Code / ZIP
                                                         </label>
-                                                        <input type="text" id="billingpincode" name="billingpincode" className="form-input" required />
+                                                        <input type="text" className="form-input" name="billing.pincode" value={formData.billing.pincode} onChange={handleChange} />
+
+                                                        {/* <input type="text" id="billingpincode" name="billingpincode" className="form-input" required /> */}
                                                     </div>
                                                 </div>
 
@@ -449,20 +578,35 @@ const Editorder = () => {
                                                         <label htmlFor="country" className=" text-sm font-medium text-gray-700">
                                                             Country / Region
                                                         </label>
-                                                        <select className="form-select mr-3" id="billingcountry" name="billingcountry">
-                                                            <option value="india">India</option>
-                                                            <option value="iran">Iran</option>
-                                                            <option value="italy">Italy</option>
+                                                        <select
+                                                            className="form-select mr-3"
+                                                            id="billingcountry"
+                                                            name="billing.country"
+                                                            value={formData.billing.country}
+                                                            onChange={handleChange}
+                                                            // value={selectedCountry}
+                                                            // onChange={(e) => getStateList(e.target.value)}
+                                                        >
+                                                            {countryList?.map((item: any) => (
+                                                                <option key={item.code} value={item.code}>
+                                                                    {item.country}
+                                                                </option>
+                                                            ))}
                                                         </select>
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="state" className=" text-sm font-medium text-gray-700">
-                                                            State / County
+                                                            State / Country
                                                         </label>
-                                                        <select className="form-select mr-3" id="billingstate" name="billingstate">
-                                                            <option value="tamilnadu">Tamil Nadu</option>
+                                                        <select className="form-select mr-3" id="billingstate" name="billing.state" value={formData.billing.state} onChange={handleChange}>
+                                                            {stateList?.map((item: any) => (
+                                                                <option key={item.raw} value={item.raw}>
+                                                                    {item.raw}
+                                                                </option>
+                                                            ))}
+                                                            {/* <option value="tamilnadu">Tamil Nadu</option>
                                                             <option value="kerala">Kerala</option>
-                                                            <option value="Delhi">Delhi</option>
+                                                            <option value="Delhi">Delhi</option> */}
                                                         </select>
                                                     </div>
                                                 </div>
@@ -472,13 +616,17 @@ const Editorder = () => {
                                                         <label htmlFor="email" className=" text-sm font-medium text-gray-700">
                                                             Email address
                                                         </label>
-                                                        <input type="mail" id="billingemail" name="billingemail" className="form-input" required />
+                                                        <input type="mail" className="form-input" name="billing.email" value={formData.billing.email} onChange={handleChange} />
+
+                                                        {/* <input type="mail" id="billingemail" name="billingemail" className="form-input" required /> */}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
                                                             Phone
                                                         </label>
-                                                        <input type="number" id="billingphone" name="billingphone" className="form-input" required />
+                                                        <input type="number" className="form-input" name="billing.phone" value={formData.billing.phone} onChange={handleChange} />
+
+                                                        {/* <input type="number" id="billingphone" name="billingphone" className="form-input" required /> */}
                                                     </div>
                                                 </div>
 
@@ -487,7 +635,13 @@ const Editorder = () => {
                                                         <label htmlFor="payments" className=" text-sm font-medium text-gray-700">
                                                             Payment method:
                                                         </label>
-                                                        <select className="form-select mr-3" id="billingpayments" name="billingpayments">
+                                                        <select
+                                                            className="form-select mr-3"
+                                                            id="billingpayments"
+                                                            name="billing.paymentMethod"
+                                                            value={formData.billing.paymentMethod}
+                                                            onChange={handleChange}
+                                                        >
                                                             <option value="private-note">Private note</option>
                                                             <option value="note-customer">Note to customer</option>
                                                         </select>
@@ -499,7 +653,9 @@ const Editorder = () => {
                                                         <label htmlFor="transaction" className=" text-sm font-medium text-gray-700">
                                                             Transaction ID
                                                         </label>
-                                                        <input type="text" id="billingtransaction" name="billingtransaction" className="form-input" required />
+                                                        <input type="text" className="form-input" name="billing.transactionId" value={formData.billing.transactionId} onChange={handleChange} />
+
+                                                        {/* <input type="text" id="billingtransaction" name="billingtransaction" className="form-input" required /> */}
                                                     </div>
                                                 </div>
                                             </>

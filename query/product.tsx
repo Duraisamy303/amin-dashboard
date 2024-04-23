@@ -532,3 +532,25 @@ export const DELETE_NOTES = gql`
         }
     }
 `;
+
+export const COUNTRY_LIST = gql`
+    query CountryList {
+        shop {
+            countries {
+                code
+                country
+            }
+        }
+    }
+`;
+
+export const STATES_LIST = gql`
+    query CountryArea($code: CountryCode!) {
+        addressValidationRules(countryCode: $code) {
+            countryAreaChoices {
+                raw
+                verbose
+            }
+        }
+    }
+`;
