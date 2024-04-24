@@ -1,13 +1,13 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery } from '@apollo/client';
-import { COUNTRY_LIST, CREATE_NOTES, DELETE_NOTES, GET_ORDER_DETAILS, SHIPPING_LIST, STATES_LIST } from '@/query/product';
+import { COUNTRY_LIST, CREATE_NOTES, CUSTOMER_LIST, DELETE_NOTES, GET_ORDER_DETAILS, SHIPPING_LIST, STATES_LIST } from '@/query/product';
 import { Loader } from '@mantine/core';
 import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useMutation } from '@apollo/client';
-import { showDeleteAlert } from '@/utils/functions';
+import { sampleParams, showDeleteAlert } from '@/utils/functions';
 import Swal from 'sweetalert2';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconX from '@/components/Icon/IconX';
@@ -33,6 +33,8 @@ const Editorder = () => {
             phone: '',
             paymentMethod: '',
             transactionId: '',
+            countryArea: '',
+            pincode: '',
         },
         shipping: {
             firstName: '',
@@ -47,12 +49,13 @@ const Editorder = () => {
             phone: '',
             paymentMethod: '',
             transactionId: '',
+            countryArea: '',
+            pincode: '',
         },
     };
 
     const [formData, setFormData] = useState(initialValues);
-    console.log('formData: ', formData);
-    const [errors, setErrors] = useState({});
+    const [errors, setErrors] = useState<any>({});
 
     const [addNotes] = useMutation(CREATE_NOTES);
     const [deleteNotes] = useMutation(DELETE_NOTES);
@@ -62,9 +65,12 @@ const Editorder = () => {
     });
 
     const { data: countryData } = useQuery(COUNTRY_LIST);
-    console.log('countryData: ', countryData);
 
-    const { data: shippingProvider } = useQuery(SHIPPING_LIST);
+    const { data: shippingProvider } = useQuery(CUSTOMER_LIST,{
+        variables:sampleParams
+    });
+
+    console.log("shippingProvider: ", shippingProvider);
 
     const [orderData, setOrderData] = useState({});
     const [customerData, setCustomerData] = useState([]);
@@ -72,13 +78,10 @@ const Editorder = () => {
     //CountryList
     const [countryList, setCountryList] = useState([]);
     const [selectedCountry, setSelectedCountry] = useState('');
-    console.log('selectedCountry: ', selectedCountry);
 
     const { data: stateData } = useQuery(STATES_LIST, {
         variables: { code: formData.billing.country },
     });
-
-    console.log('stateData: ', stateData);
 
     const [stateList, setStateList] = useState([]);
     const [selectedState, setSelectedState] = useState('');
@@ -131,12 +134,56 @@ const Editorder = () => {
     }, [stateData]);
 
     const getOrderData = () => {
-        console.log('getOrderData: ');
         setLoading(true);
         if (orderDetails) {
             if (orderDetails && orderDetails?.order) {
+                console.log('orderDetails?.order: ', orderDetails?.order);
                 setOrderData(orderDetails?.order);
                 setLoading(false);
+                const billing = orderDetails?.order?.billingAddress;
+                const shipping = orderDetails?.order?.shippingAddress;
+
+                const sampleBillingData = {
+                    firstName: billing.firstName,
+                    lastName: billing.lastName,
+                    company: billing.companyName,
+                    address_1: billing.streetAddress1,
+                    address_2: billing.streetAddress2,
+                    city: billing.city,
+                    state: billing.countryArea,
+                    country: billing.country.code,
+                    email: billing.email,
+                    phone: billing.phone,
+                    paymentMethod: '',
+                    transactionId: '',
+                    countryArea: billing?.country?.country,
+                    pincode:billing?.postalCode
+
+                };
+
+                // Sample data for shipping
+                const sampleShippingData = {
+                    firstName: shipping.firstName,
+                    lastName: shipping.lastName,
+                    company: shipping.companyName,
+                    address_1: shipping.streetAddress1,
+                    address_2: shipping.streetAddress2,
+                    city: shipping.city,
+                    state: shipping.countryArea,
+                    country: shipping.country.code,
+                    email: shipping.email,
+                    phone: shipping.phone,
+                    paymentMethod: '',
+                    transactionId: '',
+                    countryArea: shipping?.country?.country,
+                    pincode:shipping?.postalCode
+                };
+
+                // Update formData state with sample data
+                setFormData({
+                    billing: sampleBillingData,
+                    shipping: sampleShippingData,
+                });
             } else {
                 setLoading(false);
             }
@@ -356,12 +403,32 @@ const Editorder = () => {
         billing: Yup.object().shape({
             firstName: Yup.string().required('First Name is required'),
             lastName: Yup.string().required('Last Name is required'),
+            email: Yup.string().required('Email is required'),
+            company: Yup.string().required('Company is required'),
+            address_1: Yup.string().required('Street address is required'),
+            address_2: Yup.string().required('Street address is required'),
+            city: Yup.string().required('City is required'),
+            state: Yup.string().required('State is required'),
+            country: Yup.string().required('Country is required'),
+            phone: Yup.string().required('Phone is required'),
+            paymentMethod: Yup.string().required('PaymentMethod is required'),
+            transactionId: Yup.string().required('TransactionId is required'),
+
             // Add validation for other billing address fields here
         }),
         shipping: Yup.object().shape({
             firstName: Yup.string().required('First Name is required'),
             lastName: Yup.string().required('Last Name is required'),
-            // Add validation for other shipping address fields here
+            email: Yup.string().required('Email is required'),
+            company: Yup.string().required('Company is required'),
+            address_1: Yup.string().required('Street address is required'),
+            address_2: Yup.string().required('Street address is required'),
+            city: Yup.string().required('City is required'),
+            state: Yup.string().required('State is required'),
+            country: Yup.string().required('Country is required'),
+            phone: Yup.string().required('Phone is required'),
+            paymentMethod: Yup.string().required('PaymentMethod is required'),
+            transactionId: Yup.string().required('TransactionId is required'),
         }),
     });
 
@@ -472,26 +539,35 @@ const Editorder = () => {
                                         {showBillingInputs === false ? (
                                             <>
                                                 <div className="mt-3 text-gray-500">
-                                                    <p>RDA</p>
-                                                    <p>Indumathi Navinkumar</p>
+                                                    <p>{`${formData?.billing?.firstName} ${formData?.billing?.lastName}`}</p>
+                                                    <p>{formData?.billing?.company}</p>
                                                     <p>
-                                                        {' '}
-                                                        59A Winner St <br /> Madurai 625010
-                                                        <br /> Tamil Nadu
+                                                        {formData?.billing?.address_1}
+                                                        {formData?.billing?.address_2 && <br> {formData?.billing?.address_2}</br>}
+                                                        <br /> {formData?.billing?.city}
+                                                        <br /> {formData?.billing?.state}
+                                                        <br /> {formData?.billing?.countryArea}
                                                     </p>
-                                                    <p className="mt-3 font-semibold">Email Address:</p>
-                                                    <p>
-                                                        <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
-                                                            mail2inducs@gmail.com
-                                                        </a>
-                                                    </p>
-
-                                                    <p className="mt-3 font-semibold">Phone:</p>
-                                                    <p>
-                                                        <a href="tel:01803556656" className="text-primary underline">
-                                                            01803 556656
-                                                        </a>
-                                                    </p>
+                                                    {formData?.billing?.email && (
+                                                        <>
+                                                            <p className="mt-3 font-semibold">Email Address:</p>
+                                                            <p>
+                                                                <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
+                                                                    {formData?.billing?.email}
+                                                                </a>
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                    {formData?.billing?.phone && (
+                                                        <>
+                                                            <p className="mt-3 font-semibold">Phone:</p>
+                                                            <p>
+                                                                <a href="tel:01803556656" className="text-primary underline">
+                                                                    {formData?.billing?.phone}
+                                                                </a>
+                                                            </p>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </>
                                         ) : (
@@ -519,8 +595,14 @@ const Editorder = () => {
                                                         <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
                                                             Last Name
                                                         </label>
-                                                        {/* <input type="text" id="billinglname" name="billinglname" className="form-input" required /> */}
-                                                        <input type="text" className="form-input" name="billing.lastName" value={formData.billing.lastName} onChange={handleChange} />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.lastName'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.lastName"
+                                                            value={formData.billing.lastName}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.lastName'] && <div className="mt-1 text-danger">{errors['billing.lastName']}</div>}
                                                     </div>
                                                 </div>
 
@@ -529,9 +611,14 @@ const Editorder = () => {
                                                         <label htmlFor="company" className=" text-sm font-medium text-gray-700">
                                                             Company
                                                         </label>
-                                                        <input type="text" className="form-input" name="billing.company" value={formData.billing.company} onChange={handleChange} />
-
-                                                        {/* <input type="text" id="billingcompany" name="billingcompany" className="form-input" required /> */}
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.company'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.company"
+                                                            value={formData.billing.company}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.company'] && <div className="mt-1 text-danger">{errors['billing.company']}</div>}
                                                     </div>
                                                 </div>
 
@@ -540,7 +627,14 @@ const Editorder = () => {
                                                         <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 1
                                                         </label>
-                                                        <input type="text" className="form-input" name="billing.address_1" value={formData.billing.address_1} onChange={handleChange} />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.address_1'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.address_1"
+                                                            value={formData.billing.address_1}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.address_1'] && <div className="mt-1 text-danger">{errors['billing.address_1']}</div>}
 
                                                         {/* <input type="text" id="billingaddress1" name="billingaddress1" className="form-input" required /> */}
                                                     </div>
@@ -548,9 +642,14 @@ const Editorder = () => {
                                                         <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 2
                                                         </label>
-                                                        <input type="text" className="form-input" name="billing.address_2" value={formData.billing.address_2} onChange={handleChange} />
-
-                                                        {/* <input type="text" id="billingaddress2" name="billingaddress2" className="form-input" required /> */}
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.address_2'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.address_2"
+                                                            value={formData.billing.address_2}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.address_2'] && <div className="mt-1 text-danger">{errors['billing.address_2']}</div>}
                                                     </div>
                                                 </div>
 
@@ -559,17 +658,27 @@ const Editorder = () => {
                                                         <label htmlFor="city" className=" text-sm font-medium text-gray-700">
                                                             City
                                                         </label>
-                                                        <input type="text" className="form-input" name="billing.city" value={formData.billing.city} onChange={handleChange} />
-
-                                                        {/* <input type="text" id="billingcity" name="billingcity" className="form-input" required /> */}
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.city'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.city"
+                                                            value={formData.billing.city}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.city'] && <div className="mt-1 text-danger">{errors['billing.city']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
                                                             Post Code / ZIP
                                                         </label>
-                                                        <input type="text" className="form-input" name="billing.pincode" value={formData.billing.pincode} onChange={handleChange} />
-
-                                                        {/* <input type="text" id="billingpincode" name="billingpincode" className="form-input" required /> */}
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.pincode'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.pincode"
+                                                            value={formData.billing.pincode}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.pincode'] && <div className="mt-1 text-danger">{errors['billing.pincode']}</div>}
                                                     </div>
                                                 </div>
 
@@ -579,7 +688,8 @@ const Editorder = () => {
                                                             Country / Region
                                                         </label>
                                                         <select
-                                                            className="form-select mr-3"
+                                                            className={`form-select mr-3 ${errors['billing.country'] && 'border border-danger focus:border-danger'}`}
+                                                            // className="form-select mr-3"
                                                             id="billingcountry"
                                                             name="billing.country"
                                                             value={formData.billing.country}
@@ -593,21 +703,26 @@ const Editorder = () => {
                                                                 </option>
                                                             ))}
                                                         </select>
+                                                        {errors['billing.country'] && <div className="mt-1 text-danger">{errors['billing.country']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="state" className=" text-sm font-medium text-gray-700">
                                                             State / Country
                                                         </label>
-                                                        <select className="form-select mr-3" id="billingstate" name="billing.state" value={formData.billing.state} onChange={handleChange}>
+                                                        <select
+                                                            className={`form-select mr-3 ${errors['billing.state'] && 'border border-danger focus:border-danger'}`}
+                                                            id="billingstate"
+                                                            name="billing.state"
+                                                            value={formData.billing.state}
+                                                            onChange={handleChange}
+                                                        >
                                                             {stateList?.map((item: any) => (
                                                                 <option key={item.raw} value={item.raw}>
                                                                     {item.raw}
                                                                 </option>
                                                             ))}
-                                                            {/* <option value="tamilnadu">Tamil Nadu</option>
-                                                            <option value="kerala">Kerala</option>
-                                                            <option value="Delhi">Delhi</option> */}
                                                         </select>
+                                                        {errors['billing.state'] && <div className="mt-1 text-danger">{errors['billing.state']}</div>}
                                                     </div>
                                                 </div>
 
@@ -616,7 +731,16 @@ const Editorder = () => {
                                                         <label htmlFor="email" className=" text-sm font-medium text-gray-700">
                                                             Email address
                                                         </label>
-                                                        <input type="mail" className="form-input" name="billing.email" value={formData.billing.email} onChange={handleChange} />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.email'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.email"
+                                                            value={formData.billing.email}
+                                                            maxLength={10}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.email'] && <div className="mt-1 text-danger">{errors['billing.email']}</div>}
+                                                        {/* <input type="mail" className="form-input" name="billing.email" value={formData.billing.email} onChange={handleChange} /> */}
 
                                                         {/* <input type="mail" id="billingemail" name="billingemail" className="form-input" required /> */}
                                                     </div>
@@ -624,9 +748,15 @@ const Editorder = () => {
                                                         <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
                                                             Phone
                                                         </label>
-                                                        <input type="number" className="form-input" name="billing.phone" value={formData.billing.phone} onChange={handleChange} />
-
-                                                        {/* <input type="number" id="billingphone" name="billingphone" className="form-input" required /> */}
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.phone'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.phone"
+                                                            value={formData.billing.phone}
+                                                            maxLength={10}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.phone'] && <div className="mt-1 text-danger">{errors['billing.phone']}</div>}
                                                     </div>
                                                 </div>
 
@@ -673,13 +803,34 @@ const Editorder = () => {
                                         {showShippingInputs === false ? (
                                             <>
                                                 <div className="mt-3 text-gray-500">
-                                                    <p>RDA</p>
-                                                    <p>Indumathi Navinkumar</p>
+                                                    <p>{`${formData?.shipping?.firstName} ${formData?.shipping?.lastName}`}</p>
+                                                    <p>{formData?.shipping?.company}</p>
                                                     <p>
-                                                        {' '}
-                                                        59A Winner St <br /> Madurai 625010
-                                                        <br /> Tamil Nadu
+                                                        {`${formData?.shipping?.address_1} - ${formData?.shipping?.address_2}`}
+                                                        <br /> {formData?.shipping?.city}
+                                                        <br /> {formData?.shipping?.state}
+                                                        <br /> {formData?.shipping?.countryArea}
                                                     </p>
+                                                    {formData?.shipping?.email && (
+                                                        <>
+                                                            <p className="mt-3 font-semibold">Email Address:</p>
+                                                            <p>
+                                                                <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
+                                                                    {formData?.shipping?.email}
+                                                                </a>
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                    {formData?.shipping?.phone && (
+                                                        <>
+                                                            <p className="mt-3 font-semibold">Phone:</p>
+                                                            <p>
+                                                                <a href="tel:01803556656" className="text-primary underline">
+                                                                    {formData?.shipping?.phone}
+                                                                </a>
+                                                            </p>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </>
                                         ) : (
@@ -696,13 +847,28 @@ const Editorder = () => {
                                                         <label htmlFor="firstname" className=" text-sm font-medium text-gray-700">
                                                             First Name
                                                         </label>
-                                                        <input type="text" id="shippingfname" name="shippingfname" className="form-input" required />
+
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.firstName'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.firstName"
+                                                            value={formData.shipping.firstName}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.firstName'] && <div className="mt-1 text-danger">{errors['shipping.firstName']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
                                                             Last Name
                                                         </label>
-                                                        <input type="text" id="shippinglname" name="shippinglname" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.lastName'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.lastName"
+                                                            value={formData.shipping.lastName}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.lastName'] && <div className="mt-1 text-danger">{errors['shipping.lastName']}</div>}
                                                     </div>
                                                 </div>
 
@@ -711,7 +877,14 @@ const Editorder = () => {
                                                         <label htmlFor="company" className=" text-sm font-medium text-gray-700">
                                                             Company
                                                         </label>
-                                                        <input type="text" id="shippingcompany" name="shippingcompany" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.company'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.company"
+                                                            value={formData.shipping.company}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.company'] && <div className="mt-1 text-danger">{errors['shipping.company']}</div>}
                                                     </div>
                                                 </div>
 
@@ -720,13 +893,29 @@ const Editorder = () => {
                                                         <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 1
                                                         </label>
-                                                        <input type="text" id="shippingaddress1" name="shippingaddress1" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.address_1'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.address_1"
+                                                            value={formData.shipping.address_1}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.address_1'] && <div className="mt-1 text-danger">{errors['shipping.address_1']}</div>}
+
+                                                        {/* <input type="text" id="shippingaddress1" name="shippingaddress1" className="form-input" required /> */}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 2
                                                         </label>
-                                                        <input type="text" id="shippingaddress2" name="shippingaddress2" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.address_2'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.address_2"
+                                                            value={formData.shipping.address_2}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.address_2'] && <div className="mt-1 text-danger">{errors['shipping.address_2']}</div>}
                                                     </div>
                                                 </div>
 
@@ -735,13 +924,27 @@ const Editorder = () => {
                                                         <label htmlFor="city" className=" text-sm font-medium text-gray-700">
                                                             City
                                                         </label>
-                                                        <input type="text" id="shippingcity" name="shippingcity" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.city'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.city"
+                                                            value={formData.shipping.city}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.city'] && <div className="mt-1 text-danger">{errors['shipping.city']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
                                                             Post Code / ZIP
                                                         </label>
-                                                        <input type="text" id="shippingpincode" name="shippingpincode" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.pincode'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.pincode"
+                                                            value={formData.shipping.pincode}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.pincode'] && <div className="mt-1 text-danger">{errors['shipping.pincode']}</div>}
                                                     </div>
                                                 </div>
 
@@ -750,36 +953,105 @@ const Editorder = () => {
                                                         <label htmlFor="country" className=" text-sm font-medium text-gray-700">
                                                             Country / Region
                                                         </label>
-                                                        <select className="form-select mr-3" id="shippingcountry" name="shippingcountry">
-                                                            <option value="india">India</option>
-                                                            <option value="iran">Iran</option>
-                                                            <option value="italy">Italy</option>
+                                                        <select
+                                                            className={`form-select mr-3 ${errors['shipping.country'] && 'border border-danger focus:border-danger'}`}
+                                                            // className="form-select mr-3"
+                                                            id="shippingcountry"
+                                                            name="shipping.country"
+                                                            value={formData.shipping.country}
+                                                            onChange={handleChange}
+                                                            // value={selectedCountry}
+                                                            // onChange={(e) => getStateList(e.target.value)}
+                                                        >
+                                                            {countryList?.map((item: any) => (
+                                                                <option key={item.code} value={item.code}>
+                                                                    {item.country}
+                                                                </option>
+                                                            ))}
                                                         </select>
+                                                        {errors['shipping.country'] && <div className="mt-1 text-danger">{errors['shipping.country']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="state" className=" text-sm font-medium text-gray-700">
-                                                            State / County
+                                                            State / Country
                                                         </label>
-                                                        <select className="form-select mr-3" id="shippingstate" name="shippingstate">
-                                                            <option value="tamilnadu">Tamil Nadu</option>
-                                                            <option value="kerala">Kerala</option>
-                                                            <option value="Delhi">Delhi</option>
+                                                        <select
+                                                            className={`form-select mr-3 ${errors['shipping.state'] && 'border border-danger focus:border-danger'}`}
+                                                            id="shippingstate"
+                                                            name="shipping.state"
+                                                            value={formData.shipping.state}
+                                                            onChange={handleChange}
+                                                        >
+                                                            {stateList?.map((item: any) => (
+                                                                <option key={item.raw} value={item.raw}>
+                                                                    {item.raw}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        {errors['shipping.state'] && <div className="mt-1 text-danger">{errors['shipping.state']}</div>}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-5 grid grid-cols-12 gap-3">
+                                                    <div className="col-span-6">
+                                                        <label htmlFor="email" className=" text-sm font-medium text-gray-700">
+                                                            Email address
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.email'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.email"
+                                                            value={formData.shipping.email}
+                                                            maxLength={10}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.email'] && <div className="mt-1 text-danger">{errors['shipping.email']}</div>}
+                                                        {/* <input type="mail" className="form-input" name="shipping.email" value={formData.shipping.email} onChange={handleChange} /> */}
+
+                                                        {/* <input type="mail" id="shippingemail" name="shippingemail" className="form-input" required /> */}
+                                                    </div>
+                                                    <div className="col-span-6">
+                                                        <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
+                                                            Phone
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            className={`form-input ${errors['shipping.phone'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.phone"
+                                                            value={formData.shipping.phone}
+                                                            maxLength={10}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.phone'] && <div className="mt-1 text-danger">{errors['shipping.phone']}</div>}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-5 grid grid-cols-12 gap-3">
+                                                    <div className="col-span-12">
+                                                        <label htmlFor="payments" className=" text-sm font-medium text-gray-700">
+                                                            Payment method:
+                                                        </label>
+                                                        <select
+                                                            className="form-select mr-3"
+                                                            id="shippingpayments"
+                                                            name="shipping.paymentMethod"
+                                                            value={formData.shipping.paymentMethod}
+                                                            onChange={handleChange}
+                                                        >
+                                                            <option value="private-note">Private note</option>
+                                                            <option value="note-customer">Note to customer</option>
                                                         </select>
                                                     </div>
                                                 </div>
 
                                                 <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    {/* <div className="col-span-6">
-                                            <label htmlFor="email" className=" text-sm font-medium text-gray-700">
-                                                Email address
-                                            </label>
-                                            <input type="mail" id="billingemail" name="billingemail" className="form-input" required />
-                                        </div> */}
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
-                                                            Phone
+                                                    <div className="col-span-12">
+                                                        <label htmlFor="transaction" className=" text-sm font-medium text-gray-700">
+                                                            Transaction ID
                                                         </label>
-                                                        <input type="number" id="shippingphone" name="shippingphone" className="form-input" required />
+                                                        <input type="text" className="form-input" name="shipping.transactionId" value={formData.shipping.transactionId} onChange={handleChange} />
+
+                                                        {/* <input type="text" id="billingtransaction" name="billingtransaction" className="form-input" required /> */}
                                                     </div>
                                                 </div>
                                                 <div className="mt-5 grid grid-cols-12 gap-3">

@@ -388,13 +388,13 @@ const ProductList = () => {
                                 render: (row: any) => (
                                     <>
                                         <div className="mx-auto flex w-max items-center gap-4">
-                                            <Link href={`/apps/product/edit/${row.id}`} className="flex hover:text-info">
+                                            <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/edit?id=${row.id}`)}>
                                                 <IconEdit className="h-4.5 w-4.5" />
-                                            </Link>
-
-                                            <Link href="/apps/product/view" className="flex hover:text-primary">
+                                            </button>
+                                            <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/view?id=${row.id}`)}>
+                                                {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
                                                 <IconEye />
-                                            </Link>
+                                            </button>
 
                                             <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
                                                 <IconTrashLines />

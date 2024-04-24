@@ -373,6 +373,36 @@ export const SHIPPING_LIST = gql`
     }
 `;
 
+export const CUSTOMER_LIST = gql`
+    query SearchCustomers($after: String, $first: Int!, $query: String!) {
+        search: customers(after: $after, first: $first, filter: { search: $query }) {
+            edges {
+                node {
+                    id
+                    email
+                    firstName
+                    lastName
+                    __typename
+                }
+                __typename
+            }
+            pageInfo {
+                ...PageInfo
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment PageInfo on PageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        __typename
+    }
+`;
+
 export const CREATE_SHIPPING = gql`
     mutation Shipping_CarrierCreate($input: Shipping_CarrierInput!) {
         shippingCarrierCreate(input: $input) {
