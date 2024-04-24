@@ -311,7 +311,7 @@ const ProductAdd = () => {
                                                     </div>
                                                 </div>
 
-                                                <div>
+                                                <div className="pt-5 border-t border-gray-200  w-full">
                                                     <div className="flex items-center">
                                                         <div className="mb-5 mr-4">
                                                             <label htmlFor="tax-status" className="block pr-8 text-sm font-medium text-gray-700">
@@ -452,7 +452,7 @@ const ProductAdd = () => {
                                                         </div>
                                                     )}
 
-                                                    <div className="active flex items-center">
+                                                    <div className="active flex items-center pt-5 border-t border-gray-200">
                                                         <div className="mb-5 mr-4 pr-10">
                                                             <label htmlFor="sold-individually" className="block  text-sm font-medium text-gray-700">
                                                                 Sold individually
@@ -464,7 +464,7 @@ const ProductAdd = () => {
                                                         </div>
                                                     </div>
 
-                                                    <div className="active flex items-center">
+                                                    <div className="active flex items-center pt-5 border-t border-gray-200">
                                                         <div className="mb-5 mr-4 pr-2">
                                                             <label htmlFor="initial-in-stock" className="block  text-sm font-medium text-gray-700">
                                                                 Initial number in stock
@@ -475,7 +475,7 @@ const ProductAdd = () => {
                                                         </div>
                                                     </div>
 
-                                                    <div className="active flex items-center">
+                                                    <div className="active flex items-center pt-5 border-t border-gray-200">
                                                         <div className="mb-5 mr-4 pr-3">
                                                             <label htmlFor="unit-mesurement" className="block  text-sm font-medium text-gray-700">
                                                                 Unit of measurement
@@ -650,7 +650,7 @@ const ProductAdd = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="active flex items-center">
+                                                <div className="active flex items-center pt-5 border-t border-gray-200">
                                                     <div className="mb-5 mr-4 pr-3">
                                                         <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
                                                             Menu Order
@@ -661,7 +661,7 @@ const ProductAdd = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="active flex items-center">
+                                                <div className="active flex items-center pt-5 border-t border-gray-200">
                                                     <div className="mb-5 mr-4 pr-3">
                                                         <label htmlFor="review" className="block  text-sm font-medium text-gray-700">
                                                             Enable reviews
