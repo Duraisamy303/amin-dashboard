@@ -168,6 +168,10 @@ const Sidebar = () => {
                                                     <Link href="/product/category">{t('Category')}</Link>
                                                 </li>
                                                 <li>
+                                                    <Link href="/product/attributes">{t('Attributes')}</Link>
+                                                </li>
+                                                
+                                                <li>
                                                     <Link href="/product/finish">{t('Finish')}</Link>
                                                 </li>
                                                 <li>
@@ -178,6 +182,13 @@ const Sidebar = () => {
                                                 </li>
                                                 <li>
                                                     <Link href="/product/stone">{t('Stone type')}</Link>
+                                                </li>
+
+                                                <li>
+                                                    <Link href="/product/tags">{t('Tags')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/product/wishlist">{t('Wishlist')}</Link>
                                                 </li>
                                             </ul>
                                         </AnimateHeight>
