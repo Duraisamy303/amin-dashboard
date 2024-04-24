@@ -11,6 +11,7 @@ import IconPencil from '@/components/Icon/IconPencil';
 import { Button, Loader } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
+import { IRootState } from '../../store';
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -20,49 +21,49 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
-import { CREATE_DESIGN, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, ORDER_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
-import moment from 'moment';
+import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY } from '@/query/product';
+import ReactQuill from 'react-quill';
 import { useRouter } from 'next/router';
 
-const Orders = () => {
-    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const Attributes = () => {
+    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+
+const Router = useRouter()
 
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(setPageTitle('Checkbox Table'));
     });
-const router = useRouter()
 
-    const { error, data: finishData } = useQuery(ORDER_LIST, {
-        variables: { channel: 'india-channel', first: 20 },
+    const { error, data: categoryData } = useQuery(CATEGORY_LIST, {
+        variables: { channel: 'india-channel', first: 100 },
     });
 
-    console.log('finishData: ', finishData);
-
-    const [finishList, setFinishList] = useState([]);
+    const [categoryList, setCategoryList] = useState([]);
     const [loading, setLoading] = useState(false);
-    console.log("finishList: ", finishList);
 
     useEffect(() => {
-        getFinishList();
-    }, [finishData]);
+        getCategoryList();
+    }, [categoryData]);
 
-    const getFinishList = () => {
+    const getCategoryList = () => {
         setLoading(true);
-        if (finishData) {
-            if (finishData && finishData.orders && finishData.orders?.edges?.length > 0) {
-                const newData = finishData.orders?.edges.map((item: any) => ({
-                    ...item.node,
-                    order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
-                    date: moment(item?.node?.updatedAt).format('MMM d, yyyy'),
-                    status: item?.node?.paymentStatus,
-                    total: item?.node?.total.gross.amount,
-                }));
-                console.log('newData: ', newData);
-                setFinishList(newData);
-                setLoading(false);
-            } else {
+        if (categoryData) {
+            if (categoryData.categories && categoryData.categories.edges) {
+                const newData = categoryData.categories.edges.map((item) => {
+                    const jsonObject = JSON.parse(item.node.description || item.node.description);
+                    // Extract the text value
+                    const textValue = jsonObject?.blocks[0]?.data?.text;
+
+                    return {
+                        ...item.node,
+
+                        product: item.node.products?.totalCount,
+                        textdescription: textValue || '', // Set textValue or empty string if it doesn't exist
+                    };
+                });
+                setCategoryList(newData);
                 setLoading(false);
             }
         } else {
@@ -79,8 +80,8 @@ const router = useRouter()
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(finishList, 'id'));
-    }, [finishList]);
+        setInitialRecords(sortBy(categoryList, 'id'));
+    }, [categoryList]);
 
     // Log initialRecords when it changes
     useEffect(() => {
@@ -102,11 +103,12 @@ const router = useRouter()
     // const [viewModal, setViewModal] = useState(false);
 
     //Mutation
-    const [addOrder] = useMutation(CREATE_FINISH);
-    const [updateOrder] = useMutation(UPDATE_FINISH);
-    const [deleteDesign] = useMutation(DELETE_FINISH);
-    const [bulkDelete] = useMutation(DELETE_FINISH);
+    const [addCategory] = useMutation(CREATE_CATEGORY);
+    const [updateCategory] = useMutation(UPDATE_CATEGORY);
+    const [deleteCategory] = useMutation(DELETE_CATEGORY);
+    const [bulkDelete] = useMutation(DELETE_CATEGORY);
 
+    console.log('categoryList: ', categoryList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -119,11 +121,12 @@ const router = useRouter()
 
     useEffect(() => {
         setInitialRecords(() => {
-            return finishList.filter((item: any) => {
+            return categoryList.filter((item: any) => {
+                console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
-                    item.order.toLowerCase().includes(search.toLowerCase())
+                    item.name.toLowerCase().includes(search.toLowerCase())
                     // item.description.toLowerCase().includes(search.toLowerCase()) ||
                     // item.slug.toLowerCase().includes(search.toLowerCase()) ||
                     // item.count.toString().includes(search.toLowerCase())
@@ -149,34 +152,50 @@ const router = useRouter()
 
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
+        console.log('record: ', record);
         try {
+            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
+            console.log('✌️Description --->', Description);
+
             const variables = {
                 input: {
                     name: record.name,
+                    description: Description,
                 },
             };
 
-            const { data } = await (modalTitle ? updateOrder({ variables: { ...variables, id: modalContant.id } }) : addOrder({ variables }));
+            const { data } = await (modalTitle ? updateCategory({ variables: { ...variables, id: modalContant.id } }) : addCategory({ variables }));
             console.log('data: ', data);
 
-            const newData = modalTitle ? data?.productFinishUpdate?.productFinish : data?.productFinishCreate?.productFinish;
+            const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
             console.log('newData: ', newData);
-
             if (!newData) {
                 console.error('Error: New data is undefined.');
                 return;
             }
-            const updatedId = newData.id;
+
+            const jsonObject = JSON.parse(newData.description || newData.description);
+            // Extract the text value
+            const textValue = jsonObject?.blocks[0]?.data?.text;
+            console.log('✌️textValue --->', textValue);
+
+            const finalData = {
+                ...newData,
+                textdescription: textValue || '',
+            };
+            console.log("finalData", finalData)
+
+            const updatedId = finalData.id;
             const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
             const updatedDesignList: any = [...recordsData];
             if (index !== -1) {
-                updatedDesignList[index] = newData;
+                updatedDesignList[index] = finalData;
             } else {
-                updatedDesignList.push(newData);
+                updatedDesignList.push(finalData);
             }
-
-            // setFinishList(updatedDesignList);
+console.log("updatedDesignList", updatedDesignList)
+            // setCategoryList(updatedDesignList);
             setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
@@ -198,23 +217,25 @@ const router = useRouter()
     };
 
     // category table edit
-    const EditOrder = (record: any) => {
-        router.push(`/orders/editorder?id=${record.id}`);
+    const EditCategory = (record: any) => {
+        setModal1(true);
+        setModalTitle(record);
+        setModalContant(record);
     };
 
-   
     // category table create
-    const CreateOrder = () => {
-        // setModal1(true);
-        // setModalTitle(null);
-        // setModalContant(null);
-        router.push('/orders/addorder');
+    const CreateAttributes = () => {
+        setModal1(true);
+        setModalTitle(null);
+        setModalContant(null);
     };
 
     // view categotry
-    // const ViewOrder = (record: any) => {
-    //     setViewModal(true);
-    // };
+    const ViewCategory = (record: any) => {
+console.log('✌️record --->', record);
+Router.push(`/product/attributes/${record.id}`);
+        // setViewModal(true);
+    };
 
     // delete Alert Message
     const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
@@ -246,8 +267,9 @@ const router = useRouter()
                 }
             });
     };
+    console.log('mordelContentt', modalContant);
 
-    const BulkDeleteOrder = async () => {
+    const BulkDeleteCategory = async () => {
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -257,8 +279,8 @@ const router = useRouter()
                 selectedRecords?.map(async (item: any) => {
                     await bulkDelete({ variables: { id: item.id } });
                 });
-                const updatedRecordsData = finishList.filter((record) => !selectedRecords.includes(record));
-                setFinishList(updatedRecordsData);
+                const updatedRecordsData = categoryList.filter((record) => !selectedRecords.includes(record));
+                setCategoryList(updatedRecordsData);
                 setSelectedRecords([]);
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
@@ -268,31 +290,39 @@ const router = useRouter()
         );
     };
 
-    const DeleteOrder = (record: any) => {
+    const DeleteCategory = (record: any) => {
         showDeleteAlert(
             async () => {
-                const { data } = await deleteDesign({ variables: { id: record.id } });
-                const updatedRecordsData = finishList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                const { data } = await deleteCategory({ variables: { id: record.id } });
+                const updatedRecordsData = categoryList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
-                setFinishList(updatedRecordsData);
-                // getFinishList()
+                setCategoryList(updatedRecordsData);
+                // getCategoryList()
                 setSelectedRecords([]);
-                // setFinishList(finishList)
+                // setCategoryList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Order List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Finish List is safe :)', 'error');
             }
         );
     };
 
     // completed category delete option
+    // if (productItem?.description || productItem?.node?.description) {
+    //     const jsonObject = JSON.parse(
+    //       productItem?.description || productItem?.node?.description
+    //     );
+    //     // Extract the text value
+    //     textValue = jsonObject?.blocks[0]?.data?.text;
+    //   }
 
+    console.log('recordsData', recordsData);
     return (
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Orders</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Attributes</h5>
 
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -311,79 +341,15 @@ const router = useRouter()
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteOrder()}>
+                                        <button type="button" onClick={() => BulkDeleteCategory()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateOrder()}>
+                        <button type="button" className="btn btn-primary" onClick={() => CreateAttributes()}>
                             + Create
-                        </button>
-                    </div>
-                </div>
-
-                <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
-                    <div className="dropdown  mr-2 ">
-                        <Dropdown
-                            placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                            btnClassName="btn btn-outline-primary dropdown-toggle"
-                            button={
-                                <>
-                                    All dates
-                                    <span>
-                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
-                                    </span>
-                                </>
-                            }
-                        >
-                            <ul className="!min-w-[120px]">
-                                <li>
-                                    <button type="button">
-                                       All dates
-                                    </button>
-                                </li>
-
-                                <li>
-                                    <button type="button">
-                                       April 2024
-                                    </button>
-                                </li>
-
-                                <li>
-                                    <button type="button">
-                                       March 2024
-                                    </button>
-                                </li>
-                            </ul>
-                        </Dropdown>
-                    </div>
-                    <div className="dropdown  mr-2 ">
-                        <Dropdown
-                            placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                            btnClassName="btn btn-outline-primary dropdown-toggle"
-                            button={
-                                <>
-                                   Filter by Registered Customer
-                                    <span>
-                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
-                                    </span>
-                                </>
-                            }
-                        >
-                            <ul className="!min-w-[120px]">
-                                <li>
-                                    <button type="button">
-                                       Customer Name
-                                    </button>
-                                </li>
-                            </ul>
-                        </Dropdown>
-                    </div>
-                    <div>
-                        <button type="button" className="btn btn-primary" >
-                            Filter
                         </button>
                     </div>
                 </div>
@@ -397,10 +363,17 @@ const router = useRouter()
                             columns={[
                                 // { accessor: 'id', sortable: true },
                                 // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                                { accessor: 'order', sortable: true },
-                                { accessor: 'date', sortable: true },
-                                { accessor: 'status', sortable: true },
-                                { accessor: 'total', sortable: true },
+                                { accessor: 'name', sortable: true },
+                                {
+                                    accessor: 'textdescription',
+                                    sortable: true,
+                                    title: 'Description',
+                                },
+                                {
+                                    accessor: 'product',
+                                    sortable: true,
+                                },
+
                                 {
                                     // Custom column for actions
                                     accessor: 'actions', // You can use any accessor name you want
@@ -408,18 +381,18 @@ const router = useRouter()
                                     // Render method for custom column
                                     render: (row: any) => (
                                         <>
-                                            {/* <Tippy content="View">
-                                                <button type="button" onClick={() => ViewOrder(row)}>
-                                                    <IconEye className="ltr:mr-2 rtl:ml-2" />
-                                                </button>
-                                            </Tippy> */}
+                                            <Tippy content="View">
+                                            <button type="button" onClick={() => ViewCategory(row)}>
+                                                <IconEye className="ltr:mr-2 rtl:ml-2" />
+                                            </button>
+                                        </Tippy>
                                             <Tippy content="Edit">
-                                                <button type="button" onClick={() => EditOrder(row)}>
+                                                <button type="button" onClick={() => EditCategory(row)}>
                                                     <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                                 </button>
                                             </Tippy>
                                             <Tippy content="Delete">
-                                                <button type="button" onClick={() => DeleteOrder(row)}>
+                                                <button type="button" onClick={() => DeleteCategory(row)}>
                                                     <IconTrashLines />
                                                 </button>
                                             </Tippy>
@@ -447,7 +420,7 @@ const router = useRouter()
                 )}
             </div>
 
-            {/* CREATE AND EDIT CATEGORY FORM */}
+            {/* CREATE AND EDIT Attributes FORM */}
             <Transition appear show={modal1} as={Fragment}>
                 <Dialog as="div" open={modal1} onClose={() => setModal1(false)}>
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
@@ -466,7 +439,7 @@ const router = useRouter()
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Order' : 'Edit Order'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Attributes' : 'Edit Attributes'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -475,10 +448,10 @@ const router = useRouter()
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '' }
+                                                    ? { name: '', textdescription: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                          //   description: modalContant?.description,
+                                                          description: modalContant?.textdescription,
 
                                                           //   count: modalContant?.count,
                                                           //   image: modalContant?.image,
@@ -515,8 +488,19 @@ const router = useRouter()
 
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
+                                                    {/* <div className="mb-5">
+                                                        <label htmlFor="description">Description</label>
 
-                                                    {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
+                                                        <textarea
+                                                            id="description"
+                                                            rows={3}
+                                                            placeholder="Enter description"
+                                                            name="description"
+                                                            className="form-textarea min-h-[130px] resize-none"
+                                                        ></textarea>
+                                                    </div> */}
+
+                                                    <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="description">description </label>
                                                         <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
 
@@ -529,7 +513,7 @@ const router = useRouter()
                                                         ) : (
                                                             ''
                                                         )}
-                                                    </div> */}
+                                                    </div>
 
                                                     {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="slug">Slug </label>
@@ -613,4 +597,4 @@ const router = useRouter()
     );
 };
 
-export default Orders;
+export default Attributes;
