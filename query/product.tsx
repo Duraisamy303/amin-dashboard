@@ -584,3 +584,588 @@ export const STATES_LIST = gql`
         }
     }
 `;
+
+export const CHANNEL_LIST = gql`
+    query BaseChannels {
+        channels {
+            ...Channel
+            __typename
+        }
+    }
+
+    fragment Channel on Channel {
+        id
+        isActive
+        name
+        slug
+        currencyCode
+        defaultCountry {
+            code
+            country
+            __typename
+        }
+        stockSettings {
+            allocationStrategy
+            __typename
+        }
+        __typename
+    }
+`;
+
+export const PRODUCT_CAT_LIST = gql`
+    query SearchCategories($after: String, $first: Int!, $query: String!) {
+        search: categories(after: $after, first: $first, filter: { search: $query }) {
+            edges {
+                node {
+                    id
+                    name
+                    __typename
+                }
+                __typename
+            }
+            pageInfo {
+                ...PageInfo
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment PageInfo on PageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        __typename
+    }
+`;
+
+export const COLLECTION_LIST = gql`
+    query SearchCollections($after: String, $first: Int!, $query: String!, $channel: String) {
+        search: collections(after: $after, first: $first, filter: { search: $query }, channel: $channel) {
+            edges {
+                node {
+                    id
+                    name
+                    __typename
+                }
+                __typename
+            }
+            pageInfo {
+                ...PageInfo
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment PageInfo on PageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        __typename
+    }
+`;
+
+export const PRODUCT_TYPE_LIST = gql`
+    query SearchProductTypes($after: String, $first: Int!, $query: String!) {
+        search: productTypes(after: $after, first: $first, filter: { search: $query }) {
+            edges {
+                node {
+                    id
+                    name
+                    __typename
+                }
+                __typename
+            }
+            pageInfo {
+                ...PageInfo
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment PageInfo on PageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        __typename
+    }
+`;
+
+export const CREATE_PRODUCT = gql`
+    mutation ProductCreate($input: ProductCreateInput!) {
+        productCreate(input: $input) {
+            errors {
+                ...ProductErrorWithAttributes
+                __typename
+            }
+            product {
+                id
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductErrorWithAttributes on ProductError {
+        ...ProductError
+        attributes
+        __typename
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
+        __typename
+    }
+`;
+
+export const UPDATE_PRODUCT_CHANNEL = gql`
+    mutation ProductChannelListingUpdate($id: ID!, $input: ProductChannelListingUpdateInput!) {
+        productChannelListingUpdate(id: $id, input: $input) {
+            errors {
+                ...ProductChannelListingError
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductChannelListingError on ProductChannelListingError {
+        code
+        field
+        message
+        channels
+        __typename
+    }
+`;
+
+export const CREATE_VARIANT = gql`
+    mutation VariantCreate($input: ProductVariantCreateInput!, $firstValues: Int, $afterValues: String, $lastValues: Int, $beforeValues: String) {
+        productVariantCreate(input: $input) {
+            errors {
+                ...ProductErrorWithAttributes
+                __typename
+            }
+            productVariant {
+                ...ProductVariant
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductErrorWithAttributes on ProductError {
+        ...ProductError
+        attributes
+        __typename
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
+        __typename
+    }
+
+    fragment ProductVariant on ProductVariant {
+        id
+        ...Metadata
+        selectionAttributes: attributes(variantSelection: VARIANT_SELECTION) {
+            ...SelectedVariantAttribute
+            __typename
+        }
+        nonSelectionAttributes: attributes(variantSelection: NOT_VARIANT_SELECTION) {
+            ...SelectedVariantAttribute
+            __typename
+        }
+        media {
+            id
+            url
+            type
+            oembedData
+            __typename
+        }
+        name
+        product {
+            id
+            defaultVariant {
+                id
+                __typename
+            }
+            media {
+                ...ProductMedia
+                __typename
+            }
+            name
+            thumbnail {
+                url
+                __typename
+            }
+            channelListings {
+                id
+                publicationDate
+                isPublished
+                channel {
+                    id
+                    name
+                    currencyCode
+                    __typename
+                }
+                __typename
+            }
+            variants {
+                id
+                name
+                sku
+                media {
+                    id
+                    url(size: 200)
+                    type
+                    oembedData
+                    __typename
+                }
+                __typename
+            }
+            defaultVariant {
+                id
+                __typename
+            }
+            __typename
+        }
+        channelListings {
+            ...ChannelListingProductVariant
+            __typename
+        }
+        sku
+        stocks {
+            ...Stock
+            __typename
+        }
+        trackInventory
+        preorder {
+            ...Preorder
+            __typename
+        }
+        weight {
+            ...Weight
+            __typename
+        }
+        quantityLimitPerCustomer
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+
+    fragment SelectedVariantAttribute on SelectedAttribute {
+        attribute {
+            ...VariantAttribute
+            __typename
+        }
+        values {
+            ...AttributeValueDetails
+            __typename
+        }
+        __typename
+    }
+
+    fragment VariantAttribute on Attribute {
+        id
+        name
+        slug
+        inputType
+        entityType
+        valueRequired
+        unit
+        choices(first: $firstValues, after: $afterValues, last: $lastValues, before: $beforeValues) {
+            ...AttributeValueList
+            __typename
+        }
+        __typename
+    }
+
+    fragment AttributeValueList on AttributeValueCountableConnection {
+        pageInfo {
+            ...PageInfo
+            __typename
+        }
+        edges {
+            cursor
+            node {
+                ...AttributeValueDetails
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+
+    fragment PageInfo on PageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        __typename
+    }
+
+    fragment AttributeValueDetails on AttributeValue {
+        ...AttributeValue
+        plainText
+        richText
+        __typename
+    }
+
+    fragment AttributeValue on AttributeValue {
+        id
+        name
+        slug
+        file {
+            ...File
+            __typename
+        }
+        reference
+        boolean
+        date
+        dateTime
+        value
+        __typename
+    }
+
+    fragment File on File {
+        url
+        contentType
+        __typename
+    }
+
+    fragment ProductMedia on ProductMedia {
+        id
+        alt
+        sortOrder
+        url(size: 1024)
+        type
+        oembedData
+        __typename
+    }
+
+    fragment ChannelListingProductVariant on ProductVariantChannelListing {
+        id
+        channel {
+            id
+            name
+            currencyCode
+            __typename
+        }
+        price {
+            ...Money
+            __typename
+        }
+        costPrice {
+            ...Money
+            __typename
+        }
+        preorderThreshold {
+            quantity
+            soldUnits
+            __typename
+        }
+        __typename
+    }
+
+    fragment Money on Money {
+        amount
+        currency
+        __typename
+    }
+
+    fragment Stock on Stock {
+        id
+        quantity
+        quantityAllocated
+        warehouse {
+            ...Warehouse
+            __typename
+        }
+        __typename
+    }
+
+    fragment Warehouse on Warehouse {
+        id
+        name
+        __typename
+    }
+
+    fragment Preorder on PreorderData {
+        globalThreshold
+        globalSoldUnits
+        endDate
+        __typename
+    }
+
+    fragment Weight on Weight {
+        unit
+        value
+        __typename
+    }
+`;
+
+export const UPDATE_VARIANT_LIST = gql`
+    mutation ProductVariantChannelListingUpdate($id: ID!, $input: [ProductVariantChannelListingAddInput!]!) {
+        productVariantChannelListingUpdate(id: $id, input: $input) {
+            variant {
+                id
+                channelListings {
+                    ...ChannelListingProductVariant
+                    __typename
+                }
+                product {
+                    id
+                    channelListings {
+                        ...ChannelListingProductWithoutPricing
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+            errors {
+                ...ProductChannelListingError
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ChannelListingProductVariant on ProductVariantChannelListing {
+        id
+        channel {
+            id
+            name
+            currencyCode
+            __typename
+        }
+        price {
+            ...Money
+            __typename
+        }
+        costPrice {
+            ...Money
+            __typename
+        }
+        preorderThreshold {
+            quantity
+            soldUnits
+            __typename
+        }
+        __typename
+    }
+
+    fragment Money on Money {
+        amount
+        currency
+        __typename
+    }
+
+    fragment ChannelListingProductWithoutPricing on ProductChannelListing {
+        isPublished
+        publicationDate
+        isAvailableForPurchase
+        availableForPurchase
+        visibleInListings
+        channel {
+            id
+            name
+            currencyCode
+            __typename
+        }
+        __typename
+    }
+
+    fragment ProductChannelListingError on ProductChannelListingError {
+        code
+        field
+        message
+        channels
+        __typename
+    }
+`;
+
+export const UPDATE_META_DATA = gql`
+    mutation UpdateMetadata($id: ID!, $input: [MetadataInput!]!, $keysToDelete: [String!]!) {
+        updateMetadata(id: $id, input: $input) {
+            errors {
+                ...MetadataError
+                __typename
+            }
+            item {
+                ...Metadata
+                ... on Node {
+                    id
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+        deleteMetadata(id: $id, keys: $keysToDelete) {
+            errors {
+                ...MetadataError
+                __typename
+            }
+            item {
+                ...Metadata
+                ... on Node {
+                    id
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment MetadataError on MetadataError {
+        code
+        field
+        message
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+`;
