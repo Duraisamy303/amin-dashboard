@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 const View = () => {
   const editorRef = useRef(null);
-  const [editorInstance, setEditorInstance] = useState<any>(null);
+  const [editorInstance, setEditorInstance] = useState(null);
+  const [content, setContent] = useState("");
 
   useEffect(() => {
     if (typeof window === 'undefined' || !editorRef.current) return;
@@ -18,10 +19,11 @@ const View = () => {
           list: {
             class: require('@editorjs/list')
           },
-          table: {
+            table: {
             class: require('@editorjs/table')
           },
         },
+        // Your editor configuration options
       });
       setEditorInstance(editor);
     });
@@ -32,6 +34,10 @@ const View = () => {
       }
     };
   }, []);
+
+  const handleChange = (event) => {
+    setContent(event.target.value);
+  };
 
   const handleSave = async () => {
     if (editorInstance) {
