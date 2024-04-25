@@ -1,6 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment, useRef } from 'react';
-import Sortable from "sortablejs";
+import { useEffect, useState, Fragment } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -33,19 +32,23 @@ const ReactQuill = dynamic(import('react-quill'), { ssr: false });
 
 import { Tab } from '@headlessui/react';
 import AnimateHeight from 'react-animate-height';
-const ProductAdd = () => {
+import { useMutation, useQuery } from '@apollo/client';
+import {
+    CATEGORY_LIST,
+    CHANNEL_LIST,
+    COLLECTION_LIST,
+    CREATE_PRODUCT,
+    CREATE_VARIANT,
+    PRODUCT_CAT_LIST,
+    PRODUCT_TYPE_LIST,
+    UPDATE_META_DATA,
+    UPDATE_PRODUCT_CHANNEL,
+    UPDATE_VARIANT_LIST,
+} from '@/query/product';
+import { sampleParams } from '@/utils/functions';
+const ProductEdit = () => {
     const router = useRouter();
-    const dispatch = useDispatch();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
-
-    // drag and drop
-    const containerRef:any = useRef(null);
-
-    useEffect(() => {
-      Sortable.create(containerRef.current, {
-        animation: 150,
-      });
-    }, []);
 
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
@@ -55,80 +58,42 @@ const ProductAdd = () => {
     useEffect(() => {
         setIsMounted(true);
     });
-    const [salePrice, setSalePrice] = useState(false);
+    const [salePrice, setSalePrice] = useState('');
+    const [menuOrder, setMenuOrder] = useState(0);
+    console.log('menuOrder: ', menuOrder);
+
+    // ------------------------------------------New Data--------------------------------------------
+
+    const [productName, setProductName] = useState('');
+    const [slug, setSlug] = useState('');
+    const [seoTittle, setSeoTittle] = useState('');
+    const [seoDesc, setSeoDesc] = useState('');
+
+    const [shortDescription, setShortDescription] = useState('');
+    const [sku, setSku] = useState('');
+    const [quantity, setQuantity] = useState('');
+    const [regularPrice, setRegularPrice] = useState('');
+    const [selectedCollection, setSelectedCollection] = useState([]);
+    const [stackMgmt, setStackMgmt] = useState('');
+    const [publish, setPublish] = useState('published');
+
+    // ------------------------------------------New Data--------------------------------------------
+
     const [statusVisible, setStatusVisible] = useState(false);
     const [publicVisible, setPublicVisible] = useState(false);
     const [publishedDate, setPublishedDate] = useState(false);
     const [catalogVisible, setCatalogVisible] = useState(false);
     const [addCategory, setAddCategory] = useState(false);
-
     const [quantityTrack, setQuantityTrack] = useState(true);
-
     const [active, setActive] = useState<string>('1');
-    const togglePara = (value: string) => {
-        setActive((oldValue) => {
-            return oldValue === value ? '' : value;
-        });
-    };
-
-    // Product table create
-    const CreateProduct = () => {
-        router.push('/apps/product/add');
-    };
-
-    // delete Alert Message
-    // const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
-    //     const swalWithBootstrapButtons = Swal.mixin({
-    //         customClass: {
-    //             confirmButton: 'btn btn-secondary',
-    //             cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
-    //             popup: 'sweet-alerts',
-    //         },
-    //         buttonsStyling: false,
-    //     });
-
-    //     swalWithBootstrapButtons
-    //         .fire({
-    //             title: 'Are you sure?',
-    //             text: "You won't be able to Delete this!",
-    //             icon: 'warning',
-    //             showCancelButton: true,
-    //             confirmButtonText: 'Yes, delete it!',
-    //             cancelButtonText: 'No, cancel!',
-    //             reverseButtons: true,
-    //             padding: '2em',
-    //         })
-    //         .then((result) => {
-    //             if (result.isConfirmed) {
-    //                 onConfirm(); // Call the onConfirm function if the user confirms the deletion
-    //             } else if (result.dismiss === Swal.DismissReason.cancel) {
-    //                 onCancel(); // Call the onCancel function if the user cancels the deletion
-    //             }
-    //         });
-    // };
-
-    const scheduleOpen = () => {
-        setSalePrice(!salePrice);
-    };
-
-    // tax onchange
-    const taxStatus = (value: any) => {
-        console.log('✌️value --->', value);
-    };
-
-    const taxClass = (value: any) => {
-        console.log('✌️value --->', value);
-    };
-
     // track stock
     const trackStock = (value: any) => {
         setQuantityTrack(!quantityTrack);
     };
 
     const options = [
-        { value: 'orange', label: 'Orange' },
-        { value: 'white', label: 'White' },
-        { value: 'purple', label: 'Purple' },
+        { value: 'new', label: 'New' },
+        { value: 'hot', label: 'Hot' },
     ];
 
     const statusEditClick = () => {
@@ -158,27 +123,308 @@ const ProductAdd = () => {
     const productVideoPopup = () => {
         setModal1(true);
     };
+    const togglePara = (value: string) => {
+        setActive((oldValue) => {
+            return oldValue === value ? '' : value;
+        });
+    };
+
+    // -------------------------------------New Added-------------------------------------------------------
+
+    const { error, data: orderDetails } = useQuery(CHANNEL_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: collection_list } = useQuery(COLLECTION_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: productTypelist } = useQuery(PRODUCT_TYPE_LIST, {
+        variables: sampleParams,
+    });
+
+    const [addFormData] = useMutation(CREATE_PRODUCT);
+    const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
+    const [createVariant] = useMutation(CREATE_VARIANT);
+    const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
+    const [updateMedatData] = useMutation(UPDATE_META_DATA);
+
+    const [categoryList, setCategoryList] = useState([]);
+    const [collectionList, setCollectionList] = useState([]);
+    const [label, setLabel] = useState('');
+
+    const [productType, setProductType] = useState([]);
+    const [selectedCat, setselectedCat] = useState('');
+
+    useEffect(() => {
+        category_list();
+    }, [cat_list]);
+
+    useEffect(() => {
+        collections_list();
+    }, [collection_list]);
+
+    useEffect(() => {
+        productsType();
+    }, [productTypelist]);
+
+    const category_list = async () => {
+        try {
+            if (cat_list) {
+                if (cat_list && cat_list?.search?.edges?.length > 0) {
+                    const list = cat_list?.search?.edges;
+                    const dropdownData = list?.map((item: any) => {
+                        return { value: item.node?.id, label: item.node?.name };
+                    });
+
+                    setCategoryList(dropdownData);
+                }
+            }
+        } catch (error) {}
+    };
+
+    const collections_list = async () => {
+        try {
+            if (collection_list) {
+                if (collection_list && collection_list?.search?.edges?.length > 0) {
+                    const list = collection_list?.search?.edges;
+                    const dropdownData = list?.map((item: any) => {
+                        return { value: item.node?.id, label: item.node?.name };
+                    });
+
+                    setCollectionList(dropdownData);
+                }
+            }
+        } catch (error) {}
+    };
+
+    const productsType = async () => {
+        try {
+            if (productTypelist) {
+                if (productTypelist && productTypelist?.search?.edges?.length > 0) {
+                    const list = productTypelist?.search?.edges;
+                    const dropdownData = list?.map((item: any) => {
+                        return { value: item.node?.id, label: item.node?.name };
+                    });
+
+                    setProductType(dropdownData);
+                }
+            }
+        } catch (error) {}
+    };
+
+    const selectCat = (cat: any) => {
+        setselectedCat(cat);
+        // console.log("cat: ", cat);
+    };
+
+    const selectedCollections = (data: any) => {
+        setSelectedCollection(data);
+    };
+
+    const CreateProduct = async () => {
+        try {
+            const catId = selectedCat?.value;
+            console.log('catId: ', catId);
+            let collectionId: any[] = [];
+            if (selectedCollection?.length > 0) {
+                collectionId = selectedCollection?.map((item) => item.value);
+            }
+            console.log('collectionId: ', collectionId);
+            const { data } = await addFormData({
+                variables: {
+                    input: {
+                        attributes: [],
+                        category: catId,
+                        collections: collectionId,
+                        description: '{"time":1714018366783,"blocks":[{"id":"EWn3NJZQaf","type":"paragraph","data":{"text":"TESTING"}}],"version":"2.24.3"}',
+                        name: productName,
+                        productType: 'UHJvZHVjdFR5cGU6Mg==',
+                        seo: {
+                            description: seoDesc,
+                            title: seoTittle,
+                        },
+                        slug: slug,
+                        order_no: menuOrder,
+                        ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                    },
+                },
+            });
+            if (data?.productCreate?.errors?.length > 0) {
+                console.log('error: ', data?.productCreate?.errors[0]?.message);
+            } else {
+                console.log('CreateProduct: ', data);
+                const productId = data?.productCreate?.product?.id;
+                productChannelListUpdate(productId);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const productChannelListUpdate = async (productId: any) => {
+        try {
+            const { data } = await updateProductChannelList({
+                variables: {
+                    id: productId,
+                    input: {
+                        updateChannels: [
+                            {
+                                availableForPurchaseDate: null,
+                                channelId: 'Q2hhbm5lbDoy',
+                                isAvailableForPurchase: true,
+                                isPublished: publish == 'draft' ? false : true,
+                                publicationDate: null,
+                                visibleInListings: true,
+                            },
+                        ],
+                    },
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productChannelListingUpdate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
+                console.log('productChannelListUpdate: ', data);
+
+                variantCreate(productId);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const variantCreate = async (productId: string) => {
+        try {
+            const { data } = await createVariant({
+                variables: {
+                    input: {
+                        attributes: [],
+                        product: productId,
+                        sku: sku,
+                        stocks: [],
+                        preorder: null,
+                        trackInventory: stackMgmt,
+                    },
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productVariantCreate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
+                console.log('variantCreate: ', data);
+                const variantId = data?.productVariantCreate?.productVariant?.id;
+                variantListUpdate(variantId, productId);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const variantListUpdate = async (variantId: any, productId: any) => {
+        try {
+            const { data } = await updateVariantList({
+                variables: {
+                    id: variantId,
+                    input: [
+                        {
+                            channelId: 'Q2hhbm5lbDoy',
+                            costPrice: regularPrice,
+                            price: salePrice,
+                        },
+                    ],
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productVariantCreate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
+                console.log('variantCreate: ', data);
+                const variantId = data?.productVariantCreate?.productVariant?.id;
+                updateMetaData(productId);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const updateMetaData = async (productId: any) => {
+        console.log('label: ', label);
+        try {
+            const { data } = await updateMedatData({
+                variables: {
+                    id: productId,
+                    input: [
+                        {
+                            key: 'short_descripton',
+                            value: shortDescription,
+                        },
+                        {
+                            key: 'label',
+                            value: label.value,
+                        },
+                    ],
+                    keysToDelete: [],
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.updateMetadata?.errors?.length > 0) {
+                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+            } else {
+                console.log('success: ', data);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    // -------------------------------------New Added-------------------------------------------------------
 
     return (
-        <div >
-            <div className="  mt-6" >
+        <div>
+            <div className="  mt-6">
                 <div className="panel mb-5 flex flex-col gap-5 md:flex-row md:items-center">
                     <h5 className="text-lg font-semibold dark:text-white-light">Add New Product</h5>
 
                     {/* <div className="flex ltr:ml-auto rtl:mr-auto">
                         <button type="button" className="btn btn-primary" onClick={() => CreateProduct()}>
-                            + Create
+                            Submit
                         </button>
                     </div> */}
                 </div>
 
-                <div className="grid grid-cols-12 gap-4" ref={containerRef}>
+                <div className="grid grid-cols-12 gap-4">
                     <div className=" col-span-9">
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 Product Name
                             </label>
-                            <input type="text" placeholder="Enter Your Name" name="name" className="form-input" required />
+                            <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Enter Your Name" name="name" className="form-input" required />
+                        </div>
+                        <div className="panel mb-5">
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                                Slug
+                            </label>
+                            <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="Enter slug" name="name" className="form-input" required />
+                        </div>
+                        <div className="panel mb-5">
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                                SEO
+                            </label>
+                            <input type="text" value={seoTittle} onChange={(e) => setSeoTittle(e.target.value)} placeholder="Enter title" name="name" className="form-input" required />
+                            <textarea
+                                id="ctnTextarea"
+                                value={seoDesc}
+                                onChange={(e) => setSeoDesc(e.target.value)}
+                                rows={3}
+                                className="form-textarea"
+                                placeholder="Enter Description"
+                                required
+                            ></textarea>
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
@@ -190,10 +436,18 @@ const ProductAdd = () => {
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product Short description
                             </label>
-                            <textarea id="ctnTextarea" rows={3} className="form-textarea" placeholder="Enter Short Description" required></textarea>
+                            <textarea
+                                id="ctnTextarea"
+                                value={shortDescription}
+                                onChange={(e) => setShortDescription(e.target.value)}
+                                rows={3}
+                                className="form-textarea"
+                                placeholder="Enter Short Description"
+                                required
+                            ></textarea>
                         </div>
                         <div className="panel mb-5 ">
-                            <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
+                            {/* <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
                                 <label htmlFor="name" className="mt-2 block  pr-5 text-sm font-semibold text-gray-700">
                                     Product Data
                                 </label>
@@ -201,13 +455,13 @@ const ProductAdd = () => {
                                     <option value="1">Simple Product</option>
                                     <option value="2">Variable Product</option>
                                 </select>
-                            </div>
+                            </div> */}
                             <div className="flex flex-col  sm:flex-row">
                                 {isMounted && (
                                     <Tab.Group>
                                         <div className="mx-10 mb-5 sm:mb-0">
                                             <Tab.List className="m-auto w-24 text-center font-semibold">
-                                                <Tab as={Fragment}>
+                                                {/* <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
@@ -216,17 +470,8 @@ const ProductAdd = () => {
                                                             General
                                                         </button>
                                                     )}
-                                                </Tab>
-                                                <Tab as={Fragment}>
-                                                    {({ selected }) => (
-                                                        <button
-                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
-                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
-                                                        >
-                                                            Inventory
-                                                        </button>
-                                                    )}
-                                                </Tab>
+                                                </Tab> */}
+
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
@@ -253,6 +498,16 @@ const ProductAdd = () => {
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
                                                         relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
+                                                            Variants
+                                                        </button>
+                                                    )}
+                                                </Tab>
+                                                <Tab as={Fragment}>
+                                                    {({ selected }) => (
+                                                        <button
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                        >
                                                             Advanced
                                                         </button>
                                                     )}
@@ -262,240 +517,13 @@ const ProductAdd = () => {
                                         <Tab.Panels>
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4">
-                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
-                                                            Regular Price
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5">
-                                                        <input type="number" style={{ width: '350px' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input " required />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className=" flex items-center">
-                                                        <div className="mb-5 mr-4">
-                                                            <label htmlFor="salePrice" className="block pr-10 text-sm font-medium text-gray-700">
-                                                                Sale Price
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <input type="number" style={{ width: '350px' }} placeholder="Enter Sale Price" name="salePrice" className="form-input" required />
-                                                        </div>
-                                                        <div className="mb-5 pl-3">
-                                                            <span className="cursor-pointer text-gray-500 underline" onClick={scheduleOpen}>
-                                                                {!salePrice ? 'Schedule' : 'Cancel'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        {salePrice && (
-                                                            <>
-                                                                <div className="flex items-center">
-                                                                    <div className="mb-5 mr-4">
-                                                                        <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                                            Sale Price Date
-                                                                        </label>
-                                                                    </div>
-                                                                    <div className="mb-5">
-                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="flex items-end">
-                                                                    <div className="mb-5 pl-28">
-                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
-                                                                    </div>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="pt-5 border-t border-gray-200  w-full">
-                                                    <div className="flex items-center">
-                                                        <div className="mb-5 mr-4">
-                                                            <label htmlFor="tax-status" className="block pr-8 text-sm font-medium text-gray-700">
-                                                                Tax Status
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxStatus(e.target.value)}>
-                                                                <option value="taxable">Taxable</option>
-                                                                <option value="shipping-only">Shipping Only</option>
-                                                                <option value="none">None</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center">
-                                                        <div className="mb-5 mr-4">
-                                                            <label htmlFor="tax-status" className="block pr-10 text-sm font-medium text-gray-700">
-                                                                Tax Class
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxClass(e.target.value)}>
-                                                                <option value="standard">Standard</option>
-                                                                <option value="reduced-rate">Reduced rate</option>
-                                                                <option value="zero-rate">Zero rate</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Tab.Panel>
-                                            <Tab.Panel>
-                                                <div>
-                                                    <div className="active flex items-center">
-                                                        <div className="mb-5 mr-4 pr-24">
-                                                            <label htmlFor="regularPrice" className="block  text-sm font-medium text-gray-700">
-                                                                SKU
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <input type="text" style={{ width: '350px' }} placeholder="Enter SKU" name="sku" className="form-input" required />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="active flex items-center">
-                                                        <div className="mb-5 mr-4 pr-4">
-                                                            <label htmlFor="regularPrice" className="block  text-sm font-medium text-gray-700">
-                                                                Stock Management
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <input type="checkbox" onChange={(e) => trackStock(e.target.value)} className="form-checkbox" defaultChecked />
-                                                            <span>Track stock quantity for this product</span>{' '}
-                                                        </div>
-                                                    </div>
-                                                    {quantityTrack == true ? (
-                                                        <div>
-                                                            <div className=" flex items-center">
-                                                                <div className="mb-5 mr-4 pr-20">
-                                                                    <label htmlFor="quantity" className="block  text-sm font-medium text-gray-700">
-                                                                        Quantity
-                                                                    </label>
-                                                                </div>
-                                                                <div className="mb-5">
-                                                                    <input
-                                                                        type="number"
-                                                                        style={{ width: '350px' }}
-                                                                        placeholder="Enter Quantity"
-                                                                        name="quantity"
-                                                                        className="form-input"
-                                                                        defaultChecked
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className=" flex items-center">
-                                                                <div className="mb-20 mr-4 pr-5">
-                                                                    <label htmlFor="allow-orders" className="block  text-sm font-medium text-gray-700">
-                                                                        Allow backorders?
-                                                                    </label>
-                                                                </div>
-                                                                <div className="mb-5">
-                                                                    <div className="pb-5">
-                                                                        <input type="radio" name="default_radio" className="form-radio" defaultChecked />
-                                                                        <span>Do Not Allow</span>
-                                                                    </div>
-                                                                    <div className="pb-5">
-                                                                        <input type="radio" name="default_radio" className="form-radio" />
-                                                                        <span>Allow, but notify customer</span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <input type="radio" name="default_radio" className="form-radio" />
-                                                                        <span>Allow</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className=" flex items-center">
-                                                                <div className="mb-5 mr-4 pr-3">
-                                                                    <label htmlFor="low-stock" className="block  text-sm font-medium text-gray-700">
-                                                                        Low stock threshold
-                                                                    </label>
-                                                                </div>
-                                                                <div className="mb-5">
-                                                                    <input
-                                                                        type="number"
-                                                                        placeholder="Enter low stock"
-                                                                        style={{ width: '350px' }}
-                                                                        name="low-stock"
-                                                                        className="form-input"
-                                                                        defaultChecked
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div>
-                                                            <div className=" flex items-center">
-                                                                <div className="mb-20 mr-4 pr-16">
-                                                                    <label htmlFor="stock-status" className="block  text-sm font-medium text-gray-700">
-                                                                        Stock Status
-                                                                    </label>
-                                                                </div>
-                                                                <div className="mb-5 ">
-                                                                    <div className="pb-5">
-                                                                        <input type="radio" name="default_radio" className="form-radio" defaultChecked />
-                                                                        <span>In stock</span>
-                                                                    </div>
-                                                                    <div className="pb-5">
-                                                                        <input type="radio" name="default_radio" className="form-radio" />
-                                                                        <span>Out of stock</span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <input type="radio" name="default_radio" className="form-radio" />
-                                                                        <span>On backorder</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="active flex items-center pt-5 border-t border-gray-200">
-                                                        <div className="mb-5 mr-4 pr-10">
-                                                            <label htmlFor="sold-individually" className="block  text-sm font-medium text-gray-700">
-                                                                Sold individually
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <input type="checkbox" onChange={(e) => trackStock(e.target.value)} className="form-checkbox" defaultChecked />
-                                                            <span>Limit purchases to 1 item per order</span>{' '}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="active flex items-center pt-5 border-t border-gray-200">
-                                                        <div className="mb-5 mr-4 pr-2">
-                                                            <label htmlFor="initial-in-stock" className="block  text-sm font-medium text-gray-700">
-                                                                Initial number in stock
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <input type="text" style={{ width: '350px' }} placeholder="Enter Initial stock" name="stock" className="form-input" required />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="active flex items-center pt-5 border-t border-gray-200">
-                                                        <div className="mb-5 mr-4 pr-3">
-                                                            <label htmlFor="unit-mesurement" className="block  text-sm font-medium text-gray-700">
-                                                                Unit of measurement
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <input type="text" style={{ width: '350px' }} placeholder="Enter mesurement" name="mesurement" className="form-input" required />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Tab.Panel>
-                                            <Tab.Panel>
-                                                <div className="active flex items-center">
                                                     <div className="mb-5 mr-4 pr-6">
                                                         <label htmlFor="upsells" className="block pr-5 text-sm font-medium text-gray-700">
                                                             Upsells
                                                         </label>
                                                     </div>
                                                     <div className="mb-5" style={{ width: '350px' }}>
-                                                        <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
+                                                        <Select placeholder="Select an option" options={options} isMulti isSearchable={true} />
                                                     </div>
                                                 </div>
 
@@ -510,6 +538,7 @@ const ProductAdd = () => {
                                                     </div>
                                                 </div>
                                             </Tab.Panel>
+
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 pr-3">
@@ -557,7 +586,7 @@ const ProductAdd = () => {
                                                                                 </div>
                                                                                 <div className="mb-5" style={{ width: '350px' }}>
                                                                                     <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
-                                                                                    <div className="flex justify-between">
+                                                                                    {/* <div className="flex justify-between">
                                                                                         <div className="flex">
                                                                                             <button type="button" className="btn btn-outline-primary btn-sm mr-2 mt-1">
                                                                                                 Select All
@@ -571,7 +600,7 @@ const ProductAdd = () => {
                                                                                                 Create Value
                                                                                             </button>
                                                                                         </div>
-                                                                                    </div>
+                                                                                    </div> */}
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -608,7 +637,7 @@ const ProductAdd = () => {
                                                                                 </div>
                                                                                 <div className="mb-5" style={{ width: '350px' }}>
                                                                                     <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
-                                                                                    <div className="flex justify-between">
+                                                                                    {/* <div className="flex justify-between">
                                                                                         <div className="flex">
                                                                                             <button type="button" className="btn btn-outline-primary btn-sm mr-2 mt-1">
                                                                                                 Select All
@@ -622,7 +651,7 @@ const ProductAdd = () => {
                                                                                                 Create Value
                                                                                             </button>
                                                                                         </div>
-                                                                                    </div>
+                                                                                    </div> */}
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -632,12 +661,187 @@ const ProductAdd = () => {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div>
+                                                {/* <div>
                                                     <button type="button" className="btn btn-primary">
                                                         Save Attributes
                                                     </button>
+                                                </div> */}
+                                            </Tab.Panel>
+
+                                            <Tab.Panel>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4">
+                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            SKU
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input
+                                                            type="text"
+                                                            onChange={(e) => setSku(e.target.value)}
+                                                            value={sku}
+                                                            style={{ width: '350px' }}
+                                                            placeholder="Enter SKU"
+                                                            name="regularPrice"
+                                                            className="form-input "
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4 pr-4">
+                                                        <label htmlFor="regularPrice" className="block  text-sm font-medium text-gray-700">
+                                                            Stock Management
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input type="checkbox" value={stackMgmt} onChange={(e) => setStackMgmt(e.target.value)} className="form-checkbox" defaultChecked />
+                                                        <span>Track stock quantity for this product</span>{' '}
+                                                    </div>
+                                                </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4 ">
+                                                        <label htmlFor="quantity" className="block  text-sm font-medium text-gray-700">
+                                                            Quantity
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input
+                                                            type="number"
+                                                            onChange={(e) => setQuantity(e.target.value)}
+                                                            value={quantity}
+                                                            style={{ width: '350px' }}
+                                                            placeholder="Enter Quantity"
+                                                            name="quantity"
+                                                            className="form-input"
+                                                            defaultChecked
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4">
+                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            Regular Price
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input
+                                                            type="number"
+                                                            onChange={(e) => setRegularPrice(e.target.value)}
+                                                            value={regularPrice}
+                                                            style={{ width: '350px' }}
+                                                            placeholder="Enter Regular Price"
+                                                            name="regularPrice"
+                                                            className="form-input "
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className=" flex items-center">
+                                                        <div className="mb-5 mr-4">
+                                                            <label htmlFor="salePrice" className="block pr-10 text-sm font-medium text-gray-700">
+                                                                Sale Price
+                                                            </label>
+                                                        </div>
+                                                        <div className="mb-5">
+                                                            <input
+                                                                type="number"
+                                                                onChange={(e) => setSalePrice(e.target.value)}
+                                                                value={salePrice}
+                                                                style={{ width: '350px' }}
+                                                                placeholder="Enter Sale Price"
+                                                                name="salePrice"
+                                                                className="form-input"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        {/* <div className="mb-5 pl-3">
+                                                            <span className="cursor-pointer text-gray-500 underline" onClick={scheduleOpen}>
+                                                                {!salePrice ? 'Schedule' : 'Cancel'}
+                                                            </span>
+                                                        </div> */}
+                                                    </div>
+                                                    {/* <div>
+                                                        {salePrice && (
+                                                            <>
+                                                                <div className="flex items-center">
+                                                                    <div className="mb-5 mr-4">
+                                                                        <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                                            Sale Price Date
+                                                                        </label>
+                                                                    </div>
+                                                                    <div className="mb-5">
+                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex items-end">
+                                                                    <div className="mb-5 pl-28">
+                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div> */}
+                                                </div>
+
+                                                {/* <div>
+                                                    <div className="flex items-center">
+                                                        <div className="mb-5 mr-4">
+                                                            <label htmlFor="tax-status" className="block pr-8 text-sm font-medium text-gray-700">
+                                                                Tax Status
+                                                            </label>
+                                                        </div>
+                                                        <div className="mb-5">
+                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxStatus(e.target.value)}>
+                                                                <option value="taxable">Taxable</option>
+                                                                <option value="shipping-only">Shipping Only</option>
+                                                                <option value="none">None</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <div className="mb-5 mr-4">
+                                                            <label htmlFor="tax-status" className="block pr-10 text-sm font-medium text-gray-700">
+                                                                Tax Class
+                                                            </label>
+                                                        </div>
+                                                        <div className="mb-5">
+                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxClass(e.target.value)}>
+                                                                <option value="standard">Standard</option>
+                                                                <option value="reduced-rate">Reduced rate</option>
+                                                                <option value="zero-rate">Zero rate</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div> */}
+                                            </Tab.Panel>
+
+                                            <Tab.Panel>
+                                                <div>
+                                                    <div className="active flex items-center">
+                                                        <div className="mb-5 mr-4 pr-3">
+                                                            <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
+                                                                Menu Order
+                                                            </label>
+                                                        </div>
+                                                        <div className="mb-5">
+                                                            <input
+                                                                type="number"
+                                                                style={{ width: '350px' }}
+                                                                value={menuOrder}
+                                                                onChange={(e) => setMenuOrder(e.target.value)}
+                                                                placeholder="Enter Menu Order"
+                                                                name="regularPrice"
+                                                                className="form-input"
+                                                                required
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </Tab.Panel>
+
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-20 mr-4">
@@ -650,7 +854,7 @@ const ProductAdd = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="active flex items-center pt-5 border-t border-gray-200">
+                                                <div className="active flex items-center border-t border-gray-200 pt-5">
                                                     <div className="mb-5 mr-4 pr-3">
                                                         <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
                                                             Menu Order
@@ -661,7 +865,7 @@ const ProductAdd = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="active flex items-center pt-5 border-t border-gray-200">
+                                                <div className="active flex items-center border-t border-gray-200 pt-5">
                                                     <div className="mb-5 mr-4 pr-3">
                                                         <label htmlFor="review" className="block  text-sm font-medium text-gray-700">
                                                             Enable reviews
@@ -677,8 +881,24 @@ const ProductAdd = () => {
                                 )}
                             </div>
                         </div>
+                        <div className="panel mt-5">
+                            <div className="mb-5 border-b border-gray-200 pb-2">
+                                <h5 className=" block text-lg font-medium text-gray-700">Collections</h5>
+                            </div>
+                            <div className="mb-5">
+                                <Select placeholder="Select an collection" options={collectionList} value={selectedCollection} onChange={selectedCollections} isMulti isSearchable={true} />
+                            </div>
+                        </div>
+                        <div className="panel mt-5">
+                            <div className="mb-5 border-b border-gray-200 pb-2">
+                                <h5 className=" block text-lg font-medium text-gray-700">Label</h5>
+                            </div>
+                            <div className="mb-5">
+                                <Select placeholder="Select an label" options={options} value={label} onChange={(val) => setLabel(val)} isSearchable={true} />
+                            </div>
+                        </div>
 
-                        <div className="panel mb-5">
+                        {/* <div className="panel mb-5">
                             <div className="grid grid-cols-12 gap-4">
                                 <div className="col-span-6">
                                     <h5 className="un mb-5 block text-lg font-medium text-gray-700 underline">Permanent "New" label</h5>
@@ -698,42 +918,37 @@ const ProductAdd = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
-
                     <div className="col-span-3">
                         <div className="panel">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Publish</h5>
                             </div>
 
-                            <p className="mb-5">
+                            {/* <p className="mb-5">
                                 Status: <span className="font-bold">Published</span>{' '}
                                 <span className="ml-2 cursor-pointer text-primary underline" onClick={() => statusEditClick()}>
                                     {statusVisible ? 'Cancel' : 'Edit'}
                                 </span>
-                            </p>
+                            </p> */}
 
-                            {statusVisible ? (
-                                <>
-                                    <div className="active flex items-center">
-                                        <div className="mb-5 pr-3">
-                                            <select className="form-select w-52 flex-1 ">
-                                                <option value="published">Published</option>
-                                                <option value="pending-reviews">Pending Reviews</option>
-                                                <option value="draft">Draft</option>
-                                            </select>
-                                        </div>
-                                        <div className="mb-5">
+                            <div className="active flex items-center">
+                                <div className="mb-5 w-full pr-3">
+                                    <select className="form-select  flex-1 " value={publish} onChange={(e) => setPublish(e.target.value)}>
+                                        <option value="published">Published</option>
+                                        {/* <option value="pending-reviews">Pending Reviews</option> */}
+                                        <option value="draft">Draft</option>
+                                    </select>
+                                </div>
+                                {/* <div className="mb-5">
                                             <button type="button" className="btn btn-outline-primary">
                                                 Ok
                                             </button>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : null}
+                                        </div> */}
+                            </div>
 
-                            <p className="mb-5">
+                            {/* <p className="mb-5">
                                 Visibility: <span className="font-bold">Public</span>{' '}
                                 <span className="ml-2 cursor-pointer text-primary underline" onClick={() => PublicEditClick()}>
                                     {publicVisible ? 'Cancel' : 'Edit'}
@@ -767,9 +982,9 @@ const ProductAdd = () => {
                                         </div>
                                     </div>
                                 </>
-                            ) : null}
+                            ) : null} */}
 
-                            <p className="mb-5">
+                            {/* <p className="mb-5">
                                 Published on: <span className="font-bold">May 19, 2023 at 17:53</span>{' '}
                                 <span className="ml-2 cursor-pointer text-primary underline" onClick={() => PublishedDateClick()}>
                                     {publishedDate ? 'Cancel' : 'Edit'}
@@ -789,15 +1004,15 @@ const ProductAdd = () => {
                                         </div>
                                     </div>
                                 </>
-                            ) : null}
-                            <p className="mb-5">
+                            ) : null} */}
+                            {/* <p className="mb-5">
                                 Catalog visibility: <span className="font-bold">Shop and search results</span>{' '}
                                 <span className="ml-2 cursor-pointer text-primary underline" onClick={() => CatalogEditClick()}>
                                     {catalogVisible ? 'Cancel' : 'Edit'}
                                 </span>
-                            </p>
+                            </p> */}
 
-                            {catalogVisible ? (
+                            {/* {catalogVisible ? (
                                 <>
                                     <div className="active">
                                         <p className="mb-2 text-sm text-gray-500">This setting determines which shop pages products will be listed on.</p>
@@ -834,10 +1049,10 @@ const ProductAdd = () => {
                                         </div>
                                     </div>
                                 </>
-                            ) : null}
+                            ) : null} */}
 
-                            <button type="submit" className="btn btn-primary w-full">
-                                Publish
+                            <button type="submit" className="btn btn-primary w-full" onClick={() => CreateProduct()}>
+                                Update
                             </button>
                         </div>
 
@@ -862,17 +1077,19 @@ const ProductAdd = () => {
                             </div>
 
                             <p className="mt-5 cursor-pointer text-primary underline">Add product gallery images</p>
-                            <button type="button" className="btn btn-primary mt-5" onClick={() => productVideoPopup()}>
+                            {/* <button type="button" className="btn btn-primary mt-5" onClick={() => productVideoPopup()}>
                                 + Video
-                            </button>
+                            </button> */}
                         </div>
 
                         <div className="panel mt-5">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Categories</h5>
                             </div>
-
                             <div className="mb-5">
+                                <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
+                            </div>
+                            {/* <div className="mb-5">
                                 {isMounted && (
                                     <Tab.Group>
                                         <Tab.List className="mt-3 flex flex-wrap border-b border-white-light dark:border-[#191e3a]">
@@ -944,8 +1161,8 @@ const ProductAdd = () => {
                                         </Tab.Panels>
                                     </Tab.Group>
                                 )}
-                            </div>
-                            <p className="cursor-pointer text-primary underline" onClick={() => addCategoryClick()}>
+                            </div> */}
+                            {/* <p className="cursor-pointer text-primary underline" onClick={() => addCategoryClick()}>
                                 {addCategory ? 'Cancel' : '+ Add New Category'}
                             </p>
                             {addCategory && (
@@ -962,7 +1179,7 @@ const ProductAdd = () => {
                                         </button>
                                     </div>
                                 </>
-                            )}
+                            )} */}
                         </div>
 
                         <div className="panel mt-5">
@@ -1008,7 +1225,6 @@ const ProductAdd = () => {
                     </div>
                 </div>
             </div>
-            {/* PRODUCT SECTION IMAGE POPUP */}{' '}
             <Transition appear show={modal2} as={Fragment}>
                 <Dialog as="div" open={modal2} onClose={() => setModal2(false)}>
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
@@ -1283,4 +1499,4 @@ const ProductAdd = () => {
     );
 };
 
-export default ProductAdd;
+export default ProductEdit;
