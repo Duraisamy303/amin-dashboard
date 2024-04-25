@@ -32,6 +32,7 @@ const ReactQuill = dynamic(import('react-quill'), { ssr: false });
 
 import { Tab } from '@headlessui/react';
 import AnimateHeight from 'react-animate-height';
+import IconTrash from '@/components/Icon/IconTrash';
 const ProductEdit = () => {
     const router = useRouter();
     const dispatch = useDispatch();
@@ -39,6 +40,7 @@ const ProductEdit = () => {
 
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
+    const [modal3, setModal3] = useState(false);
 
     const [value, setValue] = useState('demo content'); // quill text editor
     const [isMounted, setIsMounted] = useState(false); //tabs
@@ -51,6 +53,7 @@ const ProductEdit = () => {
     const [publishedDate, setPublishedDate] = useState(false);
     const [catalogVisible, setCatalogVisible] = useState(false);
     const [addCategory, setAddCategory] = useState(false);
+
 
     const [quantityTrack, setQuantityTrack] = useState(true);
 
@@ -144,9 +147,44 @@ const ProductEdit = () => {
     const productImagePopup = () => {
         setModal2(true);
     };
+    const productImagesUploader = () => {
+        setModal3(true);
+    };
 
     const productVideoPopup = () => {
         setModal1(true);
+    };
+
+    // image
+    const [imageUrl, setImageUrl] = useState('');
+    const [thumbnail, setThumbnail] = useState('');
+    // State to track whether delete icon should be displayed
+
+    // Function to handle file selection
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = event.target.files[0];
+        if (selectedFile) {
+            // Assuming you only need the URL of the selected image
+            const imageUrl = URL.createObjectURL(selectedFile);
+            // Set the image URL in the state or use it as needed
+            setImageUrl(imageUrl);
+           
+        }
+    };
+
+    // Function to handle upload button click
+    const handleUpload = () => {
+        // Here you can perform any upload operation if needed
+        console.log('Uploading image:', imageUrl);
+        setThumbnail(imageUrl);
+        setModal3(false);
+    };
+
+    // Function to handle delete icon click
+    const handleDelete = () => {
+        // Clear the image URL from the state
+        setImageUrl('');
+        setThumbnail('');
     };
 
     return (
@@ -750,12 +788,22 @@ const ProductEdit = () => {
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Image</h5>
                             </div>
-                            <div onClick={() => productImagePopup()}>
-                                <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" />
+                            <div
+                                //  onClick={() => productImagePopup()}
+                                onClick={() => productImagesUploader()}
+                                className="cursor-pointer"
+                                title="Upload Images"
+                            >
+                                {thumbnail == '' || null? (
+                                    <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" />
+                                ) : (
+                                    <img src={thumbnail} alt="Product image" className="h-60 object-cover" />
+                                )}
+                                {/* <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" /> */}
                             </div>
                             <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
 
-                            <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
+                            <p className="mt-5 cursor-pointer text-danger underline" onClick={handleDelete}>Remove product image</p>
                         </div>
 
                         <div className="panel mt-5">
@@ -1105,6 +1153,7 @@ const ProductEdit = () => {
                     </div>
                 </Dialog>
             </Transition>
+
             {/* product video popup */}
             <Transition appear show={modal1} as={Fragment}>
                 <Dialog as="div" open={modal1} onClose={() => setModal1(false)}>
@@ -1177,6 +1226,63 @@ const ProductEdit = () => {
                                                     </Tab.Panel>
                                                 </Tab.Panels>
                                             </Tab.Group>
+                                        )}
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
+
+            {/* product image upload popup */}
+            <Transition appear show={modal3} as={Fragment}>
+                <Dialog as="div" open={modal3} onClose={() => setModal3(false)}>
+                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0" />
+                    </Transition.Child>
+                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between border-b bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <div className="text-lg font-bold">Product gallery Image</div>
+                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal3(false)}>
+                                            <IconX />
+                                        </button>
+                                    </div>
+                                    <div className="m-5 pt-5">
+                                        {/* Input for selecting file */}
+                                        <input type="file" id="product-gallery-image" className="form-input" onChange={handleFileChange} />
+
+                                        {/* Button to upload */}
+                                        <div className="flex justify-end">
+                                            <button className="btn btn-primary mt-5" onClick={handleUpload}>
+                                                Upload
+                                            </button>
+                                        </div>
+
+                                        {/* Display preview of the selected image */}
+                                        {imageUrl && (
+                                            <div className="mt-5 bg-[#f0f0f0] p-5">
+                                                <div className=" relative h-20 w-20">
+                                                    <img src={imageUrl} alt="Selected" className="h-full w-full object-cover " />
+
+                                                    {/* Delete icon */}
+
+                                                    <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={handleDelete}>
+                                                        <IconTrashLines />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </Dialog.Panel>
