@@ -11,6 +11,9 @@
   "dependencies": {
     "@apollo/client": "^3.9.10",
     "@editorjs/editorjs": "^2.29.1",
+    "@editorjs/header": "^2.8.1",
+    "@editorjs/list": "^1.9.0",
+    "@editorjs/table": "^2.3.0",
     "@emotion/react": "^11.10.6",
     "@fullcalendar/core": "^6.1.4",
     "@fullcalendar/daygrid": "^6.1.4",
