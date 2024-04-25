@@ -59,7 +59,10 @@ const ProductEdit = () => {
         setIsMounted(true);
     });
     const [salePrice, setSalePrice] = useState('');
-    const [menuOrder, setMenuOrder] = useState('');
+    const [menuOrder, setMenuOrder] = useState(0);
+    console.log('menuOrder: ', menuOrder);
+
+    // ------------------------------------------New Data--------------------------------------------
 
     const [productName, setProductName] = useState('');
     const [slug, setSlug] = useState('');
@@ -70,18 +73,18 @@ const ProductEdit = () => {
     const [sku, setSku] = useState('');
     const [quantity, setQuantity] = useState('');
     const [regularPrice, setRegularPrice] = useState('');
-    const [selectedCollection, setSelectedCollection] = useState('');
+    const [selectedCollection, setSelectedCollection] = useState([]);
     const [stackMgmt, setStackMgmt] = useState('');
+    const [publish, setPublish] = useState('published');
+
+    // ------------------------------------------New Data--------------------------------------------
 
     const [statusVisible, setStatusVisible] = useState(false);
-
     const [publicVisible, setPublicVisible] = useState(false);
     const [publishedDate, setPublishedDate] = useState(false);
     const [catalogVisible, setCatalogVisible] = useState(false);
     const [addCategory, setAddCategory] = useState(false);
-
     const [quantityTrack, setQuantityTrack] = useState(true);
-
     const [active, setActive] = useState<string>('1');
     // track stock
     const trackStock = (value: any) => {
@@ -152,7 +155,7 @@ const ProductEdit = () => {
 
     const [categoryList, setCategoryList] = useState([]);
     const [collectionList, setCollectionList] = useState([]);
-    const [label, setLabel] = useState([]);
+    const [label, setLabel] = useState('');
 
     const [productType, setProductType] = useState([]);
     const [selectedCat, setselectedCat] = useState('');
@@ -227,7 +230,7 @@ const ProductEdit = () => {
         try {
             const catId = selectedCat?.value;
             console.log('catId: ', catId);
-            let collectionId = [];
+            let collectionId: any[] = [];
             if (selectedCollection?.length > 0) {
                 collectionId = selectedCollection?.map((item) => item.value);
             }
@@ -247,6 +250,7 @@ const ProductEdit = () => {
                         },
                         slug: slug,
                         order_no: menuOrder,
+                        ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
                     },
                 },
             });
@@ -273,7 +277,7 @@ const ProductEdit = () => {
                                 availableForPurchaseDate: null,
                                 channelId: 'Q2hhbm5lbDoy',
                                 isAvailableForPurchase: true,
-                                isPublished: true,
+                                isPublished: publish == 'draft' ? false : true,
                                 publicationDate: null,
                                 visibleInListings: true,
                             },
@@ -349,6 +353,7 @@ const ProductEdit = () => {
     };
 
     const updateMetaData = async (productId: any) => {
+        console.log('label: ', label);
         try {
             const { data } = await updateMedatData({
                 variables: {
@@ -360,7 +365,7 @@ const ProductEdit = () => {
                         },
                         {
                             key: 'label',
-                            value: label,
+                            value: label.value,
                         },
                     ],
                     keysToDelete: [],
@@ -385,11 +390,11 @@ const ProductEdit = () => {
                 <div className="panel mb-5 flex flex-col gap-5 md:flex-row md:items-center">
                     <h5 className="text-lg font-semibold dark:text-white-light">Add New Product</h5>
 
-                    <div className="flex ltr:ml-auto rtl:mr-auto">
+                    {/* <div className="flex ltr:ml-auto rtl:mr-auto">
                         <button type="button" className="btn btn-primary" onClick={() => CreateProduct()}>
                             Submit
                         </button>
-                    </div>
+                    </div> */}
                 </div>
 
                 <div className="grid grid-cols-12 gap-4">
@@ -849,7 +854,7 @@ const ProductEdit = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="active flex items-center">
+                                                <div className="active flex items-center border-t border-gray-200 pt-5">
                                                     <div className="mb-5 mr-4 pr-3">
                                                         <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
                                                             Menu Order
@@ -860,7 +865,7 @@ const ProductEdit = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="active flex items-center">
+                                                <div className="active flex items-center border-t border-gray-200 pt-5">
                                                     <div className="mb-5 mr-4 pr-3">
                                                         <label htmlFor="review" className="block  text-sm font-medium text-gray-700">
                                                             Enable reviews
@@ -889,7 +894,7 @@ const ProductEdit = () => {
                                 <h5 className=" block text-lg font-medium text-gray-700">Label</h5>
                             </div>
                             <div className="mb-5">
-                                <Select placeholder="Select an label" options={options} isMulti value={label} onChange={(val) => setLabel(val)} isSearchable={false} />
+                                <Select placeholder="Select an label" options={options} value={label} onChange={(val) => setLabel(val)} isSearchable={true} />
                             </div>
                         </div>
 
@@ -916,38 +921,34 @@ const ProductEdit = () => {
                         </div> */}
                     </div>
                     <div className="col-span-3">
-                        {/* <div className="panel">
+                        <div className="panel">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Publish</h5>
                             </div>
 
-                            <p className="mb-5">
+                            {/* <p className="mb-5">
                                 Status: <span className="font-bold">Published</span>{' '}
                                 <span className="ml-2 cursor-pointer text-primary underline" onClick={() => statusEditClick()}>
                                     {statusVisible ? 'Cancel' : 'Edit'}
                                 </span>
-                            </p>
+                            </p> */}
 
-                            {statusVisible ? (
-                                <>
-                                    <div className="active flex items-center">
-                                        <div className="mb-5 pr-3">
-                                            <select className="form-select w-52 flex-1 ">
-                                                <option value="published">Published</option>
-                                                <option value="pending-reviews">Pending Reviews</option>
-                                                <option value="draft">Draft</option>
-                                            </select>
-                                        </div>
-                                        <div className="mb-5">
+                            <div className="active flex items-center">
+                                <div className="mb-5 w-full pr-3">
+                                    <select className="form-select  flex-1 " value={publish} onChange={(e) => setPublish(e.target.value)}>
+                                        <option value="published">Published</option>
+                                        {/* <option value="pending-reviews">Pending Reviews</option> */}
+                                        <option value="draft">Draft</option>
+                                    </select>
+                                </div>
+                                {/* <div className="mb-5">
                                             <button type="button" className="btn btn-outline-primary">
                                                 Ok
                                             </button>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : null}
+                                        </div> */}
+                            </div>
 
-                            <p className="mb-5">
+                            {/* <p className="mb-5">
                                 Visibility: <span className="font-bold">Public</span>{' '}
                                 <span className="ml-2 cursor-pointer text-primary underline" onClick={() => PublicEditClick()}>
                                     {publicVisible ? 'Cancel' : 'Edit'}
@@ -981,9 +982,9 @@ const ProductEdit = () => {
                                         </div>
                                     </div>
                                 </>
-                            ) : null}
+                            ) : null} */}
 
-                            <p className="mb-5">
+                            {/* <p className="mb-5">
                                 Published on: <span className="font-bold">May 19, 2023 at 17:53</span>{' '}
                                 <span className="ml-2 cursor-pointer text-primary underline" onClick={() => PublishedDateClick()}>
                                     {publishedDate ? 'Cancel' : 'Edit'}
@@ -1003,15 +1004,15 @@ const ProductEdit = () => {
                                         </div>
                                     </div>
                                 </>
-                            ) : null}
-                            <p className="mb-5">
+                            ) : null} */}
+                            {/* <p className="mb-5">
                                 Catalog visibility: <span className="font-bold">Shop and search results</span>{' '}
                                 <span className="ml-2 cursor-pointer text-primary underline" onClick={() => CatalogEditClick()}>
                                     {catalogVisible ? 'Cancel' : 'Edit'}
                                 </span>
-                            </p>
+                            </p> */}
 
-                            {catalogVisible ? (
+                            {/* {catalogVisible ? (
                                 <>
                                     <div className="active">
                                         <p className="mb-2 text-sm text-gray-500">This setting determines which shop pages products will be listed on.</p>
@@ -1048,12 +1049,12 @@ const ProductEdit = () => {
                                         </div>
                                     </div>
                                 </>
-                            ) : null}
+                            ) : null} */}
 
-                            <button type="submit" className="btn btn-primary w-full">
+                            <button type="submit" className="btn btn-primary w-full" onClick={() => CreateProduct()}>
                                 Update
                             </button>
-                        </div> */}
+                        </div>
 
                         <div className="panel mt-5">
                             <div className="mb-5 border-b border-gray-200 pb-2">

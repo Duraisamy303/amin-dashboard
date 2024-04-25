@@ -29,50 +29,13 @@ import { useQuery } from '@apollo/client';
 import { PRODUCT_LIST } from '@/query/product';
 import moment from 'moment';
 
-const rowData = [
-    {
-        id: 1,
-        image: `${Image1.src}`,
-        name: 'Necklace Yazhu',
-        sku: 'PBS_NP_34',
-        stock: 'Out of stock',
-        price: 10800.0,
-        categories: 'Necklace',
-        tags: 'New',
-        date: '26-03-2022',
-    },
-    {
-        id: 2,
-        image: `${Image2.src}`,
-        name: 'Necklace Preetham',
-        sku: 'PBS_NP_31',
-        stock: 'In stock ',
-        price: 14450.0,
-        categories: 'Earings',
-        tags: 'New',
-        date: '09-10-2023',
-    },
-    {
-        id: 3,
-        image: `${Image3.src}`,
-        name: 'Necklace Shila',
-        sku: 'PBS_NP_32',
-        stock: 'Out of stock',
-        price: 18900.0,
-        categories: 'New Arrivals',
-        tags: 'New',
-        date: '01-01-2024',
-    },
-];
 const ProductList = () => {
     const router = useRouter();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const { error, data: productData } = useQuery(PRODUCT_LIST, {
-        variables: { channel: 'india-channel', first: 20 }, // Pass variables here
+        variables: { channel: 'india-channel', first: 1000 }, // Pass variables here
     });
-
-    console.log('productData: ', productData);
 
     const [productList, setProductList] = useState([]);
     const [loading, setLoading] = useState(false);

@@ -86,7 +86,7 @@ export const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => 
 export const sampleParams = {
     after: null,
     first: 100,
-    query: '',
+    // query: '',
     PERMISSION_HANDLE_CHECKOUTS: true,
     PERMISSION_HANDLE_PAYMENTS: true,
     PERMISSION_HANDLE_TAXES: true,

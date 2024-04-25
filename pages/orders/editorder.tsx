@@ -66,11 +66,11 @@ const Editorder = () => {
 
     const { data: countryData } = useQuery(COUNTRY_LIST);
 
-    const { data: shippingProvider } = useQuery(CUSTOMER_LIST,{
-        variables:sampleParams
+    const { data: shippingProvider } = useQuery(CUSTOMER_LIST, {
+        variables: sampleParams,
     });
 
-    console.log("shippingProvider: ", shippingProvider);
+    console.log('shippingProvider: ', shippingProvider);
 
     const [orderData, setOrderData] = useState({});
     const [customerData, setCustomerData] = useState([]);
@@ -157,8 +157,7 @@ const Editorder = () => {
                     paymentMethod: '',
                     transactionId: '',
                     countryArea: billing?.country?.country,
-                    pincode:billing?.postalCode
-
+                    pincode: billing?.postalCode,
                 };
 
                 // Sample data for shipping
@@ -176,7 +175,7 @@ const Editorder = () => {
                     paymentMethod: '',
                     transactionId: '',
                     countryArea: shipping?.country?.country,
-                    pincode:shipping?.postalCode
+                    pincode: shipping?.postalCode,
                 };
 
                 // Update formData state with sample data
@@ -446,13 +445,17 @@ const Editorder = () => {
             .validate(value)
             .then(() => {
                 // No validation error, clear the error message
-                setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
+                setErrors((prevErrors:any) => ({ ...prevErrors, [name]: '' }));
             })
-            .catch((error) => {
+            .catch((error:any) => {
                 // Validation error, set the error message
-                setErrors((prevErrors) => ({ ...prevErrors, [name]: error.message }));
+                setErrors((prevErrors:any) => ({ ...prevErrors, [name]: error.message }));
             });
     };
+
+    const handleAddOrder = () => {
+        router.push('/orders/addorder');
+    }
 
     return (
         <>
@@ -462,7 +465,7 @@ const Editorder = () => {
                 <>
                     <div className="panel mb-5 flex items-center justify-between gap-3 p-5 ">
                         <h3 className="text-lg font-semibold dark:text-white-light">Edit Order</h3>
-                        <button type="button" className="btn btn-primary">
+                        <button type="button" className="btn btn-primary" onClick={() => handleAddOrder()}>
                             Add Order
                         </button>
                     </div>
@@ -515,7 +518,7 @@ const Editorder = () => {
 
                                             {/* <input list="statusOptions" name="status" className="form-select" /> */}
                                             <select className="form-select">
-                                                {customerData?.map((item) => (
+                                                {customerData?.map((item:any) => (
                                                     <option value="processing">{item?.node?.name}</option>
                                                 ))}
                                             </select>
@@ -1308,29 +1311,49 @@ const Editorder = () => {
                             </div>
                         </div>
 
-                        <div className="panel col-span-3 mb-5 p-5 ">
-                            <div className="mb-5 border-b border-gray-200 pb-2 ">
-                                <h3 className="text-lg font-semibold">Order Notes</h3>
+                        <div className="col-span-3">
+                            <div className="panel mb-5 p-5">
+                                <div className="mb-5 border-b border-gray-200 pb-2 ">
+                                    <h3 className="text-lg font-semibold">Order Actions</h3>
+                                </div>
+                                <div>
+                                    <select className="form-select mr-3">
+                                        <option value="">Choose An Action</option>
+                                        <option value="Email Invoice">Email Invoice</option>
+                                    </select>
+                                </div>
+                                <div className="mt-5 border-t border-gray-200 pb-2 ">
+                                    <div className="flex items-center justify-between pt-3">
+                                        <a href="#" className="text-danger underline">
+                                            Move To Trash
+                                        </a>
+                                        <button className="btn btn-outline-primary">Update</button>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="mb-5 border-b border-gray-200 pb-2 ">
-                                {orderData?.events?.length > 0 ? (
-                                    orderData?.events?.map((data: any) => (
-                                        <div className="mb-5">
-                                            <div className="text-gray-500">
-                                                <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
-                                                <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>
-                                                {data?.user && data?.user?.email && `by ${data.user.email}`}
-                                                <span className="ml-2 cursor-pointer text-danger" onClick={() => removeNotes(data)}>
-                                                    Delete note
-                                                </span>
+                            <div className="panel mb-5 p-5">
+                                <div className="mb-5 border-b border-gray-200 pb-2 ">
+                                    <h3 className="text-lg font-semibold">Order Notes</h3>
+                                </div>
+                                <div className="mb-5 border-b border-gray-200 pb-2 ">
+                                    {orderData?.events?.length > 0 ? (
+                                        orderData?.events?.map((data: any) => (
+                                            <div className="mb-5">
+                                                <div className="text-gray-500">
+                                                    <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
+                                                    <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>
+                                                    {data?.user && data?.user?.email && `by ${data.user.email}`}
+                                                    <span className="ml-2 cursor-pointer text-danger" onClick={() => removeNotes(data)}>
+                                                        Delete note
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <span className=" mr-1 border-b border-dotted border-gray-500">No data found</span>
-                                )}
+                                        ))
+                                    ) : (
+                                        <span className=" mr-1 border-b border-dotted border-gray-500">No data found</span>
+                                    )}
 
-                                {/* <div className="mb-5">
+                                    {/* <div className="mb-5">
                                     <div className="text-gray-500">
                                         <div className="mb-2 bg-blue-200 p-3">Hi</div>
                                         <span class="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
@@ -1345,40 +1368,41 @@ const Editorder = () => {
                                         <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
                                     </div>
                                 </div> */}
+                                </div>
+                                <Formik
+                                    initialValues={{ message: '', mail: false }}
+                                    validationSchema={SubmittedForm}
+                                    onSubmit={(values, { resetForm }) => {
+                                        onSubmit(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
+                                    }}
+                                >
+                                    {({ errors, submitCount, touched, setFieldValue, values }) => (
+                                        <Form>
+                                            <label className="text-gray-700">Add note</label>
+                                            <Field name="message" component="textarea" id="message" placeholder="Add a note" className="form-textarea" />
+
+                                            {errors.message && touched.message && <div className="mt-1 text-danger">{errors.message}</div>}
+                                            {/* <textarea className="form-textarea" rows="2" placeholder="Add a note"></textarea> */}
+
+                                            <div className="mt-3 flex items-center justify-between">
+                                                <select
+                                                    className="form-select mr-3"
+                                                    onChange={(e) => {
+                                                        const modeValue = e.target.value === 'private-note';
+                                                        setFieldValue('mail', modeValue);
+                                                    }}
+                                                >
+                                                    <option value="private-note">Private note</option>
+                                                    <option value="note-customer">Note to customer</option>
+                                                </select>
+                                                <button type="submit" className="btn btn-outline-primary">
+                                                    Add
+                                                </button>
+                                            </div>
+                                        </Form>
+                                    )}
+                                </Formik>
                             </div>
-                            <Formik
-                                initialValues={{ message: '', mail: false }}
-                                validationSchema={SubmittedForm}
-                                onSubmit={(values, { resetForm }) => {
-                                    onSubmit(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
-                                }}
-                            >
-                                {({ errors, submitCount, touched, setFieldValue, values }) => (
-                                    <Form>
-                                        <label className="text-gray-700">Add note</label>
-                                        <Field name="message" component="textarea" id="message" placeholder="Add a note" className="form-textarea" />
-
-                                        {errors.message && touched.message && <div className="mt-1 text-danger">{errors.message}</div>}
-                                        {/* <textarea className="form-textarea" rows="2" placeholder="Add a note"></textarea> */}
-
-                                        <div className="mt-3 flex items-center justify-between">
-                                            <select
-                                                className="form-select mr-3"
-                                                onChange={(e) => {
-                                                    const modeValue = e.target.value === 'private-note';
-                                                    setFieldValue('mail', modeValue);
-                                                }}
-                                            >
-                                                <option value="private-note">Private note</option>
-                                                <option value="note-customer">Note to customer</option>
-                                            </select>
-                                            <button type="submit" className="btn btn-outline-primary">
-                                                Add
-                                            </button>
-                                        </div>
-                                    </Form>
-                                )}
-                            </Formik>
                         </div>
                     </div>
                     <Modal
