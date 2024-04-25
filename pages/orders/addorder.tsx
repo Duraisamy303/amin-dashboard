@@ -14,6 +14,7 @@ import IconX from '@/components/Icon/IconX';
 import { Dialog, Transition } from '@headlessui/react';
 import IconEdit from '@/components/Icon/IconEdit';
 import Modal from '@/components/Modal';
+import IconTrashLines from '@/components/Icon/IconTrashLines';
 
 const AddOrder = () => {
     const router = useRouter();
@@ -643,7 +644,7 @@ const AddOrder = () => {
                                             {data?.map((item: any, index: any) => {
                                                 console.log('item: ', item);
                                                 return item?.type == 'product' ? (
-                                                    <tr className="panel align-top" key={index}>
+                                                    <tr className="align-top" key={index}>
                                                         <td>
                                                             <input
                                                                 type="text"
@@ -678,16 +679,16 @@ const AddOrder = () => {
                                                                     setSelectedProduct(index);
                                                                 }}
                                                             >
-                                                                <IconEdit className="h-5 w-5" />
+                                                                <IconPencil className="h-5 w-5 mr-3" />
                                                             </button>
                                                             <button type="button" onClick={() => removeItem(item)}>
-                                                                <IconX className="h-5 w-5" />
+                                                                <IconTrashLines className="h-5 w-5" />
                                                             </button>
                                                         </td>
                                                     </tr>
                                                 ) : item?.type == 'fee' ? (
                                                     <>
-                                                        <tr className="panel align-top" key={index}>
+                                                        <tr className="align-top" key={index}>
                                                             <td>
                                                                 <input
                                                                     type="text"
@@ -710,7 +711,7 @@ const AddOrder = () => {
                                                             </td>
                                                             <td></td>
                                                             <td>${item.quantity * item.amount}</td>
-                                                            <td>
+                                                            <td >
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => {
@@ -721,17 +722,17 @@ const AddOrder = () => {
                                                                         setSelectedFee(index);
                                                                     }}
                                                                 >
-                                                                    <IconEdit className="h-5 w-5" />
+                                                                    <IconPencil className="h-5 w-5 mr-3" />
                                                                 </button>
                                                                 <button type="button" onClick={() => removeItem(item)}>
-                                                                    <IconX className="h-5 w-5" />
+                                                                    <IconTrashLines className="h-5 w-5" />
                                                                 </button>
                                                             </td>
                                                         </tr>
                                                     </>
                                                 ) : item?.type == 'shipping' ? (
                                                     <>
-                                                        <tr className="panel align-top" key={index}>
+                                                        <tr className="align-top" key={index}>
                                                             <td>
                                                                 <input
                                                                     type="text"
@@ -764,10 +765,10 @@ const AddOrder = () => {
                                                                         setSelectedShipping(index);
                                                                     }}
                                                                 >
-                                                                    <IconEdit className="h-5 w-5" />
+                                                                    <IconPencil className="h-5 w-5 mr-3" />
                                                                 </button>
                                                                 <button type="button" onClick={() => removeItem(item)}>
-                                                                    <IconX className="h-5 w-5" />
+                                                                    <IconTrashLines className="h-5 w-5" />
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -808,7 +809,7 @@ const AddOrder = () => {
                                         <button type="button" className="btn btn-primary" onClick={() => addItem()}>
                                             Save
                                         </button>
-                                        <button type="button" className="btn btn-outline-primary" onClick={() => setbtnOpen(false)}>
+                                        <button type="button" className="btn btn-outline-danger" onClick={() => setbtnOpen(false)}>
                                             cancel
                                         </button>
                                         <button type="button" className="btn btn-outline-primary">
@@ -881,10 +882,10 @@ const AddOrder = () => {
                                     </select>
                                 </div>
                                 <div className="mt-5 border-t border-gray-200 pb-2 ">
-                                    <div className="flex items-center justify-between pt-3">
-                                        <a href="#" className="text-danger underline">
+                                    <div className="flex flex-row-reverse items-center justify-between pt-3">
+                                        {/* <a href="#" className="text-danger underline">
                                             Move To Trash
-                                        </a>
+                                        </a> */}
                                         <button className="btn btn-outline-primary">Create</button>
                                     </div>
                                 </div>
