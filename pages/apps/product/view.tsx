@@ -1,9 +1,55 @@
-import React from 'react'
+import { useEffect, useRef, useState } from 'react';
 
-const view = () => {
+const View = () => {
+  const editorRef = useRef(null);
+  const [editorInstance, setEditorInstance] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !editorRef.current) return;
+
+    import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+      const editor = new EditorJS({
+        holder: editorRef.current,
+        tools: {
+          header: {
+            class: require('@editorjs/header')
+          },
+         
+          list: {
+            class: require('@editorjs/list')
+          },
+          table: {
+            class: require('@editorjs/table')
+          },
+        },
+      });
+      setEditorInstance(editor);
+    });
+
+    return () => {
+      if (editorInstance) {
+        editorInstance.destroy();
+      }
+    };
+  }, []);
+
+  const handleSave = async () => {
+    if (editorInstance) {
+      try {
+        const savedContent = await editorInstance.save();
+        console.log("Editor content:", savedContent);
+      } catch (error) {
+        console.error("Failed to save editor content:", error);
+      }
+    }
+  };
+
   return (
-    <div>view</div>
-  )
+    <div className="panel mb-5 p-5">
+      <div ref={editorRef} className="border border-gray-200 mb-5"></div>
+      <button onClick={handleSave} className="btn btn-primary">Save</button>
+    </div>
+  );
 }
 
-export default view
+export default View;
