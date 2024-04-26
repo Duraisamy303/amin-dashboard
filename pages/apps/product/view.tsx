@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 const View = () => {
   const editorRef = useRef(null);
   const [editorInstance, setEditorInstance] = useState<any>(null);
+  console.log("editorInstance: ", editorInstance);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !editorRef.current) return;
@@ -45,7 +46,7 @@ const View = () => {
   };
 
   return (
-    <div className="panel mb-5 p-5">
+    <div className="panel mb-5 p-5 h-52">
       <div ref={editorRef} className="border border-gray-200 mb-5"></div>
       <button onClick={handleSave} className="btn btn-primary">Save</button>
     </div>

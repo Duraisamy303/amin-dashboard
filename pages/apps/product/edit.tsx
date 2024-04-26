@@ -41,6 +41,7 @@ import {
     CREATE_VARIANT,
     PRODUCT_CAT_LIST,
     PRODUCT_DETAILS,
+    PRODUCT_LIST_TAGS,
     PRODUCT_TYPE_LIST,
     UPDATE_META_DATA,
     UPDATE_PRODUCT_CHANNEL,
@@ -102,10 +103,16 @@ const ProductEdit = (props: any) => {
     // -------------------------------------New Added-------------------------------------------------------
 
     const { data: productDetails } = useQuery(PRODUCT_DETAILS, {
-        variables: { ...sampleParams, id: id },
+        variables: { channel: 'india-channel', id: id },
+    });
+    console.log("productDetails: ", productDetails);
+    
+
+    const { data: tagsList } = useQuery(PRODUCT_LIST_TAGS, {
+        variables: { channel: 'india-channel', id: id },
     });
 
-    console.log("productDetails: ", productDetails);
+    // console.log('productDetails: ', productDetails);
 
     const { error, data: orderDetails } = useQuery(CHANNEL_LIST, {
         variables: sampleParams,
@@ -130,6 +137,8 @@ const ProductEdit = (props: any) => {
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
 
     const [categoryList, setCategoryList] = useState([]);
+    const [tagList, setTagList] = useState([]);
+    const [selectedTag, setSelectedTag] = useState({});
     const [collectionList, setCollectionList] = useState([]);
     const [label, setLabel] = useState('');
     const [productData, setProductData] = useState({});
@@ -140,6 +149,10 @@ const ProductEdit = (props: any) => {
     useEffect(() => {
         productsDetails();
     }, [productDetails]);
+
+    useEffect(() => {
+        tags_list();
+    }, [tagsList]);
 
     useEffect(() => {
         category_list();
@@ -170,6 +183,8 @@ const ProductEdit = (props: any) => {
                     console.log('data?.category?.id: ', data?.category?.id);
                     setSku(data?.variants[0]?.sku);
                     setStackMgmt(data?.variants[0]?.trackInventory);
+
+                    // setRegularPrice()
                 }
             }
         } catch (error) {
@@ -187,6 +202,22 @@ const ProductEdit = (props: any) => {
                     });
 
                     setCategoryList(dropdownData);
+                }
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const tags_list = async () => {
+        try {
+            if (tagsList) {
+                if (tagsList && tagsList?.tags?.edges?.length > 0) {
+                    const list = tagsList?.tags?.edges;
+                    const dropdownData = list?.map((item: any) => {
+                        return { value: item.node?.id, label: item.node?.name };
+                    });
+                    setTagList(dropdownData);
                 }
             }
         } catch (error) {
@@ -706,7 +737,7 @@ const ProductEdit = (props: any) => {
                                                         </label>
                                                     </div>
                                                     <div className="mb-5">
-                                                        <input type="checkbox" value={stackMgmt} onChange={(e) => setStackMgmt(e.target.checked)} className="form-checkbox"  />
+                                                        <input type="checkbox" value={stackMgmt} onChange={(e) => setStackMgmt(e.target.checked)} className="form-checkbox" />
                                                         <span>Track stock quantity for this product</span>{' '}
                                                     </div>
                                                 </div>
@@ -1197,13 +1228,16 @@ const ProductEdit = (props: any) => {
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Tags</h5>
                             </div>
-                            <div className="mb-5 flex">
+                            <div className="mb-5">
+                                <Select placeholder="Select an tags" options={tagList} value={selectedTag} onChange={(data:any) => setSelectedTag(data)} isSearchable={true} />
+                            </div>
+                            {/* <div className="mb-5 flex">
                                 <input type="text" className="form-input mr-3 mt-3" placeholder="Product Tags" />
                                 <button type="button" className="btn btn-primary mt-3">
                                     Add
                                 </button>
-                            </div>
-                            <div>
+                            </div> */}
+                            {/* <div>
                                 <p className="mb-5 text-sm text-gray-500">Separate tags with commas</p>
                                 <div className="flex flex-wrap gap-3">
                                     <div className="flex items-center gap-1">
@@ -1231,7 +1265,7 @@ const ProductEdit = (props: any) => {
                                         <p>prade love</p>
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>

@@ -37,6 +37,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
         operation.setContext({
             headers: {
                 Authorization: token ? `JWT ${token}` : '',
+                'Content-Type': 'application/json',
             },
         });
         // console.log('operation headers: ', operation.getContext().headers);

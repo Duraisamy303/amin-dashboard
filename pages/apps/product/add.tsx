@@ -34,12 +34,14 @@ import { Tab } from '@headlessui/react';
 import AnimateHeight from 'react-animate-height';
 import { useMutation, useQuery } from '@apollo/client';
 import {
+    ASSIGN_TAG_PRODUCT,
     CATEGORY_LIST,
     CHANNEL_LIST,
     COLLECTION_LIST,
     CREATE_PRODUCT,
     CREATE_VARIANT,
     PRODUCT_CAT_LIST,
+    PRODUCT_LIST_TAGS,
     PRODUCT_TYPE_LIST,
     UPDATE_META_DATA,
     UPDATE_PRODUCT_CHANNEL,
@@ -74,6 +76,8 @@ const ProductEdit = () => {
     const [quantity, setQuantity] = useState('');
     const [regularPrice, setRegularPrice] = useState('');
     const [selectedCollection, setSelectedCollection] = useState([]);
+    const [tagList, setTagList] = useState([]);
+    const [selectedTag, setSelectedTag] = useState([]);
     const [stackMgmt, setStackMgmt] = useState('');
     const [publish, setPublish] = useState('published');
 
@@ -135,9 +139,15 @@ const ProductEdit = () => {
         variables: sampleParams,
     });
 
+    const { data: tagsList } = useQuery(PRODUCT_LIST_TAGS, {
+        variables: { channel: 'india-channel' },
+    });
+
     const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
         variables: sampleParams,
     });
+
+    console.log("cat_list: ", cat_list);
 
     const { data: collection_list } = useQuery(COLLECTION_LIST, {
         variables: sampleParams,
@@ -152,6 +162,7 @@ const ProductEdit = () => {
     const [createVariant] = useMutation(CREATE_VARIANT);
     const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
+    const [assignTagToProduct] = useMutation(ASSIGN_TAG_PRODUCT);
 
     const [categoryList, setCategoryList] = useState([]);
     const [collectionList, setCollectionList] = useState([]);
@@ -163,6 +174,10 @@ const ProductEdit = () => {
     useEffect(() => {
         category_list();
     }, [cat_list]);
+
+    useEffect(() => {
+        tags_list();
+    }, [tagsList]);
 
     useEffect(() => {
         collections_list();
@@ -185,6 +200,22 @@ const ProductEdit = () => {
                 }
             }
         } catch (error) {}
+    };
+
+    const tags_list = async () => {
+        try {
+            if (tagsList) {
+                if (tagsList && tagsList?.tags?.edges?.length > 0) {
+                    const list = tagsList?.tags?.edges;
+                    const dropdownData = list?.map((item: any) => {
+                        return { value: item.node?.id, label: item.node?.name };
+                    });
+                    setTagList(dropdownData);
+                }
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
     };
 
     const collections_list = async () => {
@@ -344,7 +375,7 @@ const ProductEdit = () => {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
                 console.log('variantCreate: ', data);
-                const variantId = data?.productVariantCreate?.productVariant?.id;
+                // const variantId = data?.productVariantCreate?.productVariant?.id;
                 updateMetaData(productId);
             }
         } catch (error) {
@@ -375,6 +406,37 @@ const ProductEdit = () => {
             if (data?.updateMetadata?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
+                if (selectedTag?.length > 0) {
+                    assignsTagToProduct(productId);
+                    console.log('success: ', data);
+                }
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const assignsTagToProduct = async (productId: any) => {
+        try {
+            let tagId: any[] = [];
+            if (selectedCollection?.length > 0) {
+                tagId = selectedTag?.map((item) => item.value);
+            }
+            console.log("tagId: ", tagId);
+
+            const { data } = await assignTagToProduct({
+                variables: {
+                    id: productId,
+                    input: {
+                        tags: tagId,
+                    },
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productUpdate?.errors?.length > 0) {
+                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+            } else {
+                router.push('/product/product')
                 console.log('success: ', data);
             }
         } catch (error) {
@@ -1186,7 +1248,10 @@ const ProductEdit = () => {
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Tags</h5>
                             </div>
-                            <div className="mb-5 flex">
+                            <div className="mb-5">
+                                <Select placeholder="Select an tags" options={tagList} value={selectedTag} onChange={(data: any) => setSelectedTag(data)} isSearchable={true} isMulti />
+                            </div>
+                            {/* <div className="mb-5 flex">
                                 <input type="text" className="form-input mr-3 mt-3" placeholder="Product Tags" />
                                 <button type="button" className="btn btn-primary mt-3">
                                     Add
@@ -1220,7 +1285,7 @@ const ProductEdit = () => {
                                         <p>prade love</p>
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>

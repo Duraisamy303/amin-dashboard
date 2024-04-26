@@ -34,7 +34,7 @@ const ProductList = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const { error, data: productData } = useQuery(PRODUCT_LIST, {
-        variables: { channel: 'india-channel', first: 1000 }, // Pass variables here
+        variables: { channel: 'india-channel', first: 100 }, // Pass variables here
     });
 
     const [productList, setProductList] = useState([]);
