@@ -42,6 +42,7 @@ import {
     PRODUCT_CAT_LIST,
     PRODUCT_DETAILS,
     PRODUCT_LIST_TAGS,
+    PRODUCT_MEDIA_CREATE,
     PRODUCT_TYPE_LIST,
     UPDATE_META_DATA,
     UPDATE_PRODUCT_CHANNEL,
@@ -52,6 +53,7 @@ const ProductEdit = (props: any) => {
     const router = useRouter();
 
     const { id } = router.query;
+    console.log('id: ', id);
 
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
@@ -134,6 +136,8 @@ const ProductEdit = (props: any) => {
     const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
 
+    const [createProductMedia] = useMutation(PRODUCT_MEDIA_CREATE);
+
     const [categoryList, setCategoryList] = useState([]);
     const [tagList, setTagList] = useState([]);
     const [selectedTag, setSelectedTag] = useState({});
@@ -144,12 +148,12 @@ const ProductEdit = (props: any) => {
 
     const [productType, setProductType] = useState([]);
     const [mediaData, setMediaData] = useState([]);
-    console.log('mediaData: ', mediaData);
 
     const [imageUrl, setImageUrl] = useState('');
+    const [thumbnailFile, setThumbnailFile] = useState({});
+
     const [thumbnail, setThumbnail] = useState('');
     // State to track whether delete icon should be displayed
-
 
     const [selectedCat, setselectedCat] = useState('');
 
@@ -190,6 +194,11 @@ const ProductEdit = (props: any) => {
                     setSku(data?.variants[0]?.sku);
                     setStackMgmt(data?.variants[0]?.trackInventory);
                     setMediaData(data?.media);
+                    if (data?.media?.length > 0) {
+                        const img = data?.media[0]?.url;
+                        setThumbnail(img);
+                        setThumbnailFile(data?.media[0]);
+                    }
 
                     // setRegularPrice()
                 }
@@ -435,32 +444,53 @@ const ProductEdit = (props: any) => {
         setModal3(true);
     };
 
-
     // Function to handle file selection
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = event.target.files[0];
         if (selectedFile) {
-            // Assuming you only need the URL of the selected image
             const imageUrl = URL.createObjectURL(selectedFile);
-            // Set the image URL in the state or use it as needed
             setImageUrl(imageUrl);
-
+            setThumbnailFile(selectedFile);
         }
     };
 
     // Function to handle upload button click
-    const handleUpload = () => {
+    const handleUpload = async () => {
         // Here you can perform any upload operation if needed
         console.log('Uploading image:', imageUrl);
         setThumbnail(imageUrl);
         setModal3(false);
+
+       
     };
+
+    const uploadImage=async()=>{
+        const formData = new FormData();
+        formData.append('image', imageUrl);
+        console.log("imageUrl: ", imageUrl);
+        formData.append('product', id);
+        console.log("id: ", id);
+        formData.append('alt', '');
+        console.log("formData: ", formData);
+
+        try {
+            const { data } = await createProductMedia({
+                variables: {
+                    input: formData,
+                },
+            });
+            console.log('data: ', data);
+        } catch (error) {
+            console.error('Error uploading image:', error.message);
+        }
+    }
 
     // Function to handle delete icon click
     const handleDelete = () => {
         // Clear the image URL from the state
         setImageUrl('');
         setThumbnail('');
+        setThumbnailFile({});
     };
     // -------------------------------------New Added-------------------------------------------------------
 
@@ -1149,7 +1179,7 @@ const ProductEdit = (props: any) => {
                                 className="cursor-pointer"
                                 title="Upload Images"
                             >
-                                {thumbnail == '' || null? (
+                                {thumbnail == '' || null ? (
                                     <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" />
                                 ) : (
                                     <img src={thumbnail} alt="Product image" className="h-60 object-cover" />
@@ -1157,7 +1187,14 @@ const ProductEdit = (props: any) => {
                                 {/* <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" /> */}
                             </div>
                             <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
-                            <p className="mt-5 cursor-pointer text-danger underline" onClick={handleDelete}>Remove product image</p>
+                            <p className="mt-5 cursor-pointer text-danger underline" onClick={handleDelete}>
+                                Remove product image
+                            </p>
+                            <div className="flex justify-end">
+                                <button className="btn btn-primary mt-5" onClick={uploadImage}>
+                                    Upload
+                                </button>
+                            </div>
                             {/* <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p> */}
                         </div>
 

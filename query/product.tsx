@@ -1,6 +1,28 @@
 import { gql } from '@apollo/client';
 
-export const PRODUCT_LIST_ITEM_FRAGMENT = gql`
+export const PRODUCT_LIST = gql`
+    query ProductListPaginated($channel: String!, $first: Int!, $after: String) {
+        products(first: $first, after: $after, channel: $channel) {
+            totalCount
+            edges {
+                node {
+                    ...ProductListItem
+                    __typename
+                }
+                cursor
+                __typename
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                __typename
+            }
+            __typename
+        }
+    }
+
     fragment ProductListItem on Product {
         id
         name
@@ -11,57 +33,52 @@ export const PRODUCT_LIST_ITEM_FRAGMENT = gql`
                     gross {
                         amount
                         currency
+                        __typename
                     }
+                    __typename
                 }
                 stop {
                     gross {
                         amount
                         currency
+                        __typename
                     }
+                    __typename
                 }
+                __typename
             }
             discount {
                 currency
+                __typename
             }
+            __typename
         }
         category {
             id
             name
+            __typename
         }
         thumbnail(size: 1024, format: WEBP) {
             url
             alt
+            __typename
         }
         variants {
             id
+            __typename
         }
         images {
             url
+            __typename
         }
-        created
         description
-    }
-`;
-
-export const PRODUCT_LIST = gql`
-    query ProductListPaginated($channel: String!, $first: Int!, $after: String) {
-        products(first: $first, after: $after, channel: $channel) {
-            totalCount
-            edges {
-                node {
-                    ...ProductListItem
-                }
-                cursor
-            }
-            pageInfo {
-                endCursor
-                hasNextPage
-                hasPreviousPage
-                startCursor
-            }
+        updatedAt
+        channelListings {
+            publishedAt
+            __typename
         }
+        __typename
     }
-    ${PRODUCT_LIST_ITEM_FRAGMENT}
 `;
 
 export const DELETE_PRODUCT = gql`
@@ -1171,345 +1188,354 @@ export const UPDATE_META_DATA = gql`
 `;
 
 export const PRODUCT_MEDIA_CREATE = gql`
-    mutation ProductMediaCreate($product: ID!, $image: Upload!, $alt: String) {
-        productMediaCreate(input: { product: $product, image: $image, alt: $alt }) {
+    mutation ProductMediaCreate($product: ID!, $image: Upload, $alt: String, $mediaUrl: String) {
+        productMediaCreate(input: { product: $product, image: $image, alt: $alt, mediaUrl: $mediaUrl }) {
+            errors {
+                ...ProductError
+                __typename
+            }
             product {
                 id
                 media {
-                    id
-                    url
+                    ...ProductMedia
+                    __typename
                 }
+                __typename
             }
-            errors {
-                field
-                message
-            }
+            __typename
         }
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
+        __typename
+    }
+
+    fragment ProductMedia on ProductMedia {
+        id
+        alt
+        sortOrder
+        url(size: 1024)
+        type
+        oembedData
+        __typename
     }
 `;
 
 export const PRODUCT_DETAILS = gql`
-query ProductDetails($id: ID!, $channel: String, $firstValues: Int, $afterValues: String, $lastValues: Int, $beforeValues: String) {
-    product(id: $id, channel: $channel) {
-      ...Product
-      __typename
+    query ProductDetails($id: ID!, $channel: String, $firstValues: Int, $afterValues: String, $lastValues: Int, $beforeValues: String) {
+        product(id: $id, channel: $channel) {
+            ...Product
+            __typename
+        }
     }
-  }
-  
-  fragment Product on Product {
-    ...ProductVariantAttributes
-    ...Metadata
-    name
-    slug
-    description
-    seoTitle
-    seoDescription
-    rating
-    defaultVariant {
-      id
-      __typename
-    }
-    category {
-      id
-      name
-      __typename
-    }
-    collections {
-      id
-      name
-      __typename
-    }
-    channelListings {
-      ...ChannelListingProductWithoutPricing
-      __typename
-    }
-    media {
-      ...ProductMedia
-      __typename
-    }
-    isAvailable
-    variants {
-      ...ProductDetailsVariant
-      __typename
-    }
-    productType {
-      id
-      name
-      hasVariants
-      __typename
-    }
-    weight {
-      ...Weight
-      __typename
-    }
-    taxClass {
-      id
-      name
-      __typename
-    }
-    __typename
-  }
-  
-  fragment ProductVariantAttributes on Product {
-    id
-    attributes {
-      attribute {
-        id
-        slug
+
+    fragment Product on Product {
+        ...ProductVariantAttributes
+        ...Metadata
         name
+        slug
+        description
+        seoTitle
+        seoDescription
+        rating
+        defaultVariant {
+            id
+            __typename
+        }
+        category {
+            id
+            name
+            __typename
+        }
+        collections {
+            id
+            name
+            __typename
+        }
+        channelListings {
+            ...ChannelListingProductWithoutPricing
+            __typename
+        }
+        media {
+            ...ProductMedia
+            __typename
+        }
+        isAvailable
+        variants {
+            ...ProductDetailsVariant
+            __typename
+        }
+        productType {
+            id
+            name
+            hasVariants
+            __typename
+        }
+        weight {
+            ...Weight
+            __typename
+        }
+        taxClass {
+            id
+            name
+            __typename
+        }
+        __typename
+    }
+
+    fragment ProductVariantAttributes on Product {
+        id
+        attributes {
+            attribute {
+                id
+                slug
+                name
+                inputType
+                entityType
+                valueRequired
+                unit
+                choices(first: $firstValues, after: $afterValues, last: $lastValues, before: $beforeValues) {
+                    ...AttributeValueList
+                    __typename
+                }
+                __typename
+            }
+            values {
+                ...AttributeValueDetails
+                __typename
+            }
+            __typename
+        }
+        productType {
+            id
+            variantAttributes {
+                ...VariantAttribute
+                __typename
+            }
+            __typename
+        }
+        channelListings {
+            channel {
+                id
+                name
+                currencyCode
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+
+    fragment AttributeValueList on AttributeValueCountableConnection {
+        pageInfo {
+            ...PageInfo
+            __typename
+        }
+        edges {
+            cursor
+            node {
+                ...AttributeValueDetails
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+
+    fragment PageInfo on PageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        __typename
+    }
+
+    fragment AttributeValueDetails on AttributeValue {
+        ...AttributeValue
+        plainText
+        richText
+        __typename
+    }
+
+    fragment AttributeValue on AttributeValue {
+        id
+        name
+        slug
+        file {
+            ...File
+            __typename
+        }
+        reference
+        boolean
+        date
+        dateTime
+        value
+        __typename
+    }
+
+    fragment File on File {
+        url
+        contentType
+        __typename
+    }
+
+    fragment VariantAttribute on Attribute {
+        id
+        name
+        slug
         inputType
         entityType
         valueRequired
         unit
-        choices(
-          first: $firstValues
-          after: $afterValues
-          last: $lastValues
-          before: $beforeValues
-        ) {
-          ...AttributeValueList
-          __typename
+        choices(first: $firstValues, after: $afterValues, last: $lastValues, before: $beforeValues) {
+            ...AttributeValueList
+            __typename
         }
         __typename
-      }
-      values {
-        ...AttributeValueDetails
-        __typename
-      }
-      __typename
     }
-    productType {
-      id
-      variantAttributes {
-        ...VariantAttribute
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
         __typename
-      }
-      __typename
     }
-    channelListings {
-      channel {
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+
+    fragment ChannelListingProductWithoutPricing on ProductChannelListing {
+        isPublished
+        publicationDate
+        isAvailableForPurchase
+        availableForPurchase
+        visibleInListings
+        channel {
+            id
+            name
+            currencyCode
+            __typename
+        }
+        __typename
+    }
+
+    fragment ProductMedia on ProductMedia {
         id
+        alt
+        sortOrder
+        url(size: 1024)
+        type
+        oembedData
+        __typename
+    }
+
+    fragment ProductDetailsVariant on ProductVariant {
+        id
+        sku
         name
-        currencyCode
+        attributes {
+            attribute {
+                id
+                name
+                __typename
+            }
+            values {
+                ...AttributeValueDetails
+                __typename
+            }
+            __typename
+        }
+        media {
+            url(size: 200)
+            __typename
+        }
+        stocks {
+            ...Stock
+            __typename
+        }
+        trackInventory
+        preorder {
+            ...Preorder
+            __typename
+        }
+        channelListings {
+            ...ChannelListingProductVariant
+            __typename
+        }
+        quantityLimitPerCustomer
         __typename
-      }
-      __typename
     }
-    __typename
-  }
-  
-  fragment AttributeValueList on AttributeValueCountableConnection {
-    pageInfo {
-      ...PageInfo
-      __typename
-    }
-    edges {
-      cursor
-      node {
-        ...AttributeValueDetails
+
+    fragment Stock on Stock {
+        id
+        quantity
+        quantityAllocated
+        warehouse {
+            ...Warehouse
+            __typename
+        }
         __typename
-      }
-      __typename
     }
-    __typename
-  }
-  
-  fragment PageInfo on PageInfo {
-    endCursor
-    hasNextPage
-    hasPreviousPage
-    startCursor
-    __typename
-  }
-  
-  fragment AttributeValueDetails on AttributeValue {
-    ...AttributeValue
-    plainText
-    richText
-    __typename
-  }
-  
-  fragment AttributeValue on AttributeValue {
-    id
-    name
-    slug
-    file {
-      ...File
-      __typename
-    }
-    reference
-    boolean
-    date
-    dateTime
-    value
-    __typename
-  }
-  
-  fragment File on File {
-    url
-    contentType
-    __typename
-  }
-  
-  fragment VariantAttribute on Attribute {
-    id
-    name
-    slug
-    inputType
-    entityType
-    valueRequired
-    unit
-    choices(
-      first: $firstValues
-      after: $afterValues
-      last: $lastValues
-      before: $beforeValues
-    ) {
-      ...AttributeValueList
-      __typename
-    }
-    __typename
-  }
-  
-  fragment Metadata on ObjectWithMetadata {
-    metadata {
-      ...MetadataItem
-      __typename
-    }
-    privateMetadata {
-      ...MetadataItem
-      __typename
-    }
-    __typename
-  }
-  
-  fragment MetadataItem on MetadataItem {
-    key
-    value
-    __typename
-  }
-  
-  fragment ChannelListingProductWithoutPricing on ProductChannelListing {
-    isPublished
-    publicationDate
-    isAvailableForPurchase
-    availableForPurchase
-    visibleInListings
-    channel {
-      id
-      name
-      currencyCode
-      __typename
-    }
-    __typename
-  }
-  
-  fragment ProductMedia on ProductMedia {
-    id
-    alt
-    sortOrder
-    url(size: 1024)
-    type
-    oembedData
-    __typename
-  }
-  
-  fragment ProductDetailsVariant on ProductVariant {
-    id
-    sku
-    name
-    attributes {
-      attribute {
+
+    fragment Warehouse on Warehouse {
         id
         name
         __typename
-      }
-      values {
-        ...AttributeValueDetails
+    }
+
+    fragment Preorder on PreorderData {
+        globalThreshold
+        globalSoldUnits
+        endDate
         __typename
-      }
-      __typename
     }
-    media {
-      url(size: 200)
-      __typename
+
+    fragment ChannelListingProductVariant on ProductVariantChannelListing {
+        id
+        channel {
+            id
+            name
+            currencyCode
+            __typename
+        }
+        price {
+            ...Money
+            __typename
+        }
+        costPrice {
+            ...Money
+            __typename
+        }
+        preorderThreshold {
+            quantity
+            soldUnits
+            __typename
+        }
+        __typename
     }
-    stocks {
-      ...Stock
-      __typename
+
+    fragment Money on Money {
+        amount
+        currency
+        __typename
     }
-    trackInventory
-    preorder {
-      ...Preorder
-      __typename
+
+    fragment Weight on Weight {
+        unit
+        value
+        __typename
     }
-    channelListings {
-      ...ChannelListingProductVariant
-      __typename
-    }
-    quantityLimitPerCustomer
-    __typename
-  }
-  
-  fragment Stock on Stock {
-    id
-    quantity
-    quantityAllocated
-    warehouse {
-      ...Warehouse
-      __typename
-    }
-    __typename
-  }
-  
-  fragment Warehouse on Warehouse {
-    id
-    name
-    __typename
-  }
-  
-  fragment Preorder on PreorderData {
-    globalThreshold
-    globalSoldUnits
-    endDate
-    __typename
-  }
-  
-  fragment ChannelListingProductVariant on ProductVariantChannelListing {
-    id
-    channel {
-      id
-      name
-      currencyCode
-      __typename
-    }
-    price {
-      ...Money
-      __typename
-    }
-    costPrice {
-      ...Money
-      __typename
-    }
-    preorderThreshold {
-      quantity
-      soldUnits
-      __typename
-    }
-    __typename
-  }
-  
-  fragment Money on Money {
-    amount
-    currency
-    __typename
-  }
-  
-  fragment Weight on Weight {
-    unit
-    value
-    __typename
-  }
 `;
 
 export const PRODUCT_LIST_TAGS = gql`
@@ -1537,5 +1563,62 @@ export const ASSIGN_TAG_PRODUCT = gql`
                 }
             }
         }
+    }
+`;
+
+export const FILTER_PRODUCT_LIST = gql`
+    query SearchOrderVariant($channel: String!, $first: Int!, $query: String!, $after: String, $address: AddressInput, $isPublished: Boolean, $stockAvailability: StockAvailability) {
+        search: products(first: $first, after: $after, filter: { search: $query, isPublished: $isPublished, stockAvailability: $stockAvailability }, channel: $channel) {
+            edges {
+                node {
+                    id
+                    name
+                    thumbnail {
+                        url
+                        __typename
+                    }
+                    variants {
+                        id
+                        name
+                        sku
+                        pricing(address: $address) {
+                            priceUndiscounted {
+                                gross {
+                                    ...Money
+                                    __typename
+                                }
+                                __typename
+                            }
+                            price {
+                                gross {
+                                    ...Money
+                                    __typename
+                                }
+                                __typename
+                            }
+                            onSale
+                            __typename
+                        }
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment Money on Money {
+        amount
+        currency
+        __typename
     }
 `;

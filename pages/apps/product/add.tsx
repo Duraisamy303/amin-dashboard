@@ -40,14 +40,19 @@ import {
     COLLECTION_LIST,
     CREATE_PRODUCT,
     CREATE_VARIANT,
+    DESIGN_LIST,
+    FINISH_LIST,
     PRODUCT_CAT_LIST,
     PRODUCT_LIST_TAGS,
     PRODUCT_TYPE_LIST,
+    STONE_LIST,
+    STYLE_LIST,
     UPDATE_META_DATA,
     UPDATE_PRODUCT_CHANNEL,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
 import { sampleParams } from '@/utils/functions';
+import IconRestore from '@/components/Icon/IconRestore';
 const ProductEdit = () => {
     const router = useRouter();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -81,6 +86,15 @@ const ProductEdit = () => {
     const [stackMgmt, setStackMgmt] = useState('');
     const [publish, setPublish] = useState('published');
 
+    //for accordiant
+    const [selectedArr, setSelectedArr] = useState([]);
+    const [accordions, setAccordions] = useState([]);
+    const [openAccordion, setOpenAccordion] = useState('');
+    const [chooseType, setChooseType] = useState('');
+    const [selectedValues, setSelectedValues] = useState({});
+    console.log('selectedValues: ', selectedValues);
+    const [dropdowndata, setDropdownData] = useState([]);
+
     // ------------------------------------------New Data--------------------------------------------
 
     const [statusVisible, setStatusVisible] = useState(false);
@@ -99,6 +113,15 @@ const ProductEdit = () => {
         { value: 'new', label: 'New' },
         { value: 'hot', label: 'Hot' },
     ];
+
+    const arr = [
+        { type: 'design', designName: dropdowndata?.design },
+        { type: 'style', styleName: dropdowndata?.style },
+        { type: 'stone', stoneName: dropdowndata?.stoneType },
+        { type: 'finish', finishName: dropdowndata?.finish },
+    ];
+
+    const optionsVal = arr.map((item) => ({ value: item.type, label: item.type }));
 
     const statusEditClick = () => {
         setStatusVisible(!statusVisible);
@@ -138,6 +161,49 @@ const ProductEdit = () => {
     const { error, data: orderDetails } = useQuery(CHANNEL_LIST, {
         variables: sampleParams,
     });
+    const { data: finishData } = useQuery(FINISH_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: stoneData } = useQuery(STONE_LIST, {
+        variables: sampleParams,
+    });
+    const { data: designData } = useQuery(DESIGN_LIST, {
+        variables: sampleParams,
+    });
+    const { data: styleData } = useQuery(STYLE_LIST, {
+        variables: sampleParams,
+    });
+
+    useEffect(() => {
+        let arr = {};
+        // if (designData) {
+        //     arr = designData?.productDesigns;
+        // }
+        // if (styleData) {
+        //     arr = styleData?.productStyles;
+        // }
+        // if (finishData) {
+        //     arr = finishData?.productFinishes;
+        // }
+        // if (stoneData) {
+        //     arr = stoneData?.productStoneTypes;
+        // }
+
+        const arr1 = {
+            design: designData?.productDesigns,
+            style: styleData?.productStyles,
+            finish: finishData?.productFinishes,
+            stoneType: stoneData?.productStoneTypes,
+        };
+
+        const singleObj = Object.entries(arr1).reduce((acc, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }) => ({ value: node?.id, label: node?.name }));
+            return acc;
+        }, {});
+
+        setDropdownData(singleObj);
+    }, [finishData, stoneData, designData, styleData]);
 
     const { data: tagsList } = useQuery(PRODUCT_LIST_TAGS, {
         variables: { channel: 'india-channel' },
@@ -146,8 +212,6 @@ const ProductEdit = () => {
     const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
         variables: sampleParams,
     });
-
-    console.log("cat_list: ", cat_list);
 
     const { data: collection_list } = useQuery(COLLECTION_LIST, {
         variables: sampleParams,
@@ -260,12 +324,10 @@ const ProductEdit = () => {
     const CreateProduct = async () => {
         try {
             const catId = selectedCat?.value;
-            console.log('catId: ', catId);
             let collectionId: any[] = [];
             if (selectedCollection?.length > 0) {
                 collectionId = selectedCollection?.map((item) => item.value);
             }
-            console.log('collectionId: ', collectionId);
             const { data } = await addFormData({
                 variables: {
                     input: {
@@ -282,9 +344,14 @@ const ProductEdit = () => {
                         slug: slug,
                         order_no: menuOrder,
                         ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                        ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
+                        ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
+                        ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
+                        ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
                     },
                 },
             });
+
             if (data?.productCreate?.errors?.length > 0) {
                 console.log('error: ', data?.productCreate?.errors[0]?.message);
             } else {
@@ -422,7 +489,7 @@ const ProductEdit = () => {
             if (selectedCollection?.length > 0) {
                 tagId = selectedTag?.map((item) => item.value);
             }
-            console.log("tagId: ", tagId);
+            console.log('tagId: ', tagId);
 
             const { data } = await assignTagToProduct({
                 variables: {
@@ -436,12 +503,42 @@ const ProductEdit = () => {
             if (data?.productUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
-                router.push('/product/product')
+                router.push('/product/product');
                 console.log('success: ', data);
             }
         } catch (error) {
             console.log('error: ', error);
         }
+    };
+
+    const handleAddAccordion = () => {
+        const selectedType = arr.find((item) => item.type === chooseType);
+        setSelectedArr([chooseType, ...selectedArr]);
+        setAccordions([selectedType, ...accordions]);
+        setOpenAccordion(chooseType);
+        setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
+    };
+
+    const handleRemoveAccordion = (type) => {
+        setSelectedArr(selectedArr.filter((item) => item !== type));
+        setAccordions(accordions.filter((item) => item.type !== type));
+        setOpenAccordion('');
+        const updatedSelectedValues = { ...selectedValues };
+        delete updatedSelectedValues[type];
+        setSelectedValues(updatedSelectedValues);
+    };
+
+    const handleDropdownChange = (event, type) => {
+        setChooseType(type);
+    };
+
+    const handleToggleAccordion = (type) => {
+        setOpenAccordion(openAccordion === type ? '' : type);
+    };
+
+    const handleMultiSelectChange = (selectedOptions, type) => {
+        const selectedValuesForType = selectedOptions.map((option) => option.value);
+        setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
     };
 
     // -------------------------------------New Added-------------------------------------------------------
@@ -604,14 +701,15 @@ const ProductEdit = () => {
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 pr-3">
-                                                        <select className="form-select w-52 flex-1 " style={{ width: '350px' }}>
-                                                            <option value="design">Design</option>
-                                                            <option value="finish">Finish</option>
-                                                            <option value="lock-type">Lock Type</option>
-                                                        </select>
+                                                        <Select
+                                                            placeholder="Select Type"
+                                                            options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
+                                                            onChange={(selectedOption) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
+                                                        />
                                                     </div>
                                                     <div className="mb-5">
-                                                        <button type="button" className="btn btn-outline-primary">
+                                                        <button type="button" className="btn btn-outline-primary" onClick={handleAddAccordion}>
                                                             Add
                                                         </button>
                                                     </div>
@@ -619,36 +717,47 @@ const ProductEdit = () => {
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        <div className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
-                                                            <button
-                                                                type="button"
-                                                                className={`flex w-full items-center p-4 text-white-dark dark:bg-[#1b2e4b] ${active === '1' ? '!text-primary' : ''}`}
-                                                                onClick={() => togglePara('1')}
-                                                            >
-                                                                Designs
-                                                                <div className={`ltr:ml-auto rtl:mr-auto ${active === '1' ? 'rotate-180' : ''}`}>
-                                                                    <IconCaretDown />
-                                                                </div>
-                                                            </button>
-                                                            <div>
-                                                                <AnimateHeight duration={300} height={active === '1' ? 'auto' : 0}>
-                                                                    <div className="grid grid-cols-12 gap-4 border-t border-[#d3d3d3] p-4 text-[13px] dark:border-[#1b2e4b]">
-                                                                        <div className="col-span-4">
-                                                                            <p>
-                                                                                Name:
-                                                                                <br /> <span className="font-semibold">Design</span>
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="col-span-8">
-                                                                            <div className="active ">
-                                                                                <div className=" mr-4 ">
-                                                                                    <label htmlFor="value" className="block pr-5 text-sm font-medium text-gray-700">
-                                                                                        Value(s)
-                                                                                    </label>
-                                                                                </div>
-                                                                                <div className="mb-5" style={{ width: '350px' }}>
-                                                                                    <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
-                                                                                    {/* <div className="flex justify-between">
+                                                        {accordions.map((item) => (
+                                                            <div key={item.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
+                                                                <button
+                                                                    type="button"
+                                                                    className={`flex w-full items-center p-4 text-white-dark dark:bg-[#1b2e4b] ${active === '1' ? '!text-primary' : ''}`}
+                                                                    // onClick={() => togglePara('1')}
+                                                                >
+                                                                    {item.type}
+                                                                    {/* <button onClick={() => handleRemoveAccordion(item.type)}>Remove</button> */}
+
+                                                                    <div className={`text-red-400 ltr:ml-auto rtl:mr-auto `} onClick={() => handleRemoveAccordion(item.type)}>
+                                                                        Remove
+                                                                    </div>
+                                                                </button>
+                                                                <div>
+                                                                    <AnimateHeight duration={300} height={active === '1' ? 'auto' : 0}>
+                                                                        <div className="grid grid-cols-12 gap-4 border-t border-[#d3d3d3] p-4 text-[13px] dark:border-[#1b2e4b]">
+                                                                            <div className="col-span-4">
+                                                                                <p>
+                                                                                    Name:
+                                                                                    <br /> <span className="font-semibold">{item.type}</span>
+                                                                                </p>
+                                                                            </div>
+                                                                            <div className="col-span-8">
+                                                                                <div className="active ">
+                                                                                    <div className=" mr-4 ">
+                                                                                        <label htmlFor="value" className="block pr-5 text-sm font-medium text-gray-700">
+                                                                                            Value(s)
+                                                                                        </label>
+                                                                                    </div>
+                                                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                                                        <Select
+                                                                                            placeholder={`Select ${item.type} Name`}
+                                                                                            options={item[`${item.type}Name`]}
+                                                                                            onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
+                                                                                            isMulti
+                                                                                            isSearchable={false}
+                                                                                            value={(selectedValues[item.type] || []).map((value) => ({ value, label: value }))}
+                                                                                        />
+                                                                                        {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
+                                                                                        {/* <div className="flex justify-between">
                                                                                         <div className="flex">
                                                                                             <button type="button" className="btn btn-outline-primary btn-sm mr-2 mt-1">
                                                                                                 Select All
@@ -663,64 +772,14 @@ const ProductEdit = () => {
                                                                                             </button>
                                                                                         </div>
                                                                                     </div> */}
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
-                                                                </AnimateHeight>
-                                                            </div>
-                                                        </div>
-                                                        <div className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
-                                                            <button
-                                                                type="button"
-                                                                className={`flex w-full items-center p-4 text-white-dark dark:bg-[#1b2e4b] ${active === '2' ? '!text-primary' : ''}`}
-                                                                onClick={() => togglePara('2')}
-                                                            >
-                                                                Finish
-                                                                <div className={`ltr:ml-auto rtl:mr-auto ${active === '2' ? 'rotate-180' : ''}`}>
-                                                                    <IconCaretDown />
+                                                                    </AnimateHeight>
                                                                 </div>
-                                                            </button>
-                                                            <div>
-                                                                <AnimateHeight duration={300} height={active === '2' ? 'auto' : 0}>
-                                                                    <div className="grid w-full grid-cols-12 gap-4 border-t border-[#d3d3d3] p-4 text-[13px] dark:border-[#1b2e4b]">
-                                                                        <div className="col-span-4">
-                                                                            <p>
-                                                                                Name:
-                                                                                <br /> <span className="font-semibold">Finish</span>
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="col-span-8">
-                                                                            <div className="active ">
-                                                                                <div className=" mr-4 ">
-                                                                                    <label htmlFor="value" className="block pr-5 text-sm font-medium text-gray-700">
-                                                                                        Value(s)
-                                                                                    </label>
-                                                                                </div>
-                                                                                <div className="mb-5" style={{ width: '350px' }}>
-                                                                                    <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
-                                                                                    {/* <div className="flex justify-between">
-                                                                                        <div className="flex">
-                                                                                            <button type="button" className="btn btn-outline-primary btn-sm mr-2 mt-1">
-                                                                                                Select All
-                                                                                            </button>
-                                                                                            <button type="button" className="btn btn-outline-primary btn-sm mt-1">
-                                                                                                Select None
-                                                                                            </button>
-                                                                                        </div>
-                                                                                        <div>
-                                                                                            <button type="button" className="btn btn-outline-primary btn-sm mt-1">
-                                                                                                Create Value
-                                                                                            </button>
-                                                                                        </div>
-                                                                                    </div> */}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </AnimateHeight>
                                                             </div>
-                                                        </div>
+                                                        ))}
                                                     </div>
                                                 </div>
                                                 {/* <div>

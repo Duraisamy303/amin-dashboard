@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery } from '@apollo/client';
-import { CREATE_NOTES, DELETE_NOTES, GET_ORDER_DETAILS, SHIPPING_LIST } from '@/query/product';
+import { CREATE_NOTES, DELETE_NOTES, FILTER_PRODUCT_LIST, GET_ORDER_DETAILS, SHIPPING_LIST } from '@/query/product';
 import { Loader } from '@mantine/core';
 import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
@@ -15,6 +15,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import IconEdit from '@/components/Icon/IconEdit';
 import Modal from '@/components/Modal';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
+import Select from 'react-select';
 
 const AddOrder = () => {
     const router = useRouter();
@@ -28,6 +29,44 @@ const AddOrder = () => {
         variables: { id },
     });
 
+    const { data: productData } = useQuery(FILTER_PRODUCT_LIST, {
+        variables: {
+            after: null,
+            first: 100,
+            query: '',
+            channel: 'india-channel',
+            address: {
+                country: 'IN',
+            },
+            isPublished: true,
+            stockAvailability: 'IN_STOCK',
+            PERMISSION_HANDLE_CHECKOUTS: true,
+            PERMISSION_HANDLE_PAYMENTS: true,
+            PERMISSION_HANDLE_TAXES: true,
+            PERMISSION_IMPERSONATE_USER: true,
+            PERMISSION_MANAGE_APPS: true,
+            PERMISSION_MANAGE_CHANNELS: true,
+            PERMISSION_MANAGE_CHECKOUTS: true,
+            PERMISSION_MANAGE_DISCOUNTS: true,
+            PERMISSION_MANAGE_GIFT_CARD: true,
+            PERMISSION_MANAGE_MENUS: true,
+            PERMISSION_MANAGE_OBSERVABILITY: true,
+            PERMISSION_MANAGE_ORDERS: true,
+            PERMISSION_MANAGE_ORDERS_IMPORT: true,
+            PERMISSION_MANAGE_PAGES: true,
+            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_PLUGINS: true,
+            PERMISSION_MANAGE_PRODUCTS: true,
+            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_SETTINGS: true,
+            PERMISSION_MANAGE_SHIPPING: true,
+            PERMISSION_MANAGE_STAFF: true,
+            PERMISSION_MANAGE_TAXES: true,
+            PERMISSION_MANAGE_TRANSLATIONS: true,
+            PERMISSION_MANAGE_USERS: true,
+        },
+    });
+
     const { data: shippingProvider } = useQuery(SHIPPING_LIST);
 
     const [orderData, setOrderData] = useState<any>({});
@@ -36,7 +75,6 @@ const AddOrder = () => {
 
     //List data
     const [data, setData] = useState<any>([]);
-    console.log('data: ', data);
 
     const [btnOpen, setbtnOpen] = useState(false);
 
@@ -52,6 +90,8 @@ const AddOrder = () => {
     const [selectedProduct, setSelectedProduct] = useState(0);
     const [selectedUser, setSelectedUser] = useState('');
     const [quantity, setQuantity] = useState(0);
+    const [productList, setProductList] = useState([]);
+    console.log('productList: ', productList);
 
     //For shipping
     const [shippingOpen, setShippingOpen] = useState(false);
@@ -67,6 +107,10 @@ const AddOrder = () => {
     }, [orderDetails]);
 
     useEffect(() => {
+        getProductsList();
+    }, [productData]);
+
+    useEffect(() => {
         getCustomer();
     }, [shippingProvider]);
 
@@ -76,6 +120,22 @@ const AddOrder = () => {
         if (orderDetails) {
             if (orderDetails && orderDetails?.order) {
                 setOrderData(orderDetails?.order);
+                setLoading(false);
+            } else {
+                setLoading(false);
+            }
+        } else {
+            setLoading(false);
+        }
+    };
+
+    const getProductsList = () => {
+        setLoading(true);
+        if (productData) {
+            if (productData && productData?.search && productData?.search?.edges?.length > 0) {
+                const list = productData?.search?.edges?.map((item) => item.node);
+                const dropdown: any = list.map((item: any) => ({ value: item.id, label: item.name }));
+                setProductList(dropdown);
                 setLoading(false);
             } else {
                 setLoading(false);
@@ -679,7 +739,7 @@ const AddOrder = () => {
                                                                     setSelectedProduct(index);
                                                                 }}
                                                             >
-                                                                <IconPencil className="h-5 w-5 mr-3" />
+                                                                <IconPencil className="mr-3 h-5 w-5" />
                                                             </button>
                                                             <button type="button" onClick={() => removeItem(item)}>
                                                                 <IconTrashLines className="h-5 w-5" />
@@ -711,7 +771,7 @@ const AddOrder = () => {
                                                             </td>
                                                             <td></td>
                                                             <td>${item.quantity * item.amount}</td>
-                                                            <td >
+                                                            <td>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => {
@@ -722,7 +782,7 @@ const AddOrder = () => {
                                                                         setSelectedFee(index);
                                                                     }}
                                                                 >
-                                                                    <IconPencil className="h-5 w-5 mr-3" />
+                                                                    <IconPencil className="mr-3 h-5 w-5" />
                                                                 </button>
                                                                 <button type="button" onClick={() => removeItem(item)}>
                                                                     <IconTrashLines className="h-5 w-5" />
@@ -765,7 +825,7 @@ const AddOrder = () => {
                                                                         setSelectedShipping(index);
                                                                     }}
                                                                 >
-                                                                    <IconPencil className="h-5 w-5 mr-3" />
+                                                                    <IconPencil className="mr-3 h-5 w-5" />
                                                                 </button>
                                                                 <button type="button" onClick={() => removeItem(item)}>
                                                                     <IconTrashLines className="h-5 w-5" />
@@ -972,33 +1032,21 @@ const AddOrder = () => {
                         open={addProductOpen}
                         close={() => setAddProductOpen(false)}
                         renderComponent={() => (
-                            <div className="p-5">
+                            <div className="p-10 pb-7">
                                 <form onSubmit={productIsEdit ? handleUpdateProduct : handleAddProduct}>
                                     <div className=" flex justify-between">
                                         <label htmlFor="name">Product</label>
                                         <label htmlFor="name">Quantity</label>
                                     </div>
                                     <div className="flex gap-5">
-                                        <select id="user" className="form-select" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
-                                            <option value="">Select User</option>
-                                            <option value="Max Smith">Max Smith</option>
-                                            <option value="John Doe">John Doe</option>
-                                            <option value="Kia Jain">Kia Jain</option>
-                                            <option value="Karena Courtliff">Karena Courtliff</option>
-                                            <option value="Vladamir Koschek">Vladamir Koschek</option>
-                                            <option value="Robert Garcia">Robert Garcia</option>
-                                            <option value="Marie Hamilton">Marie Hamilton</option>
-                                            <option value="Megan Meyers">Megan Meyers</option>
-                                            <option value="Angela Hull">Angela Hull</option>
-                                            <option value="Karen Wolf">Karen Wolf</option>
-                                            <option value="Jasmine Barnes">Jasmine Barnes</option>
-                                            <option value="Thomas Cox">Thomas Cox</option>
-                                            <option value="Marcus Jones">Marcus Jones</option>
-                                            <option value="Matthew Gray">Matthew Gray</option>
-                                            <option value="Chad Davis">Chad Davis</option>
-                                            <option value="Linda Drake">Linda Drake</option>
-                                            <option value="Kathleen Flores">Kathleen Flores</option>
-                                        </select>
+                                        <Select placeholder="Select an option" options={productList} isSearchable={false} />
+
+                                        {/* <select id="user" className="form-select" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
+                                            {productList?.map((items)=>
+                                            <option value={items.value}>={items.name}</option>
+                                            )}
+                                           
+                                        </select> */}
                                         <input
                                             type="number"
                                             className="form-input w-20"
