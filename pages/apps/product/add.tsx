@@ -326,7 +326,7 @@ const ProductEdit = () => {
 
     const selectCat = (cat: any) => {
         setselectedCat(cat);
-        // console.log("cat: ", cat);
+        console.log("cat: ", cat);
     };
 
     const selectedCollections = (data: any) => {
@@ -335,6 +335,7 @@ const ProductEdit = () => {
 
     const CreateProduct = async () => {
 
+        console.log("selectedCat", selectedCat)
 
         setProductNameErrMsg('');
         setSlugErrMsg('');
@@ -377,9 +378,9 @@ const ProductEdit = () => {
             setSalePriceErrMsg('Sale price cannot be empty');
             alert('Sale price cannot be empty');
         }
-        // if (selectedCat?.value === '' || {} === selectedCat) {
-        //     setCategoryErrMsg('Category cannot be empty');
-        // }
+        if (selectedCat == "") {
+            setCategoryErrMsg('Category cannot be empty');
+        }
         
         try {
             const catId = selectedCat?.value;
@@ -1278,6 +1279,7 @@ const ProductEdit = () => {
                             <div className="mb-5">
                                 <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
                                 {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
+                           
                             </div>
                             {/* <div className="mb-5">
                                 {isMounted && (
