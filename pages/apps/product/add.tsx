@@ -53,6 +53,7 @@ import {
 } from '@/query/product';
 import { sampleParams } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
+import { cA } from '@fullcalendar/core/internal-common';
 const ProductEdit = () => {
     const router = useRouter();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -94,6 +95,17 @@ const ProductEdit = () => {
     const [selectedValues, setSelectedValues] = useState({});
     console.log('selectedValues: ', selectedValues);
     const [dropdowndata, setDropdownData] = useState([]);
+
+    // error message
+    const [productNameErrMsg, setProductNameErrMsg] = useState('');
+    const [slugErrMsg, setSlugErrMsg] = useState('');
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
+    const [descriptionErrMsg, setDescriptionErrMsg] = useState('');
+    const [shortDesErrMsg, setShortDesErrMsg] = useState('');
+    const [skuErrMsg, setSkuErrMsg] = useState('');
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
+    const [categoryErrMsg, setCategoryErrMsg] = useState('');
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -322,6 +334,53 @@ const ProductEdit = () => {
     };
 
     const CreateProduct = async () => {
+
+
+        setProductNameErrMsg('');
+        setSlugErrMsg('');
+        setSeoTittleErrMsg('');
+        setSeoDescErrMsg('');
+        setDescriptionErrMsg('');
+        setShortDesErrMsg('');
+        setSkuErrMsg('');
+        setSalePriceErrMsg('');
+        setCategoryErrMsg('');
+
+        // Validate the product name and slug
+        if (productName.trim() === '') {
+            // Update the error message for the product name field
+            setProductNameErrMsg('Product name cannot be empty');
+        }
+
+        if (slug.trim() === '') {
+            // Update the error message for the slug field
+            setSlugErrMsg('Slug cannot be empty');
+        }
+        if (seoTittle.trim() === '') {
+            // Update the error message for the slug field
+            setSeoTittleErrMsg('Seo title cannot be empty');
+        }
+        if (seoDesc.trim() === '') {
+            setSeoDescErrMsg('Seo description cannot be empty');
+        }
+        // if(description?.trim() === ''){
+        //     setDescriptionErrMsg('Description cannot be empty');
+        // }
+        if (shortDescription?.trim() === '') {
+            setShortDesErrMsg('Short description cannot be empty');
+        }
+        if (sku?.trim() === '') {
+            setSkuErrMsg('Sku cannot be empty');
+            alert('Sku cannot be empty');
+        }
+        if (salePrice?.trim() === '') {
+            setSalePriceErrMsg('Sale price cannot be empty');
+            alert('Sale price cannot be empty');
+        }
+        // if (selectedCat?.value === '' || {} === selectedCat) {
+        //     setCategoryErrMsg('Category cannot be empty');
+        // }
+        
         try {
             const catId = selectedCat?.value;
             let collectionId: any[] = [];
@@ -563,33 +622,39 @@ const ProductEdit = () => {
                                 Product Name
                             </label>
                             <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Enter Your Name" name="name" className="form-input" required />
+                            {productNameErrMsg && <p className="error-message mt-1 text-red-500">{productNameErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 Slug
                             </label>
                             <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="Enter slug" name="name" className="form-input" required />
+                            {slugErrMsg && <p className="error-message mt-1 text-red-500 ">{slugErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 SEO
                             </label>
                             <input type="text" value={seoTittle} onChange={(e) => setSeoTittle(e.target.value)} placeholder="Enter title" name="name" className="form-input" required />
+                            {seoTittleErrMsg && <p className="error-message mt-1 text-red-500 ">{seoTittleErrMsg}</p>}
+
                             <textarea
                                 id="ctnTextarea"
                                 value={seoDesc}
                                 onChange={(e) => setSeoDesc(e.target.value)}
                                 rows={3}
-                                className="form-textarea"
+                                className="form-textarea mt-5"
                                 placeholder="Enter Description"
                                 required
                             ></textarea>
+                            {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
                             <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
+                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
@@ -604,6 +669,7 @@ const ProductEdit = () => {
                                 placeholder="Enter Short Description"
                                 required
                             ></textarea>
+                            {shortDesErrMsg && <p className="error-message mt-1 text-red-500 ">{shortDesErrMsg}</p>}
                         </div>
                         <div className="panel mb-5 ">
                             {/* <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
@@ -807,6 +873,7 @@ const ProductEdit = () => {
                                                             className="form-input "
                                                             required
                                                         />
+                                                        {skuErrMsg && <p className="error-message mt-1 text-red-500 ">{skuErrMsg}</p>}
                                                     </div>
                                                 </div>
                                                 <div className="active flex items-center">
@@ -876,6 +943,7 @@ const ProductEdit = () => {
                                                                 className="form-input"
                                                                 required
                                                             />
+                                                            {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>}
                                                         </div>
                                                         {/* <div className="mb-5 pl-3">
                                                             <span className="cursor-pointer text-gray-500 underline" onClick={scheduleOpen}>
@@ -1209,6 +1277,7 @@ const ProductEdit = () => {
                             </div>
                             <div className="mb-5">
                                 <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
+                                {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
                             </div>
                             {/* <div className="mb-5">
                                 {isMounted && (
