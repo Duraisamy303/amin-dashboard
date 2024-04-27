@@ -25,8 +25,8 @@ import { date } from 'yup/lib/locale';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import IconEdit from '@/components/Icon/IconEdit';
-import { useQuery } from '@apollo/client';
-import { PRODUCT_LIST } from '@/query/product';
+import { useMutation, useQuery } from '@apollo/client';
+import { DELETE_PRODUCTS, PRODUCT_LIST } from '@/query/product';
 import moment from 'moment';
 
 const ProductList = () => {
@@ -53,7 +53,9 @@ const ProductList = () => {
                     product: item?.node?.products?.totalCount,
                     image: item?.node?.thumbnail?.url,
                     categories: item?.node?.category?.name,
-                    date: moment(item?.node?.created).format('DD-MM-YYYY'),
+                    date: item?.node?.updatedAt
+                        ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
+                        : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
                     price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
                 }));
                 // const sorting: any = sortBy(newData, 'id');
@@ -79,6 +81,8 @@ const ProductList = () => {
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [initialRecords, setInitialRecords] = useState([]);
     const [recordsData, setRecordsData] = useState(initialRecords);
+
+    const [deleteProducts] = useMutation(DELETE_PRODUCTS);
 
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
 
@@ -123,7 +127,7 @@ const ProductList = () => {
                     item.name.toLowerCase().includes(search.toLowerCase()) ||
                     // item.sku.toLowerCase().includes(search.toLowerCase()) ||
                     // item.stock.toLowerCase().includes(search.toLowerCase()) ||
-                    item.price.toString().includes(search.toLowerCase()) ||
+                    // item.price.toString().includes(search.toLowerCase()) ||
                     // item.categories.toLowerCase().includes(search.toLowerCase()) ||
                     item.date.toString().includes(search.toLowerCase())
                 );
@@ -191,12 +195,20 @@ const ProductList = () => {
     };
 
     const BulkDeleteProduct = async () => {
+        console.log('recordsData: ', selectedRecords);
+
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
                 }
+                const productIds = selectedRecords?.map((item) => item.id);
+                const { data } = deleteProducts({
+                    variables: {
+                        ids: productIds,
+                    },
+                });
                 const updatedRecordsData = recordsData.filter((record) => !selectedRecords.includes(record));
                 setRecordsData(updatedRecordsData);
                 setSelectedRecords([]);
@@ -209,8 +221,16 @@ const ProductList = () => {
     };
 
     const DeleteProduct = (record: any) => {
+        console.log('record: ', record);
         showDeleteAlert(
             () => {
+                const { data } = deleteProducts({
+                    variables: {
+                        ids: [record.id],
+                    },
+                });
+                console.log('DELETE: ', data);
+
                 const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
                 Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');

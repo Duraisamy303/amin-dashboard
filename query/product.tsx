@@ -1284,6 +1284,27 @@ export const PRODUCT_DETAILS = gql`
             __typename
         }
         __typename
+        productFinish {
+            id
+            name
+        }
+        productStoneType {
+            id
+            name
+        }
+        productstyle {
+            id
+            name
+        }
+        prouctDesign {
+            id
+            name
+        }
+        orderNo
+        tags {
+            id
+            name
+        }
     }
 
     fragment ProductVariantAttributes on Product {
@@ -1327,6 +1348,10 @@ export const PRODUCT_DETAILS = gql`
             __typename
         }
         __typename
+        thumbnail {
+            url
+            alt
+        }
     }
 
     fragment AttributeValueList on AttributeValueCountableConnection {
@@ -1619,6 +1644,130 @@ export const FILTER_PRODUCT_LIST = gql`
     fragment Money on Money {
         amount
         currency
+        __typename
+    }
+`;
+
+export const REMOVE_IMAGE = gql`
+    mutation ProductMediaDelete($id: ID!) {
+        productMediaDelete(id: $id) {
+            errors {
+                ...ProductError
+                __typename
+            }
+            product {
+                id
+                media {
+                    id
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
+        __typename
+    }
+`;
+
+export const UPDATE_PRODUCT = gql`
+    mutation ProductUpdate($id: ID!, $input: ProductInput!) {
+        productUpdate(id: $id, input: $input) {
+            errors {
+                ...ProductErrorWithAttributes
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductErrorWithAttributes on ProductError {
+        ...ProductError
+        attributes
+        __typename
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
+        __typename
+    }
+`;
+
+export const DELETE_VARIENT = gql`
+    mutation VariantDelete($id: ID!) {
+        productVariantDelete(id: $id) {
+            errors {
+                ...ProductError
+                __typename
+            }
+            productVariant {
+                id
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
+        __typename
+    }
+`;
+
+export const DELETE_PRODUCTS = gql`
+    mutation productBulkDelete($ids: [ID!]!) {
+        productBulkDelete(ids: $ids) {
+            errors {
+                ...ProductError
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
+        __typename
+    }
+`;
+
+export const PRODUCTS_MEDIA_ORDERS = gql`
+    mutation ProductMediaReorder($productId: ID!, $mediaIds: [ID!]!) {
+        productMediaReorder(productId: $productId, mediaIds: $mediaIds) {
+            errors {
+                ...ProductError
+                __typename
+            }
+            product {
+                id
+                media {
+                    id
+                    alt
+                    sortOrder
+                    url
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
         __typename
     }
 `;

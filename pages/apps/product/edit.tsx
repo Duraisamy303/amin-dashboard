@@ -39,12 +39,19 @@ import {
     COLLECTION_LIST,
     CREATE_PRODUCT,
     CREATE_VARIANT,
+    DELETE_VARIENT,
+    DESIGN_LIST,
+    FINISH_LIST,
     PRODUCT_CAT_LIST,
     PRODUCT_DETAILS,
     PRODUCT_LIST_TAGS,
     PRODUCT_MEDIA_CREATE,
     PRODUCT_TYPE_LIST,
+    REMOVE_IMAGE,
+    STONE_LIST,
+    STYLE_LIST,
     UPDATE_META_DATA,
+    UPDATE_PRODUCT,
     UPDATE_PRODUCT_CHANNEL,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
@@ -53,7 +60,6 @@ const ProductEdit = (props: any) => {
     const router = useRouter();
 
     const { id } = router.query;
-    console.log('id: ', id);
 
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
@@ -103,7 +109,6 @@ const ProductEdit = (props: any) => {
     };
 
     // -------------------------------------New Added-------------------------------------------------------
-
     const { data: productDetails } = useQuery(PRODUCT_DETAILS, {
         variables: { channel: 'india-channel', id: id },
     });
@@ -130,11 +135,28 @@ const ProductEdit = (props: any) => {
         variables: sampleParams,
     });
 
+    const { data: finishData } = useQuery(FINISH_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: stoneData } = useQuery(STONE_LIST, {
+        variables: sampleParams,
+    });
+    const { data: designData } = useQuery(DESIGN_LIST, {
+        variables: sampleParams,
+    });
+    const { data: styleData } = useQuery(STYLE_LIST, {
+        variables: sampleParams,
+    });
+
     const [addFormData] = useMutation(CREATE_PRODUCT);
     const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
     const [createVariant] = useMutation(CREATE_VARIANT);
     const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
+    const [removeImage] = useMutation(REMOVE_IMAGE);
+    const [updateProduct] = useMutation(UPDATE_PRODUCT);
+    const [deleteVarient] = useMutation(DELETE_VARIENT);
 
     const [createProductMedia] = useMutation(PRODUCT_MEDIA_CREATE);
 
@@ -145,21 +167,47 @@ const ProductEdit = (props: any) => {
     const [label, setLabel] = useState('');
     const [productData, setProductData] = useState({});
     const [modal3, setModal3] = useState(false);
+    const [modal4, setModal4] = useState(false);
 
     const [productType, setProductType] = useState([]);
     const [mediaData, setMediaData] = useState([]);
 
     const [imageUrl, setImageUrl] = useState('');
     const [thumbnailFile, setThumbnailFile] = useState({});
+    const [file, setFile] = useState(null);
 
     const [thumbnail, setThumbnail] = useState('');
+    const [isthumbImgUpdate, setIsthumbImgUpdate] = useState(false);
+
+    const [images, setImages] = useState([]);
+    console.log('images: ', images);
+
+    const [selectedArr, setSelectedArr] = useState([]);
+    const [accordions, setAccordions] = useState([]);
+    const [openAccordion, setOpenAccordion] = useState('');
+    const [chooseType, setChooseType] = useState('');
+    const [selectedValues, setSelectedValues] = useState({});
+    const [dropdowndata, setDropdownData] = useState([]);
+    const [dropIndex, setDropIndex] = useState(null);
+
+    const [variants, setVariants] = useState([
+        {
+            sku: '',
+            stackMgmt: false,
+            quantity: 0,
+            regularPrice: 0,
+            salePrice: 0,
+            name: '',
+        },
+    ]);
+
     // State to track whether delete icon should be displayed
 
     const [selectedCat, setselectedCat] = useState('');
 
     useEffect(() => {
         productsDetails();
-    }, [productDetails]);
+    }, [productDetails, dropdowndata]);
 
     useEffect(() => {
         tags_list();
@@ -177,9 +225,26 @@ const ProductEdit = (props: any) => {
         productsType();
     }, [productTypelist]);
 
+    useEffect(() => {
+        const arr1 = {
+            design: designData?.productDesigns,
+            style: styleData?.productStyles,
+            finish: finishData?.productFinishes,
+            stoneType: stoneData?.productStoneTypes,
+        };
+
+        const singleObj = Object.entries(arr1).reduce((acc, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }) => ({ value: node?.id, label: node?.name }));
+            return acc;
+        }, {});
+
+        setDropdownData(singleObj);
+    }, [finishData, stoneData, designData, styleData]);
+
     const productsDetails = async () => {
         try {
             if (productDetails) {
+                console.log('productDetails: ', productDetails);
                 if (productDetails && productDetails?.product) {
                     const data = productDetails?.product;
                     setProductData(data);
@@ -191,14 +256,77 @@ const ProductEdit = (props: any) => {
                     setselectedCat(category);
                     const collection: any = data?.collections.map((item: any) => ({ value: item.id, label: item.name }));
                     setSelectedCollection(collection);
-                    setSku(data?.variants[0]?.sku);
-                    setStackMgmt(data?.variants[0]?.trackInventory);
+                    // setSku(data?.variants[0]?.sku);
+                    // setStackMgmt(data?.variants[0]?.trackInventory);
+                    setMenuOrder(data?.orderNo);
                     setMediaData(data?.media);
+                    setThumbnail(data?.thumbnail?.url);
                     if (data?.media?.length > 0) {
                         const img = data?.media[0]?.url;
                         setThumbnail(img);
+                        const file = objectToFile(data?.media[0]);
+
                         setThumbnailFile(data?.media[0]);
+                        if (data?.media?.length > 1) {
+                            setImages(data?.media);
+                        }
                     }
+
+                    const arr = [];
+                    const type: any[] = [];
+                    let selectedAccValue = {};
+                    if (data?.prouctDesign?.length > 0) {
+                        const obj = {
+                            type: 'design',
+                            designName: dropdowndata?.design,
+                        };
+                        arr.push(obj);
+                        type.push('design');
+                        selectedAccValue.design = data?.prouctDesign?.map((item) => item.id);
+                    }
+                    if (data?.productstyle?.length > 0) {
+                        const obj = {
+                            type: 'style',
+                            styleName: dropdowndata?.style,
+                        };
+                        arr.push(obj);
+                        type.push('style');
+                        selectedAccValue.style = data?.productstyle?.map((item) => item.id);
+                    }
+                    if (data?.productStoneType?.length > 0) {
+                        const obj = {
+                            type: 'stone',
+                            stoneName: dropdowndata?.stoneType,
+                        };
+                        arr.push(obj);
+                        type.push('stone');
+                        selectedAccValue.stone = data?.productStoneType?.map((item) => item.id);
+                    }
+                    if (data?.productDesign?.length > 0) {
+                        const obj = {
+                            type: 'design',
+                            stoneName: dropdowndata?.design,
+                        };
+                        arr.push(obj);
+                        type.push('design');
+                        selectedAccValue.design = data?.productDesign?.map((item) => item.id);
+                    }
+                    setAccordions(arr.flat());
+                    setSelectedArr(type);
+                    setSelectedValues(selectedAccValue);
+                    if (data?.variants?.length > 0) {
+                        const variant = data?.variants?.map((item) => ({
+                            sku: item.sku,
+                            stackMgmt: item.trackInventory,
+                            quantity: item.quantity,
+                            regularPrice: item.price,
+                            salePrice: 0,
+                            name: item.name,
+                        }));
+                        setVariants(variant);
+                        console.log('variant: ', variant);
+                    }
+                    setPublish(data?.channelListings[0]?.isPublished == true ? 'published' : 'draft');
 
                     // setRegularPrice()
                 }
@@ -284,7 +412,72 @@ const ProductEdit = (props: any) => {
         setSelectedCollection(data);
     };
 
-    const CreateProduct = async () => {
+    const objectToFile = (object) => {
+        const url = object.url;
+        const name = url.substring(url.lastIndexOf('/') + 1);
+        const type = object.type;
+        const size = object.size;
+
+        // Create a Blob object from the URL
+        fetch(url)
+            .then((response) => response.blob())
+            .then((blob) => {
+                // Create a File object from the Blob
+                const file = new File([blob], name, { type, lastModified: Date.now() });
+                console.log(file); // Log the File object
+                setFile(file);
+            })
+            .catch((error) => {
+                console.error('Error fetching file:', error);
+            });
+    };
+
+    const uploadImages = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            // Convert the provided object into a File object
+
+            // Create a FormData object and append necessary fields
+            const formData = new FormData();
+            formData.append(
+                'operations',
+                JSON.stringify({
+                    operationName: 'ProductMediaCreate',
+                    variables: { product: id, alt: '', image: null },
+                    query: `mutation ProductMediaCreate($product: ID!, $image: Upload, $alt: String, $mediaUrl: String) {
+                            productMediaCreate(input: {alt: $alt, image: $image, product: $product, mediaUrl: $mediaUrl}) {
+                                errors { ...ProductError }
+                                product { id media { ...ProductMedia } }
+                            }
+                        }
+                        fragment ProductError on ProductError { code field message }
+                        fragment ProductMedia on ProductMedia { id alt sortOrder url(size: 1024) type oembedData }`,
+                })
+            );
+            formData.append('map', JSON.stringify({ '1': ['variables.image'] }));
+            formData.append('1', thumbnailFile);
+
+            // Send the multipart form data request to the GraphQL endpoint
+            const response = await fetch('http://file.prade.in/graphql/', {
+                method: 'POST',
+                headers: {
+                    Authorization: token ? `JWT ${token}` : '',
+                },
+                body: formData,
+            });
+
+            // Parse and handle the response from the server
+            const data = await response.json();
+            console.log(data); // Response from the server
+            setThumbnail(imageUrl);
+            setIsthumbImgUpdate(true);
+            setModal3(false);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+
+    const submit = async () => {
         try {
             const catId = selectedCat?.value;
             console.log('catId: ', catId);
@@ -445,45 +638,44 @@ const ProductEdit = (props: any) => {
     };
 
     // Function to handle file selection
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
         if (selectedFile) {
             const imageUrl = URL.createObjectURL(selectedFile);
             setImageUrl(imageUrl);
-            setThumbnailFile(selectedFile);
+            setThumbnailFile(event.target.files[0]);
         }
+    };
+
+    const multiImgUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = event.target.files[0];
+        const imageUrl = URL.createObjectURL(selectedFile);
+        const obj = {
+            lastModified: selectedFile.lastModified,
+            lastModifiedDate: selectedFile.lastModifiedDate,
+            name: selectedFile.name,
+            size: selectedFile.size,
+            type: selectedFile.type,
+            webkitRelativePath: selectedFile.webkitRelativePath,
+            url: imageUrl,
+            __typename: 'ProductMedia',
+        };
+
+        setImages([...images, obj]);
+    };
+
+    const multiImageDelete = () => {
+        const filter = images?.filter((item, index) => index !== 0);
+        setImages(filter);
     };
 
     // Function to handle upload button click
     const handleUpload = async () => {
         // Here you can perform any upload operation if needed
-        console.log('Uploading image:', imageUrl);
-        setThumbnail(imageUrl);
-        setModal3(false);
+        uploadImages();
 
-       
+        // setImages([...images, thumbnailFile]);
     };
-
-    const uploadImage=async()=>{
-        const formData = new FormData();
-        formData.append('image', imageUrl);
-        console.log("imageUrl: ", imageUrl);
-        formData.append('product', id);
-        console.log("id: ", id);
-        formData.append('alt', '');
-        console.log("formData: ", formData);
-
-        try {
-            const { data } = await createProductMedia({
-                variables: {
-                    input: formData,
-                },
-            });
-            console.log('data: ', data);
-        } catch (error) {
-            console.error('Error uploading image:', error.message);
-        }
-    }
 
     // Function to handle delete icon click
     const handleDelete = () => {
@@ -491,6 +683,168 @@ const ProductEdit = (props: any) => {
         setImageUrl('');
         setThumbnail('');
         setThumbnailFile({});
+        imageDelete(thumbnailFile.id);
+
+        // const filter = images?.filter((item, index) => index !== 0);
+        // setImages(filter);
+    };
+
+    const imageDelete = (ids) => {
+        const { data } = removeImage({
+            variables: { channel: 'india-channel', id: ids },
+        });
+        productUpdate();
+    };
+
+    const productUpdate = () => {
+        const { error, data: orderDetails } = useQuery(CHANNEL_LIST, {
+            variables: sampleParams,
+        });
+    };
+
+    const deleteProductGallery = (i) => {
+        const filter = images?.filter((item, index) => index !== i);
+        setImages(filter);
+    };
+
+    const updateProducts = () => {
+        const { data } = updateProduct({
+            variables: {
+                id: id,
+                input: {
+                    attributes: [],
+                    category: selectedCat.value,
+                    collections: selectedCollection.value,
+                    description: '{"time":1714207451900,"blocks":[{"id":"EWn3NJZQaf","type":"paragraph","data":{"text":"TESTING"}}],"version":"2.24.3"}',
+                    name: productName,
+                    rating: 3,
+                    seo: {
+                        description: seoDesc,
+                        title: seoTittle,
+                    },
+                    slug: slug,
+                    ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                    ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
+                    ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
+                    ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
+                    ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
+                },
+                firstValues: 10,
+            },
+        });
+        console.log('data: ', data);
+    };
+
+    const arr = [
+        { type: 'design', designName: dropdowndata?.design },
+        { type: 'style', styleName: dropdowndata?.style },
+        { type: 'stone', stoneName: dropdowndata?.stoneType },
+        { type: 'finish', finishName: dropdowndata?.finish },
+    ];
+
+    const optionsVal = arr.map((item) => ({ value: item.type, label: item.type }));
+
+    const handleAddAccordion = () => {
+        const selectedType = arr.find((item) => item.type === chooseType);
+        setSelectedArr([chooseType, ...selectedArr]);
+        setAccordions([selectedType, ...accordions]);
+        setOpenAccordion(chooseType);
+        setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
+    };
+
+    const handleRemoveAccordion = (type) => {
+        setSelectedArr(selectedArr.filter((item) => item !== type));
+        setAccordions(accordions.filter((item) => item.type !== type));
+        setOpenAccordion('');
+        const updatedSelectedValues = { ...selectedValues };
+        delete updatedSelectedValues[type];
+        setSelectedValues(updatedSelectedValues);
+    };
+
+    const handleDropdownChange = (event, type) => {
+        setChooseType(type);
+    };
+
+    const handleToggleAccordion = (type) => {
+        setOpenAccordion(openAccordion === type ? '' : type);
+    };
+
+    const handleMultiSelectChange = (selectedOptions, type) => {
+        const selectedValuesForType = selectedOptions.map((option) => option.value);
+        setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
+    };
+
+    const handleChange = (index, fieldName, fieldValue) => {
+        setVariants((prevItems) => {
+            const updatedItems = [...prevItems];
+            updatedItems[index][fieldName] = fieldValue;
+            return updatedItems;
+        });
+    };
+
+    const handleAddItem = () => {
+        setVariants((prevItems) => [
+            ...prevItems,
+            {
+                sku: '',
+                stackMgmt: false,
+                quantity: 0,
+                regularPrice: 0,
+                salePrice: 0,
+            },
+        ]);
+    };
+
+    const handleRemoveVariants = (index) => {
+        if (index === 0) return; // Prevent removing the first item
+        setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
+    };
+
+    const handleDragStart = (e, id, i) => {
+        console.log('id: ', i);
+        e.dataTransfer.setData('id', id);
+        setDropIndex(id);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = async (e, targetIndex) => {
+        e.preventDefault();
+        const imageId = e.dataTransfer.getData('id');
+        const newIndex = parseInt(targetIndex, 10);
+        let draggedImageIndex = -1;
+        for (let i = 0; i < images.length; i++) {
+            if (images[i].id === dropIndex) {
+                draggedImageIndex = i;
+                break;
+            }
+        }
+
+        if (draggedImageIndex !== -1) {
+            const newImages = [...images];
+            const [draggedImage] = newImages.splice(draggedImageIndex, 1);
+            newImages.splice(newIndex, 0, draggedImage);
+            setImages(newImages);
+            const updatedImg = newImages?.map((item) => item.id);
+            // const { data } = await mediaReorder({
+            //     variables: {
+            //         mediaIds: [
+            //             'UHJvZHVjdE1lZGlhOjQ2',
+            //             'UHJvZHVjdE1lZGlhOjQy',
+            //             'UHJvZHVjdE1lZGlhOjQ4',
+            //             'UHJvZHVjdE1lZGlhOjQ5',
+            //             'UHJvZHVjdE1lZGlhOjUy',
+            //             'UHJvZHVjdE1lZGlhOjUz',
+            //             'UHJvZHVjdE1lZGlhOjU0',
+            //             'UHJvZHVjdE1lZGlhOjU1',
+            //         ],
+            //         productId: 'UHJvZHVjdDo0OA==',
+            //     },
+            // });
+            
+        }
     };
     // -------------------------------------New Added-------------------------------------------------------
 
@@ -582,7 +936,7 @@ const ProductEdit = (props: any) => {
                                                     )}
                                                 </Tab> */}
 
-                                                <Tab as={Fragment}>
+                                                {/* <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
@@ -591,7 +945,7 @@ const ProductEdit = (props: any) => {
                                                             Linked Products
                                                         </button>
                                                     )}
-                                                </Tab>
+                                                </Tab> */}
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
@@ -625,7 +979,7 @@ const ProductEdit = (props: any) => {
                                             </Tab.List>
                                         </div>
                                         <Tab.Panels>
-                                            <Tab.Panel>
+                                            {/* <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 mr-4 pr-6">
                                                         <label htmlFor="upsells" className="block pr-5 text-sm font-medium text-gray-700">
@@ -647,19 +1001,20 @@ const ProductEdit = (props: any) => {
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
                                                     </div>
                                                 </div>
-                                            </Tab.Panel>
+                                            </Tab.Panel> */}
 
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 pr-3">
-                                                        <select className="form-select w-52 flex-1 " style={{ width: '350px' }}>
-                                                            <option value="design">Design</option>
-                                                            <option value="finish">Finish</option>
-                                                            <option value="lock-type">Lock Type</option>
-                                                        </select>
+                                                        <Select
+                                                            placeholder="Select Type"
+                                                            options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
+                                                            onChange={(selectedOption) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
+                                                        />
                                                     </div>
                                                     <div className="mb-5">
-                                                        <button type="button" className="btn btn-outline-primary">
+                                                        <button type="button" className="btn btn-outline-primary" onClick={handleAddAccordion}>
                                                             Add
                                                         </button>
                                                     </div>
@@ -667,36 +1022,47 @@ const ProductEdit = (props: any) => {
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        <div className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
-                                                            <button
-                                                                type="button"
-                                                                className={`flex w-full items-center p-4 text-white-dark dark:bg-[#1b2e4b] ${active === '1' ? '!text-primary' : ''}`}
-                                                                onClick={() => togglePara('1')}
-                                                            >
-                                                                Designs
-                                                                <div className={`ltr:ml-auto rtl:mr-auto ${active === '1' ? 'rotate-180' : ''}`}>
-                                                                    <IconCaretDown />
-                                                                </div>
-                                                            </button>
-                                                            <div>
-                                                                <AnimateHeight duration={300} height={active === '1' ? 'auto' : 0}>
-                                                                    <div className="grid grid-cols-12 gap-4 border-t border-[#d3d3d3] p-4 text-[13px] dark:border-[#1b2e4b]">
-                                                                        <div className="col-span-4">
-                                                                            <p>
-                                                                                Name:
-                                                                                <br /> <span className="font-semibold">Design</span>
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="col-span-8">
-                                                                            <div className="active ">
-                                                                                <div className=" mr-4 ">
-                                                                                    <label htmlFor="value" className="block pr-5 text-sm font-medium text-gray-700">
-                                                                                        Value(s)
-                                                                                    </label>
-                                                                                </div>
-                                                                                <div className="mb-5" style={{ width: '350px' }}>
-                                                                                    <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
-                                                                                    {/* <div className="flex justify-between">
+                                                        {accordions.map((item) => (
+                                                            <div key={item?.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
+                                                                <button
+                                                                    type="button"
+                                                                    className={`flex w-full items-center p-4 text-white-dark dark:bg-[#1b2e4b] ${active === '1' ? '!text-primary' : ''}`}
+                                                                    // onClick={() => togglePara('1')}
+                                                                >
+                                                                    {item?.type}
+                                                                    {/* <button onClick={() => handleRemoveAccordion(item.type)}>Remove</button> */}
+
+                                                                    <div className={`text-red-400 ltr:ml-auto rtl:mr-auto `} onClick={() => handleRemoveAccordion(item.type)}>
+                                                                        <IconTrashLines />
+                                                                    </div>
+                                                                </button>
+                                                                <div>
+                                                                    <AnimateHeight duration={300} height={active === '1' ? 'auto' : 0}>
+                                                                        <div className="grid grid-cols-12 gap-4 border-t border-[#d3d3d3] p-4 text-[13px] dark:border-[#1b2e4b]">
+                                                                            <div className="col-span-4">
+                                                                                <p>
+                                                                                    Name:
+                                                                                    <br /> <span className="font-semibold">{item.type}</span>
+                                                                                </p>
+                                                                            </div>
+                                                                            <div className="col-span-8">
+                                                                                <div className="active ">
+                                                                                    <div className=" mr-4 ">
+                                                                                        <label htmlFor="value" className="block pr-5 text-sm font-medium text-gray-700">
+                                                                                            Value(s)
+                                                                                        </label>
+                                                                                    </div>
+                                                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                                                        <Select
+                                                                                            placeholder={`Select ${item.type} Name`}
+                                                                                            options={item[`${item.type}Name`]}
+                                                                                            onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
+                                                                                            isMulti
+                                                                                            isSearchable={false}
+                                                                                            value={(selectedValues[item.type] || []).map((value) => ({ value, label: value }))}
+                                                                                        />
+                                                                                        {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
+                                                                                        {/* <div className="flex justify-between">
                                                                                         <div className="flex">
                                                                                             <button type="button" className="btn btn-outline-primary btn-sm mr-2 mt-1">
                                                                                                 Select All
@@ -711,64 +1077,14 @@ const ProductEdit = (props: any) => {
                                                                                             </button>
                                                                                         </div>
                                                                                     </div> */}
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
-                                                                </AnimateHeight>
-                                                            </div>
-                                                        </div>
-                                                        <div className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
-                                                            <button
-                                                                type="button"
-                                                                className={`flex w-full items-center p-4 text-white-dark dark:bg-[#1b2e4b] ${active === '2' ? '!text-primary' : ''}`}
-                                                                onClick={() => togglePara('2')}
-                                                            >
-                                                                Finish
-                                                                <div className={`ltr:ml-auto rtl:mr-auto ${active === '2' ? 'rotate-180' : ''}`}>
-                                                                    <IconCaretDown />
+                                                                    </AnimateHeight>
                                                                 </div>
-                                                            </button>
-                                                            <div>
-                                                                <AnimateHeight duration={300} height={active === '2' ? 'auto' : 0}>
-                                                                    <div className="grid w-full grid-cols-12 gap-4 border-t border-[#d3d3d3] p-4 text-[13px] dark:border-[#1b2e4b]">
-                                                                        <div className="col-span-4">
-                                                                            <p>
-                                                                                Name:
-                                                                                <br /> <span className="font-semibold">Finish</span>
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="col-span-8">
-                                                                            <div className="active ">
-                                                                                <div className=" mr-4 ">
-                                                                                    <label htmlFor="value" className="block pr-5 text-sm font-medium text-gray-700">
-                                                                                        Value(s)
-                                                                                    </label>
-                                                                                </div>
-                                                                                <div className="mb-5" style={{ width: '350px' }}>
-                                                                                    <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
-                                                                                    {/* <div className="flex justify-between">
-                                                                                        <div className="flex">
-                                                                                            <button type="button" className="btn btn-outline-primary btn-sm mr-2 mt-1">
-                                                                                                Select All
-                                                                                            </button>
-                                                                                            <button type="button" className="btn btn-outline-primary btn-sm mt-1">
-                                                                                                Select None
-                                                                                            </button>
-                                                                                        </div>
-                                                                                        <div>
-                                                                                            <button type="button" className="btn btn-outline-primary btn-sm mt-1">
-                                                                                                Create Value
-                                                                                            </button>
-                                                                                        </div>
-                                                                                    </div> */}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </AnimateHeight>
                                                             </div>
-                                                        </div>
+                                                        ))}
                                                     </div>
                                                 </div>
                                                 {/* <div>
@@ -779,121 +1095,136 @@ const ProductEdit = (props: any) => {
                                             </Tab.Panel>
 
                                             <Tab.Panel>
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4">
-                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
-                                                            SKU
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5">
-                                                        <input
-                                                            type="text"
-                                                            onChange={(e) => setSku(e.target.value)}
-                                                            value={sku}
-                                                            style={{ width: '350px' }}
-                                                            placeholder="Enter SKU"
-                                                            name="regularPrice"
-                                                            className="form-input "
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4 pr-4">
-                                                        <label htmlFor="regularPrice" className="block  text-sm font-medium text-gray-700">
-                                                            Stock Management
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5">
-                                                        <input type="checkbox" value={stackMgmt} onChange={(e) => setStackMgmt(e.target.checked)} className="form-checkbox" />
-                                                        <span>Track stock quantity for this product</span>{' '}
-                                                    </div>
-                                                </div>
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4 ">
-                                                        <label htmlFor="quantity" className="block  text-sm font-medium text-gray-700">
-                                                            Quantity
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5">
-                                                        <input
-                                                            type="number"
-                                                            onChange={(e) => setQuantity(e.target.value)}
-                                                            value={quantity}
-                                                            style={{ width: '350px' }}
-                                                            placeholder="Enter Quantity"
-                                                            name="quantity"
-                                                            className="form-input"
-                                                            defaultChecked
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4">
-                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
-                                                            Regular Price
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5">
-                                                        <input
-                                                            type="number"
-                                                            onChange={(e) => setRegularPrice(e.target.value)}
-                                                            value={regularPrice}
-                                                            style={{ width: '350px' }}
-                                                            placeholder="Enter Regular Price"
-                                                            name="regularPrice"
-                                                            className="form-input "
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className=" flex items-center">
-                                                        <div className="mb-5 mr-4">
-                                                            <label htmlFor="salePrice" className="block pr-10 text-sm font-medium text-gray-700">
-                                                                Sale Price
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <input
-                                                                type="number"
-                                                                onChange={(e) => setSalePrice(e.target.value)}
-                                                                value={salePrice}
-                                                                style={{ width: '350px' }}
-                                                                placeholder="Enter Sale Price"
-                                                                name="salePrice"
-                                                                className="form-input"
-                                                                required
-                                                            />
-                                                        </div>
-                                                        {/* <div className="mb-5 pl-3">
-                                                            <span className="cursor-pointer text-gray-500 underline" onClick={scheduleOpen}>
-                                                                {!salePrice ? 'Schedule' : 'Cancel'}
-                                                            </span>
-                                                        </div> */}
-                                                    </div>
-                                                    {/* <div>
-                                                        {salePrice && (
-                                                            <>
-                                                                <div className="flex items-center">
-                                                                    <div className="mb-5 mr-4">
-                                                                        <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                                            Sale Price Date
-                                                                        </label>
-                                                                    </div>
-                                                                    <div className="mb-5">
-                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="flex items-end">
-                                                                    <div className="mb-5 pl-28">
-                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
-                                                                    </div>
-                                                                </div>
-                                                            </>
+                                                {variants?.map((item, index) => (
+                                                    <div key={index} className="mb-5 border-b border-gray-200">
+                                                        {index !== 0 && ( // Render remove button only for items after the first one
+                                                            <div className="active flex items-center justify-end text-danger">
+                                                                <button onClick={() => handleRemoveVariants(index)}>
+                                                                    <IconTrashLines />
+                                                                </button>
+                                                            </div>
                                                         )}
-                                                    </div> */}
+                                                        <div className="active flex items-center">
+                                                            <div className="mb-5 mr-4">
+                                                                <label htmlFor={`name${index}`} className="block pr-5 text-sm font-medium text-gray-700">
+                                                                    Variant
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="text"
+                                                                    id={`name${index}`}
+                                                                    name={`name${index}`}
+                                                                    value={item.name}
+                                                                    onChange={(e) => handleChange(index, 'name', e.target.value)}
+                                                                    style={{ width: '350px' }}
+                                                                    placeholder="Enter variants"
+                                                                    className="form-input"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="active flex items-center">
+                                                            <div className="mb-5 mr-4">
+                                                                <label htmlFor={`sku_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
+                                                                    SKU
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="text"
+                                                                    id={`sku_${index}`}
+                                                                    name={`sku_${index}`}
+                                                                    value={item.sku}
+                                                                    onChange={(e) => handleChange(index, 'sku', e.target.value)}
+                                                                    style={{ width: '350px' }}
+                                                                    placeholder="Enter SKU"
+                                                                    className="form-input"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="active flex items-center">
+                                                            <div className="mb-5 mr-4 pr-4">
+                                                                <label htmlFor={`stackMgmt_${index}`} className="block  text-sm font-medium text-gray-700">
+                                                                    Stock Management
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    id={`stackMgmt_${index}`}
+                                                                    name={`stackMgmt_${index}`}
+                                                                    checked={item.stackMgmt}
+                                                                    onChange={(e) => handleChange(index, 'stackMgmt', e.target.checked)}
+                                                                    className="form-checkbox"
+                                                                />
+                                                                <span>Track stock quantity for this product</span>
+                                                            </div>
+                                                        </div>
+                                                        {item.stackMgmt && (
+                                                            <div className="active flex items-center">
+                                                                <div className="mb-5 mr-4 ">
+                                                                    <label htmlFor={`quantity_${index}`} className="block  text-sm font-medium text-gray-700">
+                                                                        Quantity
+                                                                    </label>
+                                                                </div>
+                                                                <div className="mb-5">
+                                                                    <input
+                                                                        type="number"
+                                                                        id={`quantity_${index}`}
+                                                                        name={`quantity_${index}`}
+                                                                        value={item.quantity}
+                                                                        onChange={(e) => handleChange(index, 'quantity', parseInt(e.target.value))}
+                                                                        style={{ width: '350px' }}
+                                                                        placeholder="Enter Quantity"
+                                                                        className="form-input"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        <div className="active flex items-center">
+                                                            <div className="mb-5 mr-4">
+                                                                <label htmlFor={`regularPrice_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
+                                                                    Regular Price
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="number"
+                                                                    id={`regularPrice_${index}`}
+                                                                    name={`regularPrice_${index}`}
+                                                                    value={item.regularPrice}
+                                                                    onChange={(e) => handleChange(index, 'regularPrice', parseFloat(e.target.value))}
+                                                                    style={{ width: '350px' }}
+                                                                    placeholder="Enter Regular Price"
+                                                                    className="form-input"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center">
+                                                            <div className="mb-5 mr-4">
+                                                                <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
+                                                                    Sale Price
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="number"
+                                                                    id={`salePrice_${index}`}
+                                                                    name={`salePrice_${index}`}
+                                                                    value={item.salePrice}
+                                                                    onChange={(e) => handleChange(index, 'salePrice', parseFloat(e.target.value))}
+                                                                    style={{ width: '350px' }}
+                                                                    placeholder="Enter Sale Price"
+                                                                    className="form-input"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <div className="mb-5">
+                                                    <button type="button" className=" btn btn-primary flex justify-end" onClick={handleAddItem}>
+                                                        Add item
+                                                    </button>
                                                 </div>
 
                                                 {/* <div>
@@ -1161,7 +1492,7 @@ const ProductEdit = (props: any) => {
                                 </>
                             ) : null} */}
 
-                            <button type="submit" className="btn btn-primary w-full" onClick={() => CreateProduct()}>
+                            <button type="submit" className="btn btn-primary w-full" onClick={() => updateProducts()}>
                                 Update
                             </button>
                         </div>
@@ -1187,14 +1518,16 @@ const ProductEdit = (props: any) => {
                                 {/* <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" /> */}
                             </div>
                             <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
-                            <p className="mt-5 cursor-pointer text-danger underline" onClick={handleDelete}>
-                                Remove product image
-                            </p>
-                            <div className="flex justify-end">
+                            {thumbnail && (
+                                <p className="mt-2 cursor-pointer text-danger underline" onClick={handleDelete}>
+                                    Remove product image
+                                </p>
+                            )}
+                            {/* <div className="flex justify-end">
                                 <button className="btn btn-primary mt-5" onClick={uploadImage}>
                                     Upload
                                 </button>
-                            </div>
+                            </div> */}
                             {/* <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p> */}
                         </div>
 
@@ -1202,11 +1535,47 @@ const ProductEdit = (props: any) => {
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Gallery</h5>
                             </div>
-                            <div>
-                                <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
+
+                            <div className="grid grid-cols-12 gap-3">
+                                {/* {images?.length > 0 && */}
+                                {images?.length > 0 &&
+                                    images?.map((item, index) => (
+                                        <>
+                                            {/* <div className=" relative h-20 w-20 "> */}
+
+                                            <div
+                                                key={item.id}
+                                                className="relative col-span-4"
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, item.id, index)}
+                                                onDragOver={handleDragOver}
+                                                onDrop={(e) => handleDrop(e, index)}
+                                                // style={{ width: '33.33%', padding: '5px' }}
+                                            >
+                                                <img src={item?.url} alt="Selected" className="object-cover" />
+
+                                                {/* Delete icon */}
+
+                                                <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={() => multiImageDelete(index)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </div>
+                                        </>
+                                    ))}
+
+                                {/* {images?.map((item, index) => (
+                                    <div key={index} className="relative col-span-4">
+                                        <img src={item?.url} alt="Product image" className="object-cover" />
+                                        <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={() => deleteProductGallery(index)}>
+                                            <IconTrashLines className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                ))} */}
                             </div>
 
-                            <p className="mt-5 cursor-pointer text-primary underline">Add product gallery images</p>
+                            <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setModal4(true)}>
+                                Add product gallery images
+                            </p>
                             {/* <button type="button" className="btn btn-primary mt-5" onClick={() => productVideoPopup()}>
                                 + Video
                             </button> */}
@@ -1679,6 +2048,73 @@ const ProductEdit = (props: any) => {
                                                 </div>
                                             </div>
                                         )}
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
+
+            <Transition appear show={modal4} as={Fragment}>
+                <Dialog as="div" open={modal4} onClose={() => setModal3(false)}>
+                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0" />
+                    </Transition.Child>
+                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between border-b bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <div className="text-lg font-bold">Product gallery Image</div>
+                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal4(false)}>
+                                            <IconX />
+                                        </button>
+                                    </div>
+                                    <div className="m-5 pt-5">
+                                        {/* Input for selecting file */}
+                                        <input type="file" id="product-gallery-image" className="form-input" onChange={multiImgUpload} />
+
+                                        {/* Button to upload */}
+                                        {/* <div className="flex justify-end">
+                                            <button className="btn btn-primary mt-5" onClick={handleUpload}>
+                                                Upload
+                                            </button>
+                                        </div> */}
+
+                                        {/* Display preview of the selected image */}
+                                        {images?.length > 0 &&
+                                            images?.map((item, index) => (
+                                                <div className="mt-5 bg-[#f0f0f0] p-5">
+                                                    {/* <div className=" relative h-20 w-20 "> */}
+
+                                                    <div
+                                                        key={item.id}
+                                                        className=" relative h-20 w-20 "
+                                                        draggable
+                                                        onDragStart={(e) => handleDragStart(e, item.id)}
+                                                        onDragOver={handleDragOver}
+                                                        onDrop={(e) => handleDrop(e, index)}
+                                                        // style={{ width: '33.33%', padding: '5px' }}
+                                                    >
+                                                        <img src={item?.url} alt="Selected" className="h-full w-full object-cover " />
+
+                                                        {/* Delete icon */}
+
+                                                        <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={() => multiImageDelete(index)}>
+                                                            <IconTrashLines />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
                                     </div>
                                 </Dialog.Panel>
                             </Transition.Child>
