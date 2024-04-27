@@ -54,7 +54,7 @@ import {
 import { sampleParams } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
 import { cA } from '@fullcalendar/core/internal-common';
-const ProductEdit = () => {
+const AddCoupon = () => {
     const router = useRouter();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
@@ -68,6 +68,7 @@ const ProductEdit = () => {
     });
     const [salePrice, setSalePrice] = useState('');
     const [menuOrder, setMenuOrder] = useState(0);
+    console.log('menuOrder: ', menuOrder);
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -85,27 +86,26 @@ const ProductEdit = () => {
     const [selectedTag, setSelectedTag] = useState([]);
     const [stackMgmt, setStackMgmt] = useState('');
     const [publish, setPublish] = useState('published');
-    const [model4, setModel4] = useState(false);
 
     //for accordiant
     const [selectedArr, setSelectedArr] = useState([]);
     const [accordions, setAccordions] = useState([]);
-    console.log('accordions: ', accordions);
     const [openAccordion, setOpenAccordion] = useState('');
     const [chooseType, setChooseType] = useState('');
     const [selectedValues, setSelectedValues] = useState({});
+    console.log('selectedValues: ', selectedValues);
     const [dropdowndata, setDropdownData] = useState([]);
 
-    const [variants, setVariants] = useState([
-        {
-            sku: '',
-            stackMgmt: false,
-            quantity: 0,
-            regularPrice: 0,
-            salePrice: 0,
-            name: '',
-        },
-    ]);
+    // error message
+    const [productNameErrMsg, setProductNameErrMsg] = useState('');
+    const [slugErrMsg, setSlugErrMsg] = useState('');
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
+    const [descriptionErrMsg, setDescriptionErrMsg] = useState('');
+    const [shortDesErrMsg, setShortDesErrMsg] = useState('');
+    const [skuErrMsg, setSkuErrMsg] = useState('');
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
+    const [categoryErrMsg, setCategoryErrMsg] = useState('');
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -188,6 +188,20 @@ const ProductEdit = () => {
     });
 
     useEffect(() => {
+        let arr = {};
+        // if (designData) {
+        //     arr = designData?.productDesigns;
+        // }
+        // if (styleData) {
+        //     arr = styleData?.productStyles;
+        // }
+        // if (finishData) {
+        //     arr = finishData?.productFinishes;
+        // }
+        // if (stoneData) {
+        //     arr = stoneData?.productStoneTypes;
+        // }
+
         const arr1 = {
             design: designData?.productDesigns,
             style: styleData?.productStyles,
@@ -312,7 +326,7 @@ const ProductEdit = () => {
 
     const selectCat = (cat: any) => {
         setselectedCat(cat);
-        console.log("cat: ", cat);
+        console.log('cat: ', cat);
     };
 
     const selectedCollections = (data: any) => {
@@ -320,8 +334,7 @@ const ProductEdit = () => {
     };
 
     const CreateProduct = async () => {
-
-        console.log("selectedCat", selectedCat)
+        console.log('selectedCat', selectedCat);
 
         setProductNameErrMsg('');
         setSlugErrMsg('');
@@ -364,10 +377,10 @@ const ProductEdit = () => {
             setSalePriceErrMsg('Sale price cannot be empty');
             alert('Sale price cannot be empty');
         }
-        if (selectedCat == "") {
+        if (selectedCat == '') {
             setCategoryErrMsg('Category cannot be empty');
         }
-        
+
         try {
             const catId = selectedCat?.value;
             let collectionId: any[] = [];
@@ -388,7 +401,7 @@ const ProductEdit = () => {
                             title: seoTittle,
                         },
                         slug: slug,
-                        // order_no: menuOrder,
+                        order_no: menuOrder,
                         ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
                         ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
                         ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
@@ -446,16 +459,14 @@ const ProductEdit = () => {
         try {
             const { data } = await createVariant({
                 variables: {
-                    input: [
-                        {
-                            attributes: [],
-                            product: productId,
-                            // sku: sku,
-                            // stocks: [],
-                            // preorder: null,
-                            // trackInventory: stackMgmt,
-                        },
-                    ],
+                    input: {
+                        attributes: [],
+                        product: productId,
+                        sku: sku,
+                        stocks: [],
+                        preorder: null,
+                        trackInventory: stackMgmt,
+                    },
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
@@ -473,71 +484,16 @@ const ProductEdit = () => {
 
     const variantListUpdate = async (variantId: any, productId: any) => {
         try {
-            const variantArr = variants?.map((item) => ({
-                attributes: [],
-                sku: item.sku,
-                name: item.name,
-                trackInventory: item.stackMgmt,
-                // quantity: ? 10 : 0,
-                price: item.regularPrice,
-                channelListings: [
-                    {
-                        channelId: 'Q2hhbm5lbDoy',
-                        price: item.regularPrice,
-                    },
-                ],
-                stocks: [
-                    {
-                        warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-                        quantity: item.stackMgmt ? item.quantity : 0,
-                    },
-                ],
-            }));
-            console.log('variantArr: ', variantArr);
-
             const { data } = await updateVariantList({
                 variables: {
                     id: variantId,
-                    inputs: variantArr,
-
-                    // [
-                    //     {
-                    //         attributes: [],
-                    //         sku: 'sku-3-11',
-                    //         name: 'sku-3-11',
-                    //         trackInventory: true,
-                    //         channelListings: [
-                    //             {
-                    //                 channelId: 'Q2hhbm5lbDoy',
-                    //                 price: 400,
-                    //             },
-                    //         ],
-                    //         stocks: [
-                    //             {
-                    //                 warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-                    //                 quantity: 50,
-                    //             },
-                    //         ],
-                    //     },
-                    //     {
-                    //         attributes: [],
-                    //         sku: 'sku-3-41',
-                    //         name: 'sku-3-21',
-                    //         trackInventory: true,
-                    //         channelListings: [
-                    //             {
-                    //                 channelId: 'Q2hhbm5lbDoy',
-                    //                 price: 500,
-                    //             },
-                    //         ],
-                    //         stocks: [
-                    //             {
-                    //                 warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-                    //                 quantity: 50,
-                    //             },
-                    //         ],
-                    //     },
-                    // ],
+                    input: [
+                        {
+                            channelId: 'Q2hhbm5lbDoy',
+                            costPrice: regularPrice,
+                            price: salePrice,
+                        },
+                    ],
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
@@ -644,39 +600,13 @@ const ProductEdit = () => {
         setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
     };
 
-    const handleChange = (index, fieldName, fieldValue) => {
-        setVariants((prevItems) => {
-            const updatedItems = [...prevItems];
-            updatedItems[index][fieldName] = fieldValue;
-            return updatedItems;
-        });
-    };
-
-    const handleAddItem = () => {
-        setVariants((prevItems) => [
-            ...prevItems,
-            {
-                sku: '',
-                stackMgmt: false,
-                quantity: 0,
-                regularPrice: 0,
-                salePrice: 0,
-            },
-        ]);
-    };
-
-    const handleRemoveVariants = (index) => {
-        if (index === 0) return; // Prevent removing the first item
-        setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
-    };
-
     // -------------------------------------New Added-------------------------------------------------------
 
     return (
         <div>
             <div className="  mt-6">
                 <div className="panel mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Add New Product</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Add new coupon</h5>
 
                     {/* <div className="flex ltr:ml-auto rtl:mr-auto">
                         <button type="button" className="btn btn-primary" onClick={() => CreateProduct()}>
@@ -689,46 +619,17 @@ const ProductEdit = () => {
                     <div className=" col-span-9">
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Product Name
+                               Coupon Code 
                             </label>
                             <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Enter Your Name" name="name" className="form-input" required />
                             {productNameErrMsg && <p className="error-message mt-1 text-red-500">{productNameErrMsg}</p>}
                         </div>
-                        <div className="panel mb-5">
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Slug
-                            </label>
-                            <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="Enter slug" name="name" className="form-input" required />
-                            {slugErrMsg && <p className="error-message mt-1 text-red-500 ">{slugErrMsg}</p>}
-                        </div>
-                        <div className="panel mb-5">
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                SEO
-                            </label>
-                            <input type="text" value={seoTittle} onChange={(e) => setSeoTittle(e.target.value)} placeholder="Enter title" name="name" className="form-input" required />
-                            {seoTittleErrMsg && <p className="error-message mt-1 text-red-500 ">{seoTittleErrMsg}</p>}
-
-                            <textarea
-                                id="ctnTextarea"
-                                value={seoDesc}
-                                onChange={(e) => setSeoDesc(e.target.value)}
-                                rows={3}
-                                className="form-textarea mt-5"
-                                placeholder="Enter Description"
-                                required
-                            ></textarea>
-                            {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
-                        </div>
+                        
+                        
+                       
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
-                                Product description
-                            </label>
-                            <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
-                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
-                        </div>
-                        <div className="panel mb-5">
-                            <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
-                                Product Short description
+                                Coupon description
                             </label>
                             <textarea
                                 id="ctnTextarea"
@@ -767,7 +668,7 @@ const ProductEdit = () => {
                                                     )}
                                                 </Tab> */}
 
-                                                {/* <Tab as={Fragment}>
+                                                <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
@@ -776,7 +677,7 @@ const ProductEdit = () => {
                                                             Linked Products
                                                         </button>
                                                     )}
-                                                </Tab> */}
+                                                </Tab>
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
@@ -810,7 +711,7 @@ const ProductEdit = () => {
                                             </Tab.List>
                                         </div>
                                         <Tab.Panels>
-                                            {/* <Tab.Panel>
+                                            <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 mr-4 pr-6">
                                                         <label htmlFor="upsells" className="block pr-5 text-sm font-medium text-gray-700">
@@ -832,7 +733,7 @@ const ProductEdit = () => {
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
                                                     </div>
                                                 </div>
-                                            </Tab.Panel> */}
+                                            </Tab.Panel>
 
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
@@ -854,17 +755,17 @@ const ProductEdit = () => {
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
                                                         {accordions.map((item) => (
-                                                            <div key={item?.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
+                                                            <div key={item.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
                                                                 <button
                                                                     type="button"
                                                                     className={`flex w-full items-center p-4 text-white-dark dark:bg-[#1b2e4b] ${active === '1' ? '!text-primary' : ''}`}
                                                                     // onClick={() => togglePara('1')}
                                                                 >
-                                                                    {item?.type}
+                                                                    {item.type}
                                                                     {/* <button onClick={() => handleRemoveAccordion(item.type)}>Remove</button> */}
 
                                                                     <div className={`text-red-400 ltr:ml-auto rtl:mr-auto `} onClick={() => handleRemoveAccordion(item.type)}>
-                                                                        <IconTrashLines />
+                                                                        Remove
                                                                     </div>
                                                                 </button>
                                                                 <div>
@@ -926,136 +827,123 @@ const ProductEdit = () => {
                                             </Tab.Panel>
 
                                             <Tab.Panel>
-                                                {variants?.map((item, index) => (
-                                                    <div key={index} className="mb-5 border-b border-gray-200">
-                                                        {index !== 0 && ( // Render remove button only for items after the first one
-                                                            <div className="active flex items-center justify-end text-danger">
-                                                                <button onClick={() => handleRemoveVariants(index)}>
-                                                                    <IconTrashLines />
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                        <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
-                                                                <label htmlFor={`name${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                    Variant
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="text"
-                                                                    id={`name${index}`}
-                                                                    name={`name${index}`}
-                                                                    value={item.name}
-                                                                    onChange={(e) => handleChange(index, 'name', e.target.value)}
-                                                                    style={{ width: '350px' }}
-                                                                    placeholder="Enter variants"
-                                                                    className="form-input"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
-                                                                <label htmlFor={`sku_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                    SKU
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="text"
-                                                                    id={`sku_${index}`}
-                                                                    name={`sku_${index}`}
-                                                                    value={item.sku}
-                                                                    onChange={(e) => handleChange(index, 'sku', e.target.value)}
-                                                                    style={{ width: '350px' }}
-                                                                    placeholder="Enter SKU"
-                                                                    className="form-input"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4 pr-4">
-                                                                <label htmlFor={`stackMgmt_${index}`} className="block  text-sm font-medium text-gray-700">
-                                                                    Stock Management
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    id={`stackMgmt_${index}`}
-                                                                    name={`stackMgmt_${index}`}
-                                                                    checked={item.stackMgmt}
-                                                                    onChange={(e) => handleChange(index, 'stackMgmt', e.target.checked)}
-                                                                    className="form-checkbox"
-                                                                />
-                                                                <span>Track stock quantity for this product</span>
-                                                            </div>
-                                                        </div>
-                                                        {item.stackMgmt && (
-                                                            <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4 ">
-                                                                    <label htmlFor={`quantity_${index}`} className="block  text-sm font-medium text-gray-700">
-                                                                        Quantity
-                                                                    </label>
-                                                                </div>
-                                                                <div className="mb-5">
-                                                                    <input
-                                                                        type="number"
-                                                                        id={`quantity_${index}`}
-                                                                        name={`quantity_${index}`}
-                                                                        value={item.quantity}
-                                                                        onChange={(e) => handleChange(index, 'quantity', parseInt(e.target.value))}
-                                                                        style={{ width: '350px' }}
-                                                                        placeholder="Enter Quantity"
-                                                                        className="form-input"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
-                                                                <label htmlFor={`regularPrice_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                    Regular Price
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="number"
-                                                                    id={`regularPrice_${index}`}
-                                                                    name={`regularPrice_${index}`}
-                                                                    value={item.regularPrice}
-                                                                    onChange={(e) => handleChange(index, 'regularPrice', parseFloat(e.target.value))}
-                                                                    style={{ width: '350px' }}
-                                                                    placeholder="Enter Regular Price"
-                                                                    className="form-input"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center">
-                                                            <div className="mb-5 mr-4">
-                                                                <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
-                                                                    Sale Price
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="number"
-                                                                    id={`salePrice_${index}`}
-                                                                    name={`salePrice_${index}`}
-                                                                    value={item.salePrice}
-                                                                    onChange={(e) => handleChange(index, 'salePrice', parseFloat(e.target.value))}
-                                                                    style={{ width: '350px' }}
-                                                                    placeholder="Enter Sale Price"
-                                                                    className="form-input"
-                                                                />
-                                                            </div>
-                                                        </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4">
+                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            SKU
+                                                        </label>
                                                     </div>
-                                                ))}
-                                                <div className="mb-5">
-                                                    <button type="button" className=" btn btn-primary flex justify-end" onClick={handleAddItem}>
-                                                        Add item
-                                                    </button>
+                                                    <div className="mb-5">
+                                                        <input
+                                                            type="text"
+                                                            onChange={(e) => setSku(e.target.value)}
+                                                            value={sku}
+                                                            style={{ width: '350px' }}
+                                                            placeholder="Enter SKU"
+                                                            name="regularPrice"
+                                                            className="form-input "
+                                                            required
+                                                        />
+                                                        {skuErrMsg && <p className="error-message mt-1 text-red-500 ">{skuErrMsg}</p>}
+                                                    </div>
+                                                </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4 pr-4">
+                                                        <label htmlFor="regularPrice" className="block  text-sm font-medium text-gray-700">
+                                                            Stock Management
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input type="checkbox" value={stackMgmt} onChange={(e) => setStackMgmt(e.target.value)} className="form-checkbox" defaultChecked />
+                                                        <span>Track stock quantity for this product</span>{' '}
+                                                    </div>
+                                                </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4 ">
+                                                        <label htmlFor="quantity" className="block  text-sm font-medium text-gray-700">
+                                                            Quantity
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input
+                                                            type="number"
+                                                            onChange={(e) => setQuantity(e.target.value)}
+                                                            value={quantity}
+                                                            style={{ width: '350px' }}
+                                                            placeholder="Enter Quantity"
+                                                            name="quantity"
+                                                            className="form-input"
+                                                            defaultChecked
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4">
+                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            Regular Price
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input
+                                                            type="number"
+                                                            onChange={(e) => setRegularPrice(e.target.value)}
+                                                            value={regularPrice}
+                                                            style={{ width: '350px' }}
+                                                            placeholder="Enter Regular Price"
+                                                            name="regularPrice"
+                                                            className="form-input "
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className=" flex items-center">
+                                                        <div className="mb-5 mr-4">
+                                                            <label htmlFor="salePrice" className="block pr-10 text-sm font-medium text-gray-700">
+                                                                Sale Price
+                                                            </label>
+                                                        </div>
+                                                        <div className="mb-5">
+                                                            <input
+                                                                type="number"
+                                                                onChange={(e) => setSalePrice(e.target.value)}
+                                                                value={salePrice}
+                                                                style={{ width: '350px' }}
+                                                                placeholder="Enter Sale Price"
+                                                                name="salePrice"
+                                                                className="form-input"
+                                                                required
+                                                            />
+                                                            {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>}
+                                                        </div>
+                                                        {/* <div className="mb-5 pl-3">
+                                                            <span className="cursor-pointer text-gray-500 underline" onClick={scheduleOpen}>
+                                                                {!salePrice ? 'Schedule' : 'Cancel'}
+                                                            </span>
+                                                        </div> */}
+                                                    </div>
+                                                    {/* <div>
+                                                        {salePrice && (
+                                                            <>
+                                                                <div className="flex items-center">
+                                                                    <div className="mb-5 mr-4">
+                                                                        <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                                            Sale Price Date
+                                                                        </label>
+                                                                    </div>
+                                                                    <div className="mb-5">
+                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex items-end">
+                                                                    <div className="mb-5 pl-28">
+                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div> */}
                                                 </div>
 
                                                 {/* <div>
@@ -1153,22 +1041,7 @@ const ProductEdit = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Collections</h5>
-                            </div>
-                            <div className="mb-5">
-                                <Select placeholder="Select an collection" options={collectionList} value={selectedCollection} onChange={selectedCollections} isMulti isSearchable={true} />
-                            </div>
-                        </div>
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Label</h5>
-                            </div>
-                            <div className="mb-5">
-                                <Select placeholder="Select an label" options={options} value={label} onChange={(val) => setLabel(val)} isSearchable={true} />
-                            </div>
-                        </div>
+                        
 
                         {/* <div className="panel mb-5">
                             <div className="grid grid-cols-12 gap-4">
@@ -1328,199 +1201,6 @@ const ProductEdit = () => {
                             </button>
                         </div>
 
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Product Image</h5>
-                            </div>
-                            <div onClick={() => productImagePopup()}>
-                                <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" />
-                            </div>
-                            <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
-
-                            <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
-                        </div>
-
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Product Gallery</h5>
-                            </div>
-                            <div className="grid grid-cols-12 gap-3">
-                                <div className="relative col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                    <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
-                                        <IconTrashLines className="h-4 w-4" />
-                                    </button>
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
-                            </div>
-
-                            <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setModel4(true)}>
-                                Add product gallery images
-                            </p>
-                            {/* <button type="button" className="btn btn-primary mt-5" onClick={() => productVideoPopup()}>
-                                + Video
-                            </button> */}
-                        </div>
-
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Product Categories</h5>
-                            </div>
-                            <div className="mb-5">
-                                <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
-                                {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
-                           
-                            </div>
-                            {/* <div className="mb-5">
-                                {isMounted && (
-                                    <Tab.Group>
-                                        <Tab.List className="mt-3 flex flex-wrap border-b border-white-light dark:border-[#191e3a]">
-                                            <Tab as={Fragment}>
-                                                {({ selected }) => (
-                                                    <button
-                                                        className={`${selected ? '!border-white-light !border-b-white text-danger dark:!border-[#191e3a] dark:!border-b-black' : ''}
-                                                -mb-[1px] flex items-center border border-transparent p-3.5 py-2 !outline-none transition duration-300 hover:text-danger`}
-                                                    >
-                                                        All Categories
-                                                    </button>
-                                                )}
-                                            </Tab>
-                                            <Tab as={Fragment}>
-                                                {({ selected }) => (
-                                                    <button
-                                                        className={`${selected ? '!border-white-light !border-b-white text-danger dark:!border-[#191e3a] dark:!border-b-black' : ''}
-                                                -mb-[1px] flex items-center border border-transparent p-3.5 py-2 !outline-none transition duration-300 hover:text-danger`}
-                                                    >
-                                                        Most Used
-                                                    </button>
-                                                )}
-                                            </Tab>
-                                        </Tab.List>
-                                        <Tab.Panels className="flex-1 border border-t-0 border-white-light p-4 text-sm  dark:border-[#191e3a]">
-                                            <Tab.Panel>
-                                                <div className="active">
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Anklets</span>
-                                                    </div>
-
-                                                    <div className="pb-3 pl-5">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Kada</span>
-                                                    </div>
-
-                                                    <div className="pb-3 pl-5">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Rope Anklet</span>
-                                                    </div>
-
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Bangles & Bracelets</span>
-                                                    </div>
-                                                </div>
-                                            </Tab.Panel>
-                                            <Tab.Panel>
-                                                <div className="active">
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Anklets</span>
-                                                    </div>
-
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Kada</span>
-                                                    </div>
-
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Rope Anklet</span>
-                                                    </div>
-                                                </div>
-                                            </Tab.Panel>
-
-                                            <Tab.Panel>Disabled</Tab.Panel>
-                                        </Tab.Panels>
-                                    </Tab.Group>
-                                )}
-                            </div> */}
-                            {/* <p className="cursor-pointer text-primary underline" onClick={() => addCategoryClick()}>
-                                {addCategory ? 'Cancel' : '+ Add New Category'}
-                            </p>
-                            {addCategory && (
-                                <>
-                                    <div>
-                                        <input type="text" className="form-input mt-3" placeholder="Category Name" />
-                                        <select name="parent-category" id="parent-category" className="form-select mt-3">
-                                            <option>Anklets</option>
-                                            <option>__Black Thread</option>
-                                            <option>__Kada</option>
-                                        </select>
-                                        <button type="button" className="btn btn-primary mt-3">
-                                            Add New Category
-                                        </button>
-                                    </div>
-                                </>
-                            )} */}
-                        </div>
-
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Product Tags</h5>
-                            </div>
-                            <div className="mb-5">
-                                <Select placeholder="Select an tags" options={tagList} value={selectedTag} onChange={(data: any) => setSelectedTag(data)} isSearchable={true} isMulti />
-                            </div>
-                            {/* <div className="mb-5 flex">
-                                <input type="text" className="form-input mr-3 mt-3" placeholder="Product Tags" />
-                                <button type="button" className="btn btn-primary mt-3">
-                                    Add
-                                </button>
-                            </div>
-                            <div>
-                                <p className="mb-5 text-sm text-gray-500">Separate tags with commas</p>
-                                <div className="flex flex-wrap gap-3">
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p> 925 silver jewellery</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>Chennai</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>jewels prade</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>Kundan Earrings</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>prade love</p>
-                                    </div>
-                                </div>
-                            </div> */}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1794,10 +1474,8 @@ const ProductEdit = () => {
                     </div>
                 </Dialog>
             </Transition>
-
-            {/* product multiple img popup */}
         </div>
     );
 };
 
-export default ProductEdit;
+export default AddCoupon;
