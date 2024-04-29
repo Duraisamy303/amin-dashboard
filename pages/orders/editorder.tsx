@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery } from '@apollo/client';
-import { COUNTRY_LIST, CREATE_NOTES, CUSTOMER_LIST, DELETE_NOTES, GET_ORDER_DETAILS, SHIPPING_LIST, STATES_LIST } from '@/query/product';
+import { COUNTRY_LIST, CREATE_NOTES, CUSTOMER_LIST, DELETE_NOTES, GET_ORDER_DETAILS, ORDER_DISCOUNT_UPDATE, SHIPPING_COST_UPDATE, SHIPPING_LIST, STATES_LIST } from '@/query/product';
 import { Loader } from '@mantine/core';
 import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
@@ -59,20 +59,54 @@ const Editorder = () => {
 
     const [addNotes] = useMutation(CREATE_NOTES);
     const [deleteNotes] = useMutation(DELETE_NOTES);
+    const [updateDiscounts] = useMutation(ORDER_DISCOUNT_UPDATE);
+    const [updateShippingCost] = useMutation(SHIPPING_COST_UPDATE);
 
     const { error, data: orderDetails } = useQuery(GET_ORDER_DETAILS, {
-        variables: { id },
+        variables: {
+            id: id,
+            isStaffUser: true,
+            PERMISSION_HANDLE_CHECKOUTS: true,
+            PERMISSION_HANDLE_PAYMENTS: true,
+            PERMISSION_HANDLE_TAXES: true,
+            PERMISSION_IMPERSONATE_USER: true,
+            PERMISSION_MANAGE_APPS: true,
+            PERMISSION_MANAGE_CHANNELS: true,
+            PERMISSION_MANAGE_CHECKOUTS: true,
+            PERMISSION_MANAGE_DISCOUNTS: true,
+            PERMISSION_MANAGE_GIFT_CARD: true,
+            PERMISSION_MANAGE_MENUS: true,
+            PERMISSION_MANAGE_OBSERVABILITY: true,
+            PERMISSION_MANAGE_ORDERS: true,
+            PERMISSION_MANAGE_ORDERS_IMPORT: true,
+            PERMISSION_MANAGE_PAGES: true,
+            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_PLUGINS: true,
+            PERMISSION_MANAGE_PRODUCTS: true,
+            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_SETTINGS: true,
+            PERMISSION_MANAGE_SHIPPING: true,
+            PERMISSION_MANAGE_STAFF: true,
+            PERMISSION_MANAGE_TAXES: true,
+            PERMISSION_MANAGE_TRANSLATIONS: true,
+            PERMISSION_MANAGE_USERS: true,
+        },
     });
+
+    const [lines, setLines] = useState([]);
+    console.log('lines: ', lines);
 
     const { data: countryData } = useQuery(COUNTRY_LIST);
 
-    const { data: shippingProvider } = useQuery(CUSTOMER_LIST, {
+    const { data: shippingProvider } = useQuery(SHIPPING_LIST, {
         variables: sampleParams,
     });
 
-    console.log('shippingProvider: ', shippingProvider);
-
     const [orderData, setOrderData] = useState({});
+    const [discountOpen, setDiscountOpen] = useState(false);
+    const [discount, setDiscount] = useState(0);
+    console.log('discount: ', discount);
+
     const [customerData, setCustomerData] = useState([]);
 
     //CountryList
@@ -90,8 +124,6 @@ const Editorder = () => {
 
     //List data
     const [data, setData] = useState([]);
-
-    const [btnOpen, setbtnOpen] = useState(false);
 
     //For fee
     const [feeOpen, setFeeOpen] = useState(false);
@@ -137,12 +169,19 @@ const Editorder = () => {
         setLoading(true);
         if (orderDetails) {
             if (orderDetails && orderDetails?.order) {
-                console.log('orderDetails?.order: ', orderDetails?.order);
+                console.log('orderDetails?.order: ', orderDetails);
                 setOrderData(orderDetails?.order);
+                setLines(orderDetails?.order?.lines);
                 setLoading(false);
                 const billing = orderDetails?.order?.billingAddress;
                 const shipping = orderDetails?.order?.shippingAddress;
+                if (orderDetails?.order?.discounts?.length > 0) {
+                    setDiscount(orderDetails?.order?.discounts[0]?.amount?.amount);
+                } else {
+                    setDiscount(0);
+                }
 
+                setShippingPrice(orderDetails?.order?.shippingPrice?.gross?.amount);
                 const sampleBillingData = {
                     firstName: billing.firstName,
                     lastName: billing.lastName,
@@ -264,139 +303,6 @@ const Editorder = () => {
         setShowShippingInputs(!showShippingInputs);
     };
 
-    const [items, setItems] = useState<any>([]);
-    console.log('items: ', items);
-
-    const addItem = () => {
-        let maxId = 0;
-        maxId = items?.length ? items.reduce((max: number, character: any) => (character.id > max ? character.id : max), items[0].id) : 0;
-
-        setItems([
-            ...items,
-            {
-                id: maxId + 1,
-                title: '',
-                description: '',
-                rate: 0,
-                quantity: 0,
-                amount: 0,
-            },
-        ]);
-    };
-
-    const removeItem = (item: any = null) => {
-        showDeleteAlert(
-            async () => {
-                setData(data.filter((data: any) => data.id !== item.id));
-
-                Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
-            },
-            () => {
-                Swal.fire('Cancelled', 'Your item List is safe :)', 'error');
-            }
-        );
-
-        // setItems(items.filter((d: any) => d.id !== item.id));
-    };
-
-    const changeQuantityPrice = (type: string, value: string, id: number) => {
-        // const list = items;
-
-        const updatedItems = items.map((item: any) => {
-            if (item.id === id) {
-                // Update the quantity or amount based on the type
-                const updatedValue = type === 'quantity' || type === 'amount' ? Number(value) : value;
-
-                // Calculate the total after updating the quantity or amount
-                const total = Number(item.quantity) * Number(item.amount);
-                console.log('item.quantity: ', item.quantity, item.amount);
-
-                // Return the updated item with the new value and total
-                return {
-                    ...item,
-                    [type]: updatedValue,
-                    total: total,
-                };
-            }
-            return item;
-        });
-        setItems([...updatedItems]);
-
-        console.log('updatedItems: ', updatedItems);
-
-        const item = items.find((d: any) => d.id === id);
-        if (type === 'quantity') {
-            item.quantity = Number(value);
-        }
-        if (type === 'price') {
-            item.amount = Number(value);
-        }
-    };
-
-    // For product
-    const handleAddProduct = (e: any) => {
-        e.preventDefault();
-        const product = { user: selectedUser, quantity: quantity, type: 'product', id: data.length + 1 };
-        setData([product, ...data]);
-        setAddProductOpen(false);
-        setSelectedUser('');
-        setQuantity(0);
-        setProductIsEdit(false);
-    };
-
-    const handleUpdateProduct = (e: any) => {
-        e.preventDefault();
-        const newData = [...data];
-        newData[selectedProduct] = { user: selectedUser, quantity: quantity, type: 'product' };
-        setData(newData);
-        setAddProductOpen(false);
-        setSelectedUser('');
-        setQuantity(0);
-        setProductIsEdit(false);
-    };
-
-    //For fee
-    const handleAddFee = (e: any) => {
-        e.preventDefault();
-        const product = { user: feePrice, type: 'fee', id: data.length + 1 };
-        console.log('product: ', product);
-        setData([...data, product]);
-        setFeeOpen(false);
-        setFeePrice(0);
-        setFeeIsEdit(false);
-    };
-
-    const handleUpdateFee = (e: any) => {
-        console.log('handleUpdateFee: ');
-        e.preventDefault();
-        const newData: any = [...data];
-        newData[selectedFee] = { ...newData[selectedFee], user: feePrice, type: 'fee' };
-        setData(newData);
-        setFeeOpen(false);
-        setFeePrice(0);
-        setFeeIsEdit(false);
-    };
-
-    //For shipping
-    const handleAddShipping = (e: any) => {
-        e.preventDefault();
-        const product = { user: shippingPrice, type: 'shipping', id: data.length + 1 };
-        console.log('product: ', product);
-        setData([...data, product]);
-        setShippingOpen(false);
-        setShippingPrice(0);
-        setShippingIsEdit(false);
-    };
-
-    const handleUpdateShipping = (e: any) => {
-        e.preventDefault();
-        const newData: any = [...data];
-        newData[selectedShipping] = { ...newData[selectedShipping], user: shippingPrice, type: 'shipping' };
-        setData(newData);
-        setShippingOpen(false);
-        setShippingPrice(0);
-        setShippingIsEdit(false);
-    };
 
     const validationSchema = Yup.object().shape({
         billing: Yup.object().shape({
@@ -445,17 +351,47 @@ const Editorder = () => {
             .validate(value)
             .then(() => {
                 // No validation error, clear the error message
-                setErrors((prevErrors:any) => ({ ...prevErrors, [name]: '' }));
+                setErrors((prevErrors: any) => ({ ...prevErrors, [name]: '' }));
             })
-            .catch((error:any) => {
+            .catch((error: any) => {
                 // Validation error, set the error message
-                setErrors((prevErrors:any) => ({ ...prevErrors, [name]: error.message }));
+                setErrors((prevErrors: any) => ({ ...prevErrors, [name]: error.message }));
             });
     };
 
     const handleAddOrder = () => {
         router.push('/orders/addorder');
-    }
+    };
+
+    const updateDiscount = async () => {
+        console.log('orderData?.discounts: ', orderData?.discounts);
+
+        const { data } = await updateDiscounts({
+            variables: {
+                discountId: orderData?.discounts[0]?.id,
+                input: {
+                    reason: '',
+                    value: discount,
+                    valueType: 'PERCENTAGE',
+                },
+            },
+        });
+        console.log('data: ', data);
+    };
+
+    const updateShipping = async () => {
+        console.log('orderData?.discounts: ', orderData?.shippingMethods);
+
+        const { data } = await updateShippingCost({
+            variables: {
+                id: orderData?.id,
+                input: {
+                    shippingMethod: orderData?.shippingMethod?.id,
+                },
+            },
+        });
+        console.log('data: ', data);
+    };
 
     return (
         <>
@@ -518,7 +454,7 @@ const Editorder = () => {
 
                                             {/* <input list="statusOptions" name="status" className="form-select" /> */}
                                             <select className="form-select">
-                                                {customerData?.map((item:any) => (
+                                                {customerData?.map((item: any) => (
                                                     <option value="processing">{item?.node?.name}</option>
                                                 ))}
                                             </select>
@@ -1079,47 +1015,37 @@ const Editorder = () => {
                                                 <th className="w-1">Cost</th>
                                                 <th className="w-1">Qty</th>
                                                 <th>Total</th>
-                                                <th>Action</th>
 
                                                 <th className="w-1"></th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {data?.length <= 0 && (
-                                                <tr>
-                                                    <td colSpan={5} className="!text-center font-semibold">
-                                                        No Item Available
-                                                    </td>
-                                                </tr>
-                                            )}
-                                            {data?.map((item: any, index: any) => {
-                                                console.log('item: ', item);
-                                                return item?.type == 'product' ? (
+                                            {lines?.length > 0 &&
+                                                lines.map((item: any, index: any) => (
                                                     <tr className="panel align-top" key={index}>
                                                         <td>
-                                                            <input
-                                                                type="text"
-                                                                className="form-input min-w-[200px]"
-                                                                placeholder="Enter Item Name"
-                                                                value={item.user}
-                                                                disabled
-                                                                onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                            />
+                                                            <img src={item?.thumbnail?.url} alt="Selected" className="object-cover" />
                                                         </td>
-                                                        <td></td>
+                                                        <td>{item?.unitPrice?.gross?.amount}</td>
                                                         <td>
+                                                            <div>{item?.quantity}</div>
+                                                        </td>
+                                                        <td>
+                                                            <div>{item?.totalPrice?.gross?.amount}</div>
+                                                        </td>
+                                                        {/* <td>
                                                             <input
                                                                 type="number"
                                                                 className="form-input w-32"
                                                                 placeholder="Price"
-                                                                value={item.quantity}
+                                                                value={item.price}
                                                                 min={0}
                                                                 disabled
-                                                                onChange={(e) => changeQuantityPrice('price', e.target.value, item.id)}
+                                                                onChange={(e) => changeQuantityPrice('price', e.target.value, index)}
                                                             />
-                                                        </td>
-                                                        <td>${item.quantity * item.amount}</td>
-                                                        <td>
+                                                        </td> */}
+                                                        {/* <td>${item.quantity * item.price}</td> */}
+                                                        {/* <td>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => {
@@ -1132,100 +1058,12 @@ const Editorder = () => {
                                                             >
                                                                 <IconEdit className="h-5 w-5" />
                                                             </button>
-                                                            <button type="button" onClick={() => removeItem(item)}>
+                                                            <button type="button" onClick={() => removeItem(index)}>
                                                                 <IconX className="h-5 w-5" />
                                                             </button>
-                                                        </td>
+                                                        </td> */}
                                                     </tr>
-                                                ) : item?.type == 'fee' ? (
-                                                    <>
-                                                        <tr className="panel align-top" key={index}>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-input min-w-[200px]"
-                                                                    placeholder="Enter Item Name"
-                                                                    value={'Fee'}
-                                                                    disabled
-                                                                    onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                                />
-                                                            </td>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-input min-w-[200px]"
-                                                                    placeholder="Enter Item Name"
-                                                                    value={item.user}
-                                                                    disabled
-                                                                    onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                                />
-                                                            </td>
-                                                            <td></td>
-                                                            <td>${item.quantity * item.amount}</td>
-                                                            <td>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setFeePrice(item.user);
-                                                                        setFeePrice(item.user);
-                                                                        setFeeOpen(true);
-                                                                        setFeeIsEdit(true);
-                                                                        setSelectedFee(index);
-                                                                    }}
-                                                                >
-                                                                    <IconEdit className="h-5 w-5" />
-                                                                </button>
-                                                                <button type="button" onClick={() => removeItem(item)}>
-                                                                    <IconX className="h-5 w-5" />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    </>
-                                                ) : item?.type == 'shipping' ? (
-                                                    <>
-                                                        <tr className="panel align-top" key={index}>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-input min-w-[200px]"
-                                                                    placeholder="Enter Item Name"
-                                                                    value={'Shipping'}
-                                                                    disabled
-                                                                    onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                                />
-                                                            </td>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-input min-w-[200px]"
-                                                                    placeholder="Enter Item Name"
-                                                                    value={item.user}
-                                                                    disabled
-                                                                    onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                                />
-                                                            </td>
-                                                            <td></td>
-                                                            <td>${item.quantity * item.amount}</td>
-                                                            <td>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setShippingPrice(item.user);
-                                                                        setShippingOpen(true);
-                                                                        setShippingIsEdit(true);
-                                                                        setSelectedShipping(index);
-                                                                    }}
-                                                                >
-                                                                    <IconEdit className="h-5 w-5" />
-                                                                </button>
-                                                                <button type="button" onClick={() => removeItem(item)}>
-                                                                    <IconX className="h-5 w-5" />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    </>
-                                                ) : null;
-                                            })}
+                                                ))}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1234,28 +1072,34 @@ const Editorder = () => {
                                     <div className="sm:w-2/5">
                                         <div className="flex items-center justify-between">
                                             <div>Subtotal</div>
-                                            <div>$265.00</div>
+                                            <div>{orderData?.subtotal?.gross?.amount}</div>
                                         </div>
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Tax(%)</div>
-                                            <div>0%</div>
+                                            <div>{orderData?.total?.tax?.amount}</div>
                                         </div>
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Shipping Rate($)</div>
-                                            <div>$0.00</div>
+                                            <div>{orderData?.shippingPrice?.gross?.amount}</div>
+                                            <div className="cursor-pointer" onClick={() => setShippingOpen(true)}>
+                                                <IconPencil />
+                                            </div>
                                         </div>
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Discount(%)</div>
-                                            <div>0%</div>
+                                            <div>{orderData?.discounts?.length > 0 && orderData?.discounts[0]?.amount?.amount}</div>
+                                            <div className="cursor-pointer" onClick={() => setDiscountOpen(true)}>
+                                                <IconPencil />
+                                            </div>
                                         </div>
                                         <div className="mt-4 flex items-center justify-between font-semibold">
                                             <div>Total</div>
-                                            <div>$265.00</div>
+                                            <div>{orderData?.total?.gross?.amount}</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {btnOpen ? (
+                                {/* {btnOpen ? (
                                     <div className="mt-3 flex  flex-row-reverse gap-1">
                                         <button type="button" className="btn btn-primary" onClick={() => addItem()}>
                                             Save
@@ -1307,7 +1151,7 @@ const Editorder = () => {
                                             Add Item
                                         </button>
                                     </div>
-                                )}
+                                )} */}
                             </div>
                         </div>
 
@@ -1405,138 +1249,89 @@ const Editorder = () => {
                             </div>
                         </div>
                     </div>
-                    <Modal
-                        edit={productIsEdit}
-                        addHeader={'Add Product'}
-                        updateHeader={'Update Product'}
-                        open={addProductOpen}
-                        close={() => setAddProductOpen(false)}
-                        renderComponent={() => (
-                            <div className="p-5">
-                                <form onSubmit={productIsEdit ? handleUpdateProduct : handleAddProduct}>
-                                    <div className=" flex justify-between">
-                                        <label htmlFor="name">Product</label>
-                                        <label htmlFor="name">Quantity</label>
-                                    </div>
-                                    <div className="flex gap-5">
-                                        <select id="user" className="form-select" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
-                                            <option value="">Select User</option>
-                                            <option value="Max Smith">Max Smith</option>
-                                            <option value="John Doe">John Doe</option>
-                                            <option value="Kia Jain">Kia Jain</option>
-                                            <option value="Karena Courtliff">Karena Courtliff</option>
-                                            <option value="Vladamir Koschek">Vladamir Koschek</option>
-                                            <option value="Robert Garcia">Robert Garcia</option>
-                                            <option value="Marie Hamilton">Marie Hamilton</option>
-                                            <option value="Megan Meyers">Megan Meyers</option>
-                                            <option value="Angela Hull">Angela Hull</option>
-                                            <option value="Karen Wolf">Karen Wolf</option>
-                                            <option value="Jasmine Barnes">Jasmine Barnes</option>
-                                            <option value="Thomas Cox">Thomas Cox</option>
-                                            <option value="Marcus Jones">Marcus Jones</option>
-                                            <option value="Matthew Gray">Matthew Gray</option>
-                                            <option value="Chad Davis">Chad Davis</option>
-                                            <option value="Linda Drake">Linda Drake</option>
-                                            <option value="Kathleen Flores">Kathleen Flores</option>
-                                        </select>
-                                        <input
-                                            type="number"
-                                            className="form-input w-20"
-                                            // placeholder="Quantity"
-                                            // defaultValue={item.quantity}
-                                            value={quantity}
-                                            onChange={(e: any) => setQuantity(e.target.value)}
-                                            min={0}
-                                            // onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
-                                        />
-                                    </div>
-
-                                    <div className="mt-8 flex items-center justify-end">
-                                        <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setAddProductOpen(false)}>
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4">
-                                            {productIsEdit ? 'Update Product' : 'Add Product'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
-                    />
-
-                    <Modal
-                        edit={feeIsEdit}
-                        addHeader={'Add Fee'}
-                        updateHeader={'Update Fee'}
-                        open={feeOpen}
-                        close={() => setFeeOpen(false)}
-                        renderComponent={() => (
-                            <div className="p-5">
-                                <form onSubmit={feeIsEdit ? handleUpdateFee : handleAddFee}>
-                                    <div className="">
-                                        <div className="mb-3  bg-[#fbfbfb] text-sm  font-medium dark:bg-[#121c2c]">{'Enter a fixed amount or percentage to apply as a fee.'}</div>
-
-                                        <input
-                                            type="number"
-                                            className="form-input w-full"
-                                            // placeholder="Quantity"
-                                            // defaultValue={item.quantity}
-                                            value={feePrice}
-                                            onChange={(e: any) => setFeePrice(e.target.value)}
-                                            min={0}
-                                            // onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
-                                        />
-                                    </div>
-                                    <div className="mt-8 flex items-center justify-end">
-                                        <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setFeeOpen(false)}>
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4">
-                                            {feeIsEdit ? 'Update Fee' : 'Add Fee'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
-                    />
-
-                    <Modal
-                        edit={shippingIsEdit}
-                        addHeader={'Add Shipping'}
-                        updateHeader={'Update Shipping'}
-                        open={shippingOpen}
-                        close={() => setShippingOpen(false)}
-                        renderComponent={() => (
-                            <div className="p-5">
-                                <form onSubmit={shippingIsEdit ? handleUpdateShipping : handleAddShipping}>
-                                    <div className="">
-                                        <div className="mb-3  bg-[#fbfbfb] text-sm  font-medium dark:bg-[#121c2c]">{'Enter a fixed amount or percentage to apply as a Shipping.'}</div>
-
-                                        <input
-                                            type="number"
-                                            className="form-input w-full"
-                                            // placeholder="Quantity"
-                                            // defaultValue={item.quantity}
-                                            value={shippingPrice}
-                                            onChange={(e: any) => setShippingPrice(e.target.value)}
-                                            min={0}
-                                            // onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
-                                        />
-                                    </div>
-                                    <div className="mt-8 flex items-center justify-end">
-                                        <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setShippingOpen(false)}>
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4">
-                                            {shippingIsEdit ? 'Update Shipping' : 'Add Shipping'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
-                    />
                 </>
             )}
+
+            <Modal
+                addHeader={'Update Discount'}
+                open={discountOpen}
+                close={() => setDiscountOpen(false)}
+                renderComponent={() => (
+                    <div className="p-10 pb-7">
+                        <form onSubmit={updateDiscount}>
+                            <div className=" flex justify-between">
+                                <label htmlFor="name">Discount</label>
+                            </div>
+                            <div className="flex w-full">
+                                {/* <select id="user" className="form-select" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
+                                            {productList?.map((items)=>
+                                            <option value={items.value}>={items.name}</option>
+                                            )}
+                                           
+                                        </select> */}
+                                <input
+                                    type="number"
+                                    className="form-input "
+                                    // placeholder="Quantity"
+                                    // defaultValue={item.quantity}
+                                    value={discount}
+                                    onChange={(e: any) => setDiscount(e.target.value)}
+                                    min={0}
+                                    // onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
+                                />
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-end">
+                                <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setDiscountOpen(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4">
+                                    {'Update Discount'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+            />
+
+            <Modal
+                addHeader={'Update shipping Cost'}
+                open={shippingOpen}
+                close={() => setShippingOpen(false)}
+                renderComponent={() => (
+                    <div className="p-10 pb-7">
+                        <form onSubmit={updateShipping}>
+                            <div className="flex w-full">
+                                {/* <select id="user" className="form-select" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
+                                            {productList?.map((items)=>
+                                            <option value={items.value}>={items.name}</option>
+                                            )}
+                                           
+                                        </select> */}
+                                <input
+                                    type="number"
+                                    className="form-input "
+                                    // placeholder="Quantity"
+                                    // defaultValue={item.quantity}
+                                    value={shippingPrice}
+                                    onChange={(e: any) => setShippingPrice(e.target.value)}
+                                    min={0}
+                                    // onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
+                                />
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-end">
+                                <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setShippingOpen(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4">
+                                    {'Update shipping cost'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+            />
         </>
     );
 };

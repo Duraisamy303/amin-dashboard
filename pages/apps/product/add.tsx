@@ -51,7 +51,7 @@ import {
     UPDATE_PRODUCT_CHANNEL,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { sampleParams } from '@/utils/functions';
+import { sampleParams, uploadImage } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
 import { cA } from '@fullcalendar/core/internal-common';
 const ProductEdit = () => {
@@ -85,7 +85,7 @@ const ProductEdit = () => {
     const [selectedTag, setSelectedTag] = useState([]);
     const [stackMgmt, setStackMgmt] = useState('');
     const [publish, setPublish] = useState('published');
-    const [model4, setModel4] = useState(false);
+    const [modal4, setModal4] = useState(false);
 
     //for accordiant
     const [selectedArr, setSelectedArr] = useState([]);
@@ -94,7 +94,18 @@ const ProductEdit = () => {
     const [openAccordion, setOpenAccordion] = useState('');
     const [chooseType, setChooseType] = useState('');
     const [selectedValues, setSelectedValues] = useState({});
+    const [productNameErrMsg, setProductNameErrMsg] = useState([]);
+    const [slugErrMsg, setSlugErrMsg] = useState([]);
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState([]);
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState([]);
+    const [shortDesErrMsg, setShortDesErrMsg] = useState([]);
+    const [skuErrMsg, setSkuErrMsg] = useState([]);
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState([]);
+    const [categoryErrMsg, setCategoryErrMsg] = useState([]);
     const [dropdowndata, setDropdownData] = useState([]);
+    const [images, setImages] = useState([]);
+    const [imageUrl, setImageUrl] = useState([]);
+    console.log('images: ', imageUrl);
 
     const [variants, setVariants] = useState([
         {
@@ -312,7 +323,7 @@ const ProductEdit = () => {
 
     const selectCat = (cat: any) => {
         setselectedCat(cat);
-        console.log("cat: ", cat);
+        console.log('cat: ', cat);
     };
 
     const selectedCollections = (data: any) => {
@@ -320,54 +331,53 @@ const ProductEdit = () => {
     };
 
     const CreateProduct = async () => {
+        // console.log("selectedCat", selectedCat)
 
-        console.log("selectedCat", selectedCat)
+        // setProductNameErrMsg('');
+        // setSlugErrMsg('');
+        // setSeoTittleErrMsg('');
+        // setSeoDescErrMsg('');
+        // // setDescriptionErrMsg('');
+        // setShortDesErrMsg('');
+        // setSkuErrMsg('');
+        // setSalePriceErrMsg('');
+        // setCategoryErrMsg('');
 
-        setProductNameErrMsg('');
-        setSlugErrMsg('');
-        setSeoTittleErrMsg('');
-        setSeoDescErrMsg('');
-        setDescriptionErrMsg('');
-        setShortDesErrMsg('');
-        setSkuErrMsg('');
-        setSalePriceErrMsg('');
-        setCategoryErrMsg('');
-
-        // Validate the product name and slug
-        if (productName.trim() === '') {
-            // Update the error message for the product name field
-            setProductNameErrMsg('Product name cannot be empty');
-        }
-
-        if (slug.trim() === '') {
-            // Update the error message for the slug field
-            setSlugErrMsg('Slug cannot be empty');
-        }
-        if (seoTittle.trim() === '') {
-            // Update the error message for the slug field
-            setSeoTittleErrMsg('Seo title cannot be empty');
-        }
-        if (seoDesc.trim() === '') {
-            setSeoDescErrMsg('Seo description cannot be empty');
-        }
-        // if(description?.trim() === ''){
-        //     setDescriptionErrMsg('Description cannot be empty');
+        // // Validate the product name and slug
+        // if (productName.trim() === '') {
+        //     // Update the error message for the product name field
+        //     setProductNameErrMsg('Product name cannot be empty');
         // }
-        if (shortDescription?.trim() === '') {
-            setShortDesErrMsg('Short description cannot be empty');
-        }
-        if (sku?.trim() === '') {
-            setSkuErrMsg('Sku cannot be empty');
-            alert('Sku cannot be empty');
-        }
-        if (salePrice?.trim() === '') {
-            setSalePriceErrMsg('Sale price cannot be empty');
-            alert('Sale price cannot be empty');
-        }
-        if (selectedCat == "") {
-            setCategoryErrMsg('Category cannot be empty');
-        }
-        
+
+        // if (slug.trim() === '') {
+        //     // Update the error message for the slug field
+        //     setSlugErrMsg('Slug cannot be empty');
+        // }
+        // if (seoTittle.trim() === '') {
+        //     // Update the error message for the slug field
+        //     setSeoTittleErrMsg('Seo title cannot be empty');
+        // }
+        // if (seoDesc.trim() === '') {
+        //     setSeoDescErrMsg('Seo description cannot be empty');
+        // }
+        // // if(description?.trim() === ''){
+        // //     setDescriptionErrMsg('Description cannot be empty');
+        // // }
+        // if (shortDescription?.trim() === '') {
+        //     setShortDesErrMsg('Short description cannot be empty');
+        // }
+        // if (sku?.trim() === '') {
+        //     setSkuErrMsg('Sku cannot be empty');
+        //     alert('Sku cannot be empty');
+        // }
+        // if (salePrice?.trim() === '') {
+        //     setSalePriceErrMsg('Sale price cannot be empty');
+        //     alert('Sale price cannot be empty');
+        // }
+        // if (selectedCat == "") {
+        //     setCategoryErrMsg('Category cannot be empty');
+        // }
+
         try {
             const catId = selectedCat?.value;
             let collectionId: any[] = [];
@@ -404,6 +414,12 @@ const ProductEdit = () => {
                 console.log('CreateProduct: ', data);
                 const productId = data?.productCreate?.product?.id;
                 productChannelListUpdate(productId);
+                if (images?.length > 0) {
+                    images?.map((item) => {
+                        const imageUpload = uploadImage(productId, item);
+                        console.log('imageUpload: ', imageUpload);
+                    });
+                }
             }
         } catch (error) {
             console.log('error: ', error);
@@ -435,55 +451,25 @@ const ProductEdit = () => {
             } else {
                 console.log('productChannelListUpdate: ', data);
 
-                variantCreate(productId);
+                variantListUpdate(productId);
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
-    const variantCreate = async (productId: string) => {
-        try {
-            const { data } = await createVariant({
-                variables: {
-                    input: [
-                        {
-                            attributes: [],
-                            product: productId,
-                            // sku: sku,
-                            // stocks: [],
-                            // preorder: null,
-                            // trackInventory: stackMgmt,
-                        },
-                    ],
-                },
-                // variables: { email: formData.email, password: formData.password },
-            });
-            if (data?.productVariantCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
-            } else {
-                console.log('variantCreate: ', data);
-                const variantId = data?.productVariantCreate?.productVariant?.id;
-                variantListUpdate(variantId, productId);
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const variantListUpdate = async (variantId: any, productId: any) => {
+    const variantListUpdate = async (productId: any) => {
         try {
             const variantArr = variants?.map((item) => ({
                 attributes: [],
                 sku: item.sku,
                 name: item.name,
                 trackInventory: item.stackMgmt,
-                // quantity: ? 10 : 0,
-                price: item.regularPrice,
                 channelListings: [
                     {
                         channelId: 'Q2hhbm5lbDoy',
-                        price: item.regularPrice,
+                        price: item.salePrice,
+                        costPrice: item.regularPrice,
                     },
                 ],
                 stocks: [
@@ -495,49 +481,10 @@ const ProductEdit = () => {
             }));
             console.log('variantArr: ', variantArr);
 
-            const { data } = await updateVariantList({
+            const { data } = await createVariant({
                 variables: {
-                    id: variantId,
+                    id: productId,
                     inputs: variantArr,
-
-                    // [
-                    //     {
-                    //         attributes: [],
-                    //         sku: 'sku-3-11',
-                    //         name: 'sku-3-11',
-                    //         trackInventory: true,
-                    //         channelListings: [
-                    //             {
-                    //                 channelId: 'Q2hhbm5lbDoy',
-                    //                 price: 400,
-                    //             },
-                    //         ],
-                    //         stocks: [
-                    //             {
-                    //                 warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-                    //                 quantity: 50,
-                    //             },
-                    //         ],
-                    //     },
-                    //     {
-                    //         attributes: [],
-                    //         sku: 'sku-3-41',
-                    //         name: 'sku-3-21',
-                    //         trackInventory: true,
-                    //         channelListings: [
-                    //             {
-                    //                 channelId: 'Q2hhbm5lbDoy',
-                    //                 price: 500,
-                    //             },
-                    //         ],
-                    //         stocks: [
-                    //             {
-                    //                 warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-                    //                 quantity: 50,
-                    //             },
-                    //         ],
-                    //     },
-                    // ],
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
@@ -589,9 +536,9 @@ const ProductEdit = () => {
     const assignsTagToProduct = async (productId: any) => {
         try {
             let tagId: any[] = [];
-            if (selectedCollection?.length > 0) {
-                tagId = selectedTag?.map((item) => item.value);
-            }
+            // if (selectedCollection?.length > 0) {
+            tagId = selectedTag?.map((item) => item.value);
+            // }
             console.log('tagId: ', tagId);
 
             const { data } = await assignTagToProduct({
@@ -606,7 +553,7 @@ const ProductEdit = () => {
             if (data?.productUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
-                router.push('/product/product');
+                router.push(`/apps/product/edit?id=${productId}`)
                 console.log('success: ', data);
             }
         } catch (error) {
@@ -670,6 +617,20 @@ const ProductEdit = () => {
         setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
     };
 
+    const multiImgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = event.target.files[0];
+        const imageUrl = URL.createObjectURL(selectedFile);
+        console.log('imageUrl: ', imageUrl);
+
+        // Push the selected file into the 'images' array
+        setImages((prevImages) => [...prevImages, selectedFile]);
+
+        // Push the blob URL into the 'imageUrl' array
+        setImageUrl((prevUrls) => [...prevUrls, imageUrl]);
+
+        setModal4(false);
+    };
+
     // -------------------------------------New Added-------------------------------------------------------
 
     return (
@@ -724,7 +685,7 @@ const ProductEdit = () => {
                                 Product description
                             </label>
                             <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
-                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
+                            {/* {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>} */}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
@@ -890,7 +851,10 @@ const ProductEdit = () => {
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value) => ({ value, label: value }))}
+                                                                                            value={(selectedValues[item.type] || []).map((value) => {
+                                                                                                const option = item[`${item.type}Name`].find((option) => option.value === value);
+                                                                                                return { value: option.value, label: option.label };
+                                                                                            })}
                                                                                         />
                                                                                         {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
                                                                                         {/* <div className="flex justify-between">
@@ -1328,7 +1292,7 @@ const ProductEdit = () => {
                             </button>
                         </div>
 
-                        <div className="panel mt-5">
+                        {/* <div className="panel mt-5">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Image</h5>
                             </div>
@@ -1338,37 +1302,29 @@ const ProductEdit = () => {
                             <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
 
                             <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
-                        </div>
+                        </div> */}
 
                         <div className="panel mt-5">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Gallery</h5>
                             </div>
                             <div className="grid grid-cols-12 gap-3">
-                                <div className="relative col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                    <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
-                                        <IconTrashLines className="h-4 w-4" />
-                                    </button>
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
-                                <div className="col-span-4">
-                                    <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                </div>
+                                {imageUrl?.length > 0 &&
+                                    imageUrl?.map((item, index) => (
+                                        <div className="relative col-span-4">
+                                            <img src={item} alt="Product image" className=" object-cover" />
+                                            <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
+                                                <IconTrashLines className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                {/* <div className="col-span-4">
+                                            <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
+                                        </div> */}
                             </div>
 
-                            <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setModel4(true)}>
+                            <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setModal4(true)}>
                                 Add product gallery images
                             </p>
                             {/* <button type="button" className="btn btn-primary mt-5" onClick={() => productVideoPopup()}>
@@ -1383,7 +1339,6 @@ const ProductEdit = () => {
                             <div className="mb-5">
                                 <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
                                 {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
-                           
                             </div>
                             {/* <div className="mb-5">
                                 {isMounted && (
@@ -1796,6 +1751,46 @@ const ProductEdit = () => {
             </Transition>
 
             {/* product multiple img popup */}
+            <Transition appear show={modal4} as={Fragment}>
+                <Dialog as="div" open={modal4} onClose={() => setModal4(false)}>
+                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0" />
+                    </Transition.Child>
+                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between border-b bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <div className="text-lg font-bold">Product gallery Image</div>
+                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal4(false)}>
+                                            <IconX />
+                                        </button>
+                                    </div>
+                                    <div className="m-5 pt-5">
+                                        {/* Input for selecting file */}
+                                        <input type="file" id="product-gallery-image" className="form-input" onChange={multiImgUpload} />
+
+                                        {/* Button to upload */}
+                                        {/* <div className="flex justify-end">
+                                            <button className="btn btn-primary mt-5" onClick={handleUpload}>
+                                                Upload
+                                            </button>
+                                        </div> */}
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
         </div>
     );
 };

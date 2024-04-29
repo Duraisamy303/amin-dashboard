@@ -34,6 +34,7 @@ import { Tab } from '@headlessui/react';
 import AnimateHeight from 'react-animate-height';
 import { useMutation, useQuery } from '@apollo/client';
 import {
+    ASSIGN_TAG_PRODUCT,
     CATEGORY_LIST,
     CHANNEL_LIST,
     COLLECTION_LIST,
@@ -44,6 +45,7 @@ import {
     FINISH_LIST,
     PRODUCT_CAT_LIST,
     PRODUCT_DETAILS,
+    PRODUCT_FULL_DETAILS,
     PRODUCT_LIST_TAGS,
     PRODUCT_MEDIA_CREATE,
     PRODUCT_TYPE_LIST,
@@ -53,9 +55,10 @@ import {
     UPDATE_META_DATA,
     UPDATE_PRODUCT,
     UPDATE_PRODUCT_CHANNEL,
+    UPDATE_VARIANT,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { sampleParams } from '@/utils/functions';
+import { getValueByKey, sampleParams, uploadImage } from '@/utils/functions';
 const ProductEdit = (props: any) => {
     const router = useRouter();
 
@@ -98,8 +101,8 @@ const ProductEdit = (props: any) => {
     };
 
     const options = [
-        { value: 'new', label: 'New' },
-        { value: 'hot', label: 'Hot' },
+        { value: 'New', label: 'New' },
+        { value: 'Hot', label: 'Hot' },
     ];
 
     const togglePara = (value: string) => {
@@ -109,7 +112,7 @@ const ProductEdit = (props: any) => {
     };
 
     // -------------------------------------New Added-------------------------------------------------------
-    const { data: productDetails } = useQuery(PRODUCT_DETAILS, {
+    const { data: productDetails } = useQuery(PRODUCT_FULL_DETAILS, {
         variables: { channel: 'india-channel', id: id },
     });
 
@@ -151,9 +154,12 @@ const ProductEdit = (props: any) => {
 
     const [addFormData] = useMutation(CREATE_PRODUCT);
     const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
-    const [createVariant] = useMutation(CREATE_VARIANT);
+    // const [createVariant] = useMutation(CREATE_VARIANT);
     const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
+    const [updateVariant] = useMutation(UPDATE_VARIANT);
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
+    const [assignTagToProduct] = useMutation(ASSIGN_TAG_PRODUCT);
+
     const [removeImage] = useMutation(REMOVE_IMAGE);
     const [updateProduct] = useMutation(UPDATE_PRODUCT);
     const [deleteVarient] = useMutation(DELETE_VARIENT);
@@ -162,7 +168,7 @@ const ProductEdit = (props: any) => {
 
     const [categoryList, setCategoryList] = useState([]);
     const [tagList, setTagList] = useState([]);
-    const [selectedTag, setSelectedTag] = useState({});
+    const [selectedTag, setSelectedTag] = useState([]);
     const [collectionList, setCollectionList] = useState([]);
     const [label, setLabel] = useState('');
     const [productData, setProductData] = useState({});
@@ -180,7 +186,6 @@ const ProductEdit = (props: any) => {
     const [isthumbImgUpdate, setIsthumbImgUpdate] = useState(false);
 
     const [images, setImages] = useState([]);
-    console.log('images: ', images);
 
     const [selectedArr, setSelectedArr] = useState([]);
     const [accordions, setAccordions] = useState([]);
@@ -198,6 +203,7 @@ const ProductEdit = (props: any) => {
             regularPrice: 0,
             salePrice: 0,
             name: '',
+            id: '',
         },
     ]);
 
@@ -252,24 +258,32 @@ const ProductEdit = (props: any) => {
                     setSeoTittle(data?.seoTitle);
                     setSeoDesc(data?.seoDescription);
                     setProductName(data?.name);
-                    const category: any = categoryList.find((item: any) => item.value === data?.category?.id);
+                    const category: any = categoryList?.find((item: any) => item.value === data?.category?.id);
                     setselectedCat(category);
-                    const collection: any = data?.collections.map((item: any) => ({ value: item.id, label: item.name }));
-                    setSelectedCollection(collection);
-                    // setSku(data?.variants[0]?.sku);
-                    // setStackMgmt(data?.variants[0]?.trackInventory);
+                    if (data?.tags?.length > 0) {
+                        const tags: any = data?.tags?.map((item: any) => ({ value: item.id, label: item.name }));
+                        console.log('tags: ', tags);
+                        setSelectedTag(tags);
+                    } else {
+                        setSelectedTag([]);
+                    }
+                    if (data?.collections?.length > 0) {
+                        const collection: any = data?.collections?.map((item: any) => ({ value: item.id, label: item.name }));
+                        setSelectedCollection(collection);
+                    }
                     setMenuOrder(data?.orderNo);
+
+                    const shortDesc = getValueByKey(data?.metadata, 'short_descripton');
+                    setShortDescription(shortDesc);
+
+                    const label = getValueByKey(data?.metadata, 'label');
+                    setLabel({ value: label, label: label });
+
                     setMediaData(data?.media);
                     setThumbnail(data?.thumbnail?.url);
-                    if (data?.media?.length > 0) {
-                        const img = data?.media[0]?.url;
-                        setThumbnail(img);
-                        const file = objectToFile(data?.media[0]);
 
-                        setThumbnailFile(data?.media[0]);
-                        if (data?.media?.length > 1) {
-                            setImages(data?.media);
-                        }
+                    if (data?.media?.length > 0) {
+                        setImages(data?.media);
                     }
 
                     const arr = [];
@@ -302,14 +316,14 @@ const ProductEdit = (props: any) => {
                         type.push('stone');
                         selectedAccValue.stone = data?.productStoneType?.map((item) => item.id);
                     }
-                    if (data?.productDesign?.length > 0) {
+                    if (data?.productFinish?.length > 0) {
                         const obj = {
-                            type: 'design',
-                            stoneName: dropdowndata?.design,
+                            type: 'finish',
+                            stoneName: dropdowndata?.finish,
                         };
                         arr.push(obj);
-                        type.push('design');
-                        selectedAccValue.design = data?.productDesign?.map((item) => item.id);
+                        type.push('finish');
+                        selectedAccValue.finish = data?.productFinish?.map((item) => item.id);
                     }
                     setAccordions(arr.flat());
                     setSelectedArr(type);
@@ -318,10 +332,11 @@ const ProductEdit = (props: any) => {
                         const variant = data?.variants?.map((item) => ({
                             sku: item.sku,
                             stackMgmt: item.trackInventory,
-                            quantity: item.quantity,
-                            regularPrice: item.price,
-                            salePrice: 0,
+                            quantity: item?.stocks[0]?.quantity,
+                            regularPrice: item.channelListings[0]?.costPrice?.amount,
+                            salePrice: item.channelListings[0]?.price?.amount,
                             name: item.name,
+                            id: id,
                         }));
                         setVariants(variant);
                         console.log('variant: ', variant);
@@ -412,231 +427,6 @@ const ProductEdit = (props: any) => {
         setSelectedCollection(data);
     };
 
-    const objectToFile = (object) => {
-        const url = object.url;
-        const name = url.substring(url.lastIndexOf('/') + 1);
-        const type = object.type;
-        const size = object.size;
-
-        // Create a Blob object from the URL
-        fetch(url)
-            .then((response) => response.blob())
-            .then((blob) => {
-                // Create a File object from the Blob
-                const file = new File([blob], name, { type, lastModified: Date.now() });
-                console.log(file); // Log the File object
-                setFile(file);
-            })
-            .catch((error) => {
-                console.error('Error fetching file:', error);
-            });
-    };
-
-    const uploadImages = async () => {
-        const token = localStorage.getItem('token');
-        try {
-            // Convert the provided object into a File object
-
-            // Create a FormData object and append necessary fields
-            const formData = new FormData();
-            formData.append(
-                'operations',
-                JSON.stringify({
-                    operationName: 'ProductMediaCreate',
-                    variables: { product: id, alt: '', image: null },
-                    query: `mutation ProductMediaCreate($product: ID!, $image: Upload, $alt: String, $mediaUrl: String) {
-                            productMediaCreate(input: {alt: $alt, image: $image, product: $product, mediaUrl: $mediaUrl}) {
-                                errors { ...ProductError }
-                                product { id media { ...ProductMedia } }
-                            }
-                        }
-                        fragment ProductError on ProductError { code field message }
-                        fragment ProductMedia on ProductMedia { id alt sortOrder url(size: 1024) type oembedData }`,
-                })
-            );
-            formData.append('map', JSON.stringify({ '1': ['variables.image'] }));
-            formData.append('1', thumbnailFile);
-
-            // Send the multipart form data request to the GraphQL endpoint
-            const response = await fetch('http://file.prade.in/graphql/', {
-                method: 'POST',
-                headers: {
-                    Authorization: token ? `JWT ${token}` : '',
-                },
-                body: formData,
-            });
-
-            // Parse and handle the response from the server
-            const data = await response.json();
-            console.log(data); // Response from the server
-            setThumbnail(imageUrl);
-            setIsthumbImgUpdate(true);
-            setModal3(false);
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    };
-
-    const submit = async () => {
-        try {
-            const catId = selectedCat?.value;
-            console.log('catId: ', catId);
-            let collectionId: any[] = [];
-            if (selectedCollection?.length > 0) {
-                collectionId = selectedCollection?.map((item) => item.value);
-            }
-            console.log('collectionId: ', collectionId);
-            const { data } = await addFormData({
-                variables: {
-                    input: {
-                        attributes: [],
-                        category: catId,
-                        collections: collectionId,
-                        description: '{"time":1714018366783,"blocks":[{"id":"EWn3NJZQaf","type":"paragraph","data":{"text":"TESTING"}}],"version":"2.24.3"}',
-                        name: productName,
-                        productType: 'UHJvZHVjdFR5cGU6Mg==',
-                        seo: {
-                            description: seoDesc,
-                            title: seoTittle,
-                        },
-                        slug: slug,
-                        order_no: menuOrder,
-                        ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                    },
-                },
-            });
-            if (data?.productCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productCreate?.errors[0]?.message);
-            } else {
-                console.log('CreateProduct: ', data);
-                const productId = data?.productCreate?.product?.id;
-                productChannelListUpdate(productId);
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const productChannelListUpdate = async (productId: any) => {
-        try {
-            const { data } = await updateProductChannelList({
-                variables: {
-                    id: productId,
-                    input: {
-                        updateChannels: [
-                            {
-                                availableForPurchaseDate: null,
-                                channelId: 'Q2hhbm5lbDoy',
-                                isAvailableForPurchase: true,
-                                isPublished: publish == 'draft' ? false : true,
-                                publicationDate: null,
-                                visibleInListings: true,
-                            },
-                        ],
-                    },
-                },
-                // variables: { email: formData.email, password: formData.password },
-            });
-            if (data?.productChannelListingUpdate?.errors?.length > 0) {
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
-            } else {
-                console.log('productChannelListUpdate: ', data);
-
-                variantCreate(productId);
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const variantCreate = async (productId: string) => {
-        try {
-            const { data } = await createVariant({
-                variables: {
-                    input: {
-                        attributes: [],
-                        product: productId,
-                        sku: sku,
-                        stocks: [],
-                        preorder: null,
-                        trackInventory: stackMgmt,
-                    },
-                },
-                // variables: { email: formData.email, password: formData.password },
-            });
-            if (data?.productVariantCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
-            } else {
-                console.log('variantCreate: ', data);
-                const variantId = data?.productVariantCreate?.productVariant?.id;
-                variantListUpdate(variantId, productId);
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const variantListUpdate = async (variantId: any, productId: any) => {
-        try {
-            const { data } = await updateVariantList({
-                variables: {
-                    id: variantId,
-                    input: [
-                        {
-                            channelId: 'Q2hhbm5lbDoy',
-                            costPrice: regularPrice,
-                            price: salePrice,
-                        },
-                    ],
-                },
-                // variables: { email: formData.email, password: formData.password },
-            });
-            if (data?.productVariantCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
-            } else {
-                console.log('variantCreate: ', data);
-                const variantId = data?.productVariantCreate?.productVariant?.id;
-                updateMetaData(productId);
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const updateMetaData = async (productId: any) => {
-        console.log('label: ', label);
-        try {
-            const { data } = await updateMedatData({
-                variables: {
-                    id: productId,
-                    input: [
-                        {
-                            key: 'short_descripton',
-                            value: shortDescription,
-                        },
-                        {
-                            key: 'label',
-                            value: label.value,
-                        },
-                    ],
-                    keysToDelete: [],
-                },
-                // variables: { email: formData.email, password: formData.password },
-            });
-            if (data?.updateMetadata?.errors?.length > 0) {
-                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
-            } else {
-                console.log('success: ', data);
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const productImagePopup = () => {
-        setModal3(true);
-    };
-
     // Function to handle file selection
     const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
@@ -647,35 +437,32 @@ const ProductEdit = (props: any) => {
         }
     };
 
-    const multiImgUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const multiImgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = event.target.files[0];
         const imageUrl = URL.createObjectURL(selectedFile);
-        const obj = {
-            lastModified: selectedFile.lastModified,
-            lastModifiedDate: selectedFile.lastModifiedDate,
-            name: selectedFile.name,
-            size: selectedFile.size,
-            type: selectedFile.type,
-            webkitRelativePath: selectedFile.webkitRelativePath,
-            url: imageUrl,
-            __typename: 'ProductMedia',
-        };
 
-        setImages([...images, obj]);
+        // Push the selected file into the 'images' array
+        // setImages((prevImages) => [...prevImages, selectedFile]);
+
+        // Push the blob URL into the 'imageUrl' array
+        // setImageUrl((prevUrls) => [...prevUrls, imageUrl]);
+
+        setModal4(false);
+
+        const res = await uploadImage(id, selectedFile);
+        console.log('res: ', res);
+        setImages(res.data?.productMediaCreate?.product?.media);
     };
 
-    const multiImageDelete = () => {
-        const filter = images?.filter((item, index) => index !== 0);
-        setImages(filter);
+    const multiImageDelete = async (item) => {
+        const { data } = await removeImage({
+            variables: { id: item.id },
+        });
+        const pendingImg = data?.productMediaDelete?.product?.media;
+        setImages(pendingImg);
     };
 
     // Function to handle upload button click
-    const handleUpload = async () => {
-        // Here you can perform any upload operation if needed
-        uploadImages();
-
-        // setImages([...images, thumbnailFile]);
-    };
 
     // Function to handle delete icon click
     const handleDelete = () => {
@@ -717,7 +504,7 @@ const ProductEdit = (props: any) => {
                     collections: selectedCollection.value,
                     description: '{"time":1714207451900,"blocks":[{"id":"EWn3NJZQaf","type":"paragraph","data":{"text":"TESTING"}}],"version":"2.24.3"}',
                     name: productName,
-                    rating: 3,
+                    rating: 0,
                     seo: {
                         description: seoDesc,
                         title: seoTittle,
@@ -732,7 +519,168 @@ const ProductEdit = (props: any) => {
                 firstValues: 10,
             },
         });
+        if (data?.productUpdate?.errors?.length > 0) {
+            console.log('error');
+        } else {
+            productChannelListUpdate();
+        }
         console.log('data: ', data);
+    };
+
+    const productChannelListUpdate = async () => {
+        try {
+            const { data } = await updateProductChannelList({
+                variables: {
+                    id: id,
+                    input: {
+                        updateChannels: [
+                            {
+                                availableForPurchaseDate: null,
+                                channelId: 'Q2hhbm5lbDoy',
+                                isAvailableForPurchase: true,
+                                isPublished: publish == 'draft' ? false : true,
+                                publicationDate: null,
+                                visibleInListings: true,
+                            },
+                        ],
+                    },
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productChannelListingUpdate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
+                console.log('productChannelListUpdate: ', data);
+
+                // variantCreate(productId);
+                variantListUpdate();
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const variantListUpdate = async () => {
+        try {
+            const variantArr = variants?.map((item) => ({
+                attributes: [],
+                id: item.id,
+                sku: item.sku,
+                name: item.name,
+                trackInventory: item.stackMgmt,
+                channelListings: [
+                    {
+                        channelId: 'Q2hhbm5lbDoy',
+                        price: item.salePrice,
+                        costPrice: item.regularPrice,
+                    },
+                ],
+                stocks: [
+                    {
+                        warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
+                        quantity: item.stackMgmt ? item.quantity : 0,
+                    },
+                ],
+            }));
+            console.log('variantArr: ', variantArr);
+
+            const { data } = await updateVariant({
+                variables: {
+                    id: id,
+                    inputs: variants?.map((item) => ({
+                        attributes: [],
+                        id: item.id,
+                        sku: item.sku,
+                        name: item.name,
+                        trackInventory: item.stackMgmt,
+                        channelListings: [
+                            {
+                                channelId: 'Q2hhbm5lbDoy',
+                                price: item.salePrice,
+                                costPrice: item.regularPrice,
+                            },
+                        ],
+                        stocks: [
+                            {
+                                warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
+                                quantity: item.stackMgmt ? item.quantity : 0,
+                            },
+                        ],
+                    })),
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productVariantUpdate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
+                console.log('variantCreate: ', data);
+                // const variantId = data?.productVariantCreate?.productVariant?.id;
+                updateMetaData();
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const updateMetaData = async () => {
+        console.log('label: ', label);
+        try {
+            const { data } = await updateMedatData({
+                variables: {
+                    id: id,
+                    input: [
+                        {
+                            key: 'short_descripton',
+                            value: shortDescription,
+                        },
+                        {
+                            key: 'label',
+                            value: label.value,
+                        },
+                    ],
+                    keysToDelete: [],
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.updateMetadata?.errors?.length > 0) {
+                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+            } else {
+                console.log('success: ', data);
+                console.log('selectedTag: ', selectedTag);
+
+                assignsTagToProduct();
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const assignsTagToProduct = async () => {
+        try {
+            let tagId: any[] = [];
+            // if (selectedCollection?.length > 0) {
+            tagId = selectedTag?.map((item) => item.value);
+            // }
+            console.log('tagId: ', tagId);
+
+            const { data } = await assignTagToProduct({
+                variables: {
+                    id,
+                    input: {
+                        tags: tagId,
+                    },
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productUpdate?.errors?.length > 0) {
+                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+            } else {
+                // router.push('/product/product');
+                console.log('success: ', data);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
     };
 
     const arr = [
@@ -830,20 +778,10 @@ const ProductEdit = (props: any) => {
             const updatedImg = newImages?.map((item) => item.id);
             // const { data } = await mediaReorder({
             //     variables: {
-            //         mediaIds: [
-            //             'UHJvZHVjdE1lZGlhOjQ2',
-            //             'UHJvZHVjdE1lZGlhOjQy',
-            //             'UHJvZHVjdE1lZGlhOjQ4',
-            //             'UHJvZHVjdE1lZGlhOjQ5',
-            //             'UHJvZHVjdE1lZGlhOjUy',
-            //             'UHJvZHVjdE1lZGlhOjUz',
-            //             'UHJvZHVjdE1lZGlhOjU0',
-            //             'UHJvZHVjdE1lZGlhOjU1',
-            //         ],
-            //         productId: 'UHJvZHVjdDo0OA==',
+            //         mediaIds: updatedImg,
+            //         productId: id,
             //     },
             // });
-            
         }
     };
     // -------------------------------------New Added-------------------------------------------------------
@@ -1008,9 +946,9 @@ const ProductEdit = (props: any) => {
                                                     <div className="mb-5 pr-3">
                                                         <Select
                                                             placeholder="Select Type"
-                                                            options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
+                                                            options={optionsVal.filter((option) => !selectedArr?.includes(option.value))}
                                                             onChange={(selectedOption) => handleDropdownChange(selectedOption, selectedOption.value)}
-                                                            value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
+                                                            value={options?.find((option) => option?.value === chooseType)} // Set the value of the selected type
                                                         />
                                                     </div>
                                                     <div className="mb-5">
@@ -1053,13 +991,24 @@ const ProductEdit = (props: any) => {
                                                                                         </label>
                                                                                     </div>
                                                                                     <div className="mb-5" style={{ width: '350px' }}>
-                                                                                        <Select
+                                                                                        {/* <Select
                                                                                             placeholder={`Select ${item.type} Name`}
                                                                                             options={item[`${item.type}Name`]}
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
                                                                                             value={(selectedValues[item.type] || []).map((value) => ({ value, label: value }))}
+                                                                                        /> */}
+                                                                                        <Select
+                                                                                            placeholder={`Select ${item.type} Name`}
+                                                                                            options={item[`${item.type}Name`]}
+                                                                                            onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
+                                                                                            isMulti
+                                                                                            isSearchable={false}
+                                                                                            value={(selectedValues[item.type] || []).map((value) => {
+                                                                                                const option = item[`${item.type}Name`].find((option) => option.value === value);
+                                                                                                return { value: option.value, label: option.label };
+                                                                                            })}
                                                                                         />
                                                                                         {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
                                                                                         {/* <div className="flex justify-between">
@@ -1095,132 +1044,134 @@ const ProductEdit = (props: any) => {
                                             </Tab.Panel>
 
                                             <Tab.Panel>
-                                                {variants?.map((item, index) => (
-                                                    <div key={index} className="mb-5 border-b border-gray-200">
-                                                        {index !== 0 && ( // Render remove button only for items after the first one
-                                                            <div className="active flex items-center justify-end text-danger">
-                                                                <button onClick={() => handleRemoveVariants(index)}>
-                                                                    <IconTrashLines />
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                        <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
-                                                                <label htmlFor={`name${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                    Variant
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="text"
-                                                                    id={`name${index}`}
-                                                                    name={`name${index}`}
-                                                                    value={item.name}
-                                                                    onChange={(e) => handleChange(index, 'name', e.target.value)}
-                                                                    style={{ width: '350px' }}
-                                                                    placeholder="Enter variants"
-                                                                    className="form-input"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
-                                                                <label htmlFor={`sku_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                    SKU
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="text"
-                                                                    id={`sku_${index}`}
-                                                                    name={`sku_${index}`}
-                                                                    value={item.sku}
-                                                                    onChange={(e) => handleChange(index, 'sku', e.target.value)}
-                                                                    style={{ width: '350px' }}
-                                                                    placeholder="Enter SKU"
-                                                                    className="form-input"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4 pr-4">
-                                                                <label htmlFor={`stackMgmt_${index}`} className="block  text-sm font-medium text-gray-700">
-                                                                    Stock Management
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    id={`stackMgmt_${index}`}
-                                                                    name={`stackMgmt_${index}`}
-                                                                    checked={item.stackMgmt}
-                                                                    onChange={(e) => handleChange(index, 'stackMgmt', e.target.checked)}
-                                                                    className="form-checkbox"
-                                                                />
-                                                                <span>Track stock quantity for this product</span>
-                                                            </div>
-                                                        </div>
-                                                        {item.stackMgmt && (
+                                                {variants?.map((item, index) => {
+                                                    return (
+                                                        <div key={index} className="mb-5 border-b border-gray-200">
+                                                            {index !== 0 && ( // Render remove button only for items after the first one
+                                                                <div className="active flex items-center justify-end text-danger">
+                                                                    <button onClick={() => handleRemoveVariants(index)}>
+                                                                        <IconTrashLines />
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                             <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4 ">
-                                                                    <label htmlFor={`quantity_${index}`} className="block  text-sm font-medium text-gray-700">
-                                                                        Quantity
+                                                                <div className="mb-5 mr-4">
+                                                                    <label htmlFor={`name${index}`} className="block pr-5 text-sm font-medium text-gray-700">
+                                                                        Variant
+                                                                    </label>
+                                                                </div>
+                                                                <div className="mb-5">
+                                                                    <input
+                                                                        type="text"
+                                                                        id={`name${index}`}
+                                                                        name={`name${index}`}
+                                                                        value={item.name}
+                                                                        onChange={(e) => handleChange(index, 'name', e.target.value)}
+                                                                        style={{ width: '350px' }}
+                                                                        placeholder="Enter variants"
+                                                                        className="form-input"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <div className="active flex items-center">
+                                                                <div className="mb-5 mr-4">
+                                                                    <label htmlFor={`sku_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
+                                                                        SKU
+                                                                    </label>
+                                                                </div>
+                                                                <div className="mb-5">
+                                                                    <input
+                                                                        type="text"
+                                                                        id={`sku_${index}`}
+                                                                        name={`sku_${index}`}
+                                                                        value={item.sku}
+                                                                        onChange={(e) => handleChange(index, 'sku', e.target.value)}
+                                                                        style={{ width: '350px' }}
+                                                                        placeholder="Enter SKU"
+                                                                        className="form-input"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <div className="active flex items-center">
+                                                                <div className="mb-5 mr-4 pr-4">
+                                                                    <label htmlFor={`stackMgmt_${index}`} className="block  text-sm font-medium text-gray-700">
+                                                                        Stock Management
+                                                                    </label>
+                                                                </div>
+                                                                <div className="mb-5">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        id={`stackMgmt_${index}`}
+                                                                        name={`stackMgmt_${index}`}
+                                                                        checked={item.stackMgmt}
+                                                                        onChange={(e) => handleChange(index, 'stackMgmt', e.target.checked)}
+                                                                        className="form-checkbox"
+                                                                    />
+                                                                    <span>Track stock quantity for this product</span>
+                                                                </div>
+                                                            </div>
+                                                            {item.stackMgmt && (
+                                                                <div className="active flex items-center">
+                                                                    <div className="mb-5 mr-4 ">
+                                                                        <label htmlFor={`quantity_${index}`} className="block  text-sm font-medium text-gray-700">
+                                                                            Quantity
+                                                                        </label>
+                                                                    </div>
+                                                                    <div className="mb-5">
+                                                                        <input
+                                                                            type="number"
+                                                                            id={`quantity_${index}`}
+                                                                            name={`quantity_${index}`}
+                                                                            value={item?.quantity}
+                                                                            onChange={(e) => handleChange(index, 'quantity', parseInt(e.target.value))}
+                                                                            style={{ width: '350px' }}
+                                                                            placeholder="Enter Quantity"
+                                                                            className="form-input"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="active flex items-center">
+                                                                <div className="mb-5 mr-4">
+                                                                    <label htmlFor={`regularPrice_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
+                                                                        Regular Price
                                                                     </label>
                                                                 </div>
                                                                 <div className="mb-5">
                                                                     <input
                                                                         type="number"
-                                                                        id={`quantity_${index}`}
-                                                                        name={`quantity_${index}`}
-                                                                        value={item.quantity}
-                                                                        onChange={(e) => handleChange(index, 'quantity', parseInt(e.target.value))}
+                                                                        id={`regularPrice_${index}`}
+                                                                        name={`regularPrice_${index}`}
+                                                                        value={item.regularPrice}
+                                                                        onChange={(e) => handleChange(index, 'regularPrice', parseFloat(e.target.value))}
                                                                         style={{ width: '350px' }}
-                                                                        placeholder="Enter Quantity"
+                                                                        placeholder="Enter Regular Price"
                                                                         className="form-input"
                                                                     />
                                                                 </div>
                                                             </div>
-                                                        )}
-                                                        <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
-                                                                <label htmlFor={`regularPrice_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                    Regular Price
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="number"
-                                                                    id={`regularPrice_${index}`}
-                                                                    name={`regularPrice_${index}`}
-                                                                    value={item.regularPrice}
-                                                                    onChange={(e) => handleChange(index, 'regularPrice', parseFloat(e.target.value))}
-                                                                    style={{ width: '350px' }}
-                                                                    placeholder="Enter Regular Price"
-                                                                    className="form-input"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center">
-                                                            <div className="mb-5 mr-4">
-                                                                <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
-                                                                    Sale Price
-                                                                </label>
-                                                            </div>
-                                                            <div className="mb-5">
-                                                                <input
-                                                                    type="number"
-                                                                    id={`salePrice_${index}`}
-                                                                    name={`salePrice_${index}`}
-                                                                    value={item.salePrice}
-                                                                    onChange={(e) => handleChange(index, 'salePrice', parseFloat(e.target.value))}
-                                                                    style={{ width: '350px' }}
-                                                                    placeholder="Enter Sale Price"
-                                                                    className="form-input"
-                                                                />
+                                                            <div className="flex items-center">
+                                                                <div className="mb-5 mr-4">
+                                                                    <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
+                                                                        Sale Price
+                                                                    </label>
+                                                                </div>
+                                                                <div className="mb-5">
+                                                                    <input
+                                                                        type="number"
+                                                                        id={`salePrice_${index}`}
+                                                                        name={`salePrice_${index}`}
+                                                                        value={item.salePrice}
+                                                                        onChange={(e) => handleChange(index, 'salePrice', parseFloat(e.target.value))}
+                                                                        style={{ width: '350px' }}
+                                                                        placeholder="Enter Sale Price"
+                                                                        className="form-input"
+                                                                    />
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                                 <div className="mb-5">
                                                     <button type="button" className=" btn btn-primary flex justify-end" onClick={handleAddItem}>
                                                         Add item
@@ -1497,15 +1448,14 @@ const ProductEdit = (props: any) => {
                             </button>
                         </div>
 
-                        <div className="panel mt-5">
+                        {/* <div className="panel mt-5">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Image</h5>
                             </div>
-                            {/* <div onClick={() => productImagePopup()}>
+                            <div onClick={() => productImagePopup()}>
                                 <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" />
-                            </div> */}
+                            </div>
                             <div
-                                //  onClick={() => productImagePopup()}
                                 onClick={() => productImagePopup()}
                                 className="cursor-pointer"
                                 title="Upload Images"
@@ -1515,7 +1465,6 @@ const ProductEdit = (props: any) => {
                                 ) : (
                                     <img src={thumbnail} alt="Product image" className="h-60 object-cover" />
                                 )}
-                                {/* <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" /> */}
                             </div>
                             <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
                             {thumbnail && (
@@ -1523,13 +1472,13 @@ const ProductEdit = (props: any) => {
                                     Remove product image
                                 </p>
                             )}
-                            {/* <div className="flex justify-end">
+                            <div className="flex justify-end">
                                 <button className="btn btn-primary mt-5" onClick={uploadImage}>
                                     Upload
                                 </button>
-                            </div> */}
-                            {/* <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p> */}
-                        </div>
+                            </div>
+                            <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
+                        </div> */}
 
                         <div className="panel mt-5">
                             <div className="mb-5 border-b border-gray-200 pb-2">
@@ -1556,21 +1505,28 @@ const ProductEdit = (props: any) => {
 
                                                 {/* Delete icon */}
 
-                                                <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={() => multiImageDelete(index)}>
+                                                <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={() => multiImageDelete(item)}>
                                                     <IconTrashLines />
                                                 </button>
                                             </div>
                                         </>
                                     ))}
 
-                                {/* {images?.map((item, index) => (
-                                    <div key={index} className="relative col-span-4">
-                                        <img src={item?.url} alt="Product image" className="object-cover" />
-                                        <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={() => deleteProductGallery(index)}>
-                                            <IconTrashLines className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                ))} */}
+                                {/* <div className="grid grid-cols-12 gap-3">
+                                    {imageUrl?.length > 0 &&
+                                        imageUrl?.map((item, index) => (
+                                            <div className="relative col-span-4">
+                                                <img src={item} alt="Product image" className=" object-cover" />
+                                                <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
+                                                    <IconTrashLines className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        ))} */}
+
+                                {/* <div className="col-span-4">
+                                            <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
+                                        </div> */}
+                                {/* </div> */}
                             </div>
 
                             <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setModal4(true)}>
@@ -1686,7 +1642,7 @@ const ProductEdit = (props: any) => {
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Tags</h5>
                             </div>
                             <div className="mb-5">
-                                <Select placeholder="Select an tags" options={tagList} value={selectedTag} onChange={(data: any) => setSelectedTag(data)} isSearchable={true} />
+                                <Select placeholder="Select an tags" isMulti options={tagList} value={selectedTag} onChange={(data: any) => setSelectedTag(data)} isSearchable={true} />
                             </div>
                             {/* <div className="mb-5 flex">
                                 <input type="text" className="form-input mr-3 mt-3" placeholder="Product Tags" />
@@ -2000,64 +1956,8 @@ const ProductEdit = (props: any) => {
 
             {/* product img popup */}
 
-            <Transition appear show={modal3} as={Fragment}>
-                <Dialog as="div" open={modal3} onClose={() => setModal3(false)}>
-                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-                        <div className="fixed inset-0" />
-                    </Transition.Child>
-                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
-                        <div className="flex min-h-screen items-start justify-center px-4">
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
-                                    <div className="flex items-center justify-between border-b bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">Product gallery Image</div>
-                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal3(false)}>
-                                            <IconX />
-                                        </button>
-                                    </div>
-                                    <div className="m-5 pt-5">
-                                        {/* Input for selecting file */}
-                                        <input type="file" id="product-gallery-image" className="form-input" onChange={handleFileChange} />
-
-                                        {/* Button to upload */}
-                                        <div className="flex justify-end">
-                                            <button className="btn btn-primary mt-5" onClick={handleUpload}>
-                                                Upload
-                                            </button>
-                                        </div>
-
-                                        {/* Display preview of the selected image */}
-                                        {imageUrl && (
-                                            <div className="mt-5 bg-[#f0f0f0] p-5">
-                                                <div className=" relative h-20 w-20">
-                                                    <img src={imageUrl} alt="Selected" className="h-full w-full object-cover " />
-
-                                                    {/* Delete icon */}
-
-                                                    <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={handleDelete}>
-                                                        <IconTrashLines />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Dialog.Panel>
-                            </Transition.Child>
-                        </div>
-                    </div>
-                </Dialog>
-            </Transition>
-
             <Transition appear show={modal4} as={Fragment}>
-                <Dialog as="div" open={modal4} onClose={() => setModal3(false)}>
+                <Dialog as="div" open={modal4} onClose={() => setModal4(false)}>
                     <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
                         <div className="fixed inset-0" />
                     </Transition.Child>
@@ -2091,10 +1991,9 @@ const ProductEdit = (props: any) => {
                                         </div> */}
 
                                         {/* Display preview of the selected image */}
-                                        {images?.length > 0 &&
+                                        {/* {images?.length > 0 &&
                                             images?.map((item, index) => (
                                                 <div className="mt-5 bg-[#f0f0f0] p-5">
-                                                    {/* <div className=" relative h-20 w-20 "> */}
 
                                                     <div
                                                         key={item.id}
@@ -2103,18 +2002,16 @@ const ProductEdit = (props: any) => {
                                                         onDragStart={(e) => handleDragStart(e, item.id)}
                                                         onDragOver={handleDragOver}
                                                         onDrop={(e) => handleDrop(e, index)}
-                                                        // style={{ width: '33.33%', padding: '5px' }}
                                                     >
                                                         <img src={item?.url} alt="Selected" className="h-full w-full object-cover " />
 
-                                                        {/* Delete icon */}
 
                                                         <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={() => multiImageDelete(index)}>
                                                             <IconTrashLines />
                                                         </button>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            ))} */}
                                     </div>
                                 </Dialog.Panel>
                             </Transition.Child>

@@ -1,13 +1,25 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery } from '@apollo/client';
-import { CREATE_NOTES, DELETE_NOTES, FILTER_PRODUCT_LIST, GET_ORDER_DETAILS, SHIPPING_LIST } from '@/query/product';
+import {
+    ADD_NEW_LINE,
+    COUNTRY_LIST,
+    CREATE_NOTES,
+    CUSTOMER_ADDRESS,
+    CUSTOMER_LIST,
+    DELETE_NOTES,
+    FILTER_PRODUCT_LIST,
+    GET_ORDER_DETAILS,
+    ORDER_PRODUCT_LIST,
+    SHIPPING_LIST,
+    STATES_LIST,
+} from '@/query/product';
 import { Loader } from '@mantine/core';
 import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useMutation } from '@apollo/client';
-import { showDeleteAlert } from '@/utils/functions';
+import { sampleParams, showDeleteAlert } from '@/utils/functions';
 import Swal from 'sweetalert2';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconX from '@/components/Icon/IconX';
@@ -20,14 +32,49 @@ import Select from 'react-select';
 const AddOrder = () => {
     const router = useRouter();
 
+    const initialValues = {
+        billing: {
+            firstName: '',
+            lastName: '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            country: '',
+            email: '',
+            phone: '',
+            paymentMethod: '',
+            transactionId: '',
+            countryArea: '',
+            pincode: '',
+        },
+        shipping: {
+            firstName: '',
+            lastName: '',
+            company: '',
+            address_1: '',
+            address_2: '',
+            city: '',
+            state: '',
+            country: '',
+            email: '',
+            phone: '',
+            paymentMethod: '',
+            transactionId: '',
+            countryArea: '',
+            pincode: '',
+        },
+    };
+
+    const [formData, setFormData] = useState(initialValues);
+    const [errors, setErrors] = useState<any>({});
+
     const [addNotes] = useMutation(CREATE_NOTES);
     const [deleteNotes] = useMutation(DELETE_NOTES);
+    const [newAddLine] = useMutation(ADD_NEW_LINE);
 
-    const { id } = router.query;
-
-    const { error, data: orderDetails } = useQuery(GET_ORDER_DETAILS, {
-        variables: { id },
-    });
+    const { data: countryData } = useQuery(COUNTRY_LIST);
 
     const { data: productData } = useQuery(FILTER_PRODUCT_LIST, {
         variables: {
@@ -67,14 +114,87 @@ const AddOrder = () => {
         },
     });
 
-    const { data: shippingProvider } = useQuery(SHIPPING_LIST);
+    const { data: customerAddress } = useQuery(CUSTOMER_ADDRESS, {
+        variables: {
+            id: 'VXNlcjoyMw==',
+            PERMISSION_HANDLE_CHECKOUTS: true,
+            PERMISSION_HANDLE_PAYMENTS: true,
+            PERMISSION_HANDLE_TAXES: true,
+            PERMISSION_IMPERSONATE_USER: true,
+            PERMISSION_MANAGE_APPS: true,
+            PERMISSION_MANAGE_CHANNELS: true,
+            PERMISSION_MANAGE_CHECKOUTS: true,
+            PERMISSION_MANAGE_DISCOUNTS: true,
+            PERMISSION_MANAGE_GIFT_CARD: true,
+            PERMISSION_MANAGE_MENUS: true,
+            PERMISSION_MANAGE_OBSERVABILITY: true,
+            PERMISSION_MANAGE_ORDERS: true,
+            PERMISSION_MANAGE_ORDERS_IMPORT: true,
+            PERMISSION_MANAGE_PAGES: true,
+            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_PLUGINS: true,
+            PERMISSION_MANAGE_PRODUCTS: true,
+            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_SETTINGS: true,
+            PERMISSION_MANAGE_SHIPPING: true,
+            PERMISSION_MANAGE_STAFF: true,
+            PERMISSION_MANAGE_TAXES: true,
+            PERMISSION_MANAGE_TRANSLATIONS: true,
+            PERMISSION_MANAGE_USERS: true,
+        },
+    });
+
+    console.log('customerAddress: ', customerAddress);
+
+    const { data: stateData } = useQuery(STATES_LIST, {
+        variables: { code: formData.billing.country },
+    });
+
+    const { data: shippingProvider } = useQuery(CUSTOMER_LIST, {
+        variables: {
+            after: null,
+            first: 50,
+            query: '',
+            PERMISSION_HANDLE_CHECKOUTS: true,
+            PERMISSION_HANDLE_PAYMENTS: true,
+            PERMISSION_HANDLE_TAXES: true,
+            PERMISSION_IMPERSONATE_USER: true,
+            PERMISSION_MANAGE_APPS: true,
+            PERMISSION_MANAGE_CHANNELS: true,
+            PERMISSION_MANAGE_CHECKOUTS: true,
+            PERMISSION_MANAGE_DISCOUNTS: true,
+            PERMISSION_MANAGE_GIFT_CARD: true,
+            PERMISSION_MANAGE_MENUS: true,
+            PERMISSION_MANAGE_OBSERVABILITY: true,
+            PERMISSION_MANAGE_ORDERS: true,
+            PERMISSION_MANAGE_ORDERS_IMPORT: true,
+            PERMISSION_MANAGE_PAGES: true,
+            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_PLUGINS: true,
+            PERMISSION_MANAGE_PRODUCTS: true,
+            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_SETTINGS: true,
+            PERMISSION_MANAGE_SHIPPING: true,
+            PERMISSION_MANAGE_STAFF: true,
+            PERMISSION_MANAGE_TAXES: true,
+            PERMISSION_MANAGE_TRANSLATIONS: true,
+            PERMISSION_MANAGE_USERS: true,
+        },
+    });
+    console.log('shippingProvider: ', shippingProvider);
 
     const [orderData, setOrderData] = useState<any>({});
     const [customerData, setCustomerData] = useState([]);
+    const [selectedCustomer, setSelectedCustomer] = useState([]);
+    console.log('selectedCustomer: ', selectedCustomer);
+
     const [loading, setLoading] = useState(false);
+    const [countryList, setCountryList] = useState([]);
+    const [selectedCountry, setSelectedCountry] = useState([]);
 
     //List data
     const [data, setData] = useState<any>([]);
+    const [stateList, setStateList] = useState([]);
 
     const [btnOpen, setbtnOpen] = useState(false);
 
@@ -91,7 +211,6 @@ const AddOrder = () => {
     const [selectedUser, setSelectedUser] = useState('');
     const [quantity, setQuantity] = useState(0);
     const [productList, setProductList] = useState([]);
-    console.log('productList: ', productList);
 
     //For shipping
     const [shippingOpen, setShippingOpen] = useState(false);
@@ -103,8 +222,8 @@ const AddOrder = () => {
     const [showShippingInputs, setShowShippingInputs] = useState(false);
 
     useEffect(() => {
-        getOrderData();
-    }, [orderDetails]);
+        getCountryList();
+    }, [countryData]);
 
     useEffect(() => {
         getProductsList();
@@ -113,21 +232,11 @@ const AddOrder = () => {
     useEffect(() => {
         getCustomer();
     }, [shippingProvider]);
-
-    const getOrderData = () => {
-        console.log('getOrderData: ');
-        setLoading(true);
-        if (orderDetails) {
-            if (orderDetails && orderDetails?.order) {
-                setOrderData(orderDetails?.order);
-                setLoading(false);
-            } else {
-                setLoading(false);
-            }
-        } else {
-            setLoading(false);
+    useEffect(() => {
+        if (formData.billing.country) {
+            setStateList(stateData?.addressValidationRules?.countryAreaChoices);
         }
-    };
+    }, [stateData]);
 
     const getProductsList = () => {
         setLoading(true);
@@ -144,12 +253,30 @@ const AddOrder = () => {
             setLoading(false);
         }
     };
+    const getCountryList = () => {
+        setLoading(true);
+        if (countryData) {
+            if (countryData && countryData?.shop && countryData?.shop?.countries?.length > 0) {
+                setCountryList(countryData?.shop?.countries);
+                setLoading(false);
+            } else {
+                setLoading(false);
+            }
+        } else {
+            setLoading(false);
+        }
+    };
 
     const getCustomer = () => {
         setLoading(true);
         if (shippingProvider) {
-            if (shippingProvider && shippingProvider?.shippingCarriers?.edges?.length > 0) {
-                setCustomerData(shippingProvider?.shippingCarriers?.edges);
+            if (shippingProvider && shippingProvider?.search?.edges?.length > 0) {
+                const dropdownData = shippingProvider?.search?.edges?.map((item) => ({
+                    value: item.node?.id,
+                    label: `${item.node?.firstName} -${item.node?.lastName}`,
+                }));
+                console.log("dropdownData: ", dropdownData);
+                setCustomerData(dropdownData);
                 setLoading(false);
             } else {
                 setLoading(false);
@@ -205,7 +332,6 @@ const AddOrder = () => {
     };
 
     const [items, setItems] = useState<any>([]);
-    console.log('items: ', items);
 
     const addItem = () => {
         let maxId = 0;
@@ -276,6 +402,7 @@ const AddOrder = () => {
     // For product
     const handleAddProduct = (e: any) => {
         e.preventDefault();
+        const { data } = newAddLine({});
         const product: any = { user: selectedUser, quantity: quantity, type: 'product', id: data.length + 1 };
         setData([product, ...data]);
         setAddProductOpen(false);
@@ -338,6 +465,68 @@ const AddOrder = () => {
         setShippingIsEdit(false);
     };
 
+    const validationSchema = Yup.object().shape({
+        billing: Yup.object().shape({
+            firstName: Yup.string().required('First Name is required'),
+            lastName: Yup.string().required('Last Name is required'),
+            email: Yup.string().required('Email is required'),
+            company: Yup.string().required('Company is required'),
+            address_1: Yup.string().required('Street address is required'),
+            address_2: Yup.string().required('Street address is required'),
+            city: Yup.string().required('City is required'),
+            pincode: Yup.string().required('Postal code is required'),
+            state: Yup.string().required('State is required'),
+            country: Yup.string().required('Country is required'),
+            phone: Yup.string().required('Phone is required'),
+            paymentMethod: Yup.string().required('PaymentMethod is required'),
+            transactionId: Yup.string().required('TransactionId is required'),
+
+            // Add validation for other billing address fields here
+        }),
+        shipping: Yup.object().shape({
+            firstName: Yup.string().required('First Name is required'),
+            lastName: Yup.string().required('Last Name is required'),
+            email: Yup.string().required('Email is required'),
+            company: Yup.string().required('Company is required'),
+            address_1: Yup.string().required('Street address is required'),
+            address_2: Yup.string().required('Street address is required'),
+            city: Yup.string().required('City is required'),
+            pincode: Yup.string().required('Postal code is required'),
+            state: Yup.string().required('State is required'),
+            country: Yup.string().required('Country is required'),
+            phone: Yup.string().required('Phone is required'),
+            paymentMethod: Yup.string().required('PaymentMethod is required'),
+            transactionId: Yup.string().required('TransactionId is required'),
+        }),
+    });
+
+    const handleChange = (e: any) => {
+        const { name, value } = e.target;
+        const [section, field] = name.split('.');
+        setFormData((prevData: any) => ({
+            ...prevData,
+            [section]: {
+                ...prevData[section],
+                [field]: value,
+            },
+        }));
+        Yup.reach(validationSchema, name)
+            .validate(value)
+            .then(() => {
+                // No validation error, clear the error message
+                setErrors((prevErrors: any) => ({ ...prevErrors, [name]: '' }));
+            })
+            .catch((error: any) => {
+                // Validation error, set the error message
+                setErrors((prevErrors: any) => ({ ...prevErrors, [name]: error.message }));
+            });
+    };
+
+    const getCustomerAddress=(val)=>{
+        console.log("val: ", val);
+
+    }
+
     return (
         <>
             {loading ? (
@@ -398,11 +587,23 @@ const AddOrder = () => {
                                             </div>
 
                                             {/* <input list="statusOptions" name="status" className="form-select" /> */}
-                                            <select className="form-select">
-                                                {customerData?.map((item: any) => (
-                                                    <option value="processing">{item?.node?.name}</option>
+                                            <select
+                                                className="form-select"
+                                                value={selectedCustomer}
+                                                onChange={(val) => {
+                                                    console.log('val: ', val.target.value);
+                                                    setSelectedCustomer(val.target.value);
+                                                    getCustomerAddress(val.target.value);
+                                                }}
+                                            >
+                                                {customerData?.map((item) => (
+                                                    <option>{item.label}</option>
                                                 ))}
                                             </select>
+
+                                            {/* {customerData?.map((item: any) => (
+                                                    <option value="processing">{item?.node?.name}</option>
+                                                ))} */}
                                             {/* <datalist id="statusOptions">
                                                 <option value="processing">processing</option>
                                                 <option value="onhold">onhold</option>
@@ -423,10 +624,36 @@ const AddOrder = () => {
                                         {showBillingInputs === false ? (
                                             <>
                                                 <div className="mt-3 text-gray-500">
-                                                    <p className="font-semibold">Address: </p>
-                                                    <p>No billing address set.</p>
-
-                                                    <p className="mt-3 font-semibold">Email Address:</p>
+                                                    <p>{`${formData?.billing?.firstName} ${formData?.billing?.lastName}`}</p>
+                                                    <p>{formData?.billing?.company}</p>
+                                                    <p>
+                                                        {formData?.billing?.address_1}
+                                                        <br />
+                                                        {formData?.billing?.address_2}
+                                                        <br /> {formData?.billing?.city}
+                                                        <br /> {formData?.billing?.state}
+                                                        <br /> {selectedCountry}
+                                                    </p>
+                                                    {formData?.billing?.email && (
+                                                        <>
+                                                            <p className="mt-3 font-semibold">Email Address:</p>
+                                                            <p>
+                                                                <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
+                                                                    {formData?.billing?.email}
+                                                                </a>
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                    {formData?.billing?.phone && (
+                                                        <>
+                                                            <p className="mt-3 font-semibold">Phone:</p>
+                                                            <p>
+                                                                <a href="tel:01803556656" className="text-primary underline">
+                                                                    {formData?.billing?.phone}
+                                                                </a>
+                                                            </p>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </>
                                         ) : (
@@ -440,13 +667,28 @@ const AddOrder = () => {
                                                         <label htmlFor="firstname" className=" text-sm font-medium text-gray-700">
                                                             First Name
                                                         </label>
-                                                        <input type="text" id="billingfname" name="billingfname" className="form-input" required />
+
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.firstName'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.firstName"
+                                                            value={formData.billing.firstName}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.firstName'] && <div className="mt-1 text-danger">{errors['billing.firstName']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
                                                             Last Name
                                                         </label>
-                                                        <input type="text" id="billinglname" name="billinglname" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.lastName'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.lastName"
+                                                            value={formData.billing.lastName}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.lastName'] && <div className="mt-1 text-danger">{errors['billing.lastName']}</div>}
                                                     </div>
                                                 </div>
 
@@ -455,7 +697,14 @@ const AddOrder = () => {
                                                         <label htmlFor="company" className=" text-sm font-medium text-gray-700">
                                                             Company
                                                         </label>
-                                                        <input type="text" id="billingcompany" name="billingcompany" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.company'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.company"
+                                                            value={formData.billing.company}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.company'] && <div className="mt-1 text-danger">{errors['billing.company']}</div>}
                                                     </div>
                                                 </div>
 
@@ -464,13 +713,29 @@ const AddOrder = () => {
                                                         <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 1
                                                         </label>
-                                                        <input type="text" id="billingaddress1" name="billingaddress1" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.address_1'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.address_1"
+                                                            value={formData.billing.address_1}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.address_1'] && <div className="mt-1 text-danger">{errors['billing.address_1']}</div>}
+
+                                                        {/* <input type="text" id="billingaddress1" name="billingaddress1" className="form-input" required /> */}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 2
                                                         </label>
-                                                        <input type="text" id="billingaddress2" name="billingaddress2" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.address_2'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.address_2"
+                                                            value={formData.billing.address_2}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.address_2'] && <div className="mt-1 text-danger">{errors['billing.address_2']}</div>}
                                                     </div>
                                                 </div>
 
@@ -479,13 +744,27 @@ const AddOrder = () => {
                                                         <label htmlFor="city" className=" text-sm font-medium text-gray-700">
                                                             City
                                                         </label>
-                                                        <input type="text" id="billingcity" name="billingcity" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.city'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.city"
+                                                            value={formData.billing.city}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.city'] && <div className="mt-1 text-danger">{errors['billing.city']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
                                                             Post Code / ZIP
                                                         </label>
-                                                        <input type="text" id="billingpincode" name="billingpincode" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.pincode'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.pincode"
+                                                            value={formData.billing.pincode}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.pincode'] && <div className="mt-1 text-danger">{errors['billing.pincode']}</div>}
                                                     </div>
                                                 </div>
 
@@ -494,21 +773,49 @@ const AddOrder = () => {
                                                         <label htmlFor="country" className=" text-sm font-medium text-gray-700">
                                                             Country / Region
                                                         </label>
-                                                        <select className="form-select mr-3" id="billingcountry" name="billingcountry">
-                                                            <option value="india">India</option>
-                                                            <option value="iran">Iran</option>
-                                                            <option value="italy">Italy</option>
+                                                        <select
+                                                            className={`form-select mr-3 ${errors['billing.country'] && 'border border-danger focus:border-danger'}`}
+                                                            // className="form-select mr-3"
+                                                            id="billingcountry"
+                                                            name="billing.country"
+                                                            value={formData.billing.country}
+                                                            onChange={(e) => {
+                                                                handleChange(e);
+                                                                const selectedCountryCode = e.target.value;
+                                                                const selectedCountry = countryList.find((country) => country.code === selectedCountryCode);
+                                                                if (selectedCountry) {
+                                                                    setSelectedCountry(selectedCountry.country);
+                                                                }
+                                                            }}
+                                                            // value={selectedCountry}
+                                                            // onChange={(e) => getStateList(e.target.value)}
+                                                        >
+                                                            {countryList?.map((item: any) => (
+                                                                <option key={item.code} value={item.code}>
+                                                                    {item.country}
+                                                                </option>
+                                                            ))}
                                                         </select>
+                                                        {errors['billing.country'] && <div className="mt-1 text-danger">{errors['billing.country']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="state" className=" text-sm font-medium text-gray-700">
-                                                            State / County
+                                                            State / Country
                                                         </label>
-                                                        <select className="form-select mr-3" id="billingstate" name="billingstate">
-                                                            <option value="tamilnadu">Tamil Nadu</option>
-                                                            <option value="kerala">Kerala</option>
-                                                            <option value="Delhi">Delhi</option>
+                                                        <select
+                                                            className={`form-select mr-3 ${errors['billing.state'] && 'border border-danger focus:border-danger'}`}
+                                                            id="billingstate"
+                                                            name="billing.state"
+                                                            value={formData.billing.state}
+                                                            onChange={handleChange}
+                                                        >
+                                                            {stateList?.map((item: any) => (
+                                                                <option key={item.raw} value={item.raw}>
+                                                                    {item.raw}
+                                                                </option>
+                                                            ))}
                                                         </select>
+                                                        {errors['billing.state'] && <div className="mt-1 text-danger">{errors['billing.state']}</div>}
                                                     </div>
                                                 </div>
 
@@ -517,13 +824,32 @@ const AddOrder = () => {
                                                         <label htmlFor="email" className=" text-sm font-medium text-gray-700">
                                                             Email address
                                                         </label>
-                                                        <input type="mail" id="billingemail" name="billingemail" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.email'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.email"
+                                                            value={formData.billing.email}
+                                                            maxLength={10}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.email'] && <div className="mt-1 text-danger">{errors['billing.email']}</div>}
+                                                        {/* <input type="mail" className="form-input" name="billing.email" value={formData.billing.email} onChange={handleChange} /> */}
+
+                                                        {/* <input type="mail" id="billingemail" name="billingemail" className="form-input" required /> */}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
                                                             Phone
                                                         </label>
-                                                        <input type="number" id="billingphone" name="billingphone" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['billing.phone'] && 'border border-danger focus:border-danger'}`}
+                                                            name="billing.phone"
+                                                            value={formData.billing.phone}
+                                                            maxLength={10}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['billing.phone'] && <div className="mt-1 text-danger">{errors['billing.phone']}</div>}
                                                     </div>
                                                 </div>
 
@@ -532,7 +858,13 @@ const AddOrder = () => {
                                                         <label htmlFor="payments" className=" text-sm font-medium text-gray-700">
                                                             Payment method:
                                                         </label>
-                                                        <select className="form-select mr-3" id="billingpayments" name="billingpayments">
+                                                        <select
+                                                            className="form-select mr-3"
+                                                            id="billingpayments"
+                                                            name="billing.paymentMethod"
+                                                            value={formData.billing.paymentMethod}
+                                                            onChange={handleChange}
+                                                        >
                                                             <option value="private-note">Private note</option>
                                                             <option value="note-customer">Note to customer</option>
                                                         </select>
@@ -544,7 +876,9 @@ const AddOrder = () => {
                                                         <label htmlFor="transaction" className=" text-sm font-medium text-gray-700">
                                                             Transaction ID
                                                         </label>
-                                                        <input type="text" id="billingtransaction" name="billingtransaction" className="form-input" required />
+                                                        <input type="text" className="form-input" name="billing.transactionId" value={formData.billing.transactionId} onChange={handleChange} />
+
+                                                        {/* <input type="text" id="billingtransaction" name="billingtransaction" className="form-input" required /> */}
                                                     </div>
                                                 </div>
                                             </>
@@ -562,8 +896,34 @@ const AddOrder = () => {
                                         {showShippingInputs === false ? (
                                             <>
                                                 <div className="mt-3 text-gray-500">
-                                                    <p className="font-semibold">Address: </p>
-                                                    <p>No Shipping address set.</p>
+                                                    <p>{`${formData?.shipping?.firstName} ${formData?.shipping?.lastName}`}</p>
+                                                    <p>{formData?.shipping?.company}</p>
+                                                    <p>
+                                                        {`${formData?.shipping?.address_1} - ${formData?.shipping?.address_2}`}
+                                                        <br /> {formData?.shipping?.city}
+                                                        <br /> {formData?.shipping?.state}
+                                                        <br /> {formData?.shipping?.countryArea}
+                                                    </p>
+                                                    {formData?.shipping?.email && (
+                                                        <>
+                                                            <p className="mt-3 font-semibold">Email Address:</p>
+                                                            <p>
+                                                                <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
+                                                                    {formData?.shipping?.email}
+                                                                </a>
+                                                            </p>
+                                                        </>
+                                                    )}
+                                                    {formData?.shipping?.phone && (
+                                                        <>
+                                                            <p className="mt-3 font-semibold">Phone:</p>
+                                                            <p>
+                                                                <a href="tel:01803556656" className="text-primary underline">
+                                                                    {formData?.shipping?.phone}
+                                                                </a>
+                                                            </p>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </>
                                         ) : (
@@ -580,13 +940,28 @@ const AddOrder = () => {
                                                         <label htmlFor="firstname" className=" text-sm font-medium text-gray-700">
                                                             First Name
                                                         </label>
-                                                        <input type="text" id="shippingfname" name="shippingfname" className="form-input" required />
+
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.firstName'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.firstName"
+                                                            value={formData.shipping.firstName}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.firstName'] && <div className="mt-1 text-danger">{errors['shipping.firstName']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
                                                             Last Name
                                                         </label>
-                                                        <input type="text" id="shippinglname" name="shippinglname" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.lastName'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.lastName"
+                                                            value={formData.shipping.lastName}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.lastName'] && <div className="mt-1 text-danger">{errors['shipping.lastName']}</div>}
                                                     </div>
                                                 </div>
 
@@ -595,7 +970,14 @@ const AddOrder = () => {
                                                         <label htmlFor="company" className=" text-sm font-medium text-gray-700">
                                                             Company
                                                         </label>
-                                                        <input type="text" id="shippingcompany" name="shippingcompany" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.company'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.company"
+                                                            value={formData.shipping.company}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.company'] && <div className="mt-1 text-danger">{errors['shipping.company']}</div>}
                                                     </div>
                                                 </div>
 
@@ -604,13 +986,29 @@ const AddOrder = () => {
                                                         <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 1
                                                         </label>
-                                                        <input type="text" id="shippingaddress1" name="shippingaddress1" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.address_1'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.address_1"
+                                                            value={formData.shipping.address_1}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.address_1'] && <div className="mt-1 text-danger">{errors['shipping.address_1']}</div>}
+
+                                                        {/* <input type="text" id="shippingaddress1" name="shippingaddress1" className="form-input" required /> */}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
                                                             Addres Line 2
                                                         </label>
-                                                        <input type="text" id="shippingaddress2" name="shippingaddress2" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.address_2'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.address_2"
+                                                            value={formData.shipping.address_2}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.address_2'] && <div className="mt-1 text-danger">{errors['shipping.address_2']}</div>}
                                                     </div>
                                                 </div>
 
@@ -619,13 +1017,27 @@ const AddOrder = () => {
                                                         <label htmlFor="city" className=" text-sm font-medium text-gray-700">
                                                             City
                                                         </label>
-                                                        <input type="text" id="shippingcity" name="shippingcity" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.city'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.city"
+                                                            value={formData.shipping.city}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.city'] && <div className="mt-1 text-danger">{errors['shipping.city']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
                                                             Post Code / ZIP
                                                         </label>
-                                                        <input type="text" id="shippingpincode" name="shippingpincode" className="form-input" required />
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.pincode'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.pincode"
+                                                            value={formData.shipping.pincode}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.pincode'] && <div className="mt-1 text-danger">{errors['shipping.pincode']}</div>}
                                                     </div>
                                                 </div>
 
@@ -634,36 +1046,105 @@ const AddOrder = () => {
                                                         <label htmlFor="country" className=" text-sm font-medium text-gray-700">
                                                             Country / Region
                                                         </label>
-                                                        <select className="form-select mr-3" id="shippingcountry" name="shippingcountry">
-                                                            <option value="india">India</option>
-                                                            <option value="iran">Iran</option>
-                                                            <option value="italy">Italy</option>
+                                                        <select
+                                                            className={`form-select mr-3 ${errors['shipping.country'] && 'border border-danger focus:border-danger'}`}
+                                                            // className="form-select mr-3"
+                                                            id="shippingcountry"
+                                                            name="shipping.country"
+                                                            value={formData.shipping.country}
+                                                            onChange={handleChange}
+                                                            // value={selectedCountry}
+                                                            // onChange={(e) => getStateList(e.target.value)}
+                                                        >
+                                                            {countryList?.map((item: any) => (
+                                                                <option key={item.code} value={item.code}>
+                                                                    {item.country}
+                                                                </option>
+                                                            ))}
                                                         </select>
+                                                        {errors['shipping.country'] && <div className="mt-1 text-danger">{errors['shipping.country']}</div>}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="state" className=" text-sm font-medium text-gray-700">
-                                                            State / County
+                                                            State / Country
                                                         </label>
-                                                        <select className="form-select mr-3" id="shippingstate" name="shippingstate">
-                                                            <option value="tamilnadu">Tamil Nadu</option>
-                                                            <option value="kerala">Kerala</option>
-                                                            <option value="Delhi">Delhi</option>
+                                                        <select
+                                                            className={`form-select mr-3 ${errors['shipping.state'] && 'border border-danger focus:border-danger'}`}
+                                                            id="shippingstate"
+                                                            name="shipping.state"
+                                                            value={formData.shipping.state}
+                                                            onChange={handleChange}
+                                                        >
+                                                            {stateList?.map((item: any) => (
+                                                                <option key={item.raw} value={item.raw}>
+                                                                    {item.raw}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        {errors['shipping.state'] && <div className="mt-1 text-danger">{errors['shipping.state']}</div>}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-5 grid grid-cols-12 gap-3">
+                                                    <div className="col-span-6">
+                                                        <label htmlFor="email" className=" text-sm font-medium text-gray-700">
+                                                            Email address
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            className={`form-input ${errors['shipping.email'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.email"
+                                                            value={formData.shipping.email}
+                                                            maxLength={10}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.email'] && <div className="mt-1 text-danger">{errors['shipping.email']}</div>}
+                                                        {/* <input type="mail" className="form-input" name="shipping.email" value={formData.shipping.email} onChange={handleChange} /> */}
+
+                                                        {/* <input type="mail" id="shippingemail" name="shippingemail" className="form-input" required /> */}
+                                                    </div>
+                                                    <div className="col-span-6">
+                                                        <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
+                                                            Phone
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            className={`form-input ${errors['shipping.phone'] && 'border border-danger focus:border-danger'}`}
+                                                            name="shipping.phone"
+                                                            value={formData.shipping.phone}
+                                                            maxLength={10}
+                                                            onChange={handleChange}
+                                                        />
+                                                        {errors['shipping.phone'] && <div className="mt-1 text-danger">{errors['shipping.phone']}</div>}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-5 grid grid-cols-12 gap-3">
+                                                    <div className="col-span-12">
+                                                        <label htmlFor="payments" className=" text-sm font-medium text-gray-700">
+                                                            Payment method:
+                                                        </label>
+                                                        <select
+                                                            className="form-select mr-3"
+                                                            id="shippingpayments"
+                                                            name="shipping.paymentMethod"
+                                                            value={formData.shipping.paymentMethod}
+                                                            onChange={handleChange}
+                                                        >
+                                                            <option value="private-note">Private note</option>
+                                                            <option value="note-customer">Note to customer</option>
                                                         </select>
                                                     </div>
                                                 </div>
 
                                                 <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    {/* <div className="col-span-6">
-                                            <label htmlFor="email" className=" text-sm font-medium text-gray-700">
-                                                Email address
-                                            </label>
-                                            <input type="mail" id="billingemail" name="billingemail" className="form-input" required />
-                                        </div> */}
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
-                                                            Phone
+                                                    <div className="col-span-12">
+                                                        <label htmlFor="transaction" className=" text-sm font-medium text-gray-700">
+                                                            Transaction ID
                                                         </label>
-                                                        <input type="number" id="shippingphone" name="shippingphone" className="form-input" required />
+                                                        <input type="text" className="form-input" name="shipping.transactionId" value={formData.shipping.transactionId} onChange={handleChange} />
+
+                                                        {/* <input type="text" id="billingtransaction" name="billingtransaction" className="form-input" required /> */}
                                                     </div>
                                                 </div>
                                                 <div className="mt-5 grid grid-cols-12 gap-3">
@@ -950,7 +1431,7 @@ const AddOrder = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="panel p-5">
+                            {/* <div className="panel p-5">
                                 <div className="mb-5 border-b border-gray-200 pb-2 ">
                                     <h3 className="text-lg font-semibold">Order Notes</h3>
                                 </div>
@@ -972,10 +1453,10 @@ const AddOrder = () => {
                                         <span className=" mr-1 border-b border-dotted border-gray-500">No data found</span>
                                     )}
 
-                                    {/* <div className="mb-5">
+                                    <div className="mb-5">
                                     <div className="text-gray-500">
                                         <div className="mb-2 bg-blue-200 p-3">Hi</div>
-                                        <span class="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
+                                        <span className="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
                                         <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
                                     </div>
                                 </div>
@@ -983,10 +1464,10 @@ const AddOrder = () => {
                                 <div className="mb-5">
                                     <div className="text-gray-500">
                                         <div className="mb-2 bg-pink-200 p-3">Payment to be made upon delivery. Order status changed from Pending payment to Processing.</div>
-                                        <span class="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
+                                        <span Name="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
                                         <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
                                     </div>
-                                </div> */}
+                                </div>
                                 </div>
 
                                 <Formik
@@ -1002,7 +1483,6 @@ const AddOrder = () => {
                                             <Field name="message" component="textarea" id="message" placeholder="Add a note" className="form-textarea" />
 
                                             {errors.message && touched.message && <div className="mt-1 text-danger">{errors.message}</div>}
-                                            {/* <textarea className="form-textarea" rows="2" placeholder="Add a note"></textarea> */}
 
                                             <div className="mt-3 flex items-center justify-between">
                                                 <select
@@ -1022,7 +1502,7 @@ const AddOrder = () => {
                                         </Form>
                                     )}
                                 </Formik>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                     <Modal
@@ -1033,13 +1513,13 @@ const AddOrder = () => {
                         close={() => setAddProductOpen(false)}
                         renderComponent={() => (
                             <div className="p-10 pb-7">
-                                <form onSubmit={productIsEdit ? handleUpdateProduct : handleAddProduct}>
+                                <form onSubmit={handleAddProduct}>
                                     <div className=" flex justify-between">
                                         <label htmlFor="name">Product</label>
                                         <label htmlFor="name">Quantity</label>
                                     </div>
                                     <div className="flex gap-5">
-                                        <Select placeholder="Select an option" options={productList} isSearchable={false} />
+                                        <Select placeholder="Select an option" options={productList} value={selectedProduct} onChange={(val) => setSelectedProduct(val)} isSearchable={true} />
 
                                         {/* <select id="user" className="form-select" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
                                             {productList?.map((items)=>
