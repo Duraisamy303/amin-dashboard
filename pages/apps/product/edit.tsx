@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment } from 'react';
+import { useEffect, useState, Fragment, useRef } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -28,7 +28,7 @@ import IconEdit from '@/components/Icon/IconEdit';
 import Select from 'react-select';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
-const ReactQuill = dynamic(import('react-quill'), { ssr: false });
+// const ReactQuill = dynamic(import('react-quill'), { ssr: false });
 
 import { Tab } from '@headlessui/react';
 import AnimateHeight from 'react-animate-height';
@@ -69,7 +69,19 @@ const ProductEdit = (props: any) => {
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
 
-    const [value, setValue] = useState('demo content'); // quill text editor
+    const [value, setValue] = useState({
+        time: Date.now(),
+        blocks: [
+            {
+                type: 'paragraph',
+                data: {
+                    text: 'This is the default content.',
+                },
+            },
+        ],
+        version: '2.19.0',
+    }); // quill text editor
+
     const [isMounted, setIsMounted] = useState(false); //tabs
     useEffect(() => {
         setIsMounted(true);
@@ -88,7 +100,7 @@ const ProductEdit = (props: any) => {
     const [sku, setSku] = useState('');
     const [quantity, setQuantity] = useState('');
     const [regularPrice, setRegularPrice] = useState('');
-    const [selectedCollection, setSelectedCollection] = useState([]);
+    const [selectedCollection, setSelectedCollection] = useState<any>([]);
     const [stackMgmt, setStackMgmt] = useState(false);
     const [publish, setPublish] = useState('published');
 
@@ -170,7 +182,7 @@ const ProductEdit = (props: any) => {
     const [tagList, setTagList] = useState([]);
     const [selectedTag, setSelectedTag] = useState([]);
     const [collectionList, setCollectionList] = useState([]);
-    const [label, setLabel] = useState('');
+    const [label, setLabel] = useState<any>('');
     const [productData, setProductData] = useState({});
     const [modal3, setModal3] = useState(false);
     const [modal4, setModal4] = useState(false);
@@ -179,21 +191,21 @@ const ProductEdit = (props: any) => {
     const [mediaData, setMediaData] = useState([]);
 
     const [imageUrl, setImageUrl] = useState('');
-    const [thumbnailFile, setThumbnailFile] = useState({});
+    const [thumbnailFile, setThumbnailFile] = useState<any>({});
     const [file, setFile] = useState(null);
 
     const [thumbnail, setThumbnail] = useState('');
     const [isthumbImgUpdate, setIsthumbImgUpdate] = useState(false);
 
-    const [images, setImages] = useState([]);
+    const [images, setImages] = useState<any>([]);
 
-    const [selectedArr, setSelectedArr] = useState([]);
-    const [accordions, setAccordions] = useState([]);
-    const [openAccordion, setOpenAccordion] = useState('');
-    const [chooseType, setChooseType] = useState('');
-    const [selectedValues, setSelectedValues] = useState({});
-    const [dropdowndata, setDropdownData] = useState([]);
-    const [dropIndex, setDropIndex] = useState(null);
+    const [selectedArr, setSelectedArr] = useState<any>([]);
+    const [accordions, setAccordions] = useState<any>([]);
+    const [openAccordion, setOpenAccordion] = useState<any>('');
+    const [chooseType, setChooseType] = useState<any>('');
+    const [selectedValues, setSelectedValues] = useState<any>({});
+    const [dropdowndata, setDropdownData] = useState<any>([]);
+    const [dropIndex, setDropIndex] = useState<any>(null);
 
     const [variants, setVariants] = useState([
         {
@@ -207,9 +219,22 @@ const ProductEdit = (props: any) => {
         },
     ]);
 
+    // editor js
+    const editorRef: any = useRef(null);
+    const [editorInstance, setEditorInstance] = useState<any>(null);
+    // const [content, setContent] = useState('');
+    let count = 0;
+
+    useEffect(() => {
+        if (count === 0) {
+            editor();
+            count = 1;
+        }
+    }, []);
+
     // State to track whether delete icon should be displayed
 
-    const [selectedCat, setselectedCat] = useState('');
+    const [selectedCat, setselectedCat] = useState<any>('');
 
     useEffect(() => {
         productsDetails();
@@ -239,8 +264,8 @@ const ProductEdit = (props: any) => {
             stoneType: stoneData?.productStoneTypes,
         };
 
-        const singleObj = Object.entries(arr1).reduce((acc, [key, value]) => {
-            acc[key] = value?.edges.map(({ node }) => ({ value: node?.id, label: node?.name }));
+        const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
             return acc;
         }, {});
 
@@ -250,7 +275,6 @@ const ProductEdit = (props: any) => {
     const productsDetails = async () => {
         try {
             if (productDetails) {
-                console.log('productDetails: ', productDetails);
                 if (productDetails && productDetails?.product) {
                     const data = productDetails?.product;
                     setProductData(data);
@@ -262,7 +286,6 @@ const ProductEdit = (props: any) => {
                     setselectedCat(category);
                     if (data?.tags?.length > 0) {
                         const tags: any = data?.tags?.map((item: any) => ({ value: item.id, label: item.name }));
-                        console.log('tags: ', tags);
                         setSelectedTag(tags);
                     } else {
                         setSelectedTag([]);
@@ -272,6 +295,17 @@ const ProductEdit = (props: any) => {
                         setSelectedCollection(collection);
                     }
                     setMenuOrder(data?.orderNo);
+
+                    // const stringDescription = data.description;
+                    // const removeString = JSON.parse(stringDescription);
+                    // const Description = removeString.blocks.map((block) => block.data.text).join('');
+
+                    // console.log('Description --->', Description);
+
+                    const Description = data.description;
+                    console.log('✌️Description --->', Description);
+
+                    setValue(Description);
 
                     const shortDesc = getValueByKey(data?.metadata, 'short_descripton');
                     setShortDescription(shortDesc);
@@ -288,7 +322,7 @@ const ProductEdit = (props: any) => {
 
                     const arr = [];
                     const type: any[] = [];
-                    let selectedAccValue = {};
+                    let selectedAccValue: any = {};
                     if (data?.prouctDesign?.length > 0) {
                         const obj = {
                             type: 'design',
@@ -296,7 +330,7 @@ const ProductEdit = (props: any) => {
                         };
                         arr.push(obj);
                         type.push('design');
-                        selectedAccValue.design = data?.prouctDesign?.map((item) => item.id);
+                        selectedAccValue.design = data?.prouctDesign?.map((item: any) => item.id);
                     }
                     if (data?.productstyle?.length > 0) {
                         const obj = {
@@ -305,7 +339,7 @@ const ProductEdit = (props: any) => {
                         };
                         arr.push(obj);
                         type.push('style');
-                        selectedAccValue.style = data?.productstyle?.map((item) => item.id);
+                        selectedAccValue.style = data?.productstyle?.map((item: any) => item.id);
                     }
                     if (data?.productStoneType?.length > 0) {
                         const obj = {
@@ -314,32 +348,34 @@ const ProductEdit = (props: any) => {
                         };
                         arr.push(obj);
                         type.push('stone');
-                        selectedAccValue.stone = data?.productStoneType?.map((item) => item.id);
+                        selectedAccValue.stone = data?.productStoneType?.map((item: any) => item.id);
                     }
                     if (data?.productFinish?.length > 0) {
                         const obj = {
                             type: 'finish',
-                            stoneName: dropdowndata?.finish,
+                            finishName: dropdowndata?.finish,
                         };
                         arr.push(obj);
                         type.push('finish');
-                        selectedAccValue.finish = data?.productFinish?.map((item) => item.id);
+                        selectedAccValue.finish = data?.productFinish?.map((item: any) => item.id);
                     }
+
                     setAccordions(arr.flat());
                     setSelectedArr(type);
                     setSelectedValues(selectedAccValue);
                     if (data?.variants?.length > 0) {
-                        const variant = data?.variants?.map((item) => ({
+                        const variant = data?.variants?.map((item: any) => ({
                             sku: item.sku,
                             stackMgmt: item.trackInventory,
                             quantity: item?.stocks[0]?.quantity,
                             regularPrice: item.channelListings[0]?.costPrice?.amount,
                             salePrice: item.channelListings[0]?.price?.amount,
                             name: item.name,
-                            id: id,
+                            id: item.id,
+                            channelId: item.channelListings[0]?.id,
+                            stockId: item?.stocks[0]?.id,
                         }));
                         setVariants(variant);
-                        console.log('variant: ', variant);
                     }
                     setPublish(data?.channelListings[0]?.isPublished == true ? 'published' : 'draft');
 
@@ -350,6 +386,51 @@ const ProductEdit = (props: any) => {
             console.log('error: ', error);
         }
     };
+
+    // editor start
+    const editor = () => {
+        // Check if the window object is available and if the editorRef.current is set
+        if (typeof window === 'undefined' || !editorRef.current) return;
+
+        // Destroy the previous editor instance, if it exists
+        if (editorInstance) {
+            editorInstance.destroy();
+        }
+
+        console.log('value: ', value);
+        // Dynamically import the EditorJS module
+        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+            // Create a new instance of EditorJS with the appropriate configuration
+            const editor = new EditorJS({
+                holder: editorRef.current,
+                data: value,
+                tools: {
+                    // Configure tools as needed
+                    header: {
+                        class: require('@editorjs/header'),
+                    },
+                    list: {
+                        class: require('@editorjs/list'),
+                    },
+                    table: {
+                        class: require('@editorjs/table'),
+                    },
+                },
+            });
+
+            // Set the editorInstance state variable
+            setEditorInstance(editor);
+        });
+
+        // Cleanup function to destroy the current editor instance when the component unmounts
+        return () => {
+            if (editorInstance) {
+                editorInstance.destroy();
+            }
+        };
+    };
+
+    // editor end
 
     const category_list = async () => {
         try {
@@ -428,7 +509,7 @@ const ProductEdit = (props: any) => {
     };
 
     // Function to handle file selection
-    const handleFileChange = (event) => {
+    const handleFileChange = (event: any) => {
         const selectedFile = event.target.files[0];
         if (selectedFile) {
             const imageUrl = URL.createObjectURL(selectedFile);
@@ -454,7 +535,7 @@ const ProductEdit = (props: any) => {
         setImages(res.data?.productMediaCreate?.product?.media);
     };
 
-    const multiImageDelete = async (item) => {
+    const multiImageDelete = async (item: any) => {
         const { data } = await removeImage({
             variables: { id: item.id },
         });
@@ -476,8 +557,8 @@ const ProductEdit = (props: any) => {
         // setImages(filter);
     };
 
-    const imageDelete = (ids) => {
-        const { data } = removeImage({
+    const imageDelete = (ids: any) => {
+        const { data }: any = removeImage({
             variables: { channel: 'india-channel', id: ids },
         });
         productUpdate();
@@ -489,20 +570,37 @@ const ProductEdit = (props: any) => {
         });
     };
 
-    const deleteProductGallery = (i) => {
-        const filter = images?.filter((item, index) => index !== i);
+    const deleteProductGallery = (i: any) => {
+        const filter = images?.filter((item: any, index: any) => index !== i);
         setImages(filter);
     };
 
-    const updateProducts = () => {
-        const { data } = updateProduct({
+    const updateProducts = async () => {
+        console.log('selectedCat: ', selectedCat);
+        if (editorInstance) {
+            try {
+                // Save editor content
+                const savedContent = await editorInstance.save();
+                console.log('Editor content:', savedContent);
+                // Update state with saved content
+                setValue(savedContent);
+            } catch (error) {
+                console.error('Error saving editor content:', error);
+            }
+        }
+        console.log('selectedCollection: ', selectedCollection);
+        let tagId = selectedTag?.map((item) => item.value) || [];
+        
+        console.log('valueDescription', value);
+        const { data } = await updateProduct({
             variables: {
                 id: id,
                 input: {
                     attributes: [],
-                    category: selectedCat.value,
-                    collections: selectedCollection.value,
-                    description: '{"time":1714207451900,"blocks":[{"id":"EWn3NJZQaf","type":"paragraph","data":{"text":"TESTING"}}],"version":"2.24.3"}',
+                    category: selectedCat?.value,
+                    collections: selectedCollection.map((item) => item.value),
+                    tags: tagId,
+                    description: value,
                     name: productName,
                     rating: 0,
                     seo: {
@@ -511,21 +609,23 @@ const ProductEdit = (props: any) => {
                     },
                     slug: slug,
                     ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                    ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
-                    ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
-                    ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
-                    ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
+                    ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
+                    ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
+                    ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
+                    ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
                 },
                 firstValues: 10,
             },
         });
+    
         if (data?.productUpdate?.errors?.length > 0) {
-            console.log('error');
+            console.log('Error updating product');
         } else {
             productChannelListUpdate();
+            console.log('Product update successful:', data);
         }
-        console.log('data: ', data);
     };
+    
 
     const productChannelListUpdate = async () => {
         try {
@@ -553,7 +653,9 @@ const ProductEdit = (props: any) => {
                 console.log('productChannelListUpdate: ', data);
 
                 // variantCreate(productId);
+                console.log('productChannelListUpdate end');
                 variantListUpdate();
+                console.log('variantListUpdate start');
             }
         } catch (error) {
             console.log('error: ', error);
@@ -562,59 +664,124 @@ const ProductEdit = (props: any) => {
 
     const variantListUpdate = async () => {
         try {
-            const variantArr = variants?.map((item) => ({
+            const arrayOfVariants = variants?.map((item: any) => ({
                 attributes: [],
                 id: item.id,
                 sku: item.sku,
                 name: item.name,
                 trackInventory: item.stackMgmt,
-                channelListings: [
-                    {
-                        channelId: 'Q2hhbm5lbDoy',
-                        price: item.salePrice,
-                        costPrice: item.regularPrice,
-                    },
-                ],
-                stocks: [
-                    {
-                        warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-                        quantity: item.stackMgmt ? item.quantity : 0,
-                    },
-                ],
+                channelListings: {
+                    update: [
+                        {
+                            channelListing: item.channelId,
+                            price: item.salePrice,
+                            costPrice: item.regularPrice,
+                        },
+                    ],
+                },
+                stocks: {
+                    update: [
+                        {
+                            quantity: item.stackMgmt ? item.quantity : 0,
+                            stock: item.stockId,
+                        },
+                    ],
+                },
             }));
-            console.log('variantArr: ', variantArr);
+            console.log('✌️arrayOfVariants --->', arrayOfVariants);
+
+            // const variantArr = variants?.map((item) => ({
+            //     attributes: [],
+            //     id: item.id,
+            //     sku: item.sku,
+            //     name: item.name,
+            //     trackInventory: item.stackMgmt,
+            //     channelListings: [
+            //         {
+            //             channelId: 'Q2hhbm5lbDoy',
+            //             price: item.salePrice,
+            //             costPrice: item.regularPrice,
+            //         },
+            //     ],
+            //     stocks: [
+            //         {
+            //             warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
+            //             quantity: item.stackMgmt ? item.quantity : 0,
+            //         },
+            //     ],
+            // }));
+            // console.log('variantArr: ', variantArr);
+            console.log('variants  1: ', variants);
 
             const { data } = await updateVariant({
                 variables: {
-                    id: id,
-                    inputs: variants?.map((item) => ({
-                        attributes: [],
-                        id: item.id,
-                        sku: item.sku,
-                        name: item.name,
-                        trackInventory: item.stackMgmt,
-                        channelListings: [
-                            {
-                                channelId: 'Q2hhbm5lbDoy',
-                                price: item.salePrice,
-                                costPrice: item.regularPrice,
-                            },
-                        ],
-                        stocks: [
-                            {
-                                warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-                                quantity: item.stackMgmt ? item.quantity : 0,
-                            },
-                        ],
-                    })),
+                    // id: id,
+                    // inputs: variants?.map((item:any) => ({
+                    //     attributes: [],
+                    //     id: item.id,
+                    //     sku: item.sku,
+                    //     name: item.name,
+                    //     trackInventory: item.stackMgmt,
+                    //     channelListings: [
+                    //         {
+                    //             channelId: 'Q2hhbm5lbDoy',
+                    //             price: item.salePrice,
+                    //             costPrice: item.regularPrice,
+                    //         },
+                    //     ],
+                    //     stocks: [
+                    //         {
+                    //             warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
+                    //             quantity: item.stackMgmt ? item.quantity : 0,
+                    //         },
+                    //     ],
+                    // })),
+
+                    product: id,
+                    input: arrayOfVariants,
+                    errorPolicy: 'REJECT_FAILED_ROWS',
+
+                    // sample format
+
+                    // product: 'UHJvZHVjdDo0OA==',
+                    // input: [
+                    //     {
+                    //         id: 'UHJvZHVjdFZhcmlhbnQ6MTM=',
+                    //         attributes: [],
+                    //         name: 'hello',
+                    //         sku: 'hii',
+                    //         trackInventory: true,
+                    //         stocks: {
+                    //             update: [
+                    //                 {
+                    //                     quantity: 300,
+                    //                     stock: 'U3RvY2s6MTI=',
+                    //                 },
+                    //             ],
+                    //         },
+                    //         channelListings: {
+                    //             update: [
+                    //                 {
+                    //                     channelListing: 'UHJvZHVjdFZhcmlhbnRDaGFubmVsTGlzdGluZzoyNA==',
+                    //                     price: 142001,
+                    //                 },
+                    //             ],
+                    //         },
+                    //     },
+                    // ],
+                    // errorPolicy: 'REJECT_FAILED_ROWS',
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
+
+            console.log('variants 2: ', variants);
+
             if (data?.productVariantUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
                 console.log('variantCreate: ', data);
                 // const variantId = data?.productVariantCreate?.productVariant?.id;
+
                 updateMetaData();
             }
         } catch (error) {
@@ -623,7 +790,6 @@ const ProductEdit = (props: any) => {
     };
 
     const updateMetaData = async () => {
-        console.log('label: ', label);
         try {
             const { data } = await updateMedatData({
                 variables: {
@@ -648,7 +814,7 @@ const ProductEdit = (props: any) => {
                 console.log('success: ', data);
                 console.log('selectedTag: ', selectedTag);
 
-                assignsTagToProduct();
+                // assignsTagToProduct();
             }
         } catch (error) {
             console.log('error: ', error);
@@ -659,7 +825,7 @@ const ProductEdit = (props: any) => {
         try {
             let tagId: any[] = [];
             // if (selectedCollection?.length > 0) {
-            tagId = selectedTag?.map((item) => item.value);
+            tagId = selectedTag?.map((item: any) => item.value);
             // }
             console.log('tagId: ', tagId);
 
@@ -700,38 +866,38 @@ const ProductEdit = (props: any) => {
         setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
     };
 
-    const handleRemoveAccordion = (type) => {
-        setSelectedArr(selectedArr.filter((item) => item !== type));
-        setAccordions(accordions.filter((item) => item.type !== type));
+    const handleRemoveAccordion = (type: any) => {
+        setSelectedArr(selectedArr.filter((item: any) => item !== type));
+        setAccordions(accordions.filter((item: any) => item.type !== type));
         setOpenAccordion('');
         const updatedSelectedValues = { ...selectedValues };
         delete updatedSelectedValues[type];
         setSelectedValues(updatedSelectedValues);
     };
 
-    const handleDropdownChange = (event, type) => {
+    const handleDropdownChange = (event: any, type: any) => {
         setChooseType(type);
     };
 
-    const handleToggleAccordion = (type) => {
+    const handleToggleAccordion = (type: any) => {
         setOpenAccordion(openAccordion === type ? '' : type);
     };
 
-    const handleMultiSelectChange = (selectedOptions, type) => {
-        const selectedValuesForType = selectedOptions.map((option) => option.value);
+    const handleMultiSelectChange = (selectedOptions: any, type: any) => {
+        const selectedValuesForType = selectedOptions.map((option: any) => option.value);
         setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
     };
 
-    const handleChange = (index, fieldName, fieldValue) => {
+    const handleChange = (index: any, fieldName: any, fieldValue: any) => {
         setVariants((prevItems) => {
-            const updatedItems = [...prevItems];
+            const updatedItems: any = [...prevItems];
             updatedItems[index][fieldName] = fieldValue;
             return updatedItems;
         });
     };
 
     const handleAddItem = () => {
-        setVariants((prevItems) => [
+        setVariants((prevItems: any) => [
             ...prevItems,
             {
                 sku: '',
@@ -739,26 +905,27 @@ const ProductEdit = (props: any) => {
                 quantity: 0,
                 regularPrice: 0,
                 salePrice: 0,
+                channelId: '',
             },
         ]);
     };
 
-    const handleRemoveVariants = (index) => {
+    const handleRemoveVariants = (index: any) => {
         if (index === 0) return; // Prevent removing the first item
         setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
     };
 
-    const handleDragStart = (e, id, i) => {
+    const handleDragStart = (e: any, id: any, i: any) => {
         console.log('id: ', i);
         e.dataTransfer.setData('id', id);
         setDropIndex(id);
     };
 
-    const handleDragOver = (e) => {
+    const handleDragOver = (e: any) => {
         e.preventDefault();
     };
 
-    const handleDrop = async (e, targetIndex) => {
+    const handleDrop = async (e: any, targetIndex: any) => {
         e.preventDefault();
         const imageId = e.dataTransfer.getData('id');
         const newIndex = parseInt(targetIndex, 10);
@@ -786,6 +953,19 @@ const ProductEdit = (props: any) => {
     };
     // -------------------------------------New Added-------------------------------------------------------
 
+    // const handleSave = async () => {
+    //     if (editorInstance) {
+    //         try {
+    //             const savedContent = await editorInstance.save();
+    //             console.log('Editor content:', savedContent);
+    //             setContent(JSON.stringify(savedContent, null, 2));
+    //             setValue(savedContent);
+    //         } catch (error) {
+    //             console.error('Failed to save editor content:', error);
+    //         }
+    //     }
+    // };
+    // console.log('value', value);
     return (
         <div>
             <div className="  mt-6">
@@ -823,17 +1003,28 @@ const ProductEdit = (props: any) => {
                                 value={seoDesc}
                                 onChange={(e) => setSeoDesc(e.target.value)}
                                 rows={3}
-                                className="form-textarea"
+                                className="form-textarea mt-5"
                                 placeholder="Enter Description"
                                 required
                             ></textarea>
                         </div>
-                        <div className="panel mb-5">
+                        {/* <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
                             <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
+                        </div> */}
+                        <div className="panel mb-5">
+                            <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
+                                Product description
+                            </label>
+                            <div ref={editorRef} className="mb-5 border border-gray-200"></div>
+                            {/* <p>Editor content: {content}</p> */}
+                            {/* <button onClick={handleSave} className="btn btn-primary">
+                                Save
+                            </button> */}
                         </div>
+
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product Short description
@@ -946,8 +1137,8 @@ const ProductEdit = (props: any) => {
                                                     <div className="mb-5 pr-3">
                                                         <Select
                                                             placeholder="Select Type"
-                                                            options={optionsVal.filter((option) => !selectedArr?.includes(option.value))}
-                                                            onChange={(selectedOption) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            options={optionsVal.filter((option: any) => !selectedArr?.includes(option.value))}
+                                                            onChange={(selectedOption: any) => handleDropdownChange(selectedOption, selectedOption.value)}
                                                             value={options?.find((option) => option?.value === chooseType)} // Set the value of the selected type
                                                         />
                                                     </div>
@@ -960,7 +1151,7 @@ const ProductEdit = (props: any) => {
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        {accordions.map((item) => (
+                                                        {accordions.map((item: any) => (
                                                             <div key={item?.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
                                                                 <button
                                                                     type="button"
@@ -1005,9 +1196,10 @@ const ProductEdit = (props: any) => {
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value) => {
-                                                                                                const option = item[`${item.type}Name`].find((option) => option.value === value);
-                                                                                                return { value: option.value, label: option.label };
+                                                                                            value={(selectedValues[item.type] || []).map((value: any) => {
+                                                                                                const options = item[`${item.type}Name`];
+                                                                                                const option = options ? options.find((option: any) => option.value === value) : null;
+                                                                                                return option ? { value: option.value, label: option.label } : null;
                                                                                             })}
                                                                                         />
                                                                                         {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
@@ -1172,11 +1364,11 @@ const ProductEdit = (props: any) => {
                                                         </div>
                                                     );
                                                 })}
-                                                <div className="mb-5">
+                                                {/* <div className="mb-5">
                                                     <button type="button" className=" btn btn-primary flex justify-end" onClick={handleAddItem}>
                                                         Add item
                                                     </button>
-                                                </div>
+                                                </div> */}
 
                                                 {/* <div>
                                                     <div className="flex items-center">
@@ -1223,7 +1415,7 @@ const ProductEdit = (props: any) => {
                                                                 type="number"
                                                                 style={{ width: '350px' }}
                                                                 value={menuOrder}
-                                                                onChange={(e) => setMenuOrder(e.target.value)}
+                                                                onChange={(e: any) => setMenuOrder(e.target.value)}
                                                                 placeholder="Enter Menu Order"
                                                                 name="regularPrice"
                                                                 className="form-input"
@@ -1488,7 +1680,7 @@ const ProductEdit = (props: any) => {
                             <div className="grid grid-cols-12 gap-3">
                                 {/* {images?.length > 0 && */}
                                 {images?.length > 0 &&
-                                    images?.map((item, index) => (
+                                    images?.map((item: any, index: any) => (
                                         <>
                                             {/* <div className=" relative h-20 w-20 "> */}
 
