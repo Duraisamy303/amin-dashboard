@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment } from 'react';
+import { useEffect, useState, Fragment,useCallback, useRef } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -54,7 +54,7 @@ import {
 import { sampleParams, uploadImage } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
 import { cA } from '@fullcalendar/core/internal-common';
-const ProductEdit = () => {
+const ProductAdd = () => {
     const router = useRouter();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
@@ -88,23 +88,32 @@ const ProductEdit = () => {
     const [modal4, setModal4] = useState(false);
 
     //for accordiant
-    const [selectedArr, setSelectedArr] = useState([]);
-    const [accordions, setAccordions] = useState([]);
+    const [selectedArr, setSelectedArr] = useState<any>([]);
+    const [accordions, setAccordions] = useState<any>([]);
     console.log('accordions: ', accordions);
     const [openAccordion, setOpenAccordion] = useState('');
     const [chooseType, setChooseType] = useState('');
-    const [selectedValues, setSelectedValues] = useState({});
-    const [productNameErrMsg, setProductNameErrMsg] = useState([]);
-    const [slugErrMsg, setSlugErrMsg] = useState([]);
-    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState([]);
-    const [seoDescErrMsg, setSeoDescErrMsg] = useState([]);
-    const [shortDesErrMsg, setShortDesErrMsg] = useState([]);
-    const [skuErrMsg, setSkuErrMsg] = useState([]);
-    const [salePriceErrMsg, setSalePriceErrMsg] = useState([]);
-    const [categoryErrMsg, setCategoryErrMsg] = useState([]);
-    const [dropdowndata, setDropdownData] = useState([]);
-    const [images, setImages] = useState([]);
-    const [imageUrl, setImageUrl] = useState([]);
+    const [selectedValues, setSelectedValues] = useState<any>({});
+
+
+// error message start
+
+    const [productNameErrMsg, setProductNameErrMsg] = useState("");
+    const [slugErrMsg, setSlugErrMsg] = useState("");
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState("");
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState("");
+    const [shortDesErrMsg, setShortDesErrMsg] = useState("");
+    const [skuErrMsg, setSkuErrMsg] = useState("");
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState("");
+    const [categoryErrMsg, setCategoryErrMsg] = useState("");
+
+// error message end
+
+
+
+    const [dropdowndata, setDropdownData] = useState<any>("");
+    const [images, setImages] = useState<any>("");
+    const [imageUrl, setImageUrl] = useState<any>("");
     console.log('images: ', imageUrl);
 
     const [variants, setVariants] = useState([
@@ -117,6 +126,110 @@ const ProductEdit = () => {
             name: '',
         },
     ]);
+
+
+
+// editor start
+
+const editorRef = useRef(null);
+const [editorInstance, setEditorInstance] = useState(null);
+const [content, setContent] = useState('');
+
+const [value2, setValue2] = useState<any>({
+    time: Date.now(),
+    blocks: [
+        {
+            type: 'paragraph',
+            data: {
+                text: 'This is the default content.',
+            },
+        },
+    ],
+    version: '2.19.0',
+});
+// let count = 0;
+// editor start
+
+let editors = { isReady: false };
+useEffect(() => {
+if (!editors.isReady) {
+editor();
+editors.isReady = true;
+}
+
+return () => {
+if (editorInstance) {
+  editorInstance?.blocks?.clear();
+}
+};
+}, [value2, ]);
+
+
+// const editorRef = useRef(null); // Define a ref to hold the editor instance
+
+const editor = useCallback(() => {
+// Check if the window object is available and if the editorRef.current is set
+if (typeof window === 'undefined' || !editorRef.current) return;
+
+// Ensure only one editor instance is created
+if (editorInstance) {
+return;
+}
+
+console.log('value2: ', value2);
+// Dynamically import the EditorJS module
+import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+// Create a new instance of EditorJS with the appropriate configuration
+const editor = new EditorJS({
+  holder: editorRef.current,
+  data: value2,
+  tools: {
+    // Configure tools as needed
+    header: {
+      class: require('@editorjs/header'),
+    },
+    list: {
+      class: require('@editorjs/list'),
+    },
+    table: {
+      class: require('@editorjs/table'),
+    },
+  },
+});
+
+// Set the editorInstance state variable
+setEditorInstance(editor);
+});
+
+// Cleanup function to destroy the current editor instance when the component unmounts
+return () => {
+if (editorInstance) {
+  editorInstance?.blocks?.clear();
+}
+};
+}, [editorInstance, value]);
+
+// editor end
+
+// const handleSave = async () => {
+//     if (editorInstance) {
+//         try {
+//             const savedContent = await editorInstance.save();
+//             console.log('Editor content:', savedContent);
+//             setValue2(JSON.stringify(savedContent, null, 2));
+//         } catch (error) {
+//             console.error('Failed to save editor content:', error);
+//         }
+//     }
+// };
+
+// editor end
+
+
+
+
+
+
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -206,8 +319,8 @@ const ProductEdit = () => {
             stoneType: stoneData?.productStoneTypes,
         };
 
-        const singleObj = Object.entries(arr1).reduce((acc, [key, value]) => {
-            acc[key] = value?.edges.map(({ node }) => ({ value: node?.id, label: node?.name }));
+        const singleObj = Object.entries(arr1).reduce((acc:any, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }:any) => ({ value: node?.id, label: node?.name }));
             return acc;
         }, {});
 
@@ -242,7 +355,7 @@ const ProductEdit = () => {
     const [label, setLabel] = useState('');
 
     const [productType, setProductType] = useState([]);
-    const [selectedCat, setselectedCat] = useState('');
+    const [selectedCat, setselectedCat] = useState<any>('');
 
     useEffect(() => {
         category_list();
@@ -333,39 +446,39 @@ const ProductEdit = () => {
     const CreateProduct = async () => {
         // console.log("selectedCat", selectedCat)
 
-        // setProductNameErrMsg('');
-        // setSlugErrMsg('');
-        // setSeoTittleErrMsg('');
-        // setSeoDescErrMsg('');
-        // // setDescriptionErrMsg('');
-        // setShortDesErrMsg('');
+        setProductNameErrMsg('');
+        setSlugErrMsg('');
+        setSeoTittleErrMsg('');
+        setSeoDescErrMsg('');
+        // setDescriptionErrMsg('');
+        setShortDesErrMsg('');
         // setSkuErrMsg('');
         // setSalePriceErrMsg('');
-        // setCategoryErrMsg('');
+        setCategoryErrMsg('');
 
-        // // Validate the product name and slug
-        // if (productName.trim() === '') {
-        //     // Update the error message for the product name field
-        //     setProductNameErrMsg('Product name cannot be empty');
-        // }
+        // Validate the product name and slug
+        if (productName.trim() === '') {
+            // Update the error message for the product name field
+            setProductNameErrMsg('Product name cannot be empty');
+        }
 
-        // if (slug.trim() === '') {
-        //     // Update the error message for the slug field
-        //     setSlugErrMsg('Slug cannot be empty');
+        if (slug.trim() === '') {
+            // Update the error message for the slug field
+            setSlugErrMsg('Slug cannot be empty');
+        }
+        if (seoTittle.trim() === '') {
+            // Update the error message for the slug field
+            setSeoTittleErrMsg('Seo title cannot be empty');
+        }
+        if (seoDesc.trim() === '') {
+            setSeoDescErrMsg('Seo description cannot be empty');
+        }
+        // if(description?.trim() === ''){
+        //     setDescriptionErrMsg('Description cannot be empty');
         // }
-        // if (seoTittle.trim() === '') {
-        //     // Update the error message for the slug field
-        //     setSeoTittleErrMsg('Seo title cannot be empty');
-        // }
-        // if (seoDesc.trim() === '') {
-        //     setSeoDescErrMsg('Seo description cannot be empty');
-        // }
-        // // if(description?.trim() === ''){
-        // //     setDescriptionErrMsg('Description cannot be empty');
-        // // }
-        // if (shortDescription?.trim() === '') {
-        //     setShortDesErrMsg('Short description cannot be empty');
-        // }
+        if (shortDescription?.trim() === '') {
+            setShortDesErrMsg('Short description cannot be empty');
+        }
         // if (sku?.trim() === '') {
         //     setSkuErrMsg('Sku cannot be empty');
         //     alert('Sku cannot be empty');
@@ -374,23 +487,39 @@ const ProductEdit = () => {
         //     setSalePriceErrMsg('Sale price cannot be empty');
         //     alert('Sale price cannot be empty');
         // }
-        // if (selectedCat == "") {
-        //     setCategoryErrMsg('Category cannot be empty');
-        // }
+        if (selectedCat == "") {
+            setCategoryErrMsg('Category cannot be empty');
+        }
 
+
+
+        if (editorInstance) {
+            try {
+                const savedContent = await editorInstance.save();
+                console.log('Editor content:', savedContent);
+                setValue2(savedContent )
+console.log('✌️setValue2 --->', value2);
+            } catch (error) {
+                console.error('Failed to save editor content:', error);
+            }
+        }
+        
         try {
             const catId = selectedCat?.value;
             let collectionId: any[] = [];
             if (selectedCollection?.length > 0) {
-                collectionId = selectedCollection?.map((item) => item.value);
+                collectionId = selectedCollection?.map((item:any) => item.value);
             }
+
+
+           
             const { data } = await addFormData({
                 variables: {
                     input: {
                         attributes: [],
                         category: catId,
                         collections: collectionId,
-                        description: '{"time":1714018366783,"blocks":[{"id":"EWn3NJZQaf","type":"paragraph","data":{"text":"TESTING"}}],"version":"2.24.3"}',
+                        description: value2,
                         name: productName,
                         productType: 'UHJvZHVjdFR5cGU6Mg==',
                         seo: {
@@ -415,7 +544,7 @@ const ProductEdit = () => {
                 const productId = data?.productCreate?.product?.id;
                 productChannelListUpdate(productId);
                 if (images?.length > 0) {
-                    images?.map((item) => {
+                    images?.map((item:any) => {
                         const imageUpload = uploadImage(productId, item);
                         console.log('imageUpload: ', imageUpload);
                     });
@@ -537,7 +666,7 @@ const ProductEdit = () => {
         try {
             let tagId: any[] = [];
             // if (selectedCollection?.length > 0) {
-            tagId = selectedTag?.map((item) => item.value);
+            tagId = selectedTag?.map((item:any) => item.value);
             // }
             console.log('tagId: ', tagId);
 
@@ -569,38 +698,38 @@ const ProductEdit = () => {
         setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
     };
 
-    const handleRemoveAccordion = (type) => {
-        setSelectedArr(selectedArr.filter((item) => item !== type));
-        setAccordions(accordions.filter((item) => item.type !== type));
+    const handleRemoveAccordion = (type:any) => {
+        setSelectedArr(selectedArr.filter((item:any) => item !== type));
+        setAccordions(accordions.filter((item:any) => item.type !== type));
         setOpenAccordion('');
-        const updatedSelectedValues = { ...selectedValues };
+        const updatedSelectedValues:any = { ...selectedValues };
         delete updatedSelectedValues[type];
         setSelectedValues(updatedSelectedValues);
     };
 
-    const handleDropdownChange = (event, type) => {
+    const handleDropdownChange = (event:any, type:any) => {
         setChooseType(type);
     };
 
-    const handleToggleAccordion = (type) => {
+    const handleToggleAccordion = (type:any) => {
         setOpenAccordion(openAccordion === type ? '' : type);
     };
 
-    const handleMultiSelectChange = (selectedOptions, type) => {
-        const selectedValuesForType = selectedOptions.map((option) => option.value);
+    const handleMultiSelectChange = (selectedOptions:any, type:any) => {
+        const selectedValuesForType = selectedOptions.map((option:any) => option.value);
         setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
     };
 
-    const handleChange = (index, fieldName, fieldValue) => {
+    const handleChange = (index:any, fieldName:any, fieldValue:any) => {
         setVariants((prevItems) => {
-            const updatedItems = [...prevItems];
+            const updatedItems:any = [...prevItems];
             updatedItems[index][fieldName] = fieldValue;
             return updatedItems;
         });
     };
 
     const handleAddItem = () => {
-        setVariants((prevItems) => [
+        setVariants((prevItems:any) => [
             ...prevItems,
             {
                 sku: '',
@@ -612,7 +741,7 @@ const ProductEdit = () => {
         ]);
     };
 
-    const handleRemoveVariants = (index) => {
+    const handleRemoveVariants = (index:any) => {
         if (index === 0) return; // Prevent removing the first item
         setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
     };
@@ -623,10 +752,10 @@ const ProductEdit = () => {
         console.log('imageUrl: ', imageUrl);
 
         // Push the selected file into the 'images' array
-        setImages((prevImages) => [...prevImages, selectedFile]);
+        setImages((prevImages:any) => [...prevImages, selectedFile]);
 
         // Push the blob URL into the 'imageUrl' array
-        setImageUrl((prevUrls) => [...prevUrls, imageUrl]);
+        setImageUrl((prevUrls:any) => [...prevUrls, imageUrl]);
 
         setModal4(false);
     };
@@ -680,12 +809,25 @@ const ProductEdit = () => {
                             ></textarea>
                             {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
                         </div>
-                        <div className="panel mb-5">
+                        {/* <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
                             <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
+                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
+                        </div> */}
+                         <div className="panel mb-5">
+                            <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
+                                Product description
+                            </label>
+                            <div ref={editorRef} className="mb-5 border border-gray-200">
+  <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} />
+</div>
                             {/* {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>} */}
+                            {/* <p>Editor content: {content}</p> */}
+                            {/* <button onClick={handleSave} className="btn btn-primary">
+                                Save
+                            </button> */}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
@@ -801,7 +943,7 @@ const ProductEdit = () => {
                                                         <Select
                                                             placeholder="Select Type"
                                                             options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
-                                                            onChange={(selectedOption) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            onChange={(selectedOption:any) => handleDropdownChange(selectedOption, selectedOption.value)}
                                                             value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
                                                         />
                                                     </div>
@@ -814,7 +956,7 @@ const ProductEdit = () => {
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        {accordions.map((item) => (
+                                                        {accordions.map((item:any) => (
                                                             <div key={item?.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
                                                                 <button
                                                                     type="button"
@@ -851,8 +993,8 @@ const ProductEdit = () => {
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value) => {
-                                                                                                const option = item[`${item.type}Name`].find((option) => option.value === value);
+                                                                                            value={(selectedValues[item.type] || []).map((value:any) => {
+                                                                                                const option = item[`${item.type}Name`].find((option:any) => option.value === value);
                                                                                                 return { value: option.value, label: option.label };
                                                                                             })}
                                                                                         />
@@ -935,6 +1077,7 @@ const ProductEdit = () => {
                                                                     placeholder="Enter SKU"
                                                                     className="form-input"
                                                                 />
+                                                                {skuErrMsg && <p className="error-message mt-1 text-red-500 ">{skuErrMsg}</p>}
                                                             </div>
                                                         </div>
                                                         <div className="active flex items-center">
@@ -1012,6 +1155,7 @@ const ProductEdit = () => {
                                                                     placeholder="Enter Sale Price"
                                                                     className="form-input"
                                                                 />
+                                                                {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1130,7 +1274,7 @@ const ProductEdit = () => {
                                 <h5 className=" block text-lg font-medium text-gray-700">Label</h5>
                             </div>
                             <div className="mb-5">
-                                <Select placeholder="Select an label" options={options} value={label} onChange={(val) => setLabel(val)} isSearchable={true} />
+                                <Select placeholder="Select an label" options={options} value={label} onChange={(val:any) => setLabel(val)} isSearchable={true} />
                             </div>
                         </div>
 
@@ -1288,7 +1432,7 @@ const ProductEdit = () => {
                             ) : null} */}
 
                             <button type="submit" className="btn btn-primary w-full" onClick={() => CreateProduct()}>
-                                Update
+                                Create
                             </button>
                         </div>
 
@@ -1310,7 +1454,7 @@ const ProductEdit = () => {
                             </div>
                             <div className="grid grid-cols-12 gap-3">
                                 {imageUrl?.length > 0 &&
-                                    imageUrl?.map((item, index) => (
+                                    imageUrl?.map((item:any, index:any) => (
                                         <div className="relative col-span-4">
                                             <img src={item} alt="Product image" className=" object-cover" />
                                             <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
@@ -1795,4 +1939,4 @@ const ProductEdit = () => {
     );
 };
 
-export default ProductEdit;
+export default ProductAdd;
