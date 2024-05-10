@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment,useCallback, useRef } from 'react';
+import { useEffect, useState, Fragment, useCallback, useRef } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -95,25 +95,22 @@ const ProductAdd = () => {
     const [chooseType, setChooseType] = useState('');
     const [selectedValues, setSelectedValues] = useState<any>({});
 
+    // error message start
 
-// error message start
+    const [productNameErrMsg, setProductNameErrMsg] = useState('');
+    const [slugErrMsg, setSlugErrMsg] = useState('');
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
+    const [shortDesErrMsg, setShortDesErrMsg] = useState('');
+    const [skuErrMsg, setSkuErrMsg] = useState('');
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
+    const [categoryErrMsg, setCategoryErrMsg] = useState('');
 
-    const [productNameErrMsg, setProductNameErrMsg] = useState("");
-    const [slugErrMsg, setSlugErrMsg] = useState("");
-    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState("");
-    const [seoDescErrMsg, setSeoDescErrMsg] = useState("");
-    const [shortDesErrMsg, setShortDesErrMsg] = useState("");
-    const [skuErrMsg, setSkuErrMsg] = useState("");
-    const [salePriceErrMsg, setSalePriceErrMsg] = useState("");
-    const [categoryErrMsg, setCategoryErrMsg] = useState("");
+    // error message end
 
-// error message end
-
-
-
-    const [dropdowndata, setDropdownData] = useState<any>("");
-    const [images, setImages] = useState<any>("");
-    const [imageUrl, setImageUrl] = useState<any>("");
+    const [dropdowndata, setDropdownData] = useState<any>('');
+    const [images, setImages] = useState<any>('');
+    const [imageUrl, setImageUrl] = useState<any>('');
     console.log('images: ', imageUrl);
 
     const [variants, setVariants] = useState([
@@ -127,109 +124,100 @@ const ProductAdd = () => {
         },
     ]);
 
+    // editor start
 
+    const editorRef = useRef(null);
+    const [editorInstance, setEditorInstance] = useState(null);
+    const [content, setContent] = useState('');
 
-// editor start
-
-const editorRef = useRef(null);
-const [editorInstance, setEditorInstance] = useState(null);
-const [content, setContent] = useState('');
-
-const [value2, setValue2] = useState<any>({
-    time: Date.now(),
-    blocks: [
-        {
-            type: 'paragraph',
-            data: {
-                text: 'This is the default content.',
+    const [value2, setValue2] = useState<any>({
+        time: Date.now(),
+        blocks: [
+            {
+                type: 'paragraph',
+                data: {
+                    text: 'This is the default content.',
+                },
             },
-        },
-    ],
-    version: '2.19.0',
-});
-// let count = 0;
-// editor start
+        ],
+        version: '2.19.0',
+    });
+    // let count = 0;
+    // editor start
 
-let editors = { isReady: false };
-useEffect(() => {
-if (!editors.isReady) {
-editor();
-editors.isReady = true;
-}
+    let editors = { isReady: false };
+    useEffect(() => {
+        if (!editors.isReady) {
+            editor();
+            editors.isReady = true;
+        }
 
-return () => {
-if (editorInstance) {
-  editorInstance?.blocks?.clear();
-}
-};
-}, [value2, ]);
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, [value2]);
 
+    // const editorRef = useRef(null); // Define a ref to hold the editor instance
 
-// const editorRef = useRef(null); // Define a ref to hold the editor instance
+    const editor = useCallback(() => {
+        // Check if the window object is available and if the editorRef.current is set
+        if (typeof window === 'undefined' || !editorRef.current) return;
 
-const editor = useCallback(() => {
-// Check if the window object is available and if the editorRef.current is set
-if (typeof window === 'undefined' || !editorRef.current) return;
+        // Ensure only one editor instance is created
+        if (editorInstance) {
+            return;
+        }
 
-// Ensure only one editor instance is created
-if (editorInstance) {
-return;
-}
+        console.log('value2: ', value2);
+        // Dynamically import the EditorJS module
+        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+            // Create a new instance of EditorJS with the appropriate configuration
+            const editor = new EditorJS({
+                holder: editorRef.current,
+                data: value2,
+                tools: {
+                    // Configure tools as needed
+                    header: {
+                        class: require('@editorjs/header'),
+                    },
+                    list: {
+                        class: require('@editorjs/list'),
+                    },
+                    table: {
+                        class: require('@editorjs/table'),
+                    },
+                },
+            });
 
-console.log('value2: ', value2);
-// Dynamically import the EditorJS module
-import('@editorjs/editorjs').then(({ default: EditorJS }) => {
-// Create a new instance of EditorJS with the appropriate configuration
-const editor = new EditorJS({
-  holder: editorRef.current,
-  data: value2,
-  tools: {
-    // Configure tools as needed
-    header: {
-      class: require('@editorjs/header'),
-    },
-    list: {
-      class: require('@editorjs/list'),
-    },
-    table: {
-      class: require('@editorjs/table'),
-    },
-  },
-});
+            // Set the editorInstance state variable
+            setEditorInstance(editor);
+        });
 
-// Set the editorInstance state variable
-setEditorInstance(editor);
-});
+        // Cleanup function to destroy the current editor instance when the component unmounts
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, [editorInstance, value]);
 
-// Cleanup function to destroy the current editor instance when the component unmounts
-return () => {
-if (editorInstance) {
-  editorInstance?.blocks?.clear();
-}
-};
-}, [editorInstance, value]);
+    // editor end
 
-// editor end
+    // const handleSave = async () => {
+    //     if (editorInstance) {
+    //         try {
+    //             const savedContent = await editorInstance.save();
+    //             console.log('Editor content:', savedContent);
+    //             setValue2(JSON.stringify(savedContent, null, 2));
+    //         } catch (error) {
+    //             console.error('Failed to save editor content:', error);
+    //         }
+    //     }
+    // };
 
-// const handleSave = async () => {
-//     if (editorInstance) {
-//         try {
-//             const savedContent = await editorInstance.save();
-//             console.log('Editor content:', savedContent);
-//             setValue2(JSON.stringify(savedContent, null, 2));
-//         } catch (error) {
-//             console.error('Failed to save editor content:', error);
-//         }
-//     }
-// };
-
-// editor end
-
-
-
-
-
-
+    // editor end
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -319,8 +307,8 @@ if (editorInstance) {
             stoneType: stoneData?.productStoneTypes,
         };
 
-        const singleObj = Object.entries(arr1).reduce((acc:any, [key, value]) => {
-            acc[key] = value?.edges.map(({ node }:any) => ({ value: node?.id, label: node?.name }));
+        const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
             return acc;
         }, {});
 
@@ -487,45 +475,42 @@ if (editorInstance) {
         //     setSalePriceErrMsg('Sale price cannot be empty');
         //     alert('Sale price cannot be empty');
         // }
-        if (selectedCat == "") {
+        if (selectedCat == '') {
             setCategoryErrMsg('Category cannot be empty');
         }
+        let tagId: any[] = [];
 
-
+     tagId = selectedTag?.map((item: any) => item.value);
 
         if (editorInstance) {
             try {
                 const savedContent = await editorInstance.save();
                 console.log('Editor content:', savedContent);
-                setValue2(savedContent )
-console.log('✌️setValue2 --->', value2);
-            } catch (error) {
-                console.error('Failed to save editor content:', error);
-            }
-        }
-        
+                setValue2(savedContent);
+                console.log('✌️setValue2 --->', value2);
+            
+
         try {
             const catId = selectedCat?.value;
             let collectionId: any[] = [];
             if (selectedCollection?.length > 0) {
-                collectionId = selectedCollection?.map((item:any) => item.value);
+                collectionId = selectedCollection?.map((item: any) => item.value);
             }
 
-
-           
             const { data } = await addFormData({
                 variables: {
                     input: {
                         attributes: [],
                         category: catId,
                         collections: collectionId,
-                        description: value2,
+                        description: JSON.stringify(savedContent),
                         name: productName,
                         productType: 'UHJvZHVjdFR5cGU6Mg==',
                         seo: {
                             description: seoDesc,
                             title: seoTittle,
                         },
+                        tags:tagId,
                         slug: slug,
                         // order_no: menuOrder,
                         ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
@@ -544,7 +529,7 @@ console.log('✌️setValue2 --->', value2);
                 const productId = data?.productCreate?.product?.id;
                 productChannelListUpdate(productId);
                 if (images?.length > 0) {
-                    images?.map((item:any) => {
+                    images?.map((item: any) => {
                         const imageUpload = uploadImage(productId, item);
                         console.log('imageUpload: ', imageUpload);
                     });
@@ -553,6 +538,10 @@ console.log('✌️setValue2 --->', value2);
         } catch (error) {
             console.log('error: ', error);
         }
+    } catch (error) {
+        console.error('Failed to save editor content:', error);
+    }
+}
     };
 
     const productChannelListUpdate = async (productId: any) => {
@@ -652,10 +641,12 @@ console.log('✌️setValue2 --->', value2);
             if (data?.updateMetadata?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
-                if (selectedTag?.length > 0) {
-                    assignsTagToProduct(productId);
+                // if (selectedTag?.length > 0) {
+                    // assignsTagToProduct(productId);
                     console.log('success: ', data);
-                }
+                    router.push(`/apps/product/edit?id=${productId}`);
+                    console.log('success: ', data);
+                // }
             }
         } catch (error) {
             console.log('error: ', error);
@@ -666,7 +657,7 @@ console.log('✌️setValue2 --->', value2);
         try {
             let tagId: any[] = [];
             // if (selectedCollection?.length > 0) {
-            tagId = selectedTag?.map((item:any) => item.value);
+            tagId = selectedTag?.map((item: any) => item.value);
             // }
             console.log('tagId: ', tagId);
 
@@ -682,7 +673,7 @@ console.log('✌️setValue2 --->', value2);
             if (data?.productUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
-                router.push(`/apps/product/edit?id=${productId}`)
+                router.push(`/apps/product/edit?id=${productId}`);
                 console.log('success: ', data);
             }
         } catch (error) {
@@ -698,38 +689,38 @@ console.log('✌️setValue2 --->', value2);
         setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
     };
 
-    const handleRemoveAccordion = (type:any) => {
-        setSelectedArr(selectedArr.filter((item:any) => item !== type));
-        setAccordions(accordions.filter((item:any) => item.type !== type));
+    const handleRemoveAccordion = (type: any) => {
+        setSelectedArr(selectedArr.filter((item: any) => item !== type));
+        setAccordions(accordions.filter((item: any) => item.type !== type));
         setOpenAccordion('');
-        const updatedSelectedValues:any = { ...selectedValues };
+        const updatedSelectedValues: any = { ...selectedValues };
         delete updatedSelectedValues[type];
         setSelectedValues(updatedSelectedValues);
     };
 
-    const handleDropdownChange = (event:any, type:any) => {
+    const handleDropdownChange = (event: any, type: any) => {
         setChooseType(type);
     };
 
-    const handleToggleAccordion = (type:any) => {
+    const handleToggleAccordion = (type: any) => {
         setOpenAccordion(openAccordion === type ? '' : type);
     };
 
-    const handleMultiSelectChange = (selectedOptions:any, type:any) => {
-        const selectedValuesForType = selectedOptions.map((option:any) => option.value);
+    const handleMultiSelectChange = (selectedOptions: any, type: any) => {
+        const selectedValuesForType = selectedOptions.map((option: any) => option.value);
         setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
     };
 
-    const handleChange = (index:any, fieldName:any, fieldValue:any) => {
+    const handleChange = (index: any, fieldName: any, fieldValue: any) => {
         setVariants((prevItems) => {
-            const updatedItems:any = [...prevItems];
+            const updatedItems: any = [...prevItems];
             updatedItems[index][fieldName] = fieldValue;
             return updatedItems;
         });
     };
 
     const handleAddItem = () => {
-        setVariants((prevItems:any) => [
+        setVariants((prevItems: any) => [
             ...prevItems,
             {
                 sku: '',
@@ -741,7 +732,7 @@ console.log('✌️setValue2 --->', value2);
         ]);
     };
 
-    const handleRemoveVariants = (index:any) => {
+    const handleRemoveVariants = (index: any) => {
         if (index === 0) return; // Prevent removing the first item
         setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
     };
@@ -752,10 +743,10 @@ console.log('✌️setValue2 --->', value2);
         console.log('imageUrl: ', imageUrl);
 
         // Push the selected file into the 'images' array
-        setImages((prevImages:any) => [...prevImages, selectedFile]);
+        setImages((prevImages: any) => [...prevImages, selectedFile]);
 
         // Push the blob URL into the 'imageUrl' array
-        setImageUrl((prevUrls:any) => [...prevUrls, imageUrl]);
+        setImageUrl((prevUrls: any) => [...prevUrls, imageUrl]);
 
         setModal4(false);
     };
@@ -816,13 +807,13 @@ console.log('✌️setValue2 --->', value2);
                             <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
                             {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
                         </div> */}
-                         <div className="panel mb-5">
+                        <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
                             <div ref={editorRef} className="mb-5 border border-gray-200">
-  <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} />
-</div>
+                                <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} />
+                            </div>
                             {/* {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>} */}
                             {/* <p>Editor content: {content}</p> */}
                             {/* <button onClick={handleSave} className="btn btn-primary">
@@ -943,7 +934,7 @@ console.log('✌️setValue2 --->', value2);
                                                         <Select
                                                             placeholder="Select Type"
                                                             options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
-                                                            onChange={(selectedOption:any) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            onChange={(selectedOption: any) => handleDropdownChange(selectedOption, selectedOption.value)}
                                                             value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
                                                         />
                                                     </div>
@@ -956,7 +947,7 @@ console.log('✌️setValue2 --->', value2);
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        {accordions.map((item:any) => (
+                                                        {accordions.map((item: any) => (
                                                             <div key={item?.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
                                                                 <button
                                                                     type="button"
@@ -993,8 +984,8 @@ console.log('✌️setValue2 --->', value2);
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value:any) => {
-                                                                                                const option = item[`${item.type}Name`].find((option:any) => option.value === value);
+                                                                                            value={(selectedValues[item.type] || []).map((value: any) => {
+                                                                                                const option = item[`${item.type}Name`].find((option: any) => option.value === value);
                                                                                                 return { value: option.value, label: option.label };
                                                                                             })}
                                                                                         />
@@ -1274,7 +1265,7 @@ console.log('✌️setValue2 --->', value2);
                                 <h5 className=" block text-lg font-medium text-gray-700">Label</h5>
                             </div>
                             <div className="mb-5">
-                                <Select placeholder="Select an label" options={options} value={label} onChange={(val:any) => setLabel(val)} isSearchable={true} />
+                                <Select placeholder="Select an label" options={options} value={label} onChange={(val: any) => setLabel(val)} isSearchable={true} />
                             </div>
                         </div>
 
@@ -1454,7 +1445,7 @@ console.log('✌️setValue2 --->', value2);
                             </div>
                             <div className="grid grid-cols-12 gap-3">
                                 {imageUrl?.length > 0 &&
-                                    imageUrl?.map((item:any, index:any) => (
+                                    imageUrl?.map((item: any, index: any) => (
                                         <div className="relative col-span-4">
                                             <img src={item} alt="Product image" className=" object-cover" />
                                             <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">

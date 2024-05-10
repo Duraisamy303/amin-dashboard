@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment, useRef } from 'react';
+import { useEffect, useState, Fragment, useRef, useCallback } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -69,18 +69,7 @@ const ProductEdit = (props: any) => {
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
 
-    const [value, setValue] = useState({
-        time: Date.now(),
-        blocks: [
-            {
-                type: 'paragraph',
-                data: {
-                    text: 'This is the default content.',
-                },
-            },
-        ],
-        version: '2.19.0',
-    }); // quill text editor
+    const [value, setValue] = useState({}); // quill text editor
 
     const [isMounted, setIsMounted] = useState(false); //tabs
     useEffect(() => {
@@ -222,15 +211,18 @@ const ProductEdit = (props: any) => {
     // editor js
     const editorRef: any = useRef(null);
     const [editorInstance, setEditorInstance] = useState<any>(null);
+    let editorInstanceRef: any = useRef(null);
+
+    const isEditorInitialized = useRef(false);
     // const [content, setContent] = useState('');
     let count = 0;
 
-    useEffect(() => {
-        if (count === 0) {
-            editor();
-            count = 1;
-        }
-    }, []);
+    // useEffect(() => {
+    //     if (count === 0) {
+    //         editor();
+    //         count = 1;
+    //     }
+    // }, [value]);
 
     // State to track whether delete icon should be displayed
 
@@ -303,9 +295,12 @@ const ProductEdit = (props: any) => {
                     // console.log('Description --->', Description);
 
                     const Description = data.description;
+                    // editor(Description);
+                    const description1 = { time: 1714207451900, blocks: [{ id: 'EWn3NJZQaf', data: { text: 'TESTING' }, type: 'paragraph' }], version: '2.24.3' };
+
                     console.log('✌️Description --->', Description);
 
-                    setValue(Description);
+                    setValue(description1);
 
                     const shortDesc = getValueByKey(data?.metadata, 'short_descripton');
                     setShortDescription(shortDesc);
@@ -387,17 +382,36 @@ const ProductEdit = (props: any) => {
         }
     };
 
-    // editor start
-    const editor = () => {
+    let editors = { isReady: false };
+
+    useEffect(() => {
+        if (!editors.isReady) {
+            editor();
+            editors.isReady = true;
+        }
+
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, [value, productDetails]);
+
+    useEffect(() => {
+        setValue({ time: 1714207451900, blocks: [{ id: 'EWn3NJZQaf', data: { text: 'TESTING' }, type: 'paragraph' }], version: '2.24.3' });
+    }, [productDetails]);
+
+    // const editorRef = useRef(null); // Define a ref to hold the editor instance
+
+    const editor = useCallback(() => {
         // Check if the window object is available and if the editorRef.current is set
         if (typeof window === 'undefined' || !editorRef.current) return;
 
-        // Destroy the previous editor instance, if it exists
+        // Ensure only one editor instance is created
         if (editorInstance) {
-            editorInstance.destroy();
+            return;
         }
 
-        console.log('value: ', value);
         // Dynamically import the EditorJS module
         import('@editorjs/editorjs').then(({ default: EditorJS }) => {
             // Create a new instance of EditorJS with the appropriate configuration
@@ -425,10 +439,19 @@ const ProductEdit = (props: any) => {
         // Cleanup function to destroy the current editor instance when the component unmounts
         return () => {
             if (editorInstance) {
-                editorInstance.destroy();
+                editorInstance?.blocks?.clear();
             }
         };
-    };
+    }, [editorInstance, value]);
+
+    // useEffect(() => {
+    //     return () => {
+    //         if (editorInstanceRef.current) {
+    //             editorInstanceRef.current.destroy();
+    //             isEditorInitialized.current = false; // Reset the flag
+    //         }
+    //     };
+    // }, []);
 
     // editor end
 
@@ -590,7 +613,7 @@ const ProductEdit = (props: any) => {
         }
         console.log('selectedCollection: ', selectedCollection);
         let tagId = selectedTag?.map((item) => item.value) || [];
-        
+
         console.log('valueDescription', value);
         const { data } = await updateProduct({
             variables: {
@@ -617,7 +640,7 @@ const ProductEdit = (props: any) => {
                 firstValues: 10,
             },
         });
-    
+
         if (data?.productUpdate?.errors?.length > 0) {
             console.log('Error updating product');
         } else {
@@ -625,7 +648,6 @@ const ProductEdit = (props: any) => {
             console.log('Product update successful:', data);
         }
     };
-    
 
     const productChannelListUpdate = async () => {
         try {
