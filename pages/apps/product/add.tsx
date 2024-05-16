@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment } from 'react';
+import { useEffect, useState, Fragment, useCallback, useRef } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -51,9 +51,10 @@ import {
     UPDATE_PRODUCT_CHANNEL,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { sampleParams } from '@/utils/functions';
+import { sampleParams, uploadImage } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
-const ProductEdit = () => {
+import { cA } from '@fullcalendar/core/internal-common';
+const ProductAdd = () => {
     const router = useRouter();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
@@ -67,7 +68,6 @@ const ProductEdit = () => {
     });
     const [salePrice, setSalePrice] = useState('');
     const [menuOrder, setMenuOrder] = useState(0);
-    console.log('menuOrder: ', menuOrder);
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -85,15 +85,139 @@ const ProductEdit = () => {
     const [selectedTag, setSelectedTag] = useState([]);
     const [stackMgmt, setStackMgmt] = useState('');
     const [publish, setPublish] = useState('published');
+    const [modal4, setModal4] = useState(false);
 
     //for accordiant
-    const [selectedArr, setSelectedArr] = useState([]);
-    const [accordions, setAccordions] = useState([]);
+    const [selectedArr, setSelectedArr] = useState<any>([]);
+    const [accordions, setAccordions] = useState<any>([]);
+    console.log('accordions: ', accordions);
     const [openAccordion, setOpenAccordion] = useState('');
     const [chooseType, setChooseType] = useState('');
-    const [selectedValues, setSelectedValues] = useState({});
-    console.log('selectedValues: ', selectedValues);
-    const [dropdowndata, setDropdownData] = useState([]);
+    const [selectedValues, setSelectedValues] = useState<any>({});
+
+    // error message start
+
+    const [productNameErrMsg, setProductNameErrMsg] = useState('');
+    const [slugErrMsg, setSlugErrMsg] = useState('');
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
+    const [shortDesErrMsg, setShortDesErrMsg] = useState('');
+    const [skuErrMsg, setSkuErrMsg] = useState('');
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
+    const [categoryErrMsg, setCategoryErrMsg] = useState('');
+
+    // error message end
+
+    const [dropdowndata, setDropdownData] = useState<any>('');
+    const [images, setImages] = useState<any>('');
+    const [imageUrl, setImageUrl] = useState<any>('');
+    console.log('images: ', imageUrl);
+
+    const [variants, setVariants] = useState([
+        {
+            sku: '',
+            stackMgmt: false,
+            quantity: 0,
+            regularPrice: 0,
+            salePrice: 0,
+            name: '',
+        },
+    ]);
+
+    // editor start
+
+    const editorRef = useRef(null);
+    const [editorInstance, setEditorInstance] = useState(null);
+    const [content, setContent] = useState('');
+
+    const [value2, setValue2] = useState<any>({
+        time: Date.now(),
+        blocks: [
+            {
+                type: 'paragraph',
+                data: {
+                    text: 'This is the default content.',
+                },
+            },
+        ],
+        version: '2.19.0',
+    });
+    // let count = 0;
+    // editor start
+
+    let editors = { isReady: false };
+    useEffect(() => {
+        if (!editors.isReady) {
+            editor();
+            editors.isReady = true;
+        }
+
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, [value2]);
+
+    // const editorRef = useRef(null); // Define a ref to hold the editor instance
+
+    const editor = useCallback(() => {
+        // Check if the window object is available and if the editorRef.current is set
+        if (typeof window === 'undefined' || !editorRef.current) return;
+
+        // Ensure only one editor instance is created
+        if (editorInstance) {
+            return;
+        }
+
+        console.log('value2: ', value2);
+        // Dynamically import the EditorJS module
+        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+            // Create a new instance of EditorJS with the appropriate configuration
+            const editor = new EditorJS({
+                holder: editorRef.current,
+                data: value2,
+                tools: {
+                    // Configure tools as needed
+                    header: {
+                        class: require('@editorjs/header'),
+                    },
+                    list: {
+                        class: require('@editorjs/list'),
+                    },
+                    table: {
+                        class: require('@editorjs/table'),
+                    },
+                },
+            });
+
+            // Set the editorInstance state variable
+            setEditorInstance(editor);
+        });
+
+        // Cleanup function to destroy the current editor instance when the component unmounts
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, [editorInstance, value]);
+
+    // editor end
+
+    // const handleSave = async () => {
+    //     if (editorInstance) {
+    //         try {
+    //             const savedContent = await editorInstance.save();
+    //             console.log('Editor content:', savedContent);
+    //             setValue2(JSON.stringify(savedContent, null, 2));
+    //         } catch (error) {
+    //             console.error('Failed to save editor content:', error);
+    //         }
+    //     }
+    // };
+
+    // editor end
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -176,20 +300,6 @@ const ProductEdit = () => {
     });
 
     useEffect(() => {
-        let arr = {};
-        // if (designData) {
-        //     arr = designData?.productDesigns;
-        // }
-        // if (styleData) {
-        //     arr = styleData?.productStyles;
-        // }
-        // if (finishData) {
-        //     arr = finishData?.productFinishes;
-        // }
-        // if (stoneData) {
-        //     arr = stoneData?.productStoneTypes;
-        // }
-
         const arr1 = {
             design: designData?.productDesigns,
             style: styleData?.productStyles,
@@ -197,8 +307,8 @@ const ProductEdit = () => {
             stoneType: stoneData?.productStoneTypes,
         };
 
-        const singleObj = Object.entries(arr1).reduce((acc, [key, value]) => {
-            acc[key] = value?.edges.map(({ node }) => ({ value: node?.id, label: node?.name }));
+        const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
             return acc;
         }, {});
 
@@ -233,7 +343,7 @@ const ProductEdit = () => {
     const [label, setLabel] = useState('');
 
     const [productType, setProductType] = useState([]);
-    const [selectedCat, setselectedCat] = useState('');
+    const [selectedCat, setselectedCat] = useState<any>('');
 
     useEffect(() => {
         category_list();
@@ -314,7 +424,7 @@ const ProductEdit = () => {
 
     const selectCat = (cat: any) => {
         setselectedCat(cat);
-        // console.log("cat: ", cat);
+        console.log('cat: ', cat);
     };
 
     const selectedCollections = (data: any) => {
@@ -322,27 +432,87 @@ const ProductEdit = () => {
     };
 
     const CreateProduct = async () => {
+        // console.log("selectedCat", selectedCat)
+
+        setProductNameErrMsg('');
+        setSlugErrMsg('');
+        setSeoTittleErrMsg('');
+        setSeoDescErrMsg('');
+        // setDescriptionErrMsg('');
+        setShortDesErrMsg('');
+        // setSkuErrMsg('');
+        // setSalePriceErrMsg('');
+        setCategoryErrMsg('');
+
+        // Validate the product name and slug
+        if (productName.trim() === '') {
+            // Update the error message for the product name field
+            setProductNameErrMsg('Product name cannot be empty');
+        }
+
+        if (slug.trim() === '') {
+            // Update the error message for the slug field
+            setSlugErrMsg('Slug cannot be empty');
+        }
+        if (seoTittle.trim() === '') {
+            // Update the error message for the slug field
+            setSeoTittleErrMsg('Seo title cannot be empty');
+        }
+        if (seoDesc.trim() === '') {
+            setSeoDescErrMsg('Seo description cannot be empty');
+        }
+        // if(description?.trim() === ''){
+        //     setDescriptionErrMsg('Description cannot be empty');
+        // }
+        if (shortDescription?.trim() === '') {
+            setShortDesErrMsg('Short description cannot be empty');
+        }
+        // if (sku?.trim() === '') {
+        //     setSkuErrMsg('Sku cannot be empty');
+        //     alert('Sku cannot be empty');
+        // }
+        // if (salePrice?.trim() === '') {
+        //     setSalePriceErrMsg('Sale price cannot be empty');
+        //     alert('Sale price cannot be empty');
+        // }
+        if (selectedCat == '') {
+            setCategoryErrMsg('Category cannot be empty');
+        }
+        let tagId: any[] = [];
+
+     tagId = selectedTag?.map((item: any) => item.value);
+
+        if (editorInstance) {
+            try {
+                const savedContent = await editorInstance.save();
+                console.log('Editor content:', savedContent);
+                setValue2(savedContent);
+                console.log('✌️setValue2 --->', value2);
+            
+
         try {
             const catId = selectedCat?.value;
             let collectionId: any[] = [];
             if (selectedCollection?.length > 0) {
-                collectionId = selectedCollection?.map((item) => item.value);
+                collectionId = selectedCollection?.map((item: any) => item.value);
             }
+
             const { data } = await addFormData({
                 variables: {
                     input: {
                         attributes: [],
                         category: catId,
                         collections: collectionId,
-                        description: '{"time":1714018366783,"blocks":[{"id":"EWn3NJZQaf","type":"paragraph","data":{"text":"TESTING"}}],"version":"2.24.3"}',
+                        description: JSON.stringify(savedContent),
                         name: productName,
                         productType: 'UHJvZHVjdFR5cGU6Mg==',
                         seo: {
                             description: seoDesc,
                             title: seoTittle,
                         },
+                        tags:tagId,
                         slug: slug,
-                        order_no: menuOrder,
+                        // order_no: menuOrder,
                         ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
                         ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
                         ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
@@ -358,10 +528,20 @@ const ProductEdit = () => {
                 console.log('CreateProduct: ', data);
                 const productId = data?.productCreate?.product?.id;
                 productChannelListUpdate(productId);
+                if (images?.length > 0) {
+                    images?.map((item: any) => {
+                        const imageUpload = uploadImage(productId, item);
+                        console.log('imageUpload: ', imageUpload);
+                    });
+                }
             }
         } catch (error) {
             console.log('error: ', error);
         }
+    } catch (error) {
+        console.error('Failed to save editor content:', error);
+    }
+}
     };
 
     const productChannelListUpdate = async (productId: any) => {
@@ -389,52 +569,40 @@ const ProductEdit = () => {
             } else {
                 console.log('productChannelListUpdate: ', data);
 
-                variantCreate(productId);
+                variantListUpdate(productId);
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
-    const variantCreate = async (productId: string) => {
+    const variantListUpdate = async (productId: any) => {
         try {
+            const variantArr = variants?.map((item) => ({
+                attributes: [],
+                sku: item.sku,
+                name: item.name,
+                trackInventory: item.stackMgmt,
+                channelListings: [
+                    {
+                        channelId: 'Q2hhbm5lbDoy',
+                        price: item.salePrice,
+                        costPrice: item.regularPrice,
+                    },
+                ],
+                stocks: [
+                    {
+                        warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
+                        quantity: item.stackMgmt ? item.quantity : 0,
+                    },
+                ],
+            }));
+            console.log('variantArr: ', variantArr);
+
             const { data } = await createVariant({
                 variables: {
-                    input: {
-                        attributes: [],
-                        product: productId,
-                        sku: sku,
-                        stocks: [],
-                        preorder: null,
-                        trackInventory: stackMgmt,
-                    },
-                },
-                // variables: { email: formData.email, password: formData.password },
-            });
-            if (data?.productVariantCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
-            } else {
-                console.log('variantCreate: ', data);
-                const variantId = data?.productVariantCreate?.productVariant?.id;
-                variantListUpdate(variantId, productId);
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const variantListUpdate = async (variantId: any, productId: any) => {
-        try {
-            const { data } = await updateVariantList({
-                variables: {
-                    id: variantId,
-                    input: [
-                        {
-                            channelId: 'Q2hhbm5lbDoy',
-                            costPrice: regularPrice,
-                            price: salePrice,
-                        },
-                    ],
+                    id: productId,
+                    inputs: variantArr,
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
@@ -473,10 +641,12 @@ const ProductEdit = () => {
             if (data?.updateMetadata?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
-                if (selectedTag?.length > 0) {
-                    assignsTagToProduct(productId);
+                // if (selectedTag?.length > 0) {
+                    // assignsTagToProduct(productId);
                     console.log('success: ', data);
-                }
+                    router.push(`/apps/product/edit?id=${productId}`);
+                    console.log('success: ', data);
+                // }
             }
         } catch (error) {
             console.log('error: ', error);
@@ -486,9 +656,9 @@ const ProductEdit = () => {
     const assignsTagToProduct = async (productId: any) => {
         try {
             let tagId: any[] = [];
-            if (selectedCollection?.length > 0) {
-                tagId = selectedTag?.map((item) => item.value);
-            }
+            // if (selectedCollection?.length > 0) {
+            tagId = selectedTag?.map((item: any) => item.value);
+            // }
             console.log('tagId: ', tagId);
 
             const { data } = await assignTagToProduct({
@@ -503,7 +673,7 @@ const ProductEdit = () => {
             if (data?.productUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
-                router.push('/product/product');
+                router.push(`/apps/product/edit?id=${productId}`);
                 console.log('success: ', data);
             }
         } catch (error) {
@@ -519,26 +689,66 @@ const ProductEdit = () => {
         setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
     };
 
-    const handleRemoveAccordion = (type) => {
-        setSelectedArr(selectedArr.filter((item) => item !== type));
-        setAccordions(accordions.filter((item) => item.type !== type));
+    const handleRemoveAccordion = (type: any) => {
+        setSelectedArr(selectedArr.filter((item: any) => item !== type));
+        setAccordions(accordions.filter((item: any) => item.type !== type));
         setOpenAccordion('');
-        const updatedSelectedValues = { ...selectedValues };
+        const updatedSelectedValues: any = { ...selectedValues };
         delete updatedSelectedValues[type];
         setSelectedValues(updatedSelectedValues);
     };
 
-    const handleDropdownChange = (event, type) => {
+    const handleDropdownChange = (event: any, type: any) => {
         setChooseType(type);
     };
 
-    const handleToggleAccordion = (type) => {
+    const handleToggleAccordion = (type: any) => {
         setOpenAccordion(openAccordion === type ? '' : type);
     };
 
-    const handleMultiSelectChange = (selectedOptions, type) => {
-        const selectedValuesForType = selectedOptions.map((option) => option.value);
+    const handleMultiSelectChange = (selectedOptions: any, type: any) => {
+        const selectedValuesForType = selectedOptions.map((option: any) => option.value);
         setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
+    };
+
+    const handleChange = (index: any, fieldName: any, fieldValue: any) => {
+        setVariants((prevItems) => {
+            const updatedItems: any = [...prevItems];
+            updatedItems[index][fieldName] = fieldValue;
+            return updatedItems;
+        });
+    };
+
+    const handleAddItem = () => {
+        setVariants((prevItems: any) => [
+            ...prevItems,
+            {
+                sku: '',
+                stackMgmt: false,
+                quantity: 0,
+                regularPrice: 0,
+                salePrice: 0,
+            },
+        ]);
+    };
+
+    const handleRemoveVariants = (index: any) => {
+        if (index === 0) return; // Prevent removing the first item
+        setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
+    };
+
+    const multiImgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = event.target.files[0];
+        const imageUrl = URL.createObjectURL(selectedFile);
+        console.log('imageUrl: ', imageUrl);
+
+        // Push the selected file into the 'images' array
+        setImages((prevImages: any) => [...prevImages, selectedFile]);
+
+        // Push the blob URL into the 'imageUrl' array
+        setImageUrl((prevUrls: any) => [...prevUrls, imageUrl]);
+
+        setModal4(false);
     };
 
     // -------------------------------------New Added-------------------------------------------------------
@@ -563,33 +773,52 @@ const ProductEdit = () => {
                                 Product Name
                             </label>
                             <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Enter Your Name" name="name" className="form-input" required />
+                            {productNameErrMsg && <p className="error-message mt-1 text-red-500">{productNameErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 Slug
                             </label>
                             <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="Enter slug" name="name" className="form-input" required />
+                            {slugErrMsg && <p className="error-message mt-1 text-red-500 ">{slugErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 SEO
                             </label>
                             <input type="text" value={seoTittle} onChange={(e) => setSeoTittle(e.target.value)} placeholder="Enter title" name="name" className="form-input" required />
+                            {seoTittleErrMsg && <p className="error-message mt-1 text-red-500 ">{seoTittleErrMsg}</p>}
+
                             <textarea
                                 id="ctnTextarea"
                                 value={seoDesc}
                                 onChange={(e) => setSeoDesc(e.target.value)}
                                 rows={3}
-                                className="form-textarea"
+                                className="form-textarea mt-5"
                                 placeholder="Enter Description"
                                 required
                             ></textarea>
+                            {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
                         </div>
-                        <div className="panel mb-5">
+                        {/* <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
                             <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
+                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
+                        </div> */}
+                        <div className="panel mb-5">
+                            <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
+                                Product description
+                            </label>
+                            <div ref={editorRef} className="mb-5 border border-gray-200">
+                                <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} />
+                            </div>
+                            {/* {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>} */}
+                            {/* <p>Editor content: {content}</p> */}
+                            {/* <button onClick={handleSave} className="btn btn-primary">
+                                Save
+                            </button> */}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
@@ -604,6 +833,7 @@ const ProductEdit = () => {
                                 placeholder="Enter Short Description"
                                 required
                             ></textarea>
+                            {shortDesErrMsg && <p className="error-message mt-1 text-red-500 ">{shortDesErrMsg}</p>}
                         </div>
                         <div className="panel mb-5 ">
                             {/* <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
@@ -631,7 +861,7 @@ const ProductEdit = () => {
                                                     )}
                                                 </Tab> */}
 
-                                                <Tab as={Fragment}>
+                                                {/* <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
@@ -640,7 +870,7 @@ const ProductEdit = () => {
                                                             Linked Products
                                                         </button>
                                                     )}
-                                                </Tab>
+                                                </Tab> */}
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
@@ -674,7 +904,7 @@ const ProductEdit = () => {
                                             </Tab.List>
                                         </div>
                                         <Tab.Panels>
-                                            <Tab.Panel>
+                                            {/* <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 mr-4 pr-6">
                                                         <label htmlFor="upsells" className="block pr-5 text-sm font-medium text-gray-700">
@@ -696,7 +926,7 @@ const ProductEdit = () => {
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
                                                     </div>
                                                 </div>
-                                            </Tab.Panel>
+                                            </Tab.Panel> */}
 
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
@@ -704,7 +934,7 @@ const ProductEdit = () => {
                                                         <Select
                                                             placeholder="Select Type"
                                                             options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
-                                                            onChange={(selectedOption) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            onChange={(selectedOption: any) => handleDropdownChange(selectedOption, selectedOption.value)}
                                                             value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
                                                         />
                                                     </div>
@@ -717,18 +947,18 @@ const ProductEdit = () => {
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        {accordions.map((item) => (
-                                                            <div key={item.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
+                                                        {accordions.map((item: any) => (
+                                                            <div key={item?.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
                                                                 <button
                                                                     type="button"
                                                                     className={`flex w-full items-center p-4 text-white-dark dark:bg-[#1b2e4b] ${active === '1' ? '!text-primary' : ''}`}
                                                                     // onClick={() => togglePara('1')}
                                                                 >
-                                                                    {item.type}
+                                                                    {item?.type}
                                                                     {/* <button onClick={() => handleRemoveAccordion(item.type)}>Remove</button> */}
 
                                                                     <div className={`text-red-400 ltr:ml-auto rtl:mr-auto `} onClick={() => handleRemoveAccordion(item.type)}>
-                                                                        Remove
+                                                                        <IconTrashLines />
                                                                     </div>
                                                                 </button>
                                                                 <div>
@@ -754,7 +984,10 @@ const ProductEdit = () => {
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value) => ({ value, label: value }))}
+                                                                                            value={(selectedValues[item.type] || []).map((value: any) => {
+                                                                                                const option = item[`${item.type}Name`].find((option: any) => option.value === value);
+                                                                                                return { value: option.value, label: option.label };
+                                                                                            })}
                                                                                         />
                                                                                         {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
                                                                                         {/* <div className="flex justify-between">
@@ -790,121 +1023,138 @@ const ProductEdit = () => {
                                             </Tab.Panel>
 
                                             <Tab.Panel>
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4">
-                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
-                                                            SKU
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5">
-                                                        <input
-                                                            type="text"
-                                                            onChange={(e) => setSku(e.target.value)}
-                                                            value={sku}
-                                                            style={{ width: '350px' }}
-                                                            placeholder="Enter SKU"
-                                                            name="regularPrice"
-                                                            className="form-input "
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4 pr-4">
-                                                        <label htmlFor="regularPrice" className="block  text-sm font-medium text-gray-700">
-                                                            Stock Management
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5">
-                                                        <input type="checkbox" value={stackMgmt} onChange={(e) => setStackMgmt(e.target.value)} className="form-checkbox" defaultChecked />
-                                                        <span>Track stock quantity for this product</span>{' '}
-                                                    </div>
-                                                </div>
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4 ">
-                                                        <label htmlFor="quantity" className="block  text-sm font-medium text-gray-700">
-                                                            Quantity
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5">
-                                                        <input
-                                                            type="number"
-                                                            onChange={(e) => setQuantity(e.target.value)}
-                                                            value={quantity}
-                                                            style={{ width: '350px' }}
-                                                            placeholder="Enter Quantity"
-                                                            name="quantity"
-                                                            className="form-input"
-                                                            defaultChecked
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4">
-                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
-                                                            Regular Price
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5">
-                                                        <input
-                                                            type="number"
-                                                            onChange={(e) => setRegularPrice(e.target.value)}
-                                                            value={regularPrice}
-                                                            style={{ width: '350px' }}
-                                                            placeholder="Enter Regular Price"
-                                                            name="regularPrice"
-                                                            className="form-input "
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className=" flex items-center">
-                                                        <div className="mb-5 mr-4">
-                                                            <label htmlFor="salePrice" className="block pr-10 text-sm font-medium text-gray-700">
-                                                                Sale Price
-                                                            </label>
-                                                        </div>
-                                                        <div className="mb-5">
-                                                            <input
-                                                                type="number"
-                                                                onChange={(e) => setSalePrice(e.target.value)}
-                                                                value={salePrice}
-                                                                style={{ width: '350px' }}
-                                                                placeholder="Enter Sale Price"
-                                                                name="salePrice"
-                                                                className="form-input"
-                                                                required
-                                                            />
-                                                        </div>
-                                                        {/* <div className="mb-5 pl-3">
-                                                            <span className="cursor-pointer text-gray-500 underline" onClick={scheduleOpen}>
-                                                                {!salePrice ? 'Schedule' : 'Cancel'}
-                                                            </span>
-                                                        </div> */}
-                                                    </div>
-                                                    {/* <div>
-                                                        {salePrice && (
-                                                            <>
-                                                                <div className="flex items-center">
-                                                                    <div className="mb-5 mr-4">
-                                                                        <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                                            Sale Price Date
-                                                                        </label>
-                                                                    </div>
-                                                                    <div className="mb-5">
-                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="flex items-end">
-                                                                    <div className="mb-5 pl-28">
-                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
-                                                                    </div>
-                                                                </div>
-                                                            </>
+                                                {variants?.map((item, index) => (
+                                                    <div key={index} className="mb-5 border-b border-gray-200">
+                                                        {index !== 0 && ( // Render remove button only for items after the first one
+                                                            <div className="active flex items-center justify-end text-danger">
+                                                                <button onClick={() => handleRemoveVariants(index)}>
+                                                                    <IconTrashLines />
+                                                                </button>
+                                                            </div>
                                                         )}
-                                                    </div> */}
+                                                        <div className="active flex items-center">
+                                                            <div className="mb-5 mr-4">
+                                                                <label htmlFor={`name${index}`} className="block pr-5 text-sm font-medium text-gray-700">
+                                                                    Variant
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="text"
+                                                                    id={`name${index}`}
+                                                                    name={`name${index}`}
+                                                                    value={item.name}
+                                                                    onChange={(e) => handleChange(index, 'name', e.target.value)}
+                                                                    style={{ width: '350px' }}
+                                                                    placeholder="Enter variants"
+                                                                    className="form-input"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="active flex items-center">
+                                                            <div className="mb-5 mr-4">
+                                                                <label htmlFor={`sku_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
+                                                                    SKU
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="text"
+                                                                    id={`sku_${index}`}
+                                                                    name={`sku_${index}`}
+                                                                    value={item.sku}
+                                                                    onChange={(e) => handleChange(index, 'sku', e.target.value)}
+                                                                    style={{ width: '350px' }}
+                                                                    placeholder="Enter SKU"
+                                                                    className="form-input"
+                                                                />
+                                                                {skuErrMsg && <p className="error-message mt-1 text-red-500 ">{skuErrMsg}</p>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="active flex items-center">
+                                                            <div className="mb-5 mr-4 pr-4">
+                                                                <label htmlFor={`stackMgmt_${index}`} className="block  text-sm font-medium text-gray-700">
+                                                                    Stock Management
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    id={`stackMgmt_${index}`}
+                                                                    name={`stackMgmt_${index}`}
+                                                                    checked={item.stackMgmt}
+                                                                    onChange={(e) => handleChange(index, 'stackMgmt', e.target.checked)}
+                                                                    className="form-checkbox"
+                                                                />
+                                                                <span>Track stock quantity for this product</span>
+                                                            </div>
+                                                        </div>
+                                                        {item.stackMgmt && (
+                                                            <div className="active flex items-center">
+                                                                <div className="mb-5 mr-4 ">
+                                                                    <label htmlFor={`quantity_${index}`} className="block  text-sm font-medium text-gray-700">
+                                                                        Quantity
+                                                                    </label>
+                                                                </div>
+                                                                <div className="mb-5">
+                                                                    <input
+                                                                        type="number"
+                                                                        id={`quantity_${index}`}
+                                                                        name={`quantity_${index}`}
+                                                                        value={item.quantity}
+                                                                        onChange={(e) => handleChange(index, 'quantity', parseInt(e.target.value))}
+                                                                        style={{ width: '350px' }}
+                                                                        placeholder="Enter Quantity"
+                                                                        className="form-input"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        <div className="active flex items-center">
+                                                            <div className="mb-5 mr-4">
+                                                                <label htmlFor={`regularPrice_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
+                                                                    Regular Price
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="number"
+                                                                    id={`regularPrice_${index}`}
+                                                                    name={`regularPrice_${index}`}
+                                                                    value={item.regularPrice}
+                                                                    onChange={(e) => handleChange(index, 'regularPrice', parseFloat(e.target.value))}
+                                                                    style={{ width: '350px' }}
+                                                                    placeholder="Enter Regular Price"
+                                                                    className="form-input"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center">
+                                                            <div className="mb-5 mr-4">
+                                                                <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
+                                                                    Sale Price
+                                                                </label>
+                                                            </div>
+                                                            <div className="mb-5">
+                                                                <input
+                                                                    type="number"
+                                                                    id={`salePrice_${index}`}
+                                                                    name={`salePrice_${index}`}
+                                                                    value={item.salePrice}
+                                                                    onChange={(e) => handleChange(index, 'salePrice', parseFloat(e.target.value))}
+                                                                    style={{ width: '350px' }}
+                                                                    placeholder="Enter Sale Price"
+                                                                    className="form-input"
+                                                                />
+                                                                {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <div className="mb-5">
+                                                    <button type="button" className=" btn btn-primary flex justify-end" onClick={handleAddItem}>
+                                                        Add item
+                                                    </button>
                                                 </div>
 
                                                 {/* <div>
@@ -1015,7 +1265,7 @@ const ProductEdit = () => {
                                 <h5 className=" block text-lg font-medium text-gray-700">Label</h5>
                             </div>
                             <div className="mb-5">
-                                <Select placeholder="Select an label" options={options} value={label} onChange={(val) => setLabel(val)} isSearchable={true} />
+                                <Select placeholder="Select an label" options={options} value={label} onChange={(val: any) => setLabel(val)} isSearchable={true} />
                             </div>
                         </div>
 
@@ -1173,11 +1423,11 @@ const ProductEdit = () => {
                             ) : null} */}
 
                             <button type="submit" className="btn btn-primary w-full" onClick={() => CreateProduct()}>
-                                Update
+                                Create
                             </button>
                         </div>
 
-                        <div className="panel mt-5">
+                        {/* <div className="panel mt-5">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Image</h5>
                             </div>
@@ -1187,17 +1437,31 @@ const ProductEdit = () => {
                             <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
 
                             <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
-                        </div>
+                        </div> */}
 
                         <div className="panel mt-5">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Gallery</h5>
                             </div>
-                            <div>
-                                <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
+                            <div className="grid grid-cols-12 gap-3">
+                                {imageUrl?.length > 0 &&
+                                    imageUrl?.map((item: any, index: any) => (
+                                        <div className="relative col-span-4">
+                                            <img src={item} alt="Product image" className=" object-cover" />
+                                            <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
+                                                <IconTrashLines className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                {/* <div className="col-span-4">
+                                            <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
+                                        </div> */}
                             </div>
 
-                            <p className="mt-5 cursor-pointer text-primary underline">Add product gallery images</p>
+                            <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setModal4(true)}>
+                                Add product gallery images
+                            </p>
                             {/* <button type="button" className="btn btn-primary mt-5" onClick={() => productVideoPopup()}>
                                 + Video
                             </button> */}
@@ -1209,6 +1473,7 @@ const ProductEdit = () => {
                             </div>
                             <div className="mb-5">
                                 <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
+                                {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
                             </div>
                             {/* <div className="mb-5">
                                 {isMounted && (
@@ -1619,8 +1884,50 @@ const ProductEdit = () => {
                     </div>
                 </Dialog>
             </Transition>
+
+            {/* product multiple img popup */}
+            <Transition appear show={modal4} as={Fragment}>
+                <Dialog as="div" open={modal4} onClose={() => setModal4(false)}>
+                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0" />
+                    </Transition.Child>
+                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between border-b bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <div className="text-lg font-bold">Product gallery Image</div>
+                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal4(false)}>
+                                            <IconX />
+                                        </button>
+                                    </div>
+                                    <div className="m-5 pt-5">
+                                        {/* Input for selecting file */}
+                                        <input type="file" id="product-gallery-image" className="form-input" onChange={multiImgUpload} />
+
+                                        {/* Button to upload */}
+                                        {/* <div className="flex justify-end">
+                                            <button className="btn btn-primary mt-5" onClick={handleUpload}>
+                                                Upload
+                                            </button>
+                                        </div> */}
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
         </div>
     );
 };
 
-export default ProductEdit;
+export default ProductAdd;

@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment, useRef, useCallback } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -28,7 +28,7 @@ import IconEdit from '@/components/Icon/IconEdit';
 import Select from 'react-select';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
-// const ReactQuill = dynamic(import('react-quill'), { ssr: false });
+const ReactQuill = dynamic(import('react-quill'), { ssr: false });
 
 import { Tab } from '@headlessui/react';
 import AnimateHeight from 'react-animate-height';
@@ -40,43 +40,35 @@ import {
     COLLECTION_LIST,
     CREATE_PRODUCT,
     CREATE_VARIANT,
-    DELETE_VARIENT,
     DESIGN_LIST,
     FINISH_LIST,
     PRODUCT_CAT_LIST,
-    PRODUCT_DETAILS,
-    PRODUCT_FULL_DETAILS,
     PRODUCT_LIST_TAGS,
-    PRODUCT_MEDIA_CREATE,
     PRODUCT_TYPE_LIST,
-    REMOVE_IMAGE,
     STONE_LIST,
     STYLE_LIST,
     UPDATE_META_DATA,
-    UPDATE_PRODUCT,
     UPDATE_PRODUCT_CHANNEL,
-    UPDATE_VARIANT,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { getValueByKey, sampleParams, uploadImage } from '@/utils/functions';
-const ProductEdit = (props: any) => {
+import { sampleParams } from '@/utils/functions';
+import IconRestore from '@/components/Icon/IconRestore';
+import { cA } from '@fullcalendar/core/internal-common';
+const AddCoupon = () => {
     const router = useRouter();
-
-    const { id } = router.query;
-
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
 
-    const [value, setValue] = useState({}); // quill text editor
-
+    const [value, setValue] = useState('demo content'); // quill text editor
     const [isMounted, setIsMounted] = useState(false); //tabs
     useEffect(() => {
         setIsMounted(true);
     });
     const [salePrice, setSalePrice] = useState('');
     const [menuOrder, setMenuOrder] = useState(0);
+    console.log('menuOrder: ', menuOrder);
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -89,11 +81,39 @@ const ProductEdit = (props: any) => {
     const [sku, setSku] = useState('');
     const [quantity, setQuantity] = useState('');
     const [regularPrice, setRegularPrice] = useState('');
-    const [selectedCollection, setSelectedCollection] = useState<any>([]);
-    const [stackMgmt, setStackMgmt] = useState(false);
+    const [selectedCollection, setSelectedCollection] = useState([]);
+    const [tagList, setTagList] = useState([]);
+    const [selectedTag, setSelectedTag] = useState([]);
+    const [stackMgmt, setStackMgmt] = useState('');
     const [publish, setPublish] = useState('published');
 
+    //for accordiant
+    const [selectedArr, setSelectedArr] = useState([]);
+    const [accordions, setAccordions] = useState([]);
+    const [openAccordion, setOpenAccordion] = useState('');
+    const [chooseType, setChooseType] = useState('');
+    const [selectedValues, setSelectedValues] = useState({});
+    console.log('selectedValues: ', selectedValues);
+    const [dropdowndata, setDropdownData] = useState([]);
+
+    // error message
+    const [productNameErrMsg, setProductNameErrMsg] = useState('');
+    const [slugErrMsg, setSlugErrMsg] = useState('');
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
+    const [descriptionErrMsg, setDescriptionErrMsg] = useState('');
+    const [shortDesErrMsg, setShortDesErrMsg] = useState('');
+    const [skuErrMsg, setSkuErrMsg] = useState('');
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
+    const [categoryErrMsg, setCategoryErrMsg] = useState('');
+
     // ------------------------------------------New Data--------------------------------------------
+
+    const [statusVisible, setStatusVisible] = useState(false);
+    const [publicVisible, setPublicVisible] = useState(false);
+    const [publishedDate, setPublishedDate] = useState(false);
+    const [catalogVisible, setCatalogVisible] = useState(false);
+    const [addCategory, setAddCategory] = useState(false);
     const [quantityTrack, setQuantityTrack] = useState(true);
     const [active, setActive] = useState<string>('1');
     // track stock
@@ -102,10 +122,46 @@ const ProductEdit = (props: any) => {
     };
 
     const options = [
-        { value: 'New', label: 'New' },
-        { value: 'Hot', label: 'Hot' },
+        { value: 'new', label: 'New' },
+        { value: 'hot', label: 'Hot' },
     ];
 
+    const arr = [
+        { type: 'design', designName: dropdowndata?.design },
+        { type: 'style', styleName: dropdowndata?.style },
+        { type: 'stone', stoneName: dropdowndata?.stoneType },
+        { type: 'finish', finishName: dropdowndata?.finish },
+    ];
+
+    const optionsVal = arr.map((item) => ({ value: item.type, label: item.type }));
+
+    const statusEditClick = () => {
+        setStatusVisible(!statusVisible);
+    };
+
+    const PublicEditClick = () => {
+        setPublicVisible(!publicVisible);
+    };
+
+    const PublishedDateClick = () => {
+        setPublishedDate(!publishedDate);
+    };
+
+    const CatalogEditClick = () => {
+        setCatalogVisible(!catalogVisible);
+    };
+
+    const addCategoryClick = () => {
+        setAddCategory(!addCategory);
+    };
+
+    const productImagePopup = () => {
+        setModal2(true);
+    };
+
+    const productVideoPopup = () => {
+        setModal1(true);
+    };
     const togglePara = (value: string) => {
         setActive((oldValue) => {
             return oldValue === value ? '' : value;
@@ -113,32 +169,10 @@ const ProductEdit = (props: any) => {
     };
 
     // -------------------------------------New Added-------------------------------------------------------
-    const { data: productDetails } = useQuery(PRODUCT_FULL_DETAILS, {
-        variables: { channel: 'india-channel', id: id },
-    });
-
-    const { data: tagsList } = useQuery(PRODUCT_LIST_TAGS, {
-        variables: { channel: 'india-channel', id: id },
-    });
-
-    // console.log('productDetails: ', productDetails);
 
     const { error, data: orderDetails } = useQuery(CHANNEL_LIST, {
         variables: sampleParams,
     });
-
-    const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
-        variables: sampleParams,
-    });
-
-    const { data: collection_list } = useQuery(COLLECTION_LIST, {
-        variables: sampleParams,
-    });
-
-    const { data: productTypelist } = useQuery(PRODUCT_TYPE_LIST, {
-        variables: sampleParams,
-    });
-
     const { data: finishData } = useQuery(FINISH_LIST, {
         variables: sampleParams,
     });
@@ -153,92 +187,73 @@ const ProductEdit = (props: any) => {
         variables: sampleParams,
     });
 
+    useEffect(() => {
+        let arr = {};
+        // if (designData) {
+        //     arr = designData?.productDesigns;
+        // }
+        // if (styleData) {
+        //     arr = styleData?.productStyles;
+        // }
+        // if (finishData) {
+        //     arr = finishData?.productFinishes;
+        // }
+        // if (stoneData) {
+        //     arr = stoneData?.productStoneTypes;
+        // }
+
+        const arr1 = {
+            design: designData?.productDesigns,
+            style: styleData?.productStyles,
+            finish: finishData?.productFinishes,
+            stoneType: stoneData?.productStoneTypes,
+        };
+
+        const singleObj = Object.entries(arr1).reduce((acc, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }) => ({ value: node?.id, label: node?.name }));
+            return acc;
+        }, {});
+
+        setDropdownData(singleObj);
+    }, [finishData, stoneData, designData, styleData]);
+
+    const { data: tagsList } = useQuery(PRODUCT_LIST_TAGS, {
+        variables: { channel: 'india-channel' },
+    });
+
+    const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: collection_list } = useQuery(COLLECTION_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: productTypelist } = useQuery(PRODUCT_TYPE_LIST, {
+        variables: sampleParams,
+    });
+
     const [addFormData] = useMutation(CREATE_PRODUCT);
     const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
-    // const [createVariant] = useMutation(CREATE_VARIANT);
+    const [createVariant] = useMutation(CREATE_VARIANT);
     const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
-    const [updateVariant] = useMutation(UPDATE_VARIANT);
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
     const [assignTagToProduct] = useMutation(ASSIGN_TAG_PRODUCT);
 
-    const [removeImage] = useMutation(REMOVE_IMAGE);
-    const [updateProduct] = useMutation(UPDATE_PRODUCT);
-    const [deleteVarient] = useMutation(DELETE_VARIENT);
-
-    const [createProductMedia] = useMutation(PRODUCT_MEDIA_CREATE);
-
     const [categoryList, setCategoryList] = useState([]);
-    const [tagList, setTagList] = useState([]);
-    const [selectedTag, setSelectedTag] = useState([]);
     const [collectionList, setCollectionList] = useState([]);
-    const [label, setLabel] = useState<any>('');
-    const [productData, setProductData] = useState({});
-    const [modal3, setModal3] = useState(false);
-    const [modal4, setModal4] = useState(false);
+    const [label, setLabel] = useState('');
 
     const [productType, setProductType] = useState([]);
-    const [mediaData, setMediaData] = useState([]);
-
-    const [imageUrl, setImageUrl] = useState('');
-    const [thumbnailFile, setThumbnailFile] = useState<any>({});
-    const [file, setFile] = useState(null);
-
-    const [thumbnail, setThumbnail] = useState('');
-    const [isthumbImgUpdate, setIsthumbImgUpdate] = useState(false);
-
-    const [images, setImages] = useState<any>([]);
-
-    const [selectedArr, setSelectedArr] = useState<any>([]);
-    const [accordions, setAccordions] = useState<any>([]);
-    const [openAccordion, setOpenAccordion] = useState<any>('');
-    const [chooseType, setChooseType] = useState<any>('');
-    const [selectedValues, setSelectedValues] = useState<any>({});
-    const [dropdowndata, setDropdownData] = useState<any>([]);
-    const [dropIndex, setDropIndex] = useState<any>(null);
-
-    const [variants, setVariants] = useState([
-        {
-            sku: '',
-            stackMgmt: false,
-            quantity: 0,
-            regularPrice: 0,
-            salePrice: 0,
-            name: '',
-            id: '',
-        },
-    ]);
-
-    // editor js
-    const editorRef: any = useRef(null);
-    const [editorInstance, setEditorInstance] = useState<any>(null);
-    let editorInstanceRef: any = useRef(null);
-
-    const isEditorInitialized = useRef(false);
-    // const [content, setContent] = useState('');
-    let count = 0;
-
-    // useEffect(() => {
-    //     if (count === 0) {
-    //         editor();
-    //         count = 1;
-    //     }
-    // }, [value]);
-
-    // State to track whether delete icon should be displayed
-
-    const [selectedCat, setselectedCat] = useState<any>('');
-
-    useEffect(() => {
-        productsDetails();
-    }, [productDetails, dropdowndata]);
-
-    useEffect(() => {
-        tags_list();
-    }, [tagsList]);
+    const [selectedCat, setselectedCat] = useState('');
 
     useEffect(() => {
         category_list();
     }, [cat_list]);
+
+    useEffect(() => {
+        tags_list();
+    }, [tagsList]);
 
     useEffect(() => {
         collections_list();
@@ -247,213 +262,6 @@ const ProductEdit = (props: any) => {
     useEffect(() => {
         productsType();
     }, [productTypelist]);
-
-    useEffect(() => {
-        const arr1 = {
-            design: designData?.productDesigns,
-            style: styleData?.productStyles,
-            finish: finishData?.productFinishes,
-            stoneType: stoneData?.productStoneTypes,
-        };
-
-        const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
-            acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
-            return acc;
-        }, {});
-
-        setDropdownData(singleObj);
-    }, [finishData, stoneData, designData, styleData]);
-
-    const productsDetails = async () => {
-        try {
-            if (productDetails) {
-                if (productDetails && productDetails?.product) {
-                    const data = productDetails?.product;
-                    setProductData(data);
-                    setSlug(data?.slug);
-                    setSeoTittle(data?.seoTitle);
-                    setSeoDesc(data?.seoDescription);
-                    setProductName(data?.name);
-                    const category: any = categoryList?.find((item: any) => item.value === data?.category?.id);
-                    setselectedCat(category);
-                    if (data?.tags?.length > 0) {
-                        const tags: any = data?.tags?.map((item: any) => ({ value: item.id, label: item.name }));
-                        setSelectedTag(tags);
-                    } else {
-                        setSelectedTag([]);
-                    }
-                    if (data?.collections?.length > 0) {
-                        const collection: any = data?.collections?.map((item: any) => ({ value: item.id, label: item.name }));
-                        setSelectedCollection(collection);
-                    }
-                    setMenuOrder(data?.orderNo);
-
-                    // const stringDescription = data.description;
-                    // const removeString = JSON.parse(stringDescription);
-                    // const Description = removeString.blocks.map((block) => block.data.text).join('');
-
-                    // console.log('Description --->', Description);
-
-                    const Description = data.description;
-                    // editor(Description);
-                    const description1 = { time: 1714207451900, blocks: [{ id: 'EWn3NJZQaf', data: { text: 'TESTING' }, type: 'paragraph' }], version: '2.24.3' };
-
-                    console.log('✌️Description --->', Description);
-
-                    setValue(description1);
-
-                    const shortDesc = getValueByKey(data?.metadata, 'short_descripton');
-                    setShortDescription(shortDesc);
-
-                    const label = getValueByKey(data?.metadata, 'label');
-                    setLabel({ value: label, label: label });
-
-                    setMediaData(data?.media);
-                    setThumbnail(data?.thumbnail?.url);
-
-                    if (data?.media?.length > 0) {
-                        setImages(data?.media);
-                    }
-
-                    const arr = [];
-                    const type: any[] = [];
-                    let selectedAccValue: any = {};
-                    if (data?.prouctDesign?.length > 0) {
-                        const obj = {
-                            type: 'design',
-                            designName: dropdowndata?.design,
-                        };
-                        arr.push(obj);
-                        type.push('design');
-                        selectedAccValue.design = data?.prouctDesign?.map((item: any) => item.id);
-                    }
-                    if (data?.productstyle?.length > 0) {
-                        const obj = {
-                            type: 'style',
-                            styleName: dropdowndata?.style,
-                        };
-                        arr.push(obj);
-                        type.push('style');
-                        selectedAccValue.style = data?.productstyle?.map((item: any) => item.id);
-                    }
-                    if (data?.productStoneType?.length > 0) {
-                        const obj = {
-                            type: 'stone',
-                            stoneName: dropdowndata?.stoneType,
-                        };
-                        arr.push(obj);
-                        type.push('stone');
-                        selectedAccValue.stone = data?.productStoneType?.map((item: any) => item.id);
-                    }
-                    if (data?.productFinish?.length > 0) {
-                        const obj = {
-                            type: 'finish',
-                            finishName: dropdowndata?.finish,
-                        };
-                        arr.push(obj);
-                        type.push('finish');
-                        selectedAccValue.finish = data?.productFinish?.map((item: any) => item.id);
-                    }
-
-                    setAccordions(arr.flat());
-                    setSelectedArr(type);
-                    setSelectedValues(selectedAccValue);
-                    if (data?.variants?.length > 0) {
-                        const variant = data?.variants?.map((item: any) => ({
-                            sku: item.sku,
-                            stackMgmt: item.trackInventory,
-                            quantity: item?.stocks[0]?.quantity,
-                            regularPrice: item.channelListings[0]?.costPrice?.amount,
-                            salePrice: item.channelListings[0]?.price?.amount,
-                            name: item.name,
-                            id: item.id,
-                            channelId: item.channelListings[0]?.id,
-                            stockId: item?.stocks[0]?.id,
-                        }));
-                        setVariants(variant);
-                    }
-                    setPublish(data?.channelListings[0]?.isPublished == true ? 'published' : 'draft');
-
-                    // setRegularPrice()
-                }
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    let editors = { isReady: false };
-
-    useEffect(() => {
-        if (!editors.isReady) {
-            editor();
-            editors.isReady = true;
-        }
-
-        return () => {
-            if (editorInstance) {
-                editorInstance?.blocks?.clear();
-            }
-        };
-    }, [value, productDetails]);
-
-    useEffect(() => {
-        setValue({ time: 1714207451900, blocks: [{ id: 'EWn3NJZQaf', data: { text: 'TESTING' }, type: 'paragraph' }], version: '2.24.3' });
-    }, [productDetails]);
-
-    // const editorRef = useRef(null); // Define a ref to hold the editor instance
-
-    const editor = useCallback(() => {
-        // Check if the window object is available and if the editorRef.current is set
-        if (typeof window === 'undefined' || !editorRef.current) return;
-
-        // Ensure only one editor instance is created
-        if (editorInstance) {
-            return;
-        }
-
-        // Dynamically import the EditorJS module
-        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
-            // Create a new instance of EditorJS with the appropriate configuration
-            const editor = new EditorJS({
-                holder: editorRef.current,
-                data: value,
-                tools: {
-                    // Configure tools as needed
-                    header: {
-                        class: require('@editorjs/header'),
-                    },
-                    list: {
-                        class: require('@editorjs/list'),
-                    },
-                    table: {
-                        class: require('@editorjs/table'),
-                    },
-                },
-            });
-
-            // Set the editorInstance state variable
-            setEditorInstance(editor);
-        });
-
-        // Cleanup function to destroy the current editor instance when the component unmounts
-        return () => {
-            if (editorInstance) {
-                editorInstance?.blocks?.clear();
-            }
-        };
-    }, [editorInstance, value]);
-
-    // useEffect(() => {
-    //     return () => {
-    //         if (editorInstanceRef.current) {
-    //             editorInstanceRef.current.destroy();
-    //             isEditorInitialized.current = false; // Reset the flag
-    //         }
-    //     };
-    // }, []);
-
-    // editor end
 
     const category_list = async () => {
         try {
@@ -467,9 +275,7 @@ const ProductEdit = (props: any) => {
                     setCategoryList(dropdownData);
                 }
             }
-        } catch (error) {
-            console.log('error: ', error);
-        }
+        } catch (error) {}
     };
 
     const tags_list = async () => {
@@ -500,9 +306,7 @@ const ProductEdit = (props: any) => {
                     setCollectionList(dropdownData);
                 }
             }
-        } catch (error) {
-            console.log('error: ', error);
-        }
+        } catch (error) {}
     };
 
     const productsType = async () => {
@@ -517,143 +321,113 @@ const ProductEdit = (props: any) => {
                     setProductType(dropdownData);
                 }
             }
-        } catch (error) {
-            console.log('error: ', error);
-        }
+        } catch (error) {}
     };
 
     const selectCat = (cat: any) => {
         setselectedCat(cat);
-        // console.log("cat: ", cat);
+        console.log('cat: ', cat);
     };
 
     const selectedCollections = (data: any) => {
         setSelectedCollection(data);
     };
 
-    // Function to handle file selection
-    const handleFileChange = (event: any) => {
-        const selectedFile = event.target.files[0];
-        if (selectedFile) {
-            const imageUrl = URL.createObjectURL(selectedFile);
-            setImageUrl(imageUrl);
-            setThumbnailFile(event.target.files[0]);
+    const CreateProduct = async () => {
+        console.log('selectedCat', selectedCat);
+
+        setProductNameErrMsg('');
+        setSlugErrMsg('');
+        setSeoTittleErrMsg('');
+        setSeoDescErrMsg('');
+        setDescriptionErrMsg('');
+        setShortDesErrMsg('');
+        setSkuErrMsg('');
+        setSalePriceErrMsg('');
+        setCategoryErrMsg('');
+
+        // Validate the product name and slug
+        if (productName.trim() === '') {
+            // Update the error message for the product name field
+            setProductNameErrMsg('Product name cannot be empty');
         }
-    };
 
-    const multiImgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = event.target.files[0];
-        const imageUrl = URL.createObjectURL(selectedFile);
+        if (slug.trim() === '') {
+            // Update the error message for the slug field
+            setSlugErrMsg('Slug cannot be empty');
+        }
+        if (seoTittle.trim() === '') {
+            // Update the error message for the slug field
+            setSeoTittleErrMsg('Seo title cannot be empty');
+        }
+        if (seoDesc.trim() === '') {
+            setSeoDescErrMsg('Seo description cannot be empty');
+        }
+        // if(description?.trim() === ''){
+        //     setDescriptionErrMsg('Description cannot be empty');
+        // }
+        if (shortDescription?.trim() === '') {
+            setShortDesErrMsg('Short description cannot be empty');
+        }
+        if (sku?.trim() === '') {
+            setSkuErrMsg('Sku cannot be empty');
+            alert('Sku cannot be empty');
+        }
+        if (salePrice?.trim() === '') {
+            setSalePriceErrMsg('Sale price cannot be empty');
+            alert('Sale price cannot be empty');
+        }
+        if (selectedCat == '') {
+            setCategoryErrMsg('Category cannot be empty');
+        }
 
-        // Push the selected file into the 'images' array
-        // setImages((prevImages) => [...prevImages, selectedFile]);
-
-        // Push the blob URL into the 'imageUrl' array
-        // setImageUrl((prevUrls) => [...prevUrls, imageUrl]);
-
-        setModal4(false);
-
-        const res = await uploadImage(id, selectedFile);
-        console.log('res: ', res);
-        setImages(res.data?.productMediaCreate?.product?.media);
-    };
-
-    const multiImageDelete = async (item: any) => {
-        const { data } = await removeImage({
-            variables: { id: item.id },
-        });
-        const pendingImg = data?.productMediaDelete?.product?.media;
-        setImages(pendingImg);
-    };
-
-    // Function to handle upload button click
-
-    // Function to handle delete icon click
-    const handleDelete = () => {
-        // Clear the image URL from the state
-        setImageUrl('');
-        setThumbnail('');
-        setThumbnailFile({});
-        imageDelete(thumbnailFile.id);
-
-        // const filter = images?.filter((item, index) => index !== 0);
-        // setImages(filter);
-    };
-
-    const imageDelete = (ids: any) => {
-        const { data }: any = removeImage({
-            variables: { channel: 'india-channel', id: ids },
-        });
-        productUpdate();
-    };
-
-    const productUpdate = () => {
-        const { error, data: orderDetails } = useQuery(CHANNEL_LIST, {
-            variables: sampleParams,
-        });
-    };
-
-    const deleteProductGallery = (i: any) => {
-        const filter = images?.filter((item: any, index: any) => index !== i);
-        setImages(filter);
-    };
-
-    const updateProducts = async () => {
-        console.log('selectedCat: ', selectedCat);
-        if (editorInstance) {
-            try {
-                // Save editor content
-                const savedContent = await editorInstance.save();
-                console.log('Editor content:', savedContent);
-                // Update state with saved content
-                setValue(savedContent);
-            } catch (error) {
-                console.error('Error saving editor content:', error);
+        try {
+            const catId = selectedCat?.value;
+            let collectionId: any[] = [];
+            if (selectedCollection?.length > 0) {
+                collectionId = selectedCollection?.map((item) => item.value);
             }
-        }
-        console.log('selectedCollection: ', selectedCollection);
-        let tagId = selectedTag?.map((item) => item.value) || [];
-
-        console.log('valueDescription', value);
-        const { data } = await updateProduct({
-            variables: {
-                id: id,
-                input: {
-                    attributes: [],
-                    category: selectedCat?.value,
-                    collections: selectedCollection.map((item) => item.value),
-                    tags: tagId,
-                    description: value,
-                    name: productName,
-                    rating: 0,
-                    seo: {
-                        description: seoDesc,
-                        title: seoTittle,
+            const { data } = await addFormData({
+                variables: {
+                    input: {
+                        attributes: [],
+                        category: catId,
+                        collections: collectionId,
+                        description: '{"time":1714018366783,"blocks":[{"id":"EWn3NJZQaf","type":"paragraph","data":{"text":"TESTING"}}],"version":"2.24.3"}',
+                        name: productName,
+                        productType: 'UHJvZHVjdFR5cGU6Mg==',
+                        seo: {
+                            description: seoDesc,
+                            title: seoTittle,
+                        },
+                        slug: slug,
+                        order_no: menuOrder,
+                        ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                        ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
+                        ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
+                        ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
+                        ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
                     },
-                    slug: slug,
-                    ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                    ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
-                    ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
-                    ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
-                    ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
                 },
-                firstValues: 10,
-            },
-        });
+            });
 
-        if (data?.productUpdate?.errors?.length > 0) {
-            console.log('Error updating product');
-        } else {
-            productChannelListUpdate();
-            console.log('Product update successful:', data);
+            if (data?.productCreate?.errors?.length > 0) {
+                console.log('error: ', data?.productCreate?.errors[0]?.message);
+            } else {
+                console.log('CreateProduct: ', data);
+                const productId = data?.productCreate?.product?.id;
+                productChannelListUpdate(productId);
+            }
+        } catch (error) {
+            console.log('error: ', error);
         }
     };
 
-    const productChannelListUpdate = async () => {
+    const productChannelListUpdate = async (productId: any) => {
         try {
             const { data } = await updateProductChannelList({
                 variables: {
-                    id: id,
+                    id: productId,
                     input: {
                         updateChannels: [
                             {
@@ -674,148 +448,73 @@ const ProductEdit = (props: any) => {
             } else {
                 console.log('productChannelListUpdate: ', data);
 
-                // variantCreate(productId);
-                console.log('productChannelListUpdate end');
-                variantListUpdate();
-                console.log('variantListUpdate start');
+                variantCreate(productId);
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
-    const variantListUpdate = async () => {
+    const variantCreate = async (productId: string) => {
         try {
-            const arrayOfVariants = variants?.map((item: any) => ({
-                attributes: [],
-                id: item.id,
-                sku: item.sku,
-                name: item.name,
-                trackInventory: item.stackMgmt,
-                channelListings: {
-                    update: [
-                        {
-                            channelListing: item.channelId,
-                            price: item.salePrice,
-                            costPrice: item.regularPrice,
-                        },
-                    ],
-                },
-                stocks: {
-                    update: [
-                        {
-                            quantity: item.stackMgmt ? item.quantity : 0,
-                            stock: item.stockId,
-                        },
-                    ],
-                },
-            }));
-            console.log('✌️arrayOfVariants --->', arrayOfVariants);
-
-            // const variantArr = variants?.map((item) => ({
-            //     attributes: [],
-            //     id: item.id,
-            //     sku: item.sku,
-            //     name: item.name,
-            //     trackInventory: item.stackMgmt,
-            //     channelListings: [
-            //         {
-            //             channelId: 'Q2hhbm5lbDoy',
-            //             price: item.salePrice,
-            //             costPrice: item.regularPrice,
-            //         },
-            //     ],
-            //     stocks: [
-            //         {
-            //             warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-            //             quantity: item.stackMgmt ? item.quantity : 0,
-            //         },
-            //     ],
-            // }));
-            // console.log('variantArr: ', variantArr);
-            console.log('variants  1: ', variants);
-
-            const { data } = await updateVariant({
+            const { data } = await createVariant({
                 variables: {
-                    // id: id,
-                    // inputs: variants?.map((item:any) => ({
-                    //     attributes: [],
-                    //     id: item.id,
-                    //     sku: item.sku,
-                    //     name: item.name,
-                    //     trackInventory: item.stackMgmt,
-                    //     channelListings: [
-                    //         {
-                    //             channelId: 'Q2hhbm5lbDoy',
-                    //             price: item.salePrice,
-                    //             costPrice: item.regularPrice,
-                    //         },
-                    //     ],
-                    //     stocks: [
-                    //         {
-                    //             warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-                    //             quantity: item.stackMgmt ? item.quantity : 0,
-                    //         },
-                    //     ],
-                    // })),
-
-                    product: id,
-                    input: arrayOfVariants,
-                    errorPolicy: 'REJECT_FAILED_ROWS',
-
-                    // sample format
-
-                    // product: 'UHJvZHVjdDo0OA==',
-                    // input: [
-                    //     {
-                    //         id: 'UHJvZHVjdFZhcmlhbnQ6MTM=',
-                    //         attributes: [],
-                    //         name: 'hello',
-                    //         sku: 'hii',
-                    //         trackInventory: true,
-                    //         stocks: {
-                    //             update: [
-                    //                 {
-                    //                     quantity: 300,
-                    //                     stock: 'U3RvY2s6MTI=',
-                    //                 },
-                    //             ],
-                    //         },
-                    //         channelListings: {
-                    //             update: [
-                    //                 {
-                    //                     channelListing: 'UHJvZHVjdFZhcmlhbnRDaGFubmVsTGlzdGluZzoyNA==',
-                    //                     price: 142001,
-                    //                 },
-                    //             ],
-                    //         },
-                    //     },
-                    // ],
-                    // errorPolicy: 'REJECT_FAILED_ROWS',
+                    input: {
+                        attributes: [],
+                        product: productId,
+                        sku: sku,
+                        stocks: [],
+                        preorder: null,
+                        trackInventory: stackMgmt,
+                    },
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
+            if (data?.productVariantCreate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
+                console.log('variantCreate: ', data);
+                const variantId = data?.productVariantCreate?.productVariant?.id;
+                variantListUpdate(variantId, productId);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
-            console.log('variants 2: ', variants);
-
-            if (data?.productVariantUpdate?.errors?.length > 0) {
+    const variantListUpdate = async (variantId: any, productId: any) => {
+        try {
+            const { data } = await updateVariantList({
+                variables: {
+                    id: variantId,
+                    input: [
+                        {
+                            channelId: 'Q2hhbm5lbDoy',
+                            costPrice: regularPrice,
+                            price: salePrice,
+                        },
+                    ],
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productVariantCreate?.errors?.length > 0) {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
                 console.log('variantCreate: ', data);
                 // const variantId = data?.productVariantCreate?.productVariant?.id;
-
-                updateMetaData();
+                updateMetaData(productId);
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
-    const updateMetaData = async () => {
+    const updateMetaData = async (productId: any) => {
+        console.log('label: ', label);
         try {
             const { data } = await updateMedatData({
                 variables: {
-                    id: id,
+                    id: productId,
                     input: [
                         {
                             key: 'short_descripton',
@@ -833,27 +532,27 @@ const ProductEdit = (props: any) => {
             if (data?.updateMetadata?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
-                console.log('success: ', data);
-                console.log('selectedTag: ', selectedTag);
-
-                // assignsTagToProduct();
+                if (selectedTag?.length > 0) {
+                    assignsTagToProduct(productId);
+                    console.log('success: ', data);
+                }
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
-    const assignsTagToProduct = async () => {
+    const assignsTagToProduct = async (productId: any) => {
         try {
             let tagId: any[] = [];
-            // if (selectedCollection?.length > 0) {
-            tagId = selectedTag?.map((item: any) => item.value);
-            // }
+            if (selectedCollection?.length > 0) {
+                tagId = selectedTag?.map((item) => item.value);
+            }
             console.log('tagId: ', tagId);
 
             const { data } = await assignTagToProduct({
                 variables: {
-                    id,
+                    id: productId,
                     input: {
                         tags: tagId,
                     },
@@ -863,22 +562,13 @@ const ProductEdit = (props: any) => {
             if (data?.productUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
-                // router.push('/product/product');
+                router.push('/product/product');
                 console.log('success: ', data);
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
-
-    const arr = [
-        { type: 'design', designName: dropdowndata?.design },
-        { type: 'style', styleName: dropdowndata?.style },
-        { type: 'stone', stoneName: dropdowndata?.stoneType },
-        { type: 'finish', finishName: dropdowndata?.finish },
-    ];
-
-    const optionsVal = arr.map((item) => ({ value: item.type, label: item.type }));
 
     const handleAddAccordion = () => {
         const selectedType = arr.find((item) => item.type === chooseType);
@@ -888,168 +578,58 @@ const ProductEdit = (props: any) => {
         setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
     };
 
-    const handleRemoveAccordion = (type: any) => {
-        setSelectedArr(selectedArr.filter((item: any) => item !== type));
-        setAccordions(accordions.filter((item: any) => item.type !== type));
+    const handleRemoveAccordion = (type) => {
+        setSelectedArr(selectedArr.filter((item) => item !== type));
+        setAccordions(accordions.filter((item) => item.type !== type));
         setOpenAccordion('');
         const updatedSelectedValues = { ...selectedValues };
         delete updatedSelectedValues[type];
         setSelectedValues(updatedSelectedValues);
     };
 
-    const handleDropdownChange = (event: any, type: any) => {
+    const handleDropdownChange = (event, type) => {
         setChooseType(type);
     };
 
-    const handleToggleAccordion = (type: any) => {
+    const handleToggleAccordion = (type) => {
         setOpenAccordion(openAccordion === type ? '' : type);
     };
 
-    const handleMultiSelectChange = (selectedOptions: any, type: any) => {
-        const selectedValuesForType = selectedOptions.map((option: any) => option.value);
+    const handleMultiSelectChange = (selectedOptions, type) => {
+        const selectedValuesForType = selectedOptions.map((option) => option.value);
         setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
     };
 
-    const handleChange = (index: any, fieldName: any, fieldValue: any) => {
-        setVariants((prevItems) => {
-            const updatedItems: any = [...prevItems];
-            updatedItems[index][fieldName] = fieldValue;
-            return updatedItems;
-        });
-    };
-
-    const handleAddItem = () => {
-        setVariants((prevItems: any) => [
-            ...prevItems,
-            {
-                sku: '',
-                stackMgmt: false,
-                quantity: 0,
-                regularPrice: 0,
-                salePrice: 0,
-                channelId: '',
-            },
-        ]);
-    };
-
-    const handleRemoveVariants = (index: any) => {
-        if (index === 0) return; // Prevent removing the first item
-        setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
-    };
-
-    const handleDragStart = (e: any, id: any, i: any) => {
-        console.log('id: ', i);
-        e.dataTransfer.setData('id', id);
-        setDropIndex(id);
-    };
-
-    const handleDragOver = (e: any) => {
-        e.preventDefault();
-    };
-
-    const handleDrop = async (e: any, targetIndex: any) => {
-        e.preventDefault();
-        const imageId = e.dataTransfer.getData('id');
-        const newIndex = parseInt(targetIndex, 10);
-        let draggedImageIndex = -1;
-        for (let i = 0; i < images.length; i++) {
-            if (images[i].id === dropIndex) {
-                draggedImageIndex = i;
-                break;
-            }
-        }
-
-        if (draggedImageIndex !== -1) {
-            const newImages = [...images];
-            const [draggedImage] = newImages.splice(draggedImageIndex, 1);
-            newImages.splice(newIndex, 0, draggedImage);
-            setImages(newImages);
-            const updatedImg = newImages?.map((item) => item.id);
-            // const { data } = await mediaReorder({
-            //     variables: {
-            //         mediaIds: updatedImg,
-            //         productId: id,
-            //     },
-            // });
-        }
-    };
     // -------------------------------------New Added-------------------------------------------------------
 
-    // const handleSave = async () => {
-    //     if (editorInstance) {
-    //         try {
-    //             const savedContent = await editorInstance.save();
-    //             console.log('Editor content:', savedContent);
-    //             setContent(JSON.stringify(savedContent, null, 2));
-    //             setValue(savedContent);
-    //         } catch (error) {
-    //             console.error('Failed to save editor content:', error);
-    //         }
-    //     }
-    // };
-    // console.log('value', value);
     return (
         <div>
             <div className="  mt-6">
                 <div className="panel mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Edit Product</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Add new coupon</h5>
 
-                    <div className="flex ltr:ml-auto rtl:mr-auto">
-                        <button type="button" className="btn btn-primary" onClick={() => router.push('/apps/product/add')}>
-                            + Create
+                    {/* <div className="flex ltr:ml-auto rtl:mr-auto">
+                        <button type="button" className="btn btn-primary" onClick={() => CreateProduct()}>
+                            Submit
                         </button>
-                    </div>
+                    </div> */}
                 </div>
 
                 <div className="grid grid-cols-12 gap-4">
                     <div className=" col-span-9">
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Product Name
+                               Coupon Code 
                             </label>
                             <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Enter Your Name" name="name" className="form-input" required />
+                            {productNameErrMsg && <p className="error-message mt-1 text-red-500">{productNameErrMsg}</p>}
                         </div>
-                        <div className="panel mb-5">
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Slug
-                            </label>
-                            <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="Enter slug" name="name" className="form-input" required />
-                        </div>
-                        <div className="panel mb-5">
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                SEO
-                            </label>
-                            <input type="text" value={seoTittle} onChange={(e) => setSeoTittle(e.target.value)} placeholder="Enter title" name="name" className="form-input" required />
-                            <textarea
-                                id="ctnTextarea"
-                                value={seoDesc}
-                                onChange={(e) => setSeoDesc(e.target.value)}
-                                rows={3}
-                                className="form-textarea mt-5"
-                                placeholder="Enter Description"
-                                required
-                            ></textarea>
-                        </div>
-                        {/* <div className="panel mb-5">
-                            <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
-                                Product description
-                            </label>
-                            <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
-                        </div> */}
+                        
+                        
+                       
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
-                                Product description
-                            </label>
-                            <div ref={editorRef} className="mb-5 border border-gray-200"></div>
-                            {/* <p>Editor content: {content}</p> */}
-                            {/* <button onClick={handleSave} className="btn btn-primary">
-                                Save
-                            </button> */}
-                        </div>
-
-                        <div className="panel mb-5">
-                            <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
-                                Product Short description
+                                Coupon description
                             </label>
                             <textarea
                                 id="ctnTextarea"
@@ -1060,6 +640,7 @@ const ProductEdit = (props: any) => {
                                 placeholder="Enter Short Description"
                                 required
                             ></textarea>
+                            {shortDesErrMsg && <p className="error-message mt-1 text-red-500 ">{shortDesErrMsg}</p>}
                         </div>
                         <div className="panel mb-5 ">
                             {/* <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
@@ -1087,7 +668,7 @@ const ProductEdit = (props: any) => {
                                                     )}
                                                 </Tab> */}
 
-                                                {/* <Tab as={Fragment}>
+                                                <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
@@ -1096,7 +677,7 @@ const ProductEdit = (props: any) => {
                                                             Linked Products
                                                         </button>
                                                     )}
-                                                </Tab> */}
+                                                </Tab>
                                                 <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
@@ -1130,7 +711,7 @@ const ProductEdit = (props: any) => {
                                             </Tab.List>
                                         </div>
                                         <Tab.Panels>
-                                            {/* <Tab.Panel>
+                                            <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 mr-4 pr-6">
                                                         <label htmlFor="upsells" className="block pr-5 text-sm font-medium text-gray-700">
@@ -1152,16 +733,16 @@ const ProductEdit = (props: any) => {
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
                                                     </div>
                                                 </div>
-                                            </Tab.Panel> */}
+                                            </Tab.Panel>
 
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 pr-3">
                                                         <Select
                                                             placeholder="Select Type"
-                                                            options={optionsVal.filter((option: any) => !selectedArr?.includes(option.value))}
-                                                            onChange={(selectedOption: any) => handleDropdownChange(selectedOption, selectedOption.value)}
-                                                            value={options?.find((option) => option?.value === chooseType)} // Set the value of the selected type
+                                                            options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
+                                                            onChange={(selectedOption) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
                                                         />
                                                     </div>
                                                     <div className="mb-5">
@@ -1173,18 +754,18 @@ const ProductEdit = (props: any) => {
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        {accordions.map((item: any) => (
-                                                            <div key={item?.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
+                                                        {accordions.map((item) => (
+                                                            <div key={item.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
                                                                 <button
                                                                     type="button"
                                                                     className={`flex w-full items-center p-4 text-white-dark dark:bg-[#1b2e4b] ${active === '1' ? '!text-primary' : ''}`}
                                                                     // onClick={() => togglePara('1')}
                                                                 >
-                                                                    {item?.type}
+                                                                    {item.type}
                                                                     {/* <button onClick={() => handleRemoveAccordion(item.type)}>Remove</button> */}
 
                                                                     <div className={`text-red-400 ltr:ml-auto rtl:mr-auto `} onClick={() => handleRemoveAccordion(item.type)}>
-                                                                        <IconTrashLines />
+                                                                        Remove
                                                                     </div>
                                                                 </button>
                                                                 <div>
@@ -1204,25 +785,13 @@ const ProductEdit = (props: any) => {
                                                                                         </label>
                                                                                     </div>
                                                                                     <div className="mb-5" style={{ width: '350px' }}>
-                                                                                        {/* <Select
-                                                                                            placeholder={`Select ${item.type} Name`}
-                                                                                            options={item[`${item.type}Name`]}
-                                                                                            onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
-                                                                                            isMulti
-                                                                                            isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value) => ({ value, label: value }))}
-                                                                                        /> */}
                                                                                         <Select
                                                                                             placeholder={`Select ${item.type} Name`}
                                                                                             options={item[`${item.type}Name`]}
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value: any) => {
-                                                                                                const options = item[`${item.type}Name`];
-                                                                                                const option = options ? options.find((option: any) => option.value === value) : null;
-                                                                                                return option ? { value: option.value, label: option.label } : null;
-                                                                                            })}
+                                                                                            value={(selectedValues[item.type] || []).map((value) => ({ value, label: value }))}
                                                                                         />
                                                                                         {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
                                                                                         {/* <div className="flex justify-between">
@@ -1258,139 +827,124 @@ const ProductEdit = (props: any) => {
                                             </Tab.Panel>
 
                                             <Tab.Panel>
-                                                {variants?.map((item, index) => {
-                                                    return (
-                                                        <div key={index} className="mb-5 border-b border-gray-200">
-                                                            {index !== 0 && ( // Render remove button only for items after the first one
-                                                                <div className="active flex items-center justify-end text-danger">
-                                                                    <button onClick={() => handleRemoveVariants(index)}>
-                                                                        <IconTrashLines />
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                            <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4">
-                                                                    <label htmlFor={`name${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                        Variant
-                                                                    </label>
-                                                                </div>
-                                                                <div className="mb-5">
-                                                                    <input
-                                                                        type="text"
-                                                                        id={`name${index}`}
-                                                                        name={`name${index}`}
-                                                                        value={item.name}
-                                                                        onChange={(e) => handleChange(index, 'name', e.target.value)}
-                                                                        style={{ width: '350px' }}
-                                                                        placeholder="Enter variants"
-                                                                        className="form-input"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4">
-                                                                    <label htmlFor={`sku_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                        SKU
-                                                                    </label>
-                                                                </div>
-                                                                <div className="mb-5">
-                                                                    <input
-                                                                        type="text"
-                                                                        id={`sku_${index}`}
-                                                                        name={`sku_${index}`}
-                                                                        value={item.sku}
-                                                                        onChange={(e) => handleChange(index, 'sku', e.target.value)}
-                                                                        style={{ width: '350px' }}
-                                                                        placeholder="Enter SKU"
-                                                                        className="form-input"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4 pr-4">
-                                                                    <label htmlFor={`stackMgmt_${index}`} className="block  text-sm font-medium text-gray-700">
-                                                                        Stock Management
-                                                                    </label>
-                                                                </div>
-                                                                <div className="mb-5">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        id={`stackMgmt_${index}`}
-                                                                        name={`stackMgmt_${index}`}
-                                                                        checked={item.stackMgmt}
-                                                                        onChange={(e) => handleChange(index, 'stackMgmt', e.target.checked)}
-                                                                        className="form-checkbox"
-                                                                    />
-                                                                    <span>Track stock quantity for this product</span>
-                                                                </div>
-                                                            </div>
-                                                            {item.stackMgmt && (
-                                                                <div className="active flex items-center">
-                                                                    <div className="mb-5 mr-4 ">
-                                                                        <label htmlFor={`quantity_${index}`} className="block  text-sm font-medium text-gray-700">
-                                                                            Quantity
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4">
+                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            SKU
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input
+                                                            type="text"
+                                                            onChange={(e) => setSku(e.target.value)}
+                                                            value={sku}
+                                                            style={{ width: '350px' }}
+                                                            placeholder="Enter SKU"
+                                                            name="regularPrice"
+                                                            className="form-input "
+                                                            required
+                                                        />
+                                                        {skuErrMsg && <p className="error-message mt-1 text-red-500 ">{skuErrMsg}</p>}
+                                                    </div>
+                                                </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4 pr-4">
+                                                        <label htmlFor="regularPrice" className="block  text-sm font-medium text-gray-700">
+                                                            Stock Management
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input type="checkbox" value={stackMgmt} onChange={(e) => setStackMgmt(e.target.value)} className="form-checkbox" defaultChecked />
+                                                        <span>Track stock quantity for this product</span>{' '}
+                                                    </div>
+                                                </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4 ">
+                                                        <label htmlFor="quantity" className="block  text-sm font-medium text-gray-700">
+                                                            Quantity
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input
+                                                            type="number"
+                                                            onChange={(e) => setQuantity(e.target.value)}
+                                                            value={quantity}
+                                                            style={{ width: '350px' }}
+                                                            placeholder="Enter Quantity"
+                                                            name="quantity"
+                                                            className="form-input"
+                                                            defaultChecked
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4">
+                                                        <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            Regular Price
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5">
+                                                        <input
+                                                            type="number"
+                                                            onChange={(e) => setRegularPrice(e.target.value)}
+                                                            value={regularPrice}
+                                                            style={{ width: '350px' }}
+                                                            placeholder="Enter Regular Price"
+                                                            name="regularPrice"
+                                                            className="form-input "
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className=" flex items-center">
+                                                        <div className="mb-5 mr-4">
+                                                            <label htmlFor="salePrice" className="block pr-10 text-sm font-medium text-gray-700">
+                                                                Sale Price
+                                                            </label>
+                                                        </div>
+                                                        <div className="mb-5">
+                                                            <input
+                                                                type="number"
+                                                                onChange={(e) => setSalePrice(e.target.value)}
+                                                                value={salePrice}
+                                                                style={{ width: '350px' }}
+                                                                placeholder="Enter Sale Price"
+                                                                name="salePrice"
+                                                                className="form-input"
+                                                                required
+                                                            />
+                                                            {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>}
+                                                        </div>
+                                                        {/* <div className="mb-5 pl-3">
+                                                            <span className="cursor-pointer text-gray-500 underline" onClick={scheduleOpen}>
+                                                                {!salePrice ? 'Schedule' : 'Cancel'}
+                                                            </span>
+                                                        </div> */}
+                                                    </div>
+                                                    {/* <div>
+                                                        {salePrice && (
+                                                            <>
+                                                                <div className="flex items-center">
+                                                                    <div className="mb-5 mr-4">
+                                                                        <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                                            Sale Price Date
                                                                         </label>
                                                                     </div>
                                                                     <div className="mb-5">
-                                                                        <input
-                                                                            type="number"
-                                                                            id={`quantity_${index}`}
-                                                                            name={`quantity_${index}`}
-                                                                            value={item?.quantity}
-                                                                            onChange={(e) => handleChange(index, 'quantity', parseInt(e.target.value))}
-                                                                            style={{ width: '350px' }}
-                                                                            placeholder="Enter Quantity"
-                                                                            className="form-input"
-                                                                        />
+                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
                                                                     </div>
                                                                 </div>
-                                                            )}
-                                                            <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4">
-                                                                    <label htmlFor={`regularPrice_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                        Regular Price
-                                                                    </label>
+
+                                                                <div className="flex items-end">
+                                                                    <div className="mb-5 pl-28">
+                                                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="regularPrice" className="form-input" required />
+                                                                    </div>
                                                                 </div>
-                                                                <div className="mb-5">
-                                                                    <input
-                                                                        type="number"
-                                                                        id={`regularPrice_${index}`}
-                                                                        name={`regularPrice_${index}`}
-                                                                        value={item.regularPrice}
-                                                                        onChange={(e) => handleChange(index, 'regularPrice', parseFloat(e.target.value))}
-                                                                        style={{ width: '350px' }}
-                                                                        placeholder="Enter Regular Price"
-                                                                        className="form-input"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center">
-                                                                <div className="mb-5 mr-4">
-                                                                    <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
-                                                                        Sale Price
-                                                                    </label>
-                                                                </div>
-                                                                <div className="mb-5">
-                                                                    <input
-                                                                        type="number"
-                                                                        id={`salePrice_${index}`}
-                                                                        name={`salePrice_${index}`}
-                                                                        value={item.salePrice}
-                                                                        onChange={(e) => handleChange(index, 'salePrice', parseFloat(e.target.value))}
-                                                                        style={{ width: '350px' }}
-                                                                        placeholder="Enter Sale Price"
-                                                                        className="form-input"
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                                {/* <div className="mb-5">
-                                                    <button type="button" className=" btn btn-primary flex justify-end" onClick={handleAddItem}>
-                                                        Add item
-                                                    </button>
-                                                </div> */}
+                                                            </>
+                                                        )}
+                                                    </div> */}
+                                                </div>
 
                                                 {/* <div>
                                                     <div className="flex items-center">
@@ -1437,7 +991,7 @@ const ProductEdit = (props: any) => {
                                                                 type="number"
                                                                 style={{ width: '350px' }}
                                                                 value={menuOrder}
-                                                                onChange={(e: any) => setMenuOrder(e.target.value)}
+                                                                onChange={(e) => setMenuOrder(e.target.value)}
                                                                 placeholder="Enter Menu Order"
                                                                 name="regularPrice"
                                                                 className="form-input"
@@ -1487,22 +1041,7 @@ const ProductEdit = (props: any) => {
                                 )}
                             </div>
                         </div>
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Collections</h5>
-                            </div>
-                            <div className="mb-5">
-                                <Select placeholder="Select an collection" options={collectionList} value={selectedCollection} onChange={selectedCollections} isMulti isSearchable={true} />
-                            </div>
-                        </div>
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Label</h5>
-                            </div>
-                            <div className="mb-5">
-                                <Select placeholder="Select an label" options={options} value={label} onChange={(val) => setLabel(val)} isSearchable={true} />
-                            </div>
-                        </div>
+                        
 
                         {/* <div className="panel mb-5">
                             <div className="grid grid-cols-12 gap-4">
@@ -1657,243 +1196,11 @@ const ProductEdit = (props: any) => {
                                 </>
                             ) : null} */}
 
-                            <button type="submit" className="btn btn-primary w-full" onClick={() => updateProducts()}>
+                            <button type="submit" className="btn btn-primary w-full" onClick={() => CreateProduct()}>
                                 Update
                             </button>
                         </div>
 
-                        {/* <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Product Image</h5>
-                            </div>
-                            <div onClick={() => productImagePopup()}>
-                                <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" />
-                            </div>
-                            <div
-                                onClick={() => productImagePopup()}
-                                className="cursor-pointer"
-                                title="Upload Images"
-                            >
-                                {thumbnail == '' || null ? (
-                                    <img src="https://via.placeholder.com/200x300" alt="Product image" className="h-60 object-cover" />
-                                ) : (
-                                    <img src={thumbnail} alt="Product image" className="h-60 object-cover" />
-                                )}
-                            </div>
-                            <p className="mt-5 text-sm text-gray-500">Click the image to edit or update</p>
-                            {thumbnail && (
-                                <p className="mt-2 cursor-pointer text-danger underline" onClick={handleDelete}>
-                                    Remove product image
-                                </p>
-                            )}
-                            <div className="flex justify-end">
-                                <button className="btn btn-primary mt-5" onClick={uploadImage}>
-                                    Upload
-                                </button>
-                            </div>
-                            <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
-                        </div> */}
-
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Product Gallery</h5>
-                            </div>
-
-                            <div className="grid grid-cols-12 gap-3">
-                                {/* {images?.length > 0 && */}
-                                {images?.length > 0 &&
-                                    images?.map((item: any, index: any) => (
-                                        <>
-                                            {/* <div className=" relative h-20 w-20 "> */}
-
-                                            <div
-                                                key={item.id}
-                                                className="relative col-span-4"
-                                                draggable
-                                                onDragStart={(e) => handleDragStart(e, item.id, index)}
-                                                onDragOver={handleDragOver}
-                                                onDrop={(e) => handleDrop(e, index)}
-                                                // style={{ width: '33.33%', padding: '5px' }}
-                                            >
-                                                <img src={item?.url} alt="Selected" className="object-cover" />
-
-                                                {/* Delete icon */}
-
-                                                <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={() => multiImageDelete(item)}>
-                                                    <IconTrashLines />
-                                                </button>
-                                            </div>
-                                        </>
-                                    ))}
-
-                                {/* <div className="grid grid-cols-12 gap-3">
-                                    {imageUrl?.length > 0 &&
-                                        imageUrl?.map((item, index) => (
-                                            <div className="relative col-span-4">
-                                                <img src={item} alt="Product image" className=" object-cover" />
-                                                <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
-                                                    <IconTrashLines className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        ))} */}
-
-                                {/* <div className="col-span-4">
-                                            <img src="https://via.placeholder.com/100x100" alt="Product image" className=" object-cover" />
-                                        </div> */}
-                                {/* </div> */}
-                            </div>
-
-                            <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setModal4(true)}>
-                                Add product gallery images
-                            </p>
-                            {/* <button type="button" className="btn btn-primary mt-5" onClick={() => productVideoPopup()}>
-                                + Video
-                            </button> */}
-                        </div>
-
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Product Categories</h5>
-                            </div>
-                            <div className="mb-5">
-                                <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
-                            </div>
-                            {/* <div className="mb-5">
-                                {isMounted && (
-                                    <Tab.Group>
-                                        <Tab.List className="mt-3 flex flex-wrap border-b border-white-light dark:border-[#191e3a]">
-                                            <Tab as={Fragment}>
-                                                {({ selected }) => (
-                                                    <button
-                                                        className={`${selected ? '!border-white-light !border-b-white text-danger dark:!border-[#191e3a] dark:!border-b-black' : ''}
-                                                -mb-[1px] flex items-center border border-transparent p-3.5 py-2 !outline-none transition duration-300 hover:text-danger`}
-                                                    >
-                                                        All Categories
-                                                    </button>
-                                                )}
-                                            </Tab>
-                                            <Tab as={Fragment}>
-                                                {({ selected }) => (
-                                                    <button
-                                                        className={`${selected ? '!border-white-light !border-b-white text-danger dark:!border-[#191e3a] dark:!border-b-black' : ''}
-                                                -mb-[1px] flex items-center border border-transparent p-3.5 py-2 !outline-none transition duration-300 hover:text-danger`}
-                                                    >
-                                                        Most Used
-                                                    </button>
-                                                )}
-                                            </Tab>
-                                        </Tab.List>
-                                        <Tab.Panels className="flex-1 border border-t-0 border-white-light p-4 text-sm  dark:border-[#191e3a]">
-                                            <Tab.Panel>
-                                                <div className="active">
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Anklets</span>
-                                                    </div>
-
-                                                    <div className="pb-3 pl-5">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Kada</span>
-                                                    </div>
-
-                                                    <div className="pb-3 pl-5">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Rope Anklet</span>
-                                                    </div>
-
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Bangles & Bracelets</span>
-                                                    </div>
-                                                </div>
-                                            </Tab.Panel>
-                                            <Tab.Panel>
-                                                <div className="active">
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Anklets</span>
-                                                    </div>
-
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Kada</span>
-                                                    </div>
-
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Rope Anklet</span>
-                                                    </div>
-                                                </div>
-                                            </Tab.Panel>
-
-                                            <Tab.Panel>Disabled</Tab.Panel>
-                                        </Tab.Panels>
-                                    </Tab.Group>
-                                )}
-                            </div> */}
-                            {/* <p className="cursor-pointer text-primary underline" onClick={() => addCategoryClick()}>
-                                {addCategory ? 'Cancel' : '+ Add New Category'}
-                            </p>
-                            {addCategory && (
-                                <>
-                                    <div>
-                                        <input type="text" className="form-input mt-3" placeholder="Category Name" />
-                                        <select name="parent-category" id="parent-category" className="form-select mt-3">
-                                            <option>Anklets</option>
-                                            <option>__Black Thread</option>
-                                            <option>__Kada</option>
-                                        </select>
-                                        <button type="button" className="btn btn-primary mt-3">
-                                            Add New Category
-                                        </button>
-                                    </div>
-                                </>
-                            )} */}
-                        </div>
-
-                        <div className="panel mt-5">
-                            <div className="mb-5 border-b border-gray-200 pb-2">
-                                <h5 className=" block text-lg font-medium text-gray-700">Product Tags</h5>
-                            </div>
-                            <div className="mb-5">
-                                <Select placeholder="Select an tags" isMulti options={tagList} value={selectedTag} onChange={(data: any) => setSelectedTag(data)} isSearchable={true} />
-                            </div>
-                            {/* <div className="mb-5 flex">
-                                <input type="text" className="form-input mr-3 mt-3" placeholder="Product Tags" />
-                                <button type="button" className="btn btn-primary mt-3">
-                                    Add
-                                </button>
-                            </div> */}
-                            {/* <div>
-                                <p className="mb-5 text-sm text-gray-500">Separate tags with commas</p>
-                                <div className="flex flex-wrap gap-3">
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p> 925 silver jewellery</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>Chennai</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>jewels prade</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>Kundan Earrings</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>prade love</p>
-                                    </div>
-                                </div>
-                            </div> */}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -2167,74 +1474,8 @@ const ProductEdit = (props: any) => {
                     </div>
                 </Dialog>
             </Transition>
-
-            {/* product img popup */}
-
-            <Transition appear show={modal4} as={Fragment}>
-                <Dialog as="div" open={modal4} onClose={() => setModal4(false)}>
-                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-                        <div className="fixed inset-0" />
-                    </Transition.Child>
-                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
-                        <div className="flex min-h-screen items-start justify-center px-4">
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
-                                    <div className="flex items-center justify-between border-b bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">Product gallery Image</div>
-                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal4(false)}>
-                                            <IconX />
-                                        </button>
-                                    </div>
-                                    <div className="m-5 pt-5">
-                                        {/* Input for selecting file */}
-                                        <input type="file" id="product-gallery-image" className="form-input" onChange={multiImgUpload} />
-
-                                        {/* Button to upload */}
-                                        {/* <div className="flex justify-end">
-                                            <button className="btn btn-primary mt-5" onClick={handleUpload}>
-                                                Upload
-                                            </button>
-                                        </div> */}
-
-                                        {/* Display preview of the selected image */}
-                                        {/* {images?.length > 0 &&
-                                            images?.map((item, index) => (
-                                                <div className="mt-5 bg-[#f0f0f0] p-5">
-
-                                                    <div
-                                                        key={item.id}
-                                                        className=" relative h-20 w-20 "
-                                                        draggable
-                                                        onDragStart={(e) => handleDragStart(e, item.id)}
-                                                        onDragOver={handleDragOver}
-                                                        onDrop={(e) => handleDrop(e, index)}
-                                                    >
-                                                        <img src={item?.url} alt="Selected" className="h-full w-full object-cover " />
-
-
-                                                        <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white" onClick={() => multiImageDelete(index)}>
-                                                            <IconTrashLines />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))} */}
-                                    </div>
-                                </Dialog.Panel>
-                            </Transition.Child>
-                        </div>
-                    </div>
-                </Dialog>
-            </Transition>
         </div>
     );
 };
 
-export default ProductEdit;
+export default AddCoupon;

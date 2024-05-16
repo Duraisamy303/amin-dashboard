@@ -25,8 +25,8 @@ import { date } from 'yup/lib/locale';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import IconEdit from '@/components/Icon/IconEdit';
-import { useMutation, useQuery } from '@apollo/client';
-import { DELETE_PRODUCTS, PRODUCT_LIST } from '@/query/product';
+import { useQuery } from '@apollo/client';
+import { PRODUCT_LIST } from '@/query/product';
 import moment from 'moment';
 
 const ProductList = () => {
@@ -53,9 +53,7 @@ const ProductList = () => {
                     product: item?.node?.products?.totalCount,
                     image: item?.node?.thumbnail?.url,
                     categories: item?.node?.category?.name,
-                    date: item?.node?.updatedAt
-                        ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
-                        : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
+                    date: moment(item?.node?.created).format('DD-MM-YYYY'),
                     price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
                 }));
                 // const sorting: any = sortBy(newData, 'id');
@@ -81,8 +79,6 @@ const ProductList = () => {
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [initialRecords, setInitialRecords] = useState([]);
     const [recordsData, setRecordsData] = useState(initialRecords);
-
-    const [deleteProducts] = useMutation(DELETE_PRODUCTS);
 
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
 
@@ -127,7 +123,7 @@ const ProductList = () => {
                     item.name.toLowerCase().includes(search.toLowerCase()) ||
                     // item.sku.toLowerCase().includes(search.toLowerCase()) ||
                     // item.stock.toLowerCase().includes(search.toLowerCase()) ||
-                    // item.price.toString().includes(search.toLowerCase()) ||
+                    item.price.toString().includes(search.toLowerCase()) ||
                     // item.categories.toLowerCase().includes(search.toLowerCase()) ||
                     item.date.toString().includes(search.toLowerCase())
                 );
@@ -195,20 +191,12 @@ const ProductList = () => {
     };
 
     const BulkDeleteProduct = async () => {
-        console.log('recordsData: ', selectedRecords);
-
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
                 }
-                const productIds = selectedRecords?.map((item) => item.id);
-                const { data } = deleteProducts({
-                    variables: {
-                        ids: productIds,
-                    },
-                });
                 const updatedRecordsData = recordsData.filter((record) => !selectedRecords.includes(record));
                 setRecordsData(updatedRecordsData);
                 setSelectedRecords([]);
@@ -221,16 +209,8 @@ const ProductList = () => {
     };
 
     const DeleteProduct = (record: any) => {
-        console.log('record: ', record);
         showDeleteAlert(
             () => {
-                const { data } = deleteProducts({
-                    variables: {
-                        ids: [record.id],
-                    },
-                });
-                console.log('DELETE: ', data);
-
                 const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
                 Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
@@ -284,13 +264,8 @@ const ProductList = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
-                    <button type="button" className="btn btn-outline-primary">
-                        Import
-                    </button>
-                    <button type="button" className="btn btn-outline-primary">
-                        Export
-                    </button>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Coupon</h5>
+
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                         <div className="dropdown  mr-2 ">
@@ -323,24 +298,10 @@ const ProductList = () => {
 
                 <div className="mb-5 ">
                     <form onSubmit={onFilterSubmit}>
-                        <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 md:flex-row">
-                            <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
-                                <option value="">Select a Categories </option>
-                                <option value="Anklets">Anklets</option>
-                                <option value="Earings">Earings</option>
-                                <option value="Palakka">Palakka</option>
-                            </select>
-
-                            {/* New select dropdown for stock status */}
-                            <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>
-                                <option value="">Filter By Stock Status</option>
-                                <option value="In Stock">In Stock</option>
-                                <option value="Out Of Stock">Out Of Stock</option>
-                            </select>
-
-                            <select className="form-select flex-1" onChange={(e) => productTypeChange(e.target.value)}>
-                                <option value="sample-product">Simple Product</option>
-                                <option value="variable-product">Variable Product</option>
+                        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
+                            <select className="form-select w-52" onChange={(e) => productTypeChange(e.target.value)}>
+                                <option value="Show All Type">Show All Type</option>
+                                <option value="Percentage discount">Percentage discount</option>
                             </select>
                             <button type="submit" className="btn btn-primary py-2.5">
                                 Filter

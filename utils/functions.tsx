@@ -87,7 +87,7 @@ export const sampleParams = {
     after: null,
     first: 100,
     query: '',
-    channel:"india-channel",
+    channel: 'india-channel',
     PERMISSION_HANDLE_CHECKOUTS: true,
     PERMISSION_HANDLE_PAYMENTS: true,
     PERMISSION_HANDLE_TAXES: true,
@@ -112,4 +112,51 @@ export const sampleParams = {
     PERMISSION_MANAGE_TAXES: true,
     PERMISSION_MANAGE_TRANSLATIONS: true,
     PERMISSION_MANAGE_USERS: true,
+};
+
+export const uploadImage = async (productId: any, file: any) => {
+    try {
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        formData.append(
+            'operations',
+            JSON.stringify({
+                operationName: 'ProductMediaCreate',
+                variables: { product: productId, alt: '', image: null },
+                query: `mutation ProductMediaCreate($product: ID!, $image: Upload, $alt: String, $mediaUrl: String) {
+                productMediaCreate(input: {alt: $alt, image: $image, product: $product, mediaUrl: $mediaUrl}) {
+                    errors { ...ProductError }
+                    product { id media { ...ProductMedia } }
+                }
+            }
+            fragment ProductError on ProductError { code field message }
+            fragment ProductMedia on ProductMedia { id alt sortOrder url(size: 1024) type oembedData }`,
+            })
+        );
+        formData.append('map', JSON.stringify({ '1': ['variables.image'] }));
+        formData.append('1', file);
+
+        const response = await fetch('http://file.prade.in/graphql/', {
+            method: 'POST',
+            headers: {
+                Authorization: `JWT ${token}`,
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
+        console.log("data",data); // Response from the server
+        return data
+    } catch (error) {
+        console.error('Error:', error);
+    }
+};
+
+export const getValueByKey = (metadata:any[], key:string) => {
+    const item = metadata.find(item => item.key === key);
+    return item ? item.value : null;
+};
+
+export const isEmptyObject = (obj) => {
+    return Object.values(obj).every(value => value === "");
 };

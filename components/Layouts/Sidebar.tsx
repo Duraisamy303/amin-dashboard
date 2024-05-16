@@ -170,7 +170,7 @@ const Sidebar = () => {
                                                 <li>
                                                     <Link href="/product/attributes">{t('Attributes')}</Link>
                                                 </li>
-                                                
+
                                                 <li>
                                                     <Link href="/product/finish">{t('Finish')}</Link>
                                                 </li>
@@ -215,6 +215,23 @@ const Sidebar = () => {
                                             <div className="flex items-center">
                                                 <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
                                                 <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Shipping provider')}</span>
+                                            </div>
+                                        </Link>
+                                    </li>
+
+                                    <li className="nav-item">
+                                        <Link href="/shipping/shipping" className="group">
+                                            <div className="flex items-center">
+                                                <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Shipping')}</span>
+                                            </div>
+                                        </Link>
+                                    </li>
+                                    <li className="nav-item">
+                                        <Link href="/coupons/coupon" className="group">
+                                            <div className="flex items-center">
+                                                <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Coupon')}</span>
                                             </div>
                                         </Link>
                                     </li>
