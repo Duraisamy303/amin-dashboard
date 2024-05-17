@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment, useRef } from 'react';
+import { useEffect, useState, Fragment, useRef, useCallback } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -70,17 +70,8 @@ const ProductEdit = (props: any) => {
     const [modal2, setModal2] = useState(false);
 
     const [value, setValue] = useState({
-        time: Date.now(),
-        blocks: [
-            {
-                type: 'paragraph',
-                data: {
-                    text: 'This is the default content.',
-                },
-            },
-        ],
-        version: '2.19.0',
-    }); // quill text editor
+      
+    });
 
     const [isMounted, setIsMounted] = useState(false); //tabs
     useEffect(() => {
@@ -103,6 +94,19 @@ const ProductEdit = (props: any) => {
     const [selectedCollection, setSelectedCollection] = useState<any>([]);
     const [stackMgmt, setStackMgmt] = useState(false);
     const [publish, setPublish] = useState('published');
+
+    // error message start
+
+    const [productNameErrMsg, setProductNameErrMsg] = useState('');
+    const [slugErrMsg, setSlugErrMsg] = useState('');
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
+    const [shortDesErrMsg, setShortDesErrMsg] = useState('');
+    const [skuErrMsg, setSkuErrMsg] = useState('');
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
+    const [categoryErrMsg, setCategoryErrMsg] = useState('');
+
+    // error message end
 
     // ------------------------------------------New Data--------------------------------------------
     const [quantityTrack, setQuantityTrack] = useState(true);
@@ -223,14 +227,28 @@ const ProductEdit = (props: any) => {
     const editorRef: any = useRef(null);
     const [editorInstance, setEditorInstance] = useState<any>(null);
     // const [content, setContent] = useState('');
-    let count = 0;
+    // let count = 0;
 
-    useEffect(() => {
-        if (count === 0) {
-            editor();
-            count = 1;
-        }
-    }, []);
+    // useEffect(() => {
+    //     if (count === 0) {
+    //         editor();
+    //         count = 1;
+    //     }
+    // }, []);
+
+    // let editors = { isReady: false };
+    // useEffect(() => {
+    //   if (!editors.isReady) {
+    //     editor();
+    //     editors.isReady = true;
+    //   }
+
+    //   return () => {
+    //     if (editorInstance) {
+    //       editorInstance?.blocks?.clear();
+    //     }
+    //   };
+    // }, [value, productDetails]);
 
     // State to track whether delete icon should be displayed
 
@@ -272,6 +290,12 @@ const ProductEdit = (props: any) => {
         setDropdownData(singleObj);
     }, [finishData, stoneData, designData, styleData]);
 
+    //     const updateEditorValue = (newValue) => {
+    // console.log('✌️newValue --->', newValue);
+    //         setValue(newValue);
+    //         console.log("value", value)
+    //       }
+
     const productsDetails = async () => {
         try {
             if (productDetails) {
@@ -305,6 +329,20 @@ const ProductEdit = (props: any) => {
                     const Description = data.description;
                     console.log('✌️Description --->', Description);
 
+                    // const desciption1 = {
+                    //     time: Date.now(),
+                    //     blocks: [
+                    //         {
+                    //             type: 'paragraph',
+                    //             data: {
+                    //                 text: 'This is api  content.',
+                    //             },
+                    //         },
+                    //     ],
+                    //     version: '2.19.0',
+                    // };
+
+                   
                     setValue(Description);
 
                     const shortDesc = getValueByKey(data?.metadata, 'short_descripton');
@@ -388,13 +426,32 @@ const ProductEdit = (props: any) => {
     };
 
     // editor start
-    const editor = () => {
+
+    let editors = { isReady: false };
+    useEffect(() => {
+        if (!editors.isReady) {
+            editor();
+            editors.isReady = true;
+        }
+
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, [value, productDetails]);
+    
+ 
+
+    // const editorRef = useRef(null); // Define a ref to hold the editor instance
+
+    const editor = useCallback(() => {
         // Check if the window object is available and if the editorRef.current is set
         if (typeof window === 'undefined' || !editorRef.current) return;
 
-        // Destroy the previous editor instance, if it exists
+        // Ensure only one editor instance is created
         if (editorInstance) {
-            editorInstance.destroy();
+            return;
         }
 
         console.log('value: ', value);
@@ -425,10 +482,54 @@ const ProductEdit = (props: any) => {
         // Cleanup function to destroy the current editor instance when the component unmounts
         return () => {
             if (editorInstance) {
-                editorInstance.destroy();
+                editorInstance?.blocks?.clear();
             }
         };
-    };
+    }, [editorInstance, value]);
+
+    // editor end
+
+    // const editor = () => {
+    //     // Check if the window object is available and if the editorRef.current is set
+    //     if (typeof window === 'undefined' || !editorRef.current) return;
+
+    //     // Destroy the previous editor instance, if it exists
+    //     if (editorInstance) {
+    //         editorInstance?.blocks?.clear();
+    //     }
+
+    //     console.log('value: ', value);
+    //     // Dynamically import the EditorJS module
+    //     import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+    //         // Create a new instance of EditorJS with the appropriate configuration
+    //         const editor = new EditorJS({
+    //             holder: editorRef.current,
+    //             data: value,
+    //             tools: {
+    //                 // Configure tools as needed
+    //                 header: {
+    //                     class: require('@editorjs/header'),
+    //                 },
+    //                 list: {
+    //                     class: require('@editorjs/list'),
+    //                 },
+    //                 table: {
+    //                     class: require('@editorjs/table'),
+    //                 },
+    //             },
+    //         });
+
+    //         // Set the editorInstance state variable
+    //         setEditorInstance(editor);
+    //     });
+
+    //     // Cleanup function to destroy the current editor instance when the component unmounts
+    //     return () => {
+    //         if (editorInstance) {
+    //             editorInstance?.blocks?.clear();
+    //         }
+    //     };
+    // };
 
     // editor end
 
@@ -575,32 +676,85 @@ const ProductEdit = (props: any) => {
         setImages(filter);
     };
 
+
+
+
     const updateProducts = async () => {
-        console.log('selectedCat: ', selectedCat);
         if (editorInstance) {
             try {
-                // Save editor content
-                const savedContent = await editorInstance.save();
-                console.log('Editor content:', savedContent);
-                // Update state with saved content
-                setValue(savedContent);
-            } catch (error) {
-                console.error('Error saving editor content:', error);
-            }
+              const savedContent = await editorInstance.save();
+              console.log('Editor content:', savedContent);
+            
+
+
+        setProductNameErrMsg('');
+        setSlugErrMsg('');
+        setSeoTittleErrMsg('');
+        setSeoDescErrMsg('');
+        // setDescriptionErrMsg('');
+        setShortDesErrMsg('');
+        setSkuErrMsg('');
+        setSalePriceErrMsg('');
+        setCategoryErrMsg('');
+
+        // Validate the product name and slug
+        if (productName.trim() === '') {
+            // Update the error message for the product name field
+            setProductNameErrMsg('Product name cannot be empty');
         }
+
+        if (slug.trim() === '') {
+            // Update the error message for the slug field
+            setSlugErrMsg('Slug cannot be empty');
+        }
+        if (seoTittle.trim() === '') {
+            // Update the error message for the slug field
+            setSeoTittleErrMsg('Seo title cannot be empty');
+        }
+        if (seoDesc.trim() === '') {
+            setSeoDescErrMsg('Seo description cannot be empty');
+        }
+        // if(description?.trim() === ''){
+        //     setDescriptionErrMsg('Description cannot be empty');
+        // }
+        if (shortDescription?.trim() === '') {
+            setShortDesErrMsg('Short description cannot be empty');
+        }
+        // if (sku?.trim() === '') {
+        //     setSkuErrMsg('Sku cannot be empty');
+        //     alert('Sku cannot be empty');
+        // }
+        // if (salePrice?.trim() === '') {
+        //     setSalePriceErrMsg('Sale price cannot be empty');
+        //     alert('Sale price cannot be empty');
+        // }
+        if (selectedCat == '') {
+            setCategoryErrMsg('Category cannot be empty');
+        }
+
+        console.log('selectedCat: ', selectedCat);
+ 
+      
+        console.log("value", value)
         console.log('selectedCollection: ', selectedCollection);
-        let tagId = selectedTag?.map((item) => item.value) || [];
-        
+        let tagId = selectedTag?.map((item: any) => item.value) || [];
+
         console.log('valueDescription', value);
+
+
+
+        const formattedDescription = JSON.stringify(savedContent);
+
+
         const { data } = await updateProduct({
             variables: {
                 id: id,
                 input: {
                     attributes: [],
                     category: selectedCat?.value,
-                    collections: selectedCollection.map((item) => item.value),
+                    collections: selectedCollection.map((item: any) => item.value),
                     tags: tagId,
-                    description: value,
+                    description:formattedDescription ,
                     name: productName,
                     rating: 0,
                     seo: {
@@ -617,15 +771,19 @@ const ProductEdit = (props: any) => {
                 firstValues: 10,
             },
         });
-    
+
         if (data?.productUpdate?.errors?.length > 0) {
             console.log('Error updating product');
         } else {
             productChannelListUpdate();
             console.log('Product update successful:', data);
         }
+
+    } catch (error) {
+        console.error('Failed to save editor content:', error);
+      }
+    }
     };
-    
 
     const productChannelListUpdate = async () => {
         try {
@@ -986,18 +1144,22 @@ const ProductEdit = (props: any) => {
                                 Product Name
                             </label>
                             <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Enter Your Name" name="name" className="form-input" required />
+                            {productNameErrMsg && <p className="error-message mt-1 text-red-500">{productNameErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 Slug
                             </label>
                             <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="Enter slug" name="name" className="form-input" required />
+                            {slugErrMsg && <p className="error-message mt-1 text-red-500 ">{slugErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 SEO
                             </label>
                             <input type="text" value={seoTittle} onChange={(e) => setSeoTittle(e.target.value)} placeholder="Enter title" name="name" className="form-input" required />
+                            {seoTittleErrMsg && <p className="error-message mt-1 text-red-500 ">{seoTittleErrMsg}</p>}
+
                             <textarea
                                 id="ctnTextarea"
                                 value={seoDesc}
@@ -1007,6 +1169,7 @@ const ProductEdit = (props: any) => {
                                 placeholder="Enter Description"
                                 required
                             ></textarea>
+                            {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
                         </div>
                         {/* <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
@@ -1019,10 +1182,9 @@ const ProductEdit = (props: any) => {
                                 Product description
                             </label>
                             <div ref={editorRef} className="mb-5 border border-gray-200"></div>
+                            {/* {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>} */}
                             {/* <p>Editor content: {content}</p> */}
-                            {/* <button onClick={handleSave} className="btn btn-primary">
-                                Save
-                            </button> */}
+                           
                         </div>
 
                         <div className="panel mb-5">
@@ -1038,6 +1200,7 @@ const ProductEdit = (props: any) => {
                                 placeholder="Enter Short Description"
                                 required
                             ></textarea>
+                            {shortDesErrMsg && <p className="error-message mt-1 text-red-500 ">{shortDesErrMsg}</p>}
                         </div>
                         <div className="panel mb-5 ">
                             {/* <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
@@ -1282,6 +1445,8 @@ const ProductEdit = (props: any) => {
                                                                         placeholder="Enter SKU"
                                                                         className="form-input"
                                                                     />
+
+                                                                    {/* {skuErrMsg && <p className="error-message mt-1 text-red-500 ">{skuErrMsg}</p>} */}
                                                                 </div>
                                                             </div>
                                                             <div className="active flex items-center">
@@ -1359,6 +1524,7 @@ const ProductEdit = (props: any) => {
                                                                         placeholder="Enter Sale Price"
                                                                         className="form-input"
                                                                     />
+                                                                    {/* {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>} */}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1735,6 +1901,7 @@ const ProductEdit = (props: any) => {
                             </div>
                             <div className="mb-5">
                                 <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
+                                {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
                             </div>
                             {/* <div className="mb-5">
                                 {isMounted && (

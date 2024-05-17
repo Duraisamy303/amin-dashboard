@@ -340,9 +340,11 @@ const ProductList = () => {
                                                 <IconEdit className="h-4.5 w-4.5" />
                                             </Link>
 
-                                            <Link href="/apps/product/view" className="flex hover:text-primary">
+                                            {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
+                                            <button type="button" className="flex hover:text-primary" onClick={() => router.push(`/apps/product/view/${row.id}`)}>
                                                 <IconEye />
-                                            </Link>
+                                                </button> 
+                                            {/* </Link> */}
 
                                             <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
                                                 <IconTrashLines />

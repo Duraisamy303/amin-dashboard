@@ -106,6 +106,7 @@ const ProductAdd = () => {
     const [skuErrMsg, setSkuErrMsg] = useState("");
     const [salePriceErrMsg, setSalePriceErrMsg] = useState("");
     const [categoryErrMsg, setCategoryErrMsg] = useState("");
+    const [descriptionErrMsg, setDescriptionErrMsg] = useState("");
 
 // error message end
 
@@ -135,18 +136,9 @@ const editorRef = useRef(null);
 const [editorInstance, setEditorInstance] = useState(null);
 const [content, setContent] = useState('');
 
-const [value2, setValue2] = useState<any>({
-    time: Date.now(),
-    blocks: [
-        {
-            type: 'paragraph',
-            data: {
-                text: 'This is the default content.',
-            },
-        },
-    ],
-    version: '2.19.0',
-});
+// const [value2, setValue2] = useState<any>({
+    
+// });
 // let count = 0;
 // editor start
 
@@ -162,7 +154,7 @@ if (editorInstance) {
   editorInstance?.blocks?.clear();
 }
 };
-}, [value2, ]);
+}, [ ]);
 
 
 // const editorRef = useRef(null); // Define a ref to hold the editor instance
@@ -176,13 +168,13 @@ if (editorInstance) {
 return;
 }
 
-console.log('value2: ', value2);
+// console.log('value2: ', value2);
 // Dynamically import the EditorJS module
 import('@editorjs/editorjs').then(({ default: EditorJS }) => {
 // Create a new instance of EditorJS with the appropriate configuration
 const editor = new EditorJS({
   holder: editorRef.current,
-  data: value2,
+//   data: value2,
   tools: {
     // Configure tools as needed
     header: {
@@ -444,114 +436,106 @@ if (editorInstance) {
     };
 
     const CreateProduct = async () => {
-        // console.log("selectedCat", selectedCat)
-
         setProductNameErrMsg('');
         setSlugErrMsg('');
         setSeoTittleErrMsg('');
         setSeoDescErrMsg('');
-        // setDescriptionErrMsg('');
         setShortDesErrMsg('');
-        // setSkuErrMsg('');
-        // setSalePriceErrMsg('');
         setCategoryErrMsg('');
-
-        // Validate the product name and slug
+        setDescriptionErrMsg('');
+    
         if (productName.trim() === '') {
-            // Update the error message for the product name field
             setProductNameErrMsg('Product name cannot be empty');
         }
-
+    
         if (slug.trim() === '') {
-            // Update the error message for the slug field
             setSlugErrMsg('Slug cannot be empty');
         }
+    
         if (seoTittle.trim() === '') {
-            // Update the error message for the slug field
             setSeoTittleErrMsg('Seo title cannot be empty');
         }
+    
         if (seoDesc.trim() === '') {
             setSeoDescErrMsg('Seo description cannot be empty');
         }
-        // if(description?.trim() === ''){
+        // if(description.trim() === '') {
         //     setDescriptionErrMsg('Description cannot be empty');
         // }
+    
         if (shortDescription?.trim() === '') {
             setShortDesErrMsg('Short description cannot be empty');
         }
-        // if (sku?.trim() === '') {
-        //     setSkuErrMsg('Sku cannot be empty');
-        //     alert('Sku cannot be empty');
-        // }
-        // if (salePrice?.trim() === '') {
-        //     setSalePriceErrMsg('Sale price cannot be empty');
-        //     alert('Sale price cannot be empty');
-        // }
-        if (selectedCat == "") {
+    
+        if (selectedCat === "") {
             setCategoryErrMsg('Category cannot be empty');
         }
-
-
-
+    
         if (editorInstance) {
             try {
                 const savedContent = await editorInstance.save();
                 console.log('Editor content:', savedContent);
-                setValue2(savedContent )
-console.log('✌️setValue2 --->', value2);
-            } catch (error) {
-                console.error('Failed to save editor content:', error);
-            }
-        }
-        
-        try {
-            const catId = selectedCat?.value;
-            let collectionId: any[] = [];
-            if (selectedCollection?.length > 0) {
-                collectionId = selectedCollection?.map((item:any) => item.value);
-            }
-
-
-           
-            const { data } = await addFormData({
-                variables: {
-                    input: {
-                        attributes: [],
-                        category: catId,
-                        collections: collectionId,
-                        description: value2,
-                        name: productName,
-                        productType: 'UHJvZHVjdFR5cGU6Mg==',
-                        seo: {
-                            description: seoDesc,
-                            title: seoTittle,
-                        },
-                        slug: slug,
-                        // order_no: menuOrder,
-                        ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                        ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
-                        ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
-                        ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
-                        ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
-                    },
-                },
-            });
-
-            if (data?.productCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productCreate?.errors[0]?.message);
-            } else {
-                console.log('CreateProduct: ', data);
-                const productId = data?.productCreate?.product?.id;
-                productChannelListUpdate(productId);
-                if (images?.length > 0) {
-                    images?.map((item:any) => {
-                        const imageUpload = uploadImage(productId, item);
-                        console.log('imageUpload: ', imageUpload);
-                    });
+                // setValue2(savedContent);
+                // console.log('✌️setValue2 --->', value2);
+                
+                const catId = selectedCat?.value;
+                let collectionId:any = [];
+                if (selectedCollection?.length > 0) {
+                    collectionId = selectedCollection.map((item:any) => item.value);
                 }
+    
+
+                console.log("savedContent", savedContent)
+
+                const formattedDescription = JSON.stringify(savedContent);
+
+
+                let tagId: any[] = [];
+                // if (selectedCollection?.length > 0) {
+                tagId = selectedTag?.map((item: any) => item.value);
+
+                const { data } = await addFormData({
+                    variables: {
+                        input: {
+                            attributes: [],
+                            category: catId,
+                            collections: collectionId,
+                            tags: tagId,
+                            description: formattedDescription,
+                            name: productName,
+                            productType: 'UHJvZHVjdFR5cGU6Mg==',
+                            seo: {
+                                description: seoDesc,
+                                title: seoTittle,
+                            },
+                            slug: slug,
+                            ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                            ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
+                            ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
+                            ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
+                            ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
+                        },
+                    },
+                });
+    
+                if (data?.productCreate?.errors?.length > 0) {
+                    console.log('error: ', data?.productCreate?.errors[0]?.message);
+                } else {
+                    console.log('CreateProduct: ', data);
+                    const productId = data?.productCreate?.product?.id;
+                    productChannelListUpdate(productId);
+                    if (images?.length > 0) {
+                        images?.map((item:any) => {
+                            const imageUpload = uploadImage(productId, item);
+                            console.log('imageUpload: ', imageUpload);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.log('error: ', error);
             }
-        } catch (error) {
-            console.log('error: ', error);
+        } else {
+            console.error('Failed to save editor content');
         }
     };
 
@@ -651,44 +635,47 @@ console.log('✌️setValue2 --->', value2);
             });
             if (data?.updateMetadata?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
-            } else {
-                if (selectedTag?.length > 0) {
-                    assignsTagToProduct(productId);
-                    console.log('success: ', data);
-                }
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
 
-    const assignsTagToProduct = async (productId: any) => {
-        try {
-            let tagId: any[] = [];
-            // if (selectedCollection?.length > 0) {
-            tagId = selectedTag?.map((item:any) => item.value);
-            // }
-            console.log('tagId: ', tagId);
-
-            const { data } = await assignTagToProduct({
-                variables: {
-                    id: productId,
-                    input: {
-                        tags: tagId,
-                    },
-                },
-                // variables: { email: formData.email, password: formData.password },
-            });
-            if (data?.productUpdate?.errors?.length > 0) {
-                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+              
             } else {
+                // if (selectedTag?.length > 0) {
+                //     assignsTagToProduct(productId);
+                //     console.log('success: ', data);
+                // }
                 router.push(`/apps/product/edit?id=${productId}`)
-                console.log('success: ', data);
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
+
+    // const assignsTagToProduct = async (productId: any) => {
+    //     try {
+    //         let tagId: any[] = [];
+    //         // if (selectedCollection?.length > 0) {
+    //         tagId = selectedTag?.map((item:any) => item.value);
+    //         // }
+    //         console.log('tagId: ', tagId);
+
+    //         const { data } = await assignTagToProduct({
+    //             variables: {
+    //                 id: productId,
+    //                 input: {
+    //                     tags: tagId,
+    //                 },
+    //             },
+    //             // variables: { email: formData.email, password: formData.password },
+    //         });
+    //         if (data?.productUpdate?.errors?.length > 0) {
+    //             console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+    //         } else {
+    //             router.push(`/apps/product/edit?id=${productId}`)
+    //             console.log('success: ', data);
+    //         }
+    //     } catch (error) {
+    //         console.log('error: ', error);
+    //     }
+    // };
 
     const handleAddAccordion = () => {
         const selectedType = arr.find((item) => item.type === chooseType);
@@ -821,9 +808,9 @@ console.log('✌️setValue2 --->', value2);
                                 Product description
                             </label>
                             <div ref={editorRef} className="mb-5 border border-gray-200">
-  <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} />
+  {/* <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} /> */}
 </div>
-                            {/* {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>} */}
+                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
                             {/* <p>Editor content: {content}</p> */}
                             {/* <button onClick={handleSave} className="btn btn-primary">
                                 Save
