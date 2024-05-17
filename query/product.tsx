@@ -4051,13 +4051,6 @@ export const CUSTOMER_ADDRESS = gql`
         streetAddress2
         __typename
     }
-
-    fragment ProductError on ProductError {
-        code
-        field
-        message
-        __typename
-    }
 `;
 
 export const ADD_NEW_LINE = gql`
@@ -4203,6 +4196,323 @@ export const ADD_NEW_LINE = gql`
     fragment Money on Money {
         amount
         currency
+        __typename
+    }
+`;
+
+export const DELETE_LINE = gql`
+    mutation OrderLineDelete($id: ID!) {
+        orderLineDelete(id: $id) {
+            errors {
+                ...OrderError
+                __typename
+            }
+            order {
+                id
+                lines {
+                    ...OrderLine
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment OrderError on OrderError {
+        code
+        field
+        addressType
+        message
+        orderLines
+        __typename
+    }
+
+    fragment OrderLine on OrderLine {
+        id
+        isShippingRequired
+        allocations {
+            id
+            quantity
+            warehouse {
+                id
+                name
+                __typename
+            }
+            __typename
+        }
+        variant {
+            id
+            name
+            quantityAvailable
+            preorder {
+                endDate
+                __typename
+            }
+            stocks {
+                ...Stock
+                __typename
+            }
+            product {
+                id
+                isAvailableForPurchase
+                __typename
+            }
+            __typename
+        }
+        productName
+        productSku
+        quantity
+        quantityFulfilled
+        quantityToFulfill
+        totalPrice {
+            ...TaxedMoney
+            __typename
+        }
+        unitDiscount {
+            amount
+            currency
+            __typename
+        }
+        unitDiscountValue
+        unitDiscountReason
+        unitDiscountType
+        undiscountedUnitPrice {
+            currency
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        unitPrice {
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        thumbnail {
+            url
+            __typename
+        }
+        __typename
+    }
+
+    fragment Stock on Stock {
+        id
+        quantity
+        quantityAllocated
+        warehouse {
+            ...Warehouse
+            __typename
+        }
+        __typename
+    }
+
+    fragment Warehouse on Warehouse {
+        id
+        name
+        __typename
+    }
+
+    fragment TaxedMoney on TaxedMoney {
+        net {
+            ...Money
+            __typename
+        }
+        gross {
+            ...Money
+            __typename
+        }
+        __typename
+    }
+
+    fragment Money on Money {
+        amount
+        currency
+        __typename
+    }
+`;
+
+
+export const UPDATE_LINE = gql`
+mutation OrderLineUpdate($id: ID!, $input: OrderLineInput!) {
+    orderLineUpdate(id: $id, input: $input) {
+      errors {
+        ...OrderError
+        __typename
+      }
+      orderLine {
+        ...OrderLine
+        __typename
+      }
+      __typename
+    }
+  }
+  
+  fragment OrderError on OrderError {
+    code
+    field
+    addressType
+    message
+    orderLines
+    __typename
+  }
+  
+  fragment OrderLine on OrderLine {
+    id
+    isShippingRequired
+    allocations {
+      id
+      quantity
+      warehouse {
+        id
+        name
+        __typename
+      }
+      __typename
+    }
+    variant {
+      id
+      name
+      quantityAvailable
+      preorder {
+        endDate
+        __typename
+      }
+      stocks {
+        ...Stock
+        __typename
+      }
+      product {
+        id
+        isAvailableForPurchase
+        __typename
+      }
+      __typename
+    }
+    productName
+    productSku
+    quantity
+    quantityFulfilled
+    quantityToFulfill
+    totalPrice {
+      ...TaxedMoney
+      __typename
+    }
+    unitDiscount {
+      amount
+      currency
+      __typename
+    }
+    unitDiscountValue
+    unitDiscountReason
+    unitDiscountType
+    undiscountedUnitPrice {
+      currency
+      gross {
+        amount
+        currency
+        __typename
+      }
+      net {
+        amount
+        currency
+        __typename
+      }
+      __typename
+    }
+    unitPrice {
+      gross {
+        amount
+        currency
+        __typename
+      }
+      net {
+        amount
+        currency
+        __typename
+      }
+      __typename
+    }
+    thumbnail {
+      url
+      __typename
+    }
+    __typename
+  }
+  
+  fragment Stock on Stock {
+    id
+    quantity
+    quantityAllocated
+    warehouse {
+      ...Warehouse
+      __typename
+    }
+    __typename
+  }
+  
+  fragment Warehouse on Warehouse {
+    id
+    name
+    __typename
+  }
+  
+  fragment TaxedMoney on TaxedMoney {
+    net {
+      ...Money
+      __typename
+    }
+    gross {
+      ...Money
+      __typename
+    }
+    __typename
+  }
+  
+  fragment Money on Money {
+    amount
+    currency
+    __typename
+  }
+  
+`;
+
+export const CREATE_DRAFT_ORDER = gql`
+    mutation OrderDraftCreate($input: DraftOrderCreateInput!) {
+        draftOrderCreate(input: $input) {
+            errors {
+                ...OrderError
+                __typename
+            }
+            order {
+                id
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment OrderError on OrderError {
+        code
+        field
+        addressType
+        message
+        orderLines
         __typename
     }
 `;

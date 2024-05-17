@@ -156,3 +156,7 @@ export const getValueByKey = (metadata:any[], key:string) => {
     const item = metadata.find(item => item.key === key);
     return item ? item.value : null;
 };
+
+export const isEmptyObject = (obj) => {
+    return Object.values(obj).every(value => value === "");
+};

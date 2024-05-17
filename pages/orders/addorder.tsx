@@ -4,22 +4,22 @@ import { useQuery } from '@apollo/client';
 import {
     ADD_NEW_LINE,
     COUNTRY_LIST,
+    CREATE_DRAFT_ORDER,
     CREATE_NOTES,
     CUSTOMER_ADDRESS,
     CUSTOMER_LIST,
+    DELETE_LINE,
     DELETE_NOTES,
     FILTER_PRODUCT_LIST,
     GET_ORDER_DETAILS,
-    ORDER_PRODUCT_LIST,
-    SHIPPING_LIST,
+    SHIPPING_COST_UPDATE,
     STATES_LIST,
+    UPDATE_LINE,
 } from '@/query/product';
 import { Loader } from '@mantine/core';
-import moment from 'moment';
-import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useMutation } from '@apollo/client';
-import { sampleParams, showDeleteAlert } from '@/utils/functions';
+import { isEmptyObject, sampleParams, showDeleteAlert } from '@/utils/functions';
 import Swal from 'sweetalert2';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconX from '@/components/Icon/IconX';
@@ -69,10 +69,13 @@ const AddOrder = () => {
 
     const [formData, setFormData] = useState(initialValues);
     const [errors, setErrors] = useState<any>({});
+    const [isLoadBillingAddress, setIsLoadBillingAddress] = useState(initialValues);
 
     const [addNotes] = useMutation(CREATE_NOTES);
     const [deleteNotes] = useMutation(DELETE_NOTES);
     const [newAddLine] = useMutation(ADD_NEW_LINE);
+    const [updateShipping] = useMutation(SHIPPING_COST_UPDATE);
+    const [removeLine] = useMutation(DELETE_LINE);
 
     const { data: countryData } = useQuery(COUNTRY_LIST);
 
@@ -114,37 +117,7 @@ const AddOrder = () => {
         },
     });
 
-    const { data: customerAddress } = useQuery(CUSTOMER_ADDRESS, {
-        variables: {
-            id: 'VXNlcjoyMw==',
-            PERMISSION_HANDLE_CHECKOUTS: true,
-            PERMISSION_HANDLE_PAYMENTS: true,
-            PERMISSION_HANDLE_TAXES: true,
-            PERMISSION_IMPERSONATE_USER: true,
-            PERMISSION_MANAGE_APPS: true,
-            PERMISSION_MANAGE_CHANNELS: true,
-            PERMISSION_MANAGE_CHECKOUTS: true,
-            PERMISSION_MANAGE_DISCOUNTS: true,
-            PERMISSION_MANAGE_GIFT_CARD: true,
-            PERMISSION_MANAGE_MENUS: true,
-            PERMISSION_MANAGE_OBSERVABILITY: true,
-            PERMISSION_MANAGE_ORDERS: true,
-            PERMISSION_MANAGE_ORDERS_IMPORT: true,
-            PERMISSION_MANAGE_PAGES: true,
-            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_PLUGINS: true,
-            PERMISSION_MANAGE_PRODUCTS: true,
-            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_SETTINGS: true,
-            PERMISSION_MANAGE_SHIPPING: true,
-            PERMISSION_MANAGE_STAFF: true,
-            PERMISSION_MANAGE_TAXES: true,
-            PERMISSION_MANAGE_TRANSLATIONS: true,
-            PERMISSION_MANAGE_USERS: true,
-        },
-    });
-
-    console.log('customerAddress: ', customerAddress);
+    const [draftOrder] = useMutation(CREATE_DRAFT_ORDER);
 
     const { data: stateData } = useQuery(STATES_LIST, {
         variables: { code: formData.billing.country },
@@ -181,16 +154,15 @@ const AddOrder = () => {
             PERMISSION_MANAGE_USERS: true,
         },
     });
-    console.log('shippingProvider: ', shippingProvider);
 
     const [orderData, setOrderData] = useState<any>({});
     const [customerData, setCustomerData] = useState([]);
-    const [selectedCustomer, setSelectedCustomer] = useState([]);
-    console.log('selectedCustomer: ', selectedCustomer);
+    const [selectedCustomer, setSelectedCustomer] = useState('');
 
     const [loading, setLoading] = useState(false);
     const [countryList, setCountryList] = useState([]);
     const [selectedCountry, setSelectedCountry] = useState([]);
+    const [draftOrderId, setDraftOrderId] = useState([]);
 
     //List data
     const [data, setData] = useState<any>([]);
@@ -211,6 +183,8 @@ const AddOrder = () => {
     const [selectedUser, setSelectedUser] = useState('');
     const [quantity, setQuantity] = useState(0);
     const [productList, setProductList] = useState([]);
+    const [productListData, setProductListData] = useState([]);
+    console.log('productListData: ', productListData);
 
     //For shipping
     const [shippingOpen, setShippingOpen] = useState(false);
@@ -220,10 +194,85 @@ const AddOrder = () => {
 
     const [showBillingInputs, setShowBillingInputs] = useState(false);
     const [showShippingInputs, setShowShippingInputs] = useState(false);
+    const [selectedItems, setSelectedItems] = useState({});
+
+    const { data: customerAddress } = useQuery(CUSTOMER_ADDRESS, {
+        variables: {
+            id: selectedCustomer,
+            PERMISSION_HANDLE_CHECKOUTS: true,
+            PERMISSION_HANDLE_PAYMENTS: true,
+            PERMISSION_HANDLE_TAXES: true,
+            PERMISSION_IMPERSONATE_USER: true,
+            PERMISSION_MANAGE_APPS: true,
+            PERMISSION_MANAGE_CHANNELS: true,
+            PERMISSION_MANAGE_CHECKOUTS: true,
+            PERMISSION_MANAGE_DISCOUNTS: true,
+            PERMISSION_MANAGE_GIFT_CARD: true,
+            PERMISSION_MANAGE_MENUS: true,
+            PERMISSION_MANAGE_OBSERVABILITY: true,
+            PERMISSION_MANAGE_ORDERS: true,
+            PERMISSION_MANAGE_ORDERS_IMPORT: true,
+            PERMISSION_MANAGE_PAGES: true,
+            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_PLUGINS: true,
+            PERMISSION_MANAGE_PRODUCTS: true,
+            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_SETTINGS: true,
+            PERMISSION_MANAGE_SHIPPING: true,
+            PERMISSION_MANAGE_STAFF: true,
+            PERMISSION_MANAGE_TAXES: true,
+            PERMISSION_MANAGE_TRANSLATIONS: true,
+            PERMISSION_MANAGE_USERS: true,
+        },
+    });
+
+    const { data: productDetails, refetch } = useQuery(GET_ORDER_DETAILS, {
+        variables: {
+            id: draftOrderId,
+            isStaffUser: true,
+            PERMISSION_HANDLE_CHECKOUTS: true,
+            PERMISSION_HANDLE_PAYMENTS: true,
+            PERMISSION_HANDLE_TAXES: true,
+            PERMISSION_IMPERSONATE_USER: true,
+            PERMISSION_MANAGE_APPS: true,
+            PERMISSION_MANAGE_CHANNELS: true,
+            PERMISSION_MANAGE_CHECKOUTS: true,
+            PERMISSION_MANAGE_DISCOUNTS: true,
+            PERMISSION_MANAGE_GIFT_CARD: true,
+            PERMISSION_MANAGE_MENUS: true,
+            PERMISSION_MANAGE_OBSERVABILITY: true,
+            PERMISSION_MANAGE_ORDERS: true,
+            PERMISSION_MANAGE_ORDERS_IMPORT: true,
+            PERMISSION_MANAGE_PAGES: true,
+            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_PLUGINS: true,
+            PERMISSION_MANAGE_PRODUCTS: true,
+            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
+            PERMISSION_MANAGE_SETTINGS: true,
+            PERMISSION_MANAGE_SHIPPING: true,
+            PERMISSION_MANAGE_STAFF: true,
+            PERMISSION_MANAGE_TAXES: true,
+            PERMISSION_MANAGE_TRANSLATIONS: true,
+            PERMISSION_MANAGE_USERS: true,
+        },
+    });
+    console.log('productDetails: ', productDetails);
 
     useEffect(() => {
         getCountryList();
     }, [countryData]);
+
+    useEffect(() => {
+        createDraftOrder();
+    }, []);
+
+    useEffect(() => {
+        getProductDetails();
+    }, [productDetails]);
+
+    useEffect(() => {
+        getProductDetails();
+    }, []);
 
     useEffect(() => {
         getProductsList();
@@ -232,19 +281,52 @@ const AddOrder = () => {
     useEffect(() => {
         getCustomer();
     }, [shippingProvider]);
+
     useEffect(() => {
         if (formData.billing.country) {
             setStateList(stateData?.addressValidationRules?.countryAreaChoices);
         }
     }, [stateData]);
 
+    const getProductDetails = () => {
+        setLoading(true);
+        if (productDetails) {
+            if (productDetails && productDetails?.order && productDetails?.order?.lines?.length > 0) {
+                const list = productDetails?.order?.lines;
+                setProductListData(list);
+                setLoading(false);
+            } else {
+                setLoading(false);
+            }
+        } else {
+            setLoading(false);
+        }
+    };
+
+    const createDraftOrder = async () => {
+        try {
+            const { data } = await draftOrder({
+                variables: {
+                    input: {
+                        channelId: 'Q2hhbm5lbDoy',
+                    },
+                },
+            });
+            console.log('data: ', data);
+            setDraftOrderId(data?.draftOrderCreate?.order?.id);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
     const getProductsList = () => {
         setLoading(true);
         if (productData) {
             if (productData && productData?.search && productData?.search?.edges?.length > 0) {
                 const list = productData?.search?.edges?.map((item) => item.node);
+
                 const dropdown: any = list.map((item: any) => ({ value: item.id, label: item.name }));
-                setProductList(dropdown);
+                setProductList(list);
                 setLoading(false);
             } else {
                 setLoading(false);
@@ -275,7 +357,6 @@ const AddOrder = () => {
                     value: item.node?.id,
                     label: `${item.node?.firstName} -${item.node?.lastName}`,
                 }));
-                console.log("dropdownData: ", dropdownData);
                 setCustomerData(dropdownData);
                 setLoading(false);
             } else {
@@ -284,43 +365,6 @@ const AddOrder = () => {
         } else {
             setLoading(false);
         }
-    };
-
-    const SubmittedForm = Yup.object().shape({
-        message: Yup.string().required('Please fill the message'),
-    });
-
-    const onSubmit = async (record: any, { resetForm }: any) => {
-        try {
-            const aaa = { input: { message: record.message }, orderId: id, private_note: record.mail };
-
-            const data = await addNotes({
-                variables: { input: { message: record.message }, orderId: id, private_note: record.mail },
-            });
-
-            const newData = { ...orderData, events: data?.data?.orderNoteAdd?.order?.events };
-            setOrderData(newData);
-            resetForm();
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const removeNotes = (item: any) => {
-        showDeleteAlert(
-            async () => {
-                await deleteNotes({
-                    variables: { noteId: item.id },
-                });
-                const filter = orderData?.events?.filter((data: any) => data.id !== item.id);
-                const newData = { ...orderData, events: filter };
-                setOrderData(newData);
-                Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
-            },
-            () => {
-                Swal.fire('Cancelled', 'Your Notes List is safe :)', 'error');
-            }
-        );
     };
 
     const BillingInputs = () => {
@@ -350,10 +394,17 @@ const AddOrder = () => {
         ]);
     };
 
-    const removeItem = (item: any = null) => {
+    const removeItem = (item: any) => {
         showDeleteAlert(
             async () => {
-                setData(data.filter((data: any) => data.id !== item.id));
+                const data = await removeLine({
+                    variables: {
+                        id: item.id,
+                    },
+                });
+                console.log('data: ', data);
+
+                // setData(data.filter((data: any) => data.id !== item.id));
 
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
@@ -397,18 +448,6 @@ const AddOrder = () => {
         if (type === 'price') {
             item.amount = Number(value);
         }
-    };
-
-    // For product
-    const handleAddProduct = (e: any) => {
-        e.preventDefault();
-        const { data } = newAddLine({});
-        const product: any = { user: selectedUser, quantity: quantity, type: 'product', id: data.length + 1 };
-        setData([product, ...data]);
-        setAddProductOpen(false);
-        setSelectedUser('');
-        setQuantity(0);
-        setProductIsEdit(false);
     };
 
     const handleUpdateProduct = (e: any) => {
@@ -455,14 +494,26 @@ const AddOrder = () => {
         setShippingIsEdit(false);
     };
 
-    const handleUpdateShipping = (e: any) => {
-        e.preventDefault();
-        const newData: any = [...data];
-        newData[selectedShipping] = { ...newData[selectedShipping], user: shippingPrice, type: 'shipping' };
-        setData(newData);
-        setShippingOpen(false);
-        setShippingPrice(0);
-        setShippingIsEdit(false);
+    const handleUpdateShipping = async () => {
+        try {
+            console.log('draftOrderId: ', draftOrderId);
+
+            const data = await updateShipping({
+                variables: {
+                    id: draftOrderId,
+                    input: {
+                        shippingMethod: 'U2hpcHBpbmdNZXRob2Q6Mw==',
+                    },
+                },
+            });
+            console.log('data: ', data);
+            refetch();
+            setShippingOpen(false);
+            setShippingPrice(0);
+            setShippingIsEdit(false);
+        } catch (error) {
+            console.log('error: ', error);
+        }
     };
 
     const validationSchema = Yup.object().shape({
@@ -522,10 +573,191 @@ const AddOrder = () => {
             });
     };
 
-    const getCustomerAddress=(val)=>{
-        console.log("val: ", val);
+    const setBillingAddress = async () => {
+        console.log('val: ', customerAddress);
+        try {
+            if (selectedCustomer != '' && selectedCustomer != undefined) {
+                let billing = {};
+                if (customerAddress && customerAddress?.user) {
+                    if (customerAddress?.user?.defaultBillingAddress) {
+                        const billingId = customerAddress?.user?.defaultBillingAddress?.id;
+                        if (customerAddress?.user?.addresses?.length > 0) {
+                            const filter = customerAddress?.user?.addresses?.find((item) => item.id == billingId);
 
-    }
+                            billing = {
+                                firstName: filter.firstName,
+                                lastName: filter.lastName,
+                                company: filter?.companyName,
+                                address_1: filter?.streetAddress1,
+                                address_2: filter?.streetAddress2,
+                                city: filter?.city,
+                                state: filter?.state?.code,
+                                country: filter?.country?.code,
+                                email: filter.email,
+                                phone: filter.phone,
+                                paymentMethod: '',
+                                transactionId: '',
+                                countryArea: '',
+                                pincode: filter.postalCode,
+                            };
+                        }
+                    }
+
+                    setFormData({
+                        ...formData,
+                        billing,
+                    });
+                }
+            } else {
+                alert('Please choose customer');
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const setShippingAddress = async () => {
+        try {
+            if (selectedCustomer != '' && selectedCustomer != undefined) {
+                let shipping = {};
+                if (customerAddress?.user?.defaultShippingAddress) {
+                    const billingId = customerAddress?.user?.defaultShippingAddress?.id;
+                    if (customerAddress?.user?.addresses?.length > 0) {
+                        const filter = customerAddress?.user?.addresses?.find((item) => item.id == billingId);
+
+                        shipping = {
+                            firstName: filter.firstName,
+                            lastName: filter.lastName,
+                            company: filter?.companyName,
+                            address_1: filter?.streetAddress1,
+                            address_2: filter?.streetAddress2,
+                            city: filter?.city,
+                            state: '',
+                            country: filter?.country?.code,
+                            email: filter.email,
+                            phone: filter.phone,
+                            paymentMethod: '',
+                            transactionId: '',
+                            countryArea: '',
+                            pincode: filter.postalCode,
+                        };
+                    }
+                    setShowBillingInputs(true);
+                    setShowShippingInputs(true);
+                }
+
+                setFormData({
+                    ...formData,
+                    shipping,
+                });
+            } else {
+                alert('Please choose customer');
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+    const setBillingToShippingAddress = async () => {
+        try {
+            setFormData({
+                ...formData,
+                shipping: {
+                    firstName: formData?.billing.firstName,
+                    lastName: formData?.billing.lastName,
+                    company: formData?.billing.company,
+                    address_1: formData?.billing.address_1,
+                    address_2: formData?.billing.address_2,
+                    city: formData?.billing.city,
+                    state: formData?.billing.state,
+                    country: formData?.billing.country,
+                    email: formData?.billing.email,
+                    phone: formData?.billing.phone,
+                    paymentMethod: formData?.billing.paymentMethod,
+                    transactionId: formData?.billing.transactionId,
+                    countryArea: formData?.billing.countryArea,
+                    pincode: formData?.billing.pincode,
+                },
+            });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const handleSelect = (heading, subHeading) => {
+        if (subHeading) {
+            setSelectedItems((prevState) => ({
+                ...prevState,
+                [heading]: {
+                    ...prevState[heading],
+                    [subHeading]: !prevState[heading]?.[subHeading],
+                },
+            }));
+        } else {
+            setSelectedItems((prevState) => {
+                const newState = { ...prevState };
+                newState[heading] = Object.fromEntries(productList.find((item) => item.name === heading).variants.map(({ name }) => [name, !prevState[heading]?.[name]]));
+                return newState;
+            });
+        }
+    };
+
+    const handleHeadingSelect = (heading) => {
+        const isHeadingChecked = selectedItems[heading] && Object.values(selectedItems[heading]).every((value) => value);
+        if (isHeadingChecked) {
+            setSelectedItems((prevState) => {
+                const newState = { ...prevState };
+                newState[heading] = Object.fromEntries(Object.entries(prevState[heading]).map(([name]) => [name, false]));
+                return newState;
+            });
+        } else {
+            handleSelect(heading);
+        }
+    };
+
+    const handleSubHeadingSelect = (heading, subHeading) => {
+        handleSelect(heading, subHeading);
+    };
+
+    const addProducts = async () => {
+        try {
+            const selectedSubheadingIds = [];
+            productList.forEach(({ name, variants }) => {
+                if (selectedItems[name]) {
+                    variants.forEach(({ name: variantName, id }) => {
+                        if (selectedItems[name][variantName]) {
+                            selectedSubheadingIds.push(id);
+                        }
+                    });
+                }
+            });
+            const input = selectedSubheadingIds?.map((item) => ({
+                quantity: 1,
+                variantId: item,
+            }));
+
+            const data = await newAddLine({
+                variables: {
+                    id: draftOrderId,
+                    input,
+                },
+            });
+            console.log('data: ', data);
+            setAddProductOpen(false);
+            setSelectedItems([]);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const updateQuantity = async () => {
+        console.log('updateQuantity: ');
+        try {
+         
+            console.log('data: ', data);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
     return (
         <>
@@ -591,13 +823,15 @@ const AddOrder = () => {
                                                 className="form-select"
                                                 value={selectedCustomer}
                                                 onChange={(val) => {
-                                                    console.log('val: ', val.target.value);
-                                                    setSelectedCustomer(val.target.value);
-                                                    getCustomerAddress(val.target.value);
+                                                    const selectedCustomerId: any = val.target.value;
+                                                    console.log('selectedCustomerId: ', selectedCustomerId);
+                                                    setSelectedCustomer(selectedCustomerId);
                                                 }}
                                             >
                                                 {customerData?.map((item) => (
-                                                    <option>{item.label}</option>
+                                                    <option key={item?.value} value={item?.value}>
+                                                        {item?.label}
+                                                    </option>
                                                 ))}
                                             </select>
 
@@ -623,44 +857,51 @@ const AddOrder = () => {
                                         </div>
                                         {showBillingInputs === false ? (
                                             <>
-                                                <div className="mt-3 text-gray-500">
-                                                    <p>{`${formData?.billing?.firstName} ${formData?.billing?.lastName}`}</p>
-                                                    <p>{formData?.billing?.company}</p>
-                                                    <p>
-                                                        {formData?.billing?.address_1}
-                                                        <br />
-                                                        {formData?.billing?.address_2}
-                                                        <br /> {formData?.billing?.city}
-                                                        <br /> {formData?.billing?.state}
-                                                        <br /> {selectedCountry}
-                                                    </p>
-                                                    {formData?.billing?.email && (
-                                                        <>
-                                                            <p className="mt-3 font-semibold">Email Address:</p>
-                                                            <p>
-                                                                <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
-                                                                    {formData?.billing?.email}
-                                                                </a>
-                                                            </p>
-                                                        </>
-                                                    )}
-                                                    {formData?.billing?.phone && (
-                                                        <>
-                                                            <p className="mt-3 font-semibold">Phone:</p>
-                                                            <p>
-                                                                <a href="tel:01803556656" className="text-primary underline">
-                                                                    {formData?.billing?.phone}
-                                                                </a>
-                                                            </p>
-                                                        </>
-                                                    )}
-                                                </div>
+                                                {isEmptyObject(formData.billing) ? (
+                                                    <>
+                                                        <p>Address :</p>
+                                                        <p>No billing address set. </p>
+                                                    </>
+                                                ) : (
+                                                    <div className="mt-3 text-gray-500">
+                                                        <p>{`${formData?.billing?.firstName} ${formData?.billing?.lastName}`}</p>
+                                                        <p>{formData?.billing?.company}</p>
+                                                        <p>
+                                                            {formData?.billing?.address_1}
+                                                            <br />
+                                                            {formData?.billing?.address_2}
+                                                            <br /> {formData?.billing?.city}
+                                                            <br /> {formData?.billing?.state}
+                                                            <br /> {selectedCountry}
+                                                        </p>
+                                                        {formData?.billing?.email && (
+                                                            <>
+                                                                <p className="mt-3 font-semibold">Email Address:</p>
+                                                                <p>
+                                                                    <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
+                                                                        {formData?.billing?.email}
+                                                                    </a>
+                                                                </p>
+                                                            </>
+                                                        )}
+                                                        {formData?.billing?.phone && (
+                                                            <>
+                                                                <p className="mt-3 font-semibold">Phone:</p>
+                                                                <p>
+                                                                    <a href="tel:01803556656" className="text-primary underline">
+                                                                        {formData?.billing?.phone}
+                                                                    </a>
+                                                                </p>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </>
                                         ) : (
                                             <>
-                                                <a href="#" className="text-primary underline">
+                                                <button className="text-primary underline" onClick={() => setBillingAddress()}>
                                                     Load billing address
-                                                </a>
+                                                </button>
 
                                                 <div className="mt-5 grid grid-cols-12 gap-3">
                                                     <div className="col-span-6">
@@ -721,8 +962,6 @@ const AddOrder = () => {
                                                             onChange={handleChange}
                                                         />
                                                         {errors['billing.address_1'] && <div className="mt-1 text-danger">{errors['billing.address_1']}</div>}
-
-                                                        {/* <input type="text" id="billingaddress1" name="billingaddress1" className="form-input" required /> */}
                                                     </div>
                                                     <div className="col-span-6">
                                                         <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
@@ -895,45 +1134,52 @@ const AddOrder = () => {
 
                                         {showShippingInputs === false ? (
                                             <>
-                                                <div className="mt-3 text-gray-500">
-                                                    <p>{`${formData?.shipping?.firstName} ${formData?.shipping?.lastName}`}</p>
-                                                    <p>{formData?.shipping?.company}</p>
-                                                    <p>
-                                                        {`${formData?.shipping?.address_1} - ${formData?.shipping?.address_2}`}
-                                                        <br /> {formData?.shipping?.city}
-                                                        <br /> {formData?.shipping?.state}
-                                                        <br /> {formData?.shipping?.countryArea}
-                                                    </p>
-                                                    {formData?.shipping?.email && (
-                                                        <>
-                                                            <p className="mt-3 font-semibold">Email Address:</p>
-                                                            <p>
-                                                                <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
-                                                                    {formData?.shipping?.email}
-                                                                </a>
-                                                            </p>
-                                                        </>
-                                                    )}
-                                                    {formData?.shipping?.phone && (
-                                                        <>
-                                                            <p className="mt-3 font-semibold">Phone:</p>
-                                                            <p>
-                                                                <a href="tel:01803556656" className="text-primary underline">
-                                                                    {formData?.shipping?.phone}
-                                                                </a>
-                                                            </p>
-                                                        </>
-                                                    )}
-                                                </div>
+                                                {isEmptyObject(formData.shipping) ? (
+                                                    <>
+                                                        <p>Address :</p>
+                                                        <p>No shipping address set. </p>
+                                                    </>
+                                                ) : (
+                                                    <div className="mt-3 text-gray-500">
+                                                        <p>{`${formData?.shipping?.firstName} ${formData?.shipping?.lastName}`}</p>
+                                                        <p>{formData?.shipping?.company}</p>
+                                                        <p>
+                                                            {`${formData?.shipping?.address_1} - ${formData?.shipping?.address_2}`}
+                                                            <br /> {formData?.shipping?.city}
+                                                            <br /> {formData?.shipping?.state}
+                                                            <br /> {formData?.shipping?.countryArea}
+                                                        </p>
+                                                        {formData?.shipping?.email && (
+                                                            <>
+                                                                <p className="mt-3 font-semibold">Email Address:</p>
+                                                                <p>
+                                                                    <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
+                                                                        {formData?.shipping?.email}
+                                                                    </a>
+                                                                </p>
+                                                            </>
+                                                        )}
+                                                        {formData?.shipping?.phone && (
+                                                            <>
+                                                                <p className="mt-3 font-semibold">Phone:</p>
+                                                                <p>
+                                                                    <a href="tel:01803556656" className="text-primary underline">
+                                                                        {formData?.shipping?.phone}
+                                                                    </a>
+                                                                </p>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </>
                                         ) : (
                                             <>
-                                                <a href="#" className="mr-3 text-primary underline">
+                                                <button onClick={() => setShippingAddress()} className="mr-3 text-primary underline">
                                                     Load Shipping address
-                                                </a>
-                                                <a href="#" className="text-primary underline">
+                                                </button>
+                                                <button onClick={() => setBillingToShippingAddress()} className="mr-3 text-primary underline">
                                                     Copy Billing address
-                                                </a>
+                                                </button>
 
                                                 <div className="mt-5 grid grid-cols-12 gap-3">
                                                     <div className="col-span-6">
@@ -1166,6 +1412,8 @@ const AddOrder = () => {
                                         <thead>
                                             <tr>
                                                 <th>Item</th>
+                                                <th>SKU</th>
+
                                                 <th className="w-1">Cost</th>
                                                 <th className="w-1">Qty</th>
                                                 <th>Total</th>
@@ -1175,147 +1423,39 @@ const AddOrder = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {data?.length <= 0 && (
-                                                <tr>
-                                                    <td colSpan={5} className="!text-center font-semibold">
-                                                        No Item Available
+                                            {productListData?.map((item: any, index: any) => (
+                                                <tr className="align-top" key={index}>
+                                                    <td>{item?.productName}</td>
+                                                    <td>{item?.productSku}</td>
+                                                    <td>
+                                                        {item?.totalPrice?.gross?.currency} {item?.totalPrice?.gross?.amount}
+                                                    </td>
+                                                    <td>{item?.quantity}</td>
+
+                                                    <td>
+                                                        {item?.totalPrice?.gross?.currency} {item?.totalPrice?.gross?.amount}
+                                                    </td>
+
+                                                    <td>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedUser(item.id);
+                                                                console.log('item: ', item);
+                                                                setQuantity(item.quantity);
+                                                                setAddProductOpen(true);
+                                                                setProductIsEdit(true);
+                                                                setSelectedProduct(index);
+                                                            }}
+                                                        >
+                                                            <IconPencil className="mr-3 h-5 w-5" />
+                                                        </button>
+                                                        <button type="button" onClick={() => removeItem(item)}>
+                                                            <IconTrashLines className="h-5 w-5" />
+                                                        </button>
                                                     </td>
                                                 </tr>
-                                            )}
-                                            {data?.map((item: any, index: any) => {
-                                                console.log('item: ', item);
-                                                return item?.type == 'product' ? (
-                                                    <tr className="align-top" key={index}>
-                                                        <td>
-                                                            <input
-                                                                type="text"
-                                                                className="form-input min-w-[200px]"
-                                                                placeholder="Enter Item Name"
-                                                                value={item.user}
-                                                                disabled
-                                                                onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                            />
-                                                        </td>
-                                                        <td></td>
-                                                        <td>
-                                                            <input
-                                                                type="number"
-                                                                className="form-input w-32"
-                                                                placeholder="Price"
-                                                                value={item.quantity}
-                                                                min={0}
-                                                                disabled
-                                                                onChange={(e) => changeQuantityPrice('price', e.target.value, item.id)}
-                                                            />
-                                                        </td>
-                                                        <td>${item.quantity * item.amount}</td>
-                                                        <td>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setSelectedUser(item.user);
-                                                                    setQuantity(item.quantity);
-                                                                    setAddProductOpen(true);
-                                                                    setProductIsEdit(true);
-                                                                    setSelectedProduct(index);
-                                                                }}
-                                                            >
-                                                                <IconPencil className="mr-3 h-5 w-5" />
-                                                            </button>
-                                                            <button type="button" onClick={() => removeItem(item)}>
-                                                                <IconTrashLines className="h-5 w-5" />
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ) : item?.type == 'fee' ? (
-                                                    <>
-                                                        <tr className="align-top" key={index}>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-input min-w-[200px]"
-                                                                    placeholder="Enter Item Name"
-                                                                    value={'Fee'}
-                                                                    disabled
-                                                                    onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                                />
-                                                            </td>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-input min-w-[200px]"
-                                                                    placeholder="Enter Item Name"
-                                                                    value={item.user}
-                                                                    disabled
-                                                                    onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                                />
-                                                            </td>
-                                                            <td></td>
-                                                            <td>${item.quantity * item.amount}</td>
-                                                            <td>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setFeePrice(item.user);
-                                                                        setFeePrice(item.user);
-                                                                        setFeeOpen(true);
-                                                                        setFeeIsEdit(true);
-                                                                        setSelectedFee(index);
-                                                                    }}
-                                                                >
-                                                                    <IconPencil className="mr-3 h-5 w-5" />
-                                                                </button>
-                                                                <button type="button" onClick={() => removeItem(item)}>
-                                                                    <IconTrashLines className="h-5 w-5" />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    </>
-                                                ) : item?.type == 'shipping' ? (
-                                                    <>
-                                                        <tr className="align-top" key={index}>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-input min-w-[200px]"
-                                                                    placeholder="Enter Item Name"
-                                                                    value={'Shipping'}
-                                                                    disabled
-                                                                    onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                                />
-                                                            </td>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-input min-w-[200px]"
-                                                                    placeholder="Enter Item Name"
-                                                                    value={item.user}
-                                                                    disabled
-                                                                    onChange={(e) => changeQuantityPrice('title', e.target.value, item.id)}
-                                                                />
-                                                            </td>
-                                                            <td></td>
-                                                            <td>${item.quantity * item.amount}</td>
-                                                            <td>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setShippingPrice(item.user);
-                                                                        setShippingOpen(true);
-                                                                        setShippingIsEdit(true);
-                                                                        setSelectedShipping(index);
-                                                                    }}
-                                                                >
-                                                                    <IconPencil className="mr-3 h-5 w-5" />
-                                                                </button>
-                                                                <button type="button" onClick={() => removeItem(item)}>
-                                                                    <IconTrashLines className="h-5 w-5" />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    </>
-                                                ) : null;
-                                            })}
+                                            ))}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1324,7 +1464,9 @@ const AddOrder = () => {
                                     <div className="sm:w-2/5">
                                         <div className="flex items-center justify-between">
                                             <div>Subtotal</div>
-                                            <div>$265.00</div>
+                                            <div>
+                                                {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount}
+                                            </div>
                                         </div>
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Tax(%)</div>
@@ -1332,7 +1474,9 @@ const AddOrder = () => {
                                         </div>
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Shipping Rate($)</div>
-                                            <div>$0.00</div>
+                                            <div>
+                                                {productDetails?.order?.shippingPrice?.gross?.currency} {productDetails?.order?.shippingPrice?.gross?.amount}
+                                            </div>
                                         </div>
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Discount(%)</div>
@@ -1340,7 +1484,9 @@ const AddOrder = () => {
                                         </div>
                                         <div className="mt-4 flex items-center justify-between font-semibold">
                                             <div>Total</div>
-                                            <div>$265.00</div>
+                                            <div>
+                                                {productDetails?.order?.total?.gross?.currency} {productDetails?.order?.total?.gross?.amount}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1367,17 +1513,7 @@ const AddOrder = () => {
                                         >
                                             Add shipping
                                         </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-outline-primary"
-                                            onClick={() => {
-                                                setFeePrice(0);
-                                                setFeeIsEdit(false);
-                                                setFeeOpen(true);
-                                            }}
-                                        >
-                                            Add fee
-                                        </button>
+
                                         <button
                                             type="button"
                                             className="btn btn-outline-primary"
@@ -1386,6 +1522,7 @@ const AddOrder = () => {
                                                 setQuantity(0);
                                                 setProductIsEdit(false);
                                                 setAddProductOpen(true);
+                                                getProductDetails();
                                             }}
                                         >
                                             Add product(s)
@@ -1512,114 +1649,111 @@ const AddOrder = () => {
                         open={addProductOpen}
                         close={() => setAddProductOpen(false)}
                         renderComponent={() => (
-                            <div className="p-10 pb-7">
-                                <form onSubmit={handleAddProduct}>
-                                    <div className=" flex justify-between">
-                                        <label htmlFor="name">Product</label>
-                                        <label htmlFor="name">Quantity</label>
+                            <>
+                                {productIsEdit ? (
+                                    <div className="p-5">
+                                        <div className="p-5">
+                                            <input type="number" className="form-input" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+                                        </div>
+                                        <div className="flex justify-end gap-5">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedItems([]);
+                                                    setAddProductOpen(false);
+                                                }}
+                                                className="rounded border border-black bg-transparent px-4 py-2 font-semibold text-black hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => updateQuantity()}
+                                                className="rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-500 hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                            >
+                                                Update
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex gap-5">
-                                        <Select placeholder="Select an option" options={productList} value={selectedProduct} onChange={(val) => setSelectedProduct(val)} isSearchable={true} />
-
-                                        {/* <select id="user" className="form-select" value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
-                                            {productList?.map((items)=>
-                                            <option value={items.value}>={items.name}</option>
-                                            )}
-                                           
-                                        </select> */}
-                                        <input
-                                            type="number"
-                                            className="form-input w-20"
-                                            // placeholder="Quantity"
-                                            // defaultValue={item.quantity}
-                                            value={quantity}
-                                            onChange={(e: any) => setQuantity(e.target.value)}
-                                            min={0}
-                                            // onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
-                                        />
+                                ) : (
+                                    <div className="overflow-scroll p-5">
+                                        {productList.map(({ name, variants }) => (
+                                            <div key={name}>
+                                                <label>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="form-checkbox"
+                                                        checked={selectedItems[name] && Object.values(selectedItems[name])?.every((value) => value)}
+                                                        onChange={() => handleHeadingSelect(name)}
+                                                    />
+                                                    {name}
+                                                </label>
+                                                <ul>
+                                                    {variants?.map(({ name: variantName }) => (
+                                                        <li key={variantName} style={{ paddingLeft: '10px' }}>
+                                                            <label>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="form-checkbox"
+                                                                    checked={selectedItems[name]?.[variantName]}
+                                                                    onChange={() => handleSubHeadingSelect(name, variantName)}
+                                                                />
+                                                                {variantName}
+                                                            </label>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                        <div className="flex justify-end gap-5">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedItems([]);
+                                                    setAddProductOpen(false);
+                                                }}
+                                                className="rounded border border-black bg-transparent px-4 py-2 font-semibold text-black hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => addProducts()}
+                                                className="rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-500 hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                            >
+                                                Confirm
+                                            </button>
+                                        </div>
                                     </div>
-
-                                    <div className="mt-8 flex items-center justify-end">
-                                        <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setAddProductOpen(false)}>
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4">
-                                            {productIsEdit ? 'Update Product' : 'Add Product'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+                                )}
+                            </>
                         )}
                     />
 
                     <Modal
-                        edit={feeIsEdit}
-                        addHeader={'Add Fee'}
-                        updateHeader={'Update Fee'}
-                        open={feeOpen}
-                        close={() => setFeeOpen(false)}
-                        renderComponent={() => (
-                            <div className="p-5">
-                                <form onSubmit={feeIsEdit ? handleUpdateFee : handleAddFee}>
-                                    <div className="">
-                                        <div className="mb-3  bg-[#fbfbfb] text-sm  font-medium dark:bg-[#121c2c]">{'Enter a fixed amount or percentage to apply as a fee.'}</div>
-
-                                        <input
-                                            type="number"
-                                            className="form-input w-full"
-                                            // placeholder="Quantity"
-                                            // defaultValue={item.quantity}
-                                            value={feePrice}
-                                            onChange={(e: any) => setFeePrice(e.target.value)}
-                                            min={0}
-                                            // onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
-                                        />
-                                    </div>
-                                    <div className="mt-8 flex items-center justify-end">
-                                        <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setFeeOpen(false)}>
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4">
-                                            {feeIsEdit ? 'Update Fee' : 'Add Fee'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
-                    />
-
-                    <Modal
-                        edit={shippingIsEdit}
                         addHeader={'Add Shipping'}
-                        updateHeader={'Update Shipping'}
                         open={shippingOpen}
                         close={() => setShippingOpen(false)}
                         renderComponent={() => (
                             <div className="p-5">
-                                <form onSubmit={shippingIsEdit ? handleUpdateShipping : handleAddShipping}>
-                                    <div className="">
-                                        <div className="mb-3  bg-[#fbfbfb] text-sm  font-medium dark:bg-[#121c2c]">{'Enter a fixed amount or percentage to apply as a Shipping.'}</div>
+                                <div className="">
+                                    <div className="mb-3  bg-[#fbfbfb] text-sm  font-medium dark:bg-[#121c2c]">{'Enter a fixed amount or percentage to apply as a Shipping.'}</div>
 
-                                        <input
-                                            type="number"
-                                            className="form-input w-full"
-                                            // placeholder="Quantity"
-                                            // defaultValue={item.quantity}
-                                            value={shippingPrice}
-                                            onChange={(e: any) => setShippingPrice(e.target.value)}
-                                            min={0}
-                                            // onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
-                                        />
-                                    </div>
-                                    <div className="mt-8 flex items-center justify-end">
-                                        <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setShippingOpen(false)}>
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4">
-                                            {shippingIsEdit ? 'Update Shipping' : 'Add Shipping'}
-                                        </button>
-                                    </div>
-                                </form>
+                                    <input
+                                        type="number"
+                                        className="form-input w-full"
+                                        // placeholder="Quantity"
+                                        // defaultValue={item.quantity}
+                                        value={shippingPrice}
+                                        onChange={(e: any) => setShippingPrice(e.target.value)}
+                                        min={0}
+                                        // onChange={(e) => changeQuantityPrice('quantity', e.target.value, item.id)}
+                                    />
+                                </div>
+                                <div className="mt-8 flex items-center justify-end">
+                                    <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setShippingOpen(false)}>
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4" onClick={() => handleUpdateShipping()}>
+                                        Update Shipping
+                                    </button>
+                                </div>
                             </div>
                         )}
                     />
