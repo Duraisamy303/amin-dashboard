@@ -26,7 +26,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import IconEdit from '@/components/Icon/IconEdit';
 import { useMutation, useQuery } from '@apollo/client';
-import { DELETE_PRODUCTS, PRODUCT_LIST } from '@/query/product';
+import { DELETE_PRODUCTS, PRODUCT_LIST, PARENT_CATEGORY_LIST, CATEGORY_FILTER_LIST } from '@/query/product';
 import moment from 'moment';
 
 const ProductList = () => {
@@ -81,6 +81,7 @@ const ProductList = () => {
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [initialRecords, setInitialRecords] = useState([]);
     const [recordsData, setRecordsData] = useState(initialRecords);
+    const [parentLists, setParentLists] = useState([]);
 
     const [deleteProducts] = useMutation(DELETE_PRODUCTS);
 
@@ -91,6 +92,8 @@ const ProductList = () => {
         columnAccessor: 'id',
         direction: 'asc',
     });
+
+    const [selectedCategory, setSelectedCategory] = useState('');
 
     const [filterFormData, setFilterFormData] = useState({
         category: '',
@@ -139,6 +142,34 @@ const ProductList = () => {
         const data = sortBy(initialRecords, sortStatus.columnAccessor);
         setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
     }, [sortStatus]);
+
+    //    parent category list query
+    const {
+        data: parentList,
+        error: parentListError,
+        refetch,
+    } = useQuery(PARENT_CATEGORY_LIST, {
+        variables: { channel: 'india-channel' },
+    });
+
+    useEffect(() => {
+        console.log('parentList: ', parentList?.categories?.edges);
+        const getparentCategoryList = parentList?.categories?.edges;
+        setParentLists(getparentCategoryList);
+    }, []);
+
+    const {
+        data: FilterCategoryList,
+        error: FilterCategoryListError,
+        refetch: FilterCategoryListRefetch,
+    } = useQuery(CATEGORY_FILTER_LIST, {
+        variables: { channel: 'india-channel', first: 100, categoryId: selectedCategory },
+    });
+
+    const onFilterSubmit = (e: any) => {
+        e.preventDefault();
+        FilterCategoryListRefetch();
+    };
 
     // form submit
     const onSubmit = (record: any, { resetForm }: any) => {
@@ -203,8 +234,8 @@ const ProductList = () => {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
                 }
-                const productIds = selectedRecords?.map((item) => item.id);
-                const { data } = deleteProducts({
+                const productIds = selectedRecords?.map((item: any) => item.id);
+                const { data }: any = deleteProducts({
                     variables: {
                         ids: productIds,
                     },
@@ -224,7 +255,7 @@ const ProductList = () => {
         console.log('record: ', record);
         showDeleteAlert(
             () => {
-                const { data } = deleteProducts({
+                const { data }: any = deleteProducts({
                     variables: {
                         ids: [record.id],
                     },
@@ -245,19 +276,20 @@ const ProductList = () => {
     const CategoryChange = (selectedCategory: string) => {
         console.log('Selected Category:', selectedCategory);
         // Update the state with the selected category
-        setFilterFormData((prevState) => ({
-            ...prevState,
-            category: selectedCategory,
-        }));
+        setSelectedCategory(selectedCategory);
+        // setFilterFormData((prevState) => ({
+        //     ...prevState,
+        //     category: selectedCategory,
+        // }));
     };
 
     const StockStatusChange = (selectedStockStatus: string) => {
         console.log('Selected Stock Status:', selectedStockStatus);
         // Update the state with the selected stock status
-        setFilterFormData((prevState) => ({
-            ...prevState,
-            stock: selectedStockStatus,
-        }));
+        // setFilterFormData((prevState) => ({
+        //     ...prevState,
+        //     stock: selectedStockStatus,
+        // }));
     };
 
     const productTypeChange = (selectedProductType: string) => {
@@ -267,17 +299,6 @@ const ProductList = () => {
             ...prevState,
             productType: selectedProductType,
         }));
-    };
-
-    const onFilterSubmit = (e: any) => {
-        e.preventDefault();
-        console.log('filterFormData', filterFormData);
-
-        setFilterFormData({
-            category: '',
-            stock: '',
-            productType: '',
-        });
     };
 
     return (
@@ -326,9 +347,18 @@ const ProductList = () => {
                         <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 md:flex-row">
                             <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
                                 <option value="">Select a Categories </option>
-                                <option value="Anklets">Anklets</option>
-                                <option value="Earings">Earings</option>
-                                <option value="Palakka">Palakka</option>
+                                {parentLists?.map((item: any) => {
+                                    return (
+                                        <>
+                                            <option value={item?.node?.id}>{item.node?.name}</option>
+                                            {item?.node?.children?.edges.map((child: any) => (
+                                                <option key={child.id} value={child.node?.id} style={{ paddingLeft: '20px' }}>
+                                                    -- {child.node?.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    );
+                                })}
                             </select>
 
                             {/* New select dropdown for stock status */}

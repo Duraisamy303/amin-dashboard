@@ -69,9 +69,7 @@ const ProductEdit = (props: any) => {
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
 
-    const [value, setValue] = useState({
-      
-    });
+    const [value, setValue] = useState({});
 
     const [isMounted, setIsMounted] = useState(false); //tabs
     useEffect(() => {
@@ -210,6 +208,7 @@ const ProductEdit = (props: any) => {
     const [selectedValues, setSelectedValues] = useState<any>({});
     const [dropdowndata, setDropdownData] = useState<any>([]);
     const [dropIndex, setDropIndex] = useState<any>(null);
+    const [descriptionContent, setDescriptionContent] = useState<any>('');
 
     const [variants, setVariants] = useState([
         {
@@ -327,8 +326,8 @@ const ProductEdit = (props: any) => {
                     // console.log('Description --->', Description);
 
                     const Description = data.description;
-                    console.log('✌️Description --->', Description);
-
+                    setDescriptionContent(JSON.parse(Description));
+                    console.log('descriptionContent', descriptionContent);
                     // const desciption1 = {
                     //     time: Date.now(),
                     //     blocks: [
@@ -342,7 +341,6 @@ const ProductEdit = (props: any) => {
                     //     version: '2.19.0',
                     // };
 
-                   
                     setValue(Description);
 
                     const shortDesc = getValueByKey(data?.metadata, 'short_descripton');
@@ -439,9 +437,7 @@ const ProductEdit = (props: any) => {
                 editorInstance?.blocks?.clear();
             }
         };
-    }, [value, productDetails]);
-    
- 
+    }, [descriptionContent]);
 
     // const editorRef = useRef(null); // Define a ref to hold the editor instance
 
@@ -454,13 +450,15 @@ const ProductEdit = (props: any) => {
             return;
         }
 
-        console.log('value: ', value);
+        // console.log('value2: ', value2);
         // Dynamically import the EditorJS module
         import('@editorjs/editorjs').then(({ default: EditorJS }) => {
             // Create a new instance of EditorJS with the appropriate configuration
+
+            console.log("value: ", value);
             const editor = new EditorJS({
                 holder: editorRef.current,
-                data: value,
+                //   data: descriptionContent,
                 tools: {
                     // Configure tools as needed
                     header: {
@@ -486,7 +484,6 @@ const ProductEdit = (props: any) => {
             }
         };
     }, [editorInstance, value]);
-
     // editor end
 
     // const editor = () => {
@@ -676,17 +673,7 @@ const ProductEdit = (props: any) => {
         setImages(filter);
     };
 
-
-
-
     const updateProducts = async () => {
-        if (editorInstance) {
-            try {
-              const savedContent = await editorInstance.save();
-              console.log('Editor content:', savedContent);
-            
-
-
         setProductNameErrMsg('');
         setSlugErrMsg('');
         setSeoTittleErrMsg('');
@@ -731,58 +718,57 @@ const ProductEdit = (props: any) => {
         if (selectedCat == '') {
             setCategoryErrMsg('Category cannot be empty');
         }
+        if (editorInstance) {
+            try {
+                const savedContent = await editorInstance.save();
+                console.log('Editor content:', savedContent);
 
-        console.log('selectedCat: ', selectedCat);
- 
-      
-        console.log("value", value)
-        console.log('selectedCollection: ', selectedCollection);
-        let tagId = selectedTag?.map((item: any) => item.value) || [];
+                console.log('selectedCat: ', selectedCat);
 
-        console.log('valueDescription', value);
+                console.log('value', value);
+                console.log('selectedCollection: ', selectedCollection);
+                let tagId = selectedTag?.map((item: any) => item.value) || [];
 
+                console.log('valueDescription', value);
 
+                const formattedDescription = JSON.stringify(savedContent);
 
-        const formattedDescription = JSON.stringify(savedContent);
-
-
-        const { data } = await updateProduct({
-            variables: {
-                id: id,
-                input: {
-                    attributes: [],
-                    category: selectedCat?.value,
-                    collections: selectedCollection.map((item: any) => item.value),
-                    tags: tagId,
-                    description:formattedDescription ,
-                    name: productName,
-                    rating: 0,
-                    seo: {
-                        description: seoDesc,
-                        title: seoTittle,
+                const { data } = await updateProduct({
+                    variables: {
+                        id: id,
+                        input: {
+                            attributes: [],
+                            category: selectedCat?.value,
+                            collections: selectedCollection.map((item: any) => item.value),
+                            tags: tagId,
+                            description: formattedDescription,
+                            name: productName,
+                            rating: 0,
+                            seo: {
+                                description: seoDesc,
+                                title: seoTittle,
+                            },
+                            slug: slug,
+                            ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                            ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
+                            ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
+                            ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
+                            ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
+                        },
+                        firstValues: 10,
                     },
-                    slug: slug,
-                    ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                    ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
-                    ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
-                    ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
-                    ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
-                },
-                firstValues: 10,
-            },
-        });
+                });
 
-        if (data?.productUpdate?.errors?.length > 0) {
-            console.log('Error updating product');
-        } else {
-            productChannelListUpdate();
-            console.log('Product update successful:', data);
+                if (data?.productUpdate?.errors?.length > 0) {
+                    console.log('Error updating product');
+                } else {
+                    productChannelListUpdate();
+                    console.log('Product update successful:', data);
+                }
+            } catch (error) {
+                console.error('Failed to save editor content:', error);
+            }
         }
-
-    } catch (error) {
-        console.error('Failed to save editor content:', error);
-      }
-    }
     };
 
     const productChannelListUpdate = async () => {
@@ -971,7 +957,7 @@ const ProductEdit = (props: any) => {
             } else {
                 console.log('success: ', data);
                 console.log('selectedTag: ', selectedTag);
-
+                productsDetails()
                 // assignsTagToProduct();
             }
         } catch (error) {
@@ -1182,9 +1168,10 @@ const ProductEdit = (props: any) => {
                                 Product description
                             </label>
                             <div ref={editorRef} className="mb-5 border border-gray-200"></div>
+                              <div dangerouslySetInnerHTML={{ __html: descriptionContent?.blocks?.map((block: any) => block.data.html).join('') }} />
+
                             {/* {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>} */}
                             {/* <p>Editor content: {content}</p> */}
-                           
                         </div>
 
                         <div className="panel mb-5">

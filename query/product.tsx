@@ -110,15 +110,63 @@ export const CATEGORY_LIST = gql`
 `;
 
 export const CREATE_CATEGORY = gql`
-    mutation CategoryCreate($input: CategoryInput!) {
-        categoryCreate(input: $input) {
+    mutation CategoryCreate($parent: ID, $input: CategoryInput!) {
+        categoryCreate(parent: $parent, input: $input) {
             category {
-                id
-                name
-                description
-                slug
+                ...CategoryDetails
+                __typename
             }
+            errors {
+                ...ProductError
+                __typename
+            }
+            __typename
         }
+    }
+
+    fragment CategoryDetails on Category {
+        id
+        ...Metadata
+        backgroundImage {
+            alt
+            url
+            __typename
+        }
+        name
+        slug
+        description
+        seoDescription
+        seoTitle
+        parent {
+            id
+            __typename
+        }
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
+        __typename
     }
 `;
 
@@ -4347,149 +4395,147 @@ export const DELETE_LINE = gql`
     }
 `;
 
-
 export const UPDATE_LINE = gql`
-mutation OrderLineUpdate($id: ID!, $input: OrderLineInput!) {
-    orderLineUpdate(id: $id, input: $input) {
-      errors {
-        ...OrderError
-        __typename
-      }
-      orderLine {
-        ...OrderLine
-        __typename
-      }
-      __typename
+    mutation OrderLineUpdate($id: ID!, $input: OrderLineInput!) {
+        orderLineUpdate(id: $id, input: $input) {
+            errors {
+                ...OrderError
+                __typename
+            }
+            orderLine {
+                ...OrderLine
+                __typename
+            }
+            __typename
+        }
     }
-  }
-  
-  fragment OrderError on OrderError {
-    code
-    field
-    addressType
-    message
-    orderLines
-    __typename
-  }
-  
-  fragment OrderLine on OrderLine {
-    id
-    isShippingRequired
-    allocations {
-      id
-      quantity
-      warehouse {
+
+    fragment OrderError on OrderError {
+        code
+        field
+        addressType
+        message
+        orderLines
+        __typename
+    }
+
+    fragment OrderLine on OrderLine {
+        id
+        isShippingRequired
+        allocations {
+            id
+            quantity
+            warehouse {
+                id
+                name
+                __typename
+            }
+            __typename
+        }
+        variant {
+            id
+            name
+            quantityAvailable
+            preorder {
+                endDate
+                __typename
+            }
+            stocks {
+                ...Stock
+                __typename
+            }
+            product {
+                id
+                isAvailableForPurchase
+                __typename
+            }
+            __typename
+        }
+        productName
+        productSku
+        quantity
+        quantityFulfilled
+        quantityToFulfill
+        totalPrice {
+            ...TaxedMoney
+            __typename
+        }
+        unitDiscount {
+            amount
+            currency
+            __typename
+        }
+        unitDiscountValue
+        unitDiscountReason
+        unitDiscountType
+        undiscountedUnitPrice {
+            currency
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        unitPrice {
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        thumbnail {
+            url
+            __typename
+        }
+        __typename
+    }
+
+    fragment Stock on Stock {
+        id
+        quantity
+        quantityAllocated
+        warehouse {
+            ...Warehouse
+            __typename
+        }
+        __typename
+    }
+
+    fragment Warehouse on Warehouse {
         id
         name
         __typename
-      }
-      __typename
     }
-    variant {
-      id
-      name
-      quantityAvailable
-      preorder {
-        endDate
+
+    fragment TaxedMoney on TaxedMoney {
+        net {
+            ...Money
+            __typename
+        }
+        gross {
+            ...Money
+            __typename
+        }
         __typename
-      }
-      stocks {
-        ...Stock
-        __typename
-      }
-      product {
-        id
-        isAvailableForPurchase
-        __typename
-      }
-      __typename
     }
-    productName
-    productSku
-    quantity
-    quantityFulfilled
-    quantityToFulfill
-    totalPrice {
-      ...TaxedMoney
-      __typename
-    }
-    unitDiscount {
-      amount
-      currency
-      __typename
-    }
-    unitDiscountValue
-    unitDiscountReason
-    unitDiscountType
-    undiscountedUnitPrice {
-      currency
-      gross {
+
+    fragment Money on Money {
         amount
         currency
         __typename
-      }
-      net {
-        amount
-        currency
-        __typename
-      }
-      __typename
     }
-    unitPrice {
-      gross {
-        amount
-        currency
-        __typename
-      }
-      net {
-        amount
-        currency
-        __typename
-      }
-      __typename
-    }
-    thumbnail {
-      url
-      __typename
-    }
-    __typename
-  }
-  
-  fragment Stock on Stock {
-    id
-    quantity
-    quantityAllocated
-    warehouse {
-      ...Warehouse
-      __typename
-    }
-    __typename
-  }
-  
-  fragment Warehouse on Warehouse {
-    id
-    name
-    __typename
-  }
-  
-  fragment TaxedMoney on TaxedMoney {
-    net {
-      ...Money
-      __typename
-    }
-    gross {
-      ...Money
-      __typename
-    }
-    __typename
-  }
-  
-  fragment Money on Money {
-    amount
-    currency
-    __typename
-  }
-  
 `;
 
 export const CREATE_DRAFT_ORDER = gql`
@@ -4515,4 +4561,114 @@ export const CREATE_DRAFT_ORDER = gql`
         orderLines
         __typename
     }
+`;
+
+export const PARENT_CATEGORY_LIST = gql`
+    query MyQuery {
+        categories(level: 0, first: 100) {
+            edges {
+                node {
+                    id
+                    name
+                    description
+                    children(first: 100) {
+                        edges {
+                            node {
+                                id
+                                name
+                                description
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`;
+
+export const CATEGORY_FILTER_LIST = gql`
+query ProductListPaginated($channel: String!, $first: Int!, $after: String,$categoryId:[ID!]!) {
+    products(
+      filter: {categories: $categoryId}
+      first: $first
+      after: $after
+      channel: $channel
+      
+    ) {
+      totalCount
+      edges {
+        node {
+          ...ProductListItem
+          __typename
+        }
+        cursor
+        __typename
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        __typename
+      }
+      __typename
+    }
+  }
+  
+  fragment ProductListItem on Product {
+    id
+    name
+    slug
+    pricing {
+      priceRange {
+        start {
+          gross {
+            amount
+            currency
+            __typename
+          }
+          __typename
+        }
+        stop {
+          gross {
+            amount
+            currency
+            __typename
+          }
+          __typename
+        }
+        __typename
+      }
+      discount {
+        currency
+        __typename
+      }
+      __typename
+    }
+    category {
+      id
+      name
+      __typename
+    }
+    thumbnail(size: 1024, format: WEBP) {
+      url
+      alt
+      __typename
+    }
+    variants {
+      id
+      __typename
+    }
+    images {
+      url
+      __typename
+    }
+    description
+    updatedAt
+    channelListings {
+      publishedAt
+      __typename
+    }
+    __typename
+  }
 `;

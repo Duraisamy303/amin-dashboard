@@ -24,6 +24,7 @@ import IconEye from '@/components/Icon/IconEye';
 import { useMutation, useQuery } from '@apollo/client';
 import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY } from '@/query/product';
 import ReactQuill from 'react-quill';
+import { PARENT_CATEGORY_LIST } from '@/query/product';
 
 const Category = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -39,6 +40,7 @@ const Category = () => {
 
     const [categoryList, setCategoryList] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [parentLists, setParentLists] = useState([]);
 
     useEffect(() => {
         getCategoryList();
@@ -99,16 +101,32 @@ const Category = () => {
 
     // const [viewModal, setViewModal] = useState(false);
 
+    //    parent category list query
+    const {
+        data: parentList,
+        error: parentListError,
+        refetch,
+    } = useQuery(PARENT_CATEGORY_LIST, {
+        variables: { channel: 'india-channel' },
+    });
+    useEffect(() => {
+        console.log('parentList: ', parentList?.categories?.edges);
+        const getparentCategoryList = parentList?.categories?.edges;
+        setParentLists(getparentCategoryList);
+    });
+
     //Mutation
     const [addCategory] = useMutation(CREATE_CATEGORY);
     const [updateCategory] = useMutation(UPDATE_CATEGORY);
     const [deleteCategory] = useMutation(DELETE_CATEGORY);
     const [bulkDelete] = useMutation(DELETE_CATEGORY);
 
-    console.log('categoryList: ', categoryList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
+
+  
+
 
     useEffect(() => {
         const from = (page - 1) * pageSize;
@@ -119,7 +137,6 @@ const Category = () => {
     useEffect(() => {
         setInitialRecords(() => {
             return categoryList.filter((item: any) => {
-                console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -144,7 +161,7 @@ const Category = () => {
         // slug: Yup.string().required('Please fill the Slug'),
         // count: Yup.string().required('Please fill the count'),
         // image: Yup.string().required('Please fill the Image'),
-        // parentCategory: Yup.string().required('Please fill the Parent Category'),
+        parentCategory: Yup.string().required('Please fill the Parent Category'),
     });
 
     // form submit
@@ -159,7 +176,9 @@ const Category = () => {
                     name: record.name,
                     description: Description,
                 },
+                parent: record.parentCategory,
             };
+            console.log('variables: ', variables);
 
             const { data } = await (modalTitle ? updateCategory({ variables: { ...variables, id: modalContant.id } }) : addCategory({ variables }));
             console.log('data: ', data);
@@ -180,7 +199,7 @@ const Category = () => {
                 ...newData,
                 textdescription: textValue || '',
             };
-            console.log("finalData", finalData)
+            console.log('finalData', finalData);
 
             const updatedId = finalData.id;
             const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
@@ -191,7 +210,7 @@ const Category = () => {
             } else {
                 updatedDesignList.push(finalData);
             }
-console.log("updatedDesignList", updatedDesignList)
+            console.log('updatedDesignList', updatedDesignList);
             // setCategoryList(updatedDesignList);
             setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
@@ -215,6 +234,7 @@ console.log("updatedDesignList", updatedDesignList)
 
     // category table edit
     const EditCategory = (record: any) => {
+console.log('✌️record --->', record);
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
@@ -262,7 +282,6 @@ console.log("updatedDesignList", updatedDesignList)
                 }
             });
     };
-    console.log('mordelContentt', modalContant);
 
     const BulkDeleteCategory = async () => {
         showDeleteAlert(
@@ -312,7 +331,6 @@ console.log("updatedDesignList", updatedDesignList)
     //     textValue = jsonObject?.blocks[0]?.data?.text;
     //   }
 
-    console.log('recordsData', recordsData);
     return (
         <div>
             <div className="panel mt-6">
@@ -443,14 +461,14 @@ console.log("updatedDesignList", updatedDesignList)
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', textdescription: '' }
+                                                    ? { name: '', textdescription: '', parentCategory: '' }
                                                     : {
                                                           name: modalContant?.name,
                                                           description: modalContant?.textdescription,
 
                                                           //   count: modalContant?.count,
                                                           //   image: modalContant?.image,
-                                                          //   parentCategory: modalContant?.name,
+                                                          parentCategory: modalContant?.parent?.id,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
@@ -524,13 +542,27 @@ console.log("updatedDesignList", updatedDesignList)
                                                         {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div> */}
 
-                                                    {/* <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
+                                                    <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="parentCategory">Parent Category</label>
                                                         <Field as="select" name="parentCategory" className="form-select">
                                                             <option value="">Open this select menu</option>
+                                                            {parentLists.map((item: any) => {
+                                                                return (
+                                                                    <>
+                                                                        <option value={item?.node?.id}>{item.node?.name}</option>
+                                                                        {item?.node?.children?.edges.map((child: any) => (
+                                                                            <option key={child.id} value={child.node?.id} style={{ paddingLeft: '20px' }}>
+                                                                                -- {child.node?.name}
+                                                                            </option>
+                                                                        ))}
+                                                                    </>
+                                                                );
+                                                            })}
+
+                                                            {/* <option value="">Open this select menu</option>
                                                             <option value="Anklets">Anklets</option>
                                                             <option value="BlackThread">__Black Thread</option>
-                                                            <option value="Kada">__Kada</option>
+                                                            <option value="Kada">__Kada</option> */}
                                                         </Field>
                                                         {submitCount ? (
                                                             errors.parentCategory ? (
@@ -541,7 +573,7 @@ console.log("updatedDesignList", updatedDesignList)
                                                         ) : (
                                                             ''
                                                         )}
-                                                    </div> */}
+                                                    </div>
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
                                                         {modalTitle === null ? 'Submit' : 'Update'}

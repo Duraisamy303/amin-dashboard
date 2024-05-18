@@ -80,6 +80,7 @@ const Sidebar = () => {
 
     const dispatch = useDispatch();
     const { t } = useTranslation();
+    const [menuOpen, setMenuOpen] = useState(false);
 
     return (
         <div className={semidark ? 'dark' : ''}>
@@ -149,9 +150,9 @@ const Sidebar = () => {
                                     </li> */}
 
                                     <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'product' ? 'active' : ''} nav-link group w-full`}>
+                                        <button type="button" className={`${currentMenu === 'product' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('product')}>
                                             <div className="flex items-center">
-                                                <Link href="/product/product" className="flex items-center">
+                                                <Link href="#" className="flex items-center">
                                                     <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
                                                     <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
                                                 </Link>
@@ -165,30 +166,47 @@ const Sidebar = () => {
                                         <AnimateHeight duration={300} height={currentMenu === 'product' ? 'auto' : 0}>
                                             <ul className="sub-menu text-gray-500">
                                                 <li>
+                                                    <Link href="/product/product">{t('All Product')}</Link>
+                                                </li>
+                                                <li>
+                                                    <Link href="/apps/product/add">{t('Add New')}</Link>
+                                                </li>
+                                                <li>
                                                     <Link href="/product/category">{t('Category')}</Link>
                                                 </li>
-                                                <li>
-                                                    <Link href="/product/attributes">{t('Attributes')}</Link>
-                                                </li>
-
-                                                <li>
-                                                    <Link href="/product/finish">{t('Finish')}</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/product/style">{t('Style')}</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/product/design">{t('Designs')}</Link>
-                                                </li>
-                                                <li>
-                                                    <Link href="/product/stone">{t('Stone type')}</Link>
-                                                </li>
-
                                                 <li>
                                                     <Link href="/product/tags">{t('Tags')}</Link>
                                                 </li>
                                                 <li>
-                                                    <Link href="/product/wishlist">{t('Wishlist')}</Link>
+                                                    <button type="button" onClick={() => setMenuOpen(!menuOpen)}>
+                                                        <div className="flex items-center">
+                                                            {/* <IconMenuDashboard className="shrink-0 group-hover:!text-primary" /> */}
+                                                            <span className="pr-5 text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Attributes')}</span>
+                                                        </div>
+
+                                                        <div className={menuOpen !== true ? '-rotate-90 rtl:rotate-90' : ''}>
+                                                            <IconCaretDown />
+                                                        </div>
+                                                    </button>
+                                                    {/* <Link href="#" onClick={() => setMenuOpen(!menuOpen)}>
+                                                        {t('Attributes')}
+                                                    </Link> */}
+                                                    {menuOpen && (
+                                                        <ul>
+                                                            <li>
+                                                                <Link href="/product/finish">{t('Finish')}</Link>
+                                                            </li>
+                                                            <li>
+                                                                <Link href="/product/style">{t('Style')}</Link>
+                                                            </li>
+                                                            <li>
+                                                                <Link href="/product/design">{t('Designs')}</Link>
+                                                            </li>
+                                                            <li>
+                                                                <Link href="/product/stone">{t('Stone type')}</Link>
+                                                            </li>
+                                                        </ul>
+                                                    )}
                                                 </li>
                                             </ul>
                                         </AnimateHeight>
