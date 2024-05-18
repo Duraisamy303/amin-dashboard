@@ -147,16 +147,18 @@ const ProductList = () => {
     const {
         data: parentList,
         error: parentListError,
-        refetch,
+        refetch: parentListRefetch,
     } = useQuery(PARENT_CATEGORY_LIST, {
         variables: { channel: 'india-channel' },
     });
-
-    useEffect(() => {
-        console.log('parentList: ', parentList?.categories?.edges);
+    const GetcategoryFilterData = () => {
         const getparentCategoryList = parentList?.categories?.edges;
         setParentLists(getparentCategoryList);
-    }, []);
+    };
+
+    useEffect(() => {
+        GetcategoryFilterData();
+    }, [parentList]);
 
     const {
         data: FilterCategoryList,
@@ -166,9 +168,51 @@ const ProductList = () => {
         variables: { channel: 'india-channel', first: 100, categoryId: selectedCategory },
     });
 
-    const onFilterSubmit = (e: any) => {
+    const CategoryFilterList = () => {
+        console.log('FilterCategoryList', FilterCategoryList);
+        // const getFilterCategoryList = FilterCategoryList?.products?.edges;
+        // console.log('✌️getFilterCategoryList --->', getFilterCategoryList);
+        // setRecordsData(getFilterCategoryList);
+
+        setLoading(true);
+
+        if (FilterCategoryList) {
+            if (FilterCategoryList && FilterCategoryList.products && FilterCategoryList.products.edges?.length > 0) {
+                const newData = FilterCategoryList?.products?.edges.map((item: any) => ({
+                    ...item.node,
+                    product: item?.node?.products?.totalCount,
+                    image: item?.node?.thumbnail?.url,
+                    categories: item?.node?.category?.name,
+                    date: item?.node?.updatedAt
+                        ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
+                        : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
+                    price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                }));
+                // const sorting: any = sortBy(newData, 'id');
+                setProductList(newData);
+                setLoading(false);
+
+                // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+            } else if (FilterCategoryList && FilterCategoryList.products && FilterCategoryList.products.edges?.length === 0) {
+                setProductList([]);
+            } else {
+                setLoading(false);
+            }
+        } else {
+            setLoading(false);
+        }
+    };
+
+    const onFilterSubmit = async (e: any) => {
         e.preventDefault();
-        FilterCategoryListRefetch();
+        if (selectedCategory !== '') {
+            await FilterCategoryListRefetch();
+            CategoryFilterList();
+        } else {
+            getProductList();
+        }
+
+        console.log('productListproductList', productList);
     };
 
     // form submit
@@ -304,14 +348,16 @@ const ProductList = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
-                    <button type="button" className="btn btn-outline-primary">
-                        Import
-                    </button>
-                    <button type="button" className="btn btn-outline-primary">
-                        Export
-                    </button>
+                <div className="mb-5 flex flex-col gap-5 lg:flex-row lg:items-center">
+                    <div className="flex items-center gap-2">
+                        <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
+                        <button type="button" className="btn btn-outline-primary">
+                            Import
+                        </button>
+                        <button type="button" className="btn btn-outline-primary">
+                            Export
+                        </button>
+                    </div>
                     <div className="flex ltr:ml-auto rtl:mr-auto">
                         <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                         <div className="dropdown  mr-2 ">
@@ -387,6 +433,7 @@ const ProductList = () => {
                             // { accessor: 'id', sortable: true },
                             { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                             { accessor: 'name', sortable: true },
+
                             // { accessor: 'sku', sortable: true },
                             // { accessor: 'stock', sortable: true },
                             { accessor: 'price', sortable: true },

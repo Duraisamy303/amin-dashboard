@@ -455,10 +455,11 @@ const ProductEdit = (props: any) => {
         import('@editorjs/editorjs').then(({ default: EditorJS }) => {
             // Create a new instance of EditorJS with the appropriate configuration
 
-            console.log("value: ", value);
             const editor = new EditorJS({
                 holder: editorRef.current,
-                //   data: descriptionContent,
+            //  data: {
+            //         blocks: descriptionContent || [],
+            //     },
                 tools: {
                     // Configure tools as needed
                     header: {
@@ -472,7 +473,6 @@ const ProductEdit = (props: any) => {
                     },
                 },
             });
-
             // Set the editorInstance state variable
             setEditorInstance(editor);
         });
@@ -483,7 +483,7 @@ const ProductEdit = (props: any) => {
                 editorInstance?.blocks?.clear();
             }
         };
-    }, [editorInstance, value]);
+    }, [editorInstance, descriptionContent]);
     // editor end
 
     // const editor = () => {
@@ -725,13 +725,12 @@ const ProductEdit = (props: any) => {
 
                 console.log('selectedCat: ', selectedCat);
 
-                console.log('value', value);
                 console.log('selectedCollection: ', selectedCollection);
                 let tagId = selectedTag?.map((item: any) => item.value) || [];
 
-                console.log('valueDescription', value);
 
                 const formattedDescription = JSON.stringify(savedContent);
+console.log('✌️formattedDescription --->', formattedDescription);
 
                 const { data } = await updateProduct({
                     variables: {
@@ -1168,10 +1167,8 @@ const ProductEdit = (props: any) => {
                                 Product description
                             </label>
                             <div ref={editorRef} className="mb-5 border border-gray-200"></div>
-                              <div dangerouslySetInnerHTML={{ __html: descriptionContent?.blocks?.map((block: any) => block.data.html).join('') }} />
 
-                            {/* {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>} */}
-                            {/* <p>Editor content: {content}</p> */}
+                        
                         </div>
 
                         <div className="panel mb-5">
