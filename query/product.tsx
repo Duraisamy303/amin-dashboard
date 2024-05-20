@@ -93,20 +93,28 @@ export const DELETE_PRODUCT = gql`
 `;
 
 export const CATEGORY_LIST = gql`
-    query CategoryList($first: Int!, $after: String, $channel: String!) {
-        categories(first: $first, after: $after) {
-            edges {
-                node {
-                    id
-                    name
-                    description
-                    products(channel: $channel) {
-                        totalCount
-                    }
-                }
-            }
+query CategoryList($first: Int!, $after: String, $channel: String!) {
+    categories(first: $first, after: $after) {
+      edges {
+        node {
+          id
+          name
+          description
+          products(channel: $channel) {
+            totalCount
+            __typename
+          }
+          __typename
+          parent {
+            id
+            name
+          }
         }
+        __typename
+      }
+      __typename
     }
+  }
 `;
 
 export const CREATE_CATEGORY = gql`

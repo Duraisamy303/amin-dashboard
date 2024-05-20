@@ -34,7 +34,7 @@ const Category = () => {
         dispatch(setPageTitle('Checkbox Table'));
     });
 
-    const { error, data: categoryData } = useQuery(CATEGORY_LIST, {
+    const { error, data: categoryData, refetch: categoryListRefetch } = useQuery(CATEGORY_LIST, {
         variables: { channel: 'india-channel', first: 100 },
     });
 
@@ -50,14 +50,14 @@ const Category = () => {
         setLoading(true);
         if (categoryData) {
             if (categoryData.categories && categoryData.categories.edges) {
-                const newData = categoryData.categories.edges.map((item) => {
+                const newData = categoryData.categories.edges.map((item: any) => {
                     const jsonObject = JSON.parse(item.node.description || item.node.description);
                     // Extract the text value
                     const textValue = jsonObject?.blocks[0]?.data?.text;
 
                     return {
                         ...item.node,
-
+                        parent: item.node.parent?.name || '',
                         product: item.node.products?.totalCount,
                         textdescription: textValue || '', // Set textValue or empty string if it doesn't exist
                     };
@@ -179,37 +179,40 @@ const Category = () => {
 
             const { data } = await (modalTitle ? updateCategory({ variables: { ...variables, id: modalContant.id } }) : addCategory({ variables }));
             console.log('data: ', data);
+            categoryListRefetch()
+            // const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
+            // console.log('newData: ', newData);
+            // if (!newData) {
+            //     console.error('Error: New data is undefined.');
+            //     return;
+            // }
 
-            const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
-            console.log('newData: ', newData);
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
+            // const jsonObject = JSON.parse(newData.description || newData.description);
+            // // Extract the text value
+            // const textValue = jsonObject?.blocks[0]?.data?.text;
+            // console.log('✌️textValue --->', textValue);
 
-            const jsonObject = JSON.parse(newData.description || newData.description);
-            // Extract the text value
-            const textValue = jsonObject?.blocks[0]?.data?.text;
-            console.log('✌️textValue --->', textValue);
+            // const finalData = {
+            //     ...newData,
+            //     textdescription: textValue || '',
+            // };
+            // console.log('finalData', finalData);
 
-            const finalData = {
-                ...newData,
-                textdescription: textValue || '',
-            };
-            console.log('finalData', finalData);
+            // const updatedId = finalData.id;
+            // const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
-            const updatedId = finalData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
+            // const updatedDesignList: any = [...recordsData];
+            // if (index !== -1) {
+            //     updatedDesignList[index] = finalData;
+            // } else {
+            //     updatedDesignList.push(finalData);
+            // }
+            // console.log('updatedDesignList', updatedDesignList);
+            // // setCategoryList(updatedDesignList);
+            // setRecordsData(updatedDesignList);
 
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = finalData;
-            } else {
-                updatedDesignList.push(finalData);
-            }
-            console.log('updatedDesignList', updatedDesignList);
-            // setCategoryList(updatedDesignList);
-            setRecordsData(updatedDesignList);
+            // getCategoryList();
+
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -331,12 +334,12 @@ const Category = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 md:flex flex-col gap-5 md:flex-row md:items-center">
+                <div className="mb-5 flex-col gap-5 md:flex md:flex-row md:items-center">
                     <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
 
-                    <div className="md:flex md:ltr:ml-auto md:rtl:mr-auto  md:mt-0 mt-5">
-                        <input type="text" className="form-input mr-2 md:w-auto w-full mb-3 md:mb-0" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  md:mr-2 mr-0  mb-3 md:mb-0">
+                    <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
+                        <input type="text" className="form-input mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown  mb-3 mr-0  md:mb-0 md:mr-2">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="btn btn-outline-primary dropdown-toggle lg:w-auto w-full"
@@ -358,7 +361,7 @@ const Category = () => {
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary md:w-auto w-full md:mb-0" onClick={() => CreateCategory()}>
+                        <button type="button" className="btn btn-primary w-full md:mb-0 md:w-auto" onClick={() => CreateCategory()}>
                             + Create
                         </button>
                     </div>
@@ -378,6 +381,10 @@ const Category = () => {
                                     accessor: 'textdescription',
                                     sortable: true,
                                     title: 'Description',
+                                },
+                                {
+                                    accessor: 'parent',
+                                    sortable: true,
                                 },
                                 {
                                     accessor: 'product',
