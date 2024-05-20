@@ -348,7 +348,7 @@ const ProductList = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 flex flex-col gap-5 lg:flex-row lg:items-center">
+                <div className="lg:mb-5 mb-10 flex flex-col gap-5 lg:flex-row lg:items-center">
                     <div className="flex items-center gap-2">
                         <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
                         <button type="button" className="btn btn-outline-primary">
@@ -358,12 +358,12 @@ const ProductList = () => {
                             Export
                         </button>
                     </div>
-                    <div className="flex ltr:ml-auto rtl:mr-auto">
-                        <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  mr-2 ">
+                    <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
+                        <input type="text" className="form-input  mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown mb-3 mr-0  md:mb-0 md:mr-2">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                btnClassName="btn btn-outline-primary dropdown-toggle  lg:w-auto w-full"
                                 button={
                                     <>
                                         Bulk Actions
@@ -382,7 +382,7 @@ const ProductList = () => {
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateProduct()}>
+                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateProduct()}>
                             + Create
                         </button>
                     </div>
@@ -418,7 +418,7 @@ const ProductList = () => {
                                 <option value="sample-product">Simple Product</option>
                                 <option value="variable-product">Variable Product</option>
                             </select>
-                            <button type="submit" className="btn btn-primary py-2.5">
+                            <button type="submit" className="btn btn-primary py-2.5 md:w-auto w-full">
                                 Filter
                             </button>
                         </div>

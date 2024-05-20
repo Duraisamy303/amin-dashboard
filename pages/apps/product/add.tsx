@@ -132,8 +132,8 @@ const ProductAdd = () => {
 
 // editor start
 
-const editorRef = useRef(null);
-const [editorInstance, setEditorInstance] = useState(null);
+const editorRef:any = useRef(null);
+const [editorInstance, setEditorInstance] = useState<any>(null);
 const [content, setContent] = useState('');
 
 // const [value2, setValue2] = useState<any>({
@@ -344,7 +344,7 @@ if (editorInstance) {
 
     const [categoryList, setCategoryList] = useState([]);
     const [collectionList, setCollectionList] = useState([]);
-    const [label, setLabel] = useState('');
+    const [label, setLabel] = useState<any>('');
 
     const [productType, setProductType] = useState([]);
     const [selectedCat, setselectedCat] = useState<any>('');
@@ -763,7 +763,7 @@ if (editorInstance) {
                 </div>
 
                 <div className="grid grid-cols-12 gap-4">
-                    <div className=" col-span-9">
+                    <div className=" md:col-span-9 col-span-12">
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 Product Name
@@ -1198,7 +1198,7 @@ if (editorInstance) {
                                                                 type="number"
                                                                 style={{ width: '350px' }}
                                                                 value={menuOrder}
-                                                                onChange={(e) => setMenuOrder(e.target.value)}
+                                                                onChange={(e:any) => setMenuOrder(e.target.value)}
                                                                 placeholder="Enter Menu Order"
                                                                 name="regularPrice"
                                                                 className="form-input"
@@ -1287,8 +1287,8 @@ if (editorInstance) {
                             </div>
                         </div> */}
                     </div>
-                    <div className="col-span-3">
-                        <div className="panel">
+                    <div className="md:col-span-3 col-span-12">
+                        <div className="panel md:order-1 order-4">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Publish</h5>
                             </div>
@@ -1435,7 +1435,7 @@ if (editorInstance) {
                             <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
                         </div> */}
 
-                        <div className="panel mt-5">
+                        <div className="panel mt-5 md:order-2 order-2">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Gallery</h5>
                             </div>
@@ -1463,7 +1463,7 @@ if (editorInstance) {
                             </button> */}
                         </div>
 
-                        <div className="panel mt-5">
+                        <div className="panel mt-5  md:order-3 order-4">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Categories</h5>
                             </div>
@@ -1564,7 +1564,7 @@ if (editorInstance) {
                             )} */}
                         </div>
 
-                        <div className="panel mt-5">
+                        <div className="panel mt-5  md:order-4 order-1">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Tags</h5>
                             </div>
