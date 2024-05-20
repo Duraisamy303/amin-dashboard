@@ -125,9 +125,6 @@ const Category = () => {
         setPage(1);
     }, [pageSize]);
 
-  
-
-
     useEffect(() => {
         const from = (page - 1) * pageSize;
         const to = from + pageSize;
@@ -156,12 +153,12 @@ const Category = () => {
 
     // FORM VALIDATION
     const SubmittedForm = Yup.object().shape({
-        name: Yup.string().required('Please fill the Name'),
+        name: Yup.string().required('Please fill the Category Name'),
         // description: Yup.string().required('Please fill the Description'),
         // slug: Yup.string().required('Please fill the Slug'),
         // count: Yup.string().required('Please fill the count'),
         // image: Yup.string().required('Please fill the Image'),
-        parentCategory: Yup.string().required('Please fill the Parent Category'),
+        // parentCategory: Yup.string().required('Please fill the Parent Category'),
     });
 
     // form submit
@@ -234,7 +231,7 @@ const Category = () => {
 
     // category table edit
     const EditCategory = (record: any) => {
-console.log('✌️record --->', record);
+        console.log('✌️record --->', record);
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
@@ -334,15 +331,15 @@ console.log('✌️record --->', record);
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
+                <div className="mb-5 md:flex flex-col gap-5 md:flex-row md:items-center">
                     <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
 
-                    <div className="flex ltr:ml-auto rtl:mr-auto">
-                        <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  mr-2 ">
+                    <div className="md:flex md:ltr:ml-auto md:rtl:mr-auto  md:mt-0 mt-5">
+                        <input type="text" className="form-input mr-2 md:w-auto w-full mb-3 md:mb-0" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown  md:mr-2 mr-0  mb-3 md:mb-0">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                btnClassName="btn btn-outline-primary dropdown-toggle lg:w-auto w-full"
                                 button={
                                     <>
                                         Bulk Actions
@@ -361,7 +358,7 @@ console.log('✌️record --->', record);
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateCategory()}>
+                        <button type="button" className="btn btn-primary md:w-auto w-full md:mb-0" onClick={() => CreateCategory()}>
                             + Create
                         </button>
                     </div>
@@ -545,7 +542,7 @@ console.log('✌️record --->', record);
                                                     <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="parentCategory">Parent Category</label>
                                                         <Field as="select" name="parentCategory" className="form-select">
-                                                            <option value="">Open this select menu</option>
+                                                            <option value="">Open this select</option>
                                                             {parentLists.map((item: any) => {
                                                                 return (
                                                                     <>
@@ -564,7 +561,7 @@ console.log('✌️record --->', record);
                                                             <option value="BlackThread">__Black Thread</option>
                                                             <option value="Kada">__Kada</option> */}
                                                         </Field>
-                                                        {submitCount ? (
+                                                        {/* {submitCount ? (
                                                             errors.parentCategory ? (
                                                                 <div className=" mt-1 text-danger">{errors.parentCategory}</div>
                                                             ) : (
@@ -572,7 +569,7 @@ console.log('✌️record --->', record);
                                                             )
                                                         ) : (
                                                             ''
-                                                        )}
+                                                        )} */}
                                                     </div>
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
