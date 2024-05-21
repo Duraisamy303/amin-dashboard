@@ -1,19 +1,38 @@
 import React, { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery } from '@apollo/client';
-import { COUNTRY_LIST, CREATE_NOTES, CUSTOMER_LIST, DELETE_NOTES, GET_ORDER_DETAILS, ORDER_DISCOUNT_UPDATE, SHIPPING_COST_UPDATE, SHIPPING_LIST, STATES_LIST } from '@/query/product';
+import {
+    COUNTRY_LIST,
+    CREATE_DRAFT_ORDER,
+    CREATE_NOTES,
+    CUSTOMER_LIST,
+    DELETE_LINE,
+    DELETE_NOTES,
+    FULLFILL_ORDERS,
+    GET_ORDER_DETAILS,
+    MARK_US_PAID,
+    ORDER_DISCOUNT_UPDATE,
+    ORDER_FULFILL_DATA,
+    SHIPPING_COST_UPDATE,
+    SHIPPING_LIST,
+    STATES_LIST,
+    UPDATE_LINE,
+    UPDATE_SHIPPING_PROVIDER,
+    UPDATE_TRACKING_NUMBER,
+} from '@/query/product';
 import { Loader } from '@mantine/core';
 import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useMutation } from '@apollo/client';
-import { sampleParams, showDeleteAlert } from '@/utils/functions';
+import { Failure, Success, channels, profilePic, sampleParams, showDeleteAlert } from '@/utils/functions';
 import Swal from 'sweetalert2';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconX from '@/components/Icon/IconX';
 import { Dialog, Transition } from '@headlessui/react';
 import IconEdit from '@/components/Icon/IconEdit';
 import Modal from '@/components/Modal';
+import IconTrashLines from '@/components/Icon/IconTrashLines';
 
 const Editorder = () => {
     const router = useRouter();
@@ -61,40 +80,28 @@ const Editorder = () => {
     const [deleteNotes] = useMutation(DELETE_NOTES);
     const [updateDiscounts] = useMutation(ORDER_DISCOUNT_UPDATE);
     const [updateShippingCost] = useMutation(SHIPPING_COST_UPDATE);
+    const [deleteLine] = useMutation(DELETE_LINE);
+    const [updateFullfillStatus] = useMutation(FULLFILL_ORDERS);
+    const [markAsPaid] = useMutation(MARK_US_PAID);
+    const [updateLine] = useMutation(UPDATE_LINE);
+    const [draftOrder] = useMutation(CREATE_DRAFT_ORDER);
+    const [shippingProviderUpdate] = useMutation(UPDATE_SHIPPING_PROVIDER);
+    const [editTrackingNumber] = useMutation(UPDATE_TRACKING_NUMBER);
 
-    const { error, data: orderDetails } = useQuery(GET_ORDER_DETAILS, {
+    // updateFullfillStatus
+
+    const {
+        error,
+        data: orderDetails,
+        refetch: getOrderDetails,
+    } = useQuery(GET_ORDER_DETAILS, {
         variables: {
             id: id,
             isStaffUser: true,
-            PERMISSION_HANDLE_CHECKOUTS: true,
-            PERMISSION_HANDLE_PAYMENTS: true,
-            PERMISSION_HANDLE_TAXES: true,
-            PERMISSION_IMPERSONATE_USER: true,
-            PERMISSION_MANAGE_APPS: true,
-            PERMISSION_MANAGE_CHANNELS: true,
-            PERMISSION_MANAGE_CHECKOUTS: true,
-            PERMISSION_MANAGE_DISCOUNTS: true,
-            PERMISSION_MANAGE_GIFT_CARD: true,
-            PERMISSION_MANAGE_MENUS: true,
-            PERMISSION_MANAGE_OBSERVABILITY: true,
-            PERMISSION_MANAGE_ORDERS: true,
-            PERMISSION_MANAGE_ORDERS_IMPORT: true,
-            PERMISSION_MANAGE_PAGES: true,
-            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_PLUGINS: true,
-            PERMISSION_MANAGE_PRODUCTS: true,
-            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_SETTINGS: true,
-            PERMISSION_MANAGE_SHIPPING: true,
-            PERMISSION_MANAGE_STAFF: true,
-            PERMISSION_MANAGE_TAXES: true,
-            PERMISSION_MANAGE_TRANSLATIONS: true,
-            PERMISSION_MANAGE_USERS: true,
         },
     });
 
     const [lines, setLines] = useState([]);
-    console.log('lines: ', lines);
 
     const { data: countryData } = useQuery(COUNTRY_LIST);
 
@@ -102,50 +109,55 @@ const Editorder = () => {
         variables: sampleParams,
     });
 
+    const { data: fulfillsData, refetch: fulfillRefetch } = useQuery(ORDER_FULFILL_DATA, {
+        variables: {
+            orderId: id,
+        },
+    });
+
     const [orderData, setOrderData] = useState({});
     const [discountOpen, setDiscountOpen] = useState(false);
+    const [isUpdateQty, setIsUpdateQty] = useState(false);
+    const [productQuantity, setProductQuantity] = useState('');
+    const [isEdited, setIsEdited] = useState({});
+    const [fullfillData, setFullfillData] = useState([]);
+    console.log('fullfillData: ', fullfillData);
+
+    const [paymentStatus, setPaymentStatus] = useState('');
+    const [selectedCurrency, setSelectedCurrency] = useState('');
+
+    const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+    const [reference, setReference] = useState('');
+
+    const [orderStatus, setOrderStatus] = useState('');
+
     const [discount, setDiscount] = useState(0);
-    console.log('discount: ', discount);
+    const [isOrderOpen, setIsOrderOpen] = useState(false);
 
     const [customerData, setCustomerData] = useState([]);
+    const [trackingNumber, setTrackingNumber] = useState('');
+    const [shippingPatner, setShippingPatner] = useState('');
+    console.log('shippingPatner: ', shippingPatner);
+
+    const [isOpenChannel, setIsOpenChannel] = useState(false);
 
     //CountryList
     const [countryList, setCountryList] = useState([]);
-    const [selectedCountry, setSelectedCountry] = useState('');
 
     const { data: stateData } = useQuery(STATES_LIST, {
         variables: { code: formData.billing.country },
     });
 
     const [stateList, setStateList] = useState([]);
-    const [selectedState, setSelectedState] = useState('');
 
     const [loading, setLoading] = useState(false);
 
-    //List data
-    const [data, setData] = useState([]);
-
-    //For fee
-    const [feeOpen, setFeeOpen] = useState(false);
-    const [selectedFee, setSelectedFee] = useState(0);
-    const [feePrice, setFeePrice] = useState(0);
-    const [feeIsEdit, setFeeIsEdit] = useState(false);
-
-    // For product
-    const [addProductOpen, setAddProductOpen] = useState(false);
-    const [productIsEdit, setProductIsEdit] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState(0);
-    const [selectedUser, setSelectedUser] = useState('');
-    const [quantity, setQuantity] = useState(0);
-
     //For shipping
     const [shippingOpen, setShippingOpen] = useState(false);
-    const [selectedShipping, setSelectedShipping] = useState(0);
     const [shippingPrice, setShippingPrice] = useState(0);
-    const [shippingIsEdit, setShippingIsEdit] = useState(false);
-
     const [showBillingInputs, setShowBillingInputs] = useState(false);
     const [showShippingInputs, setShowShippingInputs] = useState(false);
+    const [waitingStatus, setWaitingStatus] = useState('');
 
     useEffect(() => {
         getOrderData();
@@ -169,7 +181,6 @@ const Editorder = () => {
         setLoading(true);
         if (orderDetails) {
             if (orderDetails && orderDetails?.order) {
-                console.log('orderDetails?.order: ', orderDetails);
                 setOrderData(orderDetails?.order);
                 setLines(orderDetails?.order?.lines);
                 setLoading(false);
@@ -183,16 +194,16 @@ const Editorder = () => {
 
                 setShippingPrice(orderDetails?.order?.shippingPrice?.gross?.amount);
                 const sampleBillingData = {
-                    firstName: billing.firstName,
-                    lastName: billing.lastName,
-                    company: billing.companyName,
-                    address_1: billing.streetAddress1,
-                    address_2: billing.streetAddress2,
-                    city: billing.city,
-                    state: billing.countryArea,
-                    country: billing.country.code,
-                    email: billing.email,
-                    phone: billing.phone,
+                    firstName: billing?.firstName,
+                    lastName: billing?.lastName,
+                    company: billing?.companyName,
+                    address_1: billing?.streetAddress1,
+                    address_2: billing?.streetAddress2,
+                    city: billing?.city,
+                    state: billing?.countryArea,
+                    country: billing?.country.code,
+                    email: billing?.email,
+                    phone: billing?.phone,
                     paymentMethod: '',
                     transactionId: '',
                     countryArea: billing?.country?.country,
@@ -201,16 +212,16 @@ const Editorder = () => {
 
                 // Sample data for shipping
                 const sampleShippingData = {
-                    firstName: shipping.firstName,
-                    lastName: shipping.lastName,
-                    company: shipping.companyName,
-                    address_1: shipping.streetAddress1,
-                    address_2: shipping.streetAddress2,
-                    city: shipping.city,
-                    state: shipping.countryArea,
-                    country: shipping.country.code,
-                    email: shipping.email,
-                    phone: shipping.phone,
+                    firstName: shipping?.firstName,
+                    lastName: shipping?.lastName,
+                    company: shipping?.companyName,
+                    address_1: shipping?.streetAddress1,
+                    address_2: shipping?.streetAddress2,
+                    city: shipping?.city,
+                    state: shipping?.countryArea,
+                    country: shipping?.country.code,
+                    email: shipping?.email,
+                    phone: shipping?.phone,
                     paymentMethod: '',
                     transactionId: '',
                     countryArea: shipping?.country?.country,
@@ -235,6 +246,7 @@ const Editorder = () => {
         if (shippingProvider) {
             if (shippingProvider && shippingProvider?.shippingCarriers?.edges?.length > 0) {
                 setCustomerData(shippingProvider?.shippingCarriers?.edges);
+                console.log('shippingProvider?.shippingCarriers?.edges: ', shippingProvider?.shippingCarriers?.edges);
                 setLoading(false);
             } else {
                 setLoading(false);
@@ -264,14 +276,13 @@ const Editorder = () => {
 
     const onSubmit = async (record: any, { resetForm }: any) => {
         try {
-            const aaa = { input: { message: record.message }, orderId: id, private_note: record.mail };
-
             const data = await addNotes({
                 variables: { input: { message: record.message }, orderId: id, private_note: record.mail },
             });
 
             const newData = { ...orderData, events: data?.data?.orderNoteAdd?.order?.events };
             setOrderData(newData);
+            getOrderDetails();
             resetForm();
         } catch (error) {
             console.log('error: ', error);
@@ -287,6 +298,7 @@ const Editorder = () => {
                 const filter = orderData?.events?.filter((data: any) => data.id !== item.id);
                 const newData = { ...orderData, events: filter };
                 setOrderData(newData);
+                getOrderDetails();
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
@@ -303,6 +315,21 @@ const Editorder = () => {
         setShowShippingInputs(!showShippingInputs);
     };
 
+    //delete Product to this order
+    const deleteProduct = async (item: any) => {
+        try {
+            const res = await deleteLine({
+                variables: {
+                    id: item.id,
+                },
+            });
+            getOrderData();
+            // setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '' });
+            // Success('Product Deleted Successfully');
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
     const validationSchema = Yup.object().shape({
         billing: Yup.object().shape({
@@ -360,12 +387,10 @@ const Editorder = () => {
     };
 
     const handleAddOrder = () => {
-        router.push('/orders/addorder');
+        router.push('/orders/new-order');
     };
 
     const updateDiscount = async () => {
-        console.log('orderData?.discounts: ', orderData?.discounts);
-
         const { data } = await updateDiscounts({
             variables: {
                 discountId: orderData?.discounts[0]?.id,
@@ -376,13 +401,10 @@ const Editorder = () => {
                 },
             },
         });
-        console.log('data: ', data);
     };
 
     const updateShipping = async () => {
-        console.log('orderData?.discounts: ', orderData?.shippingMethods);
-
-        const { data } = await updateShippingCost({
+        const res = await updateShippingCost({
             variables: {
                 id: orderData?.id,
                 input: {
@@ -390,7 +412,163 @@ const Editorder = () => {
                 },
             },
         });
-        console.log('data: ', data);
+    };
+
+    const isFullfiled = () => {
+        const isQuantity = fullfillData?.every((item: any) => item.variant.quantityAvailable >= item.quantity);
+        return isQuantity;
+    };
+    const orderStateUpdate = async () => {
+        try {
+            const isQuantity = isFullfiled();
+            console.log('isQuantity: ', isQuantity);
+            // if (isQuantity) {
+                const modify = fullfillData?.map((item) => ({
+                    orderLineId: item.id,
+                    stocks: item?.variant?.stocks?.map((data) => ({
+                        quantity: data.quantity,
+                        warehouse: data?.warehouse?.id,
+                    })),
+                }));
+                console.log('modify: ', modify);
+
+                const res = await updateFullfillStatus({
+                    variables: {
+                        input: {
+                            lines: modify,
+                            notifyCustomer: true,
+                            allowStockToBeExceeded: false,
+                        },
+                        orderId: id,
+                    },
+                });
+                if (res?.data?.orderFulfill?.errors?.length > 0) {
+                    setIsOrderOpen(false);
+                } else {
+                    setOrderStatus(waitingStatus);
+                    setIsOrderOpen(false);
+                }
+            // } else {
+            //     Failure('Out of Stock');
+            // }
+        } catch (error) {
+            Failure(error);
+
+            console.log('error: ', error);
+        }
+    };
+
+    const updatePaymentStatus = async () => {
+        try {
+            const res = await markAsPaid({
+                variables: {
+                    id: id,
+                    transactionReference: reference,
+                },
+            });
+            getOrderDetails();
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const updateQuantity = async () => {
+        try {
+            const res = await updateLine({
+                variables: {
+                    id: isEdited.id,
+                    input: {
+                        quantity: productQuantity,
+                    },
+                },
+            });
+            getOrderData();
+            setIsUpdateQty(false);
+            setProductQuantity('');
+            Success('Product Updated Successfully');
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const createDraftOrder = async () => {
+        try {
+            const { data } = await draftOrder({
+                variables: {
+                    input: {
+                        channelId: selectedCurrency == 'USD' ? 'Q2hhbm5lbDox' : 'Q2hhbm5lbDoy',
+                    },
+                },
+            });
+            localStorage.setItem('channel', selectedCurrency);
+            setIsOpenChannel(false);
+            router.push({
+                pathname: '/orders/new-order',
+                query: { orderId: data?.draftOrderCreate?.order?.id },
+            });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const handleSubmit = async () => {
+        try {
+            updateShippingProvider();
+            updateTrackingNumber();
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+    const updateShippingProvider = async () => {
+        try {
+            const res = await shippingProviderUpdate({
+                variables: {
+                    input: {
+                        courierPartner: shippingPatner,
+                    },
+                    orderId: id,
+                },
+            });
+            getOrderDetails();
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const updateTrackingNumber = async () => {
+        try {
+            const res = await editTrackingNumber({
+                variables: {
+                    id: 'RnVsZmlsbG1lbnQ6MTY=',
+                    input: {
+                        trackingNumber: '123',
+                        notifyCustomer: true,
+                    },
+                },
+            });
+            getOrderDetails();
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const handleOrderChange = async (status: any) => {
+        if (status == 'shipped') {
+            setWaitingStatus(status);
+            setIsOrderOpen(true);
+            const res = await fulfillRefetch();
+            setFullfillData(res?.data?.order?.lines);
+        } else {
+            setOrderStatus(status);
+        }
+    };
+
+    const stocks = (item) => {
+        console.log('item: ', item);
+        const stock = item?.quantity + item?.variant?.stocks[0]?.quantity - item?.variant?.stocks[0]?.quantityAllocated;
+        console.log('stock: ', stock);
+
+        return stock;
     };
 
     return (
@@ -401,7 +579,7 @@ const Editorder = () => {
                 <>
                     <div className="panel mb-5 flex items-center justify-between gap-3 p-5 ">
                         <h3 className="text-lg font-semibold dark:text-white-light">Edit Order</h3>
-                        <button type="button" className="btn btn-primary" onClick={() => handleAddOrder()}>
+                        <button type="button" className="btn btn-primary" onClick={() => setIsOpenChannel(true)}>
                             Add Order
                         </button>
                     </div>
@@ -417,52 +595,48 @@ const Editorder = () => {
                                     <div className="grid grid-cols-12 gap-5">
                                         <div className="col-span-4">
                                             <label htmlFor="dateTimeCreated" className="block pr-2 text-sm font-medium text-gray-700">
-                                                Date created:
+                                                Order created:
                                             </label>
 
-                                            <input type="datetime-local" id="dateTimeCreated" name="dateTimeCreated" className="form-input" required />
+                                            <input
+                                                type="datetime-local"
+                                                value={moment(orderDetails?.order?.created).format('YYYY-MM-DDTHH:mm')}
+                                                id="dateTimeCreated"
+                                                name="dateTimeCreated"
+                                                className="form-input"
+                                                disabled
+                                            />
                                         </div>
 
                                         <div className="col-span-4">
                                             <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                Status:
+                                                Order Status:
                                             </label>
-                                            <select className="form-select">
+                                            <select className="form-select" value={orderStatus} onChange={(e) => handleOrderChange(e.target.value)}>
                                                 <option value="processing">Processing</option>
-                                                <option value="onhold">On Hold</option>
-                                                <option value="completed">Completed</option>
+                                                <option value="shipped">Shipped</option>
                                             </select>
                                         </div>
 
                                         <div className="col-span-4">
-                                            <div className=" flex  items-center justify-between">
-                                                <label htmlFor="status" className="block pr-2 text-sm font-medium text-gray-700">
-                                                    Customer:
-                                                </label>
-                                                <div>
-                                                    <p>
-                                                        <a href="#" className="mr-2 text-primary">
-                                                            Profile
-                                                        </a>
-                                                        /
-                                                        <a href="#" className="ml-2 text-primary">
-                                                            View Other Orders
-                                                        </a>
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* <input list="statusOptions" name="status" className="form-select" /> */}
-                                            <select className="form-select">
-                                                {customerData?.map((item: any) => (
-                                                    <option value="processing">{item?.node?.name}</option>
-                                                ))}
+                                            <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                Payment Status:
+                                            </label>
+                                            <select
+                                                className="form-select"
+                                                value={paymentStatus}
+                                                onChange={(e) => {
+                                                    const status = e.target.value;
+                                                    if (status == 'FULLY_CHARGED') {
+                                                        setIsPaymentOpen(true);
+                                                    } else {
+                                                        setPaymentStatus(status);
+                                                    }
+                                                }}
+                                            >
+                                                <option value="NOT_CHARGET">payment pending</option>
+                                                <option value="FULLY_CHARGED">payment completed</option>
                                             </select>
-                                            {/* <datalist id="statusOptions">
-                                                <option value="processing">processing</option>
-                                                <option value="onhold">onhold</option>
-                                                <option value="completed">completed</option>
-                                            </datalist> */}
                                         </div>
                                     </div>
                                 </div>
@@ -482,7 +656,7 @@ const Editorder = () => {
                                                     <p>{formData?.billing?.company}</p>
                                                     <p>
                                                         {formData?.billing?.address_1}
-                                                        {formData?.billing?.address_2 && <br> {formData?.billing?.address_2}</br>}
+                                                        {formData?.billing?.address_2 && <div>{formData.billing.address_2}</div>}
                                                         <br /> {formData?.billing?.city}
                                                         <br /> {formData?.billing?.state}
                                                         <br /> {formData?.billing?.countryArea}
@@ -699,7 +873,7 @@ const Editorder = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
+                                                {/* <div className="mt-5 grid grid-cols-12 gap-3">
                                                     <div className="col-span-12">
                                                         <label htmlFor="payments" className=" text-sm font-medium text-gray-700">
                                                             Payment method:
@@ -715,18 +889,17 @@ const Editorder = () => {
                                                             <option value="note-customer">Note to customer</option>
                                                         </select>
                                                     </div>
-                                                </div>
+                                                </div> */}
 
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
+                                                {/* <div className="mt-5 grid grid-cols-12 gap-3">
                                                     <div className="col-span-12">
                                                         <label htmlFor="transaction" className=" text-sm font-medium text-gray-700">
                                                             Transaction ID
                                                         </label>
                                                         <input type="text" className="form-input" name="billing.transactionId" value={formData.billing.transactionId} onChange={handleChange} />
 
-                                                        {/* <input type="text" id="billingtransaction" name="billingtransaction" className="form-input" required /> */}
                                                     </div>
-                                                </div>
+                                                </div> */}
                                             </>
                                         )}
                                     </div>
@@ -965,7 +1138,7 @@ const Editorder = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
+                                                {/* <div className="mt-5 grid grid-cols-12 gap-3">
                                                     <div className="col-span-12">
                                                         <label htmlFor="payments" className=" text-sm font-medium text-gray-700">
                                                             Payment method:
@@ -990,7 +1163,6 @@ const Editorder = () => {
                                                         </label>
                                                         <input type="text" className="form-input" name="shipping.transactionId" value={formData.shipping.transactionId} onChange={handleChange} />
 
-                                                        {/* <input type="text" id="billingtransaction" name="billingtransaction" className="form-input" required /> */}
                                                     </div>
                                                 </div>
                                                 <div className="mt-5 grid grid-cols-12 gap-3">
@@ -1000,7 +1172,7 @@ const Editorder = () => {
                                                         </label>
                                                         <textarea className="form-input" name="note" id="note" cols="30" rows="2"></textarea>
                                                     </div>
-                                                </div>
+                                                </div> */}
                                             </>
                                         )}
                                     </div>
@@ -1015,13 +1187,13 @@ const Editorder = () => {
                                                 <th className="w-1">Cost</th>
                                                 <th className="w-1">Qty</th>
                                                 <th>Total</th>
-
+                                                {/* <th>Action</th> */}
                                                 <th className="w-1"></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {lines?.length > 0 &&
-                                                lines.map((item: any, index: any) => (
+                                                lines?.map((item: any, index: any) => (
                                                     <tr className="panel align-top" key={index}>
                                                         <td>
                                                             <img src={item?.thumbnail?.url} alt="Selected" className="object-cover" />
@@ -1034,32 +1206,20 @@ const Editorder = () => {
                                                             <div>{item?.totalPrice?.gross?.amount}</div>
                                                         </td>
                                                         {/* <td>
-                                                            <input
-                                                                type="number"
-                                                                className="form-input w-32"
-                                                                placeholder="Price"
-                                                                value={item.price}
-                                                                min={0}
-                                                                disabled
-                                                                onChange={(e) => changeQuantityPrice('price', e.target.value, index)}
-                                                            />
-                                                        </td> */}
-                                                        {/* <td>${item.quantity * item.price}</td> */}
-                                                        {/* <td>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => {
-                                                                    setSelectedUser(item.user);
-                                                                    setQuantity(item.quantity);
-                                                                    setAddProductOpen(true);
-                                                                    setProductIsEdit(true);
-                                                                    setSelectedProduct(index);
+                                                                    setProductQuantity(item?.quantity);
+                                                                    setIsUpdateQty(true);
+                                                                    setIsEdited(item);
+                                                                    console.log('item: ', item);
+                                                                    // setState({ editProduct: item, isEditProduct: true, isOpenProductAdd: true, productQuantity: item?.quantity });
                                                                 }}
                                                             >
-                                                                <IconEdit className="h-5 w-5" />
+                                                                <IconPencil className="mr-3 h-5 w-5" />
                                                             </button>
-                                                            <button type="button" onClick={() => removeItem(index)}>
-                                                                <IconX className="h-5 w-5" />
+                                                            <button type="button" onClick={() => deleteProduct(item)}>
+                                                                <IconTrashLines className="h-5 w-5" />
                                                             </button>
                                                         </td> */}
                                                     </tr>
@@ -1074,84 +1234,56 @@ const Editorder = () => {
                                             <div>Subtotal</div>
                                             <div>{orderData?.subtotal?.gross?.amount}</div>
                                         </div>
-                                        <div className="mt-4 flex items-center justify-between">
+                                        {formData?.billing?.state !== '' &&
+                                            (formData?.shipping?.state == 'Tamil Nadu' ? (
+                                                <>
+                                                    <div className="mt-4 flex items-center justify-between">
+                                                        <div>SGST</div>
+                                                        <div>
+                                                            {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2}
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-4 flex items-center justify-between">
+                                                        <div>CSGT</div>
+                                                        <div>
+                                                            {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="mt-4 flex items-center justify-between">
+                                                    <div>IGST</div>
+                                                    <div>
+                                                        {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        {/* <div className="mt-4 flex items-center justify-between">
                                             <div>Tax(%)</div>
                                             <div>{orderData?.total?.tax?.amount}</div>
-                                        </div>
+                                        </div> */}
                                         <div className="mt-4 flex items-center justify-between">
-                                            <div>Shipping Rate($)</div>
-                                            <div>{orderData?.shippingPrice?.gross?.amount}</div>
-                                            <div className="cursor-pointer" onClick={() => setShippingOpen(true)}>
-                                                <IconPencil />
+                                            <div>Shipping Rate</div>
+                                            <div>
+                                                {orderData?.shippingPrice?.gross?.currency} {orderData?.shippingPrice?.gross?.amount}
                                             </div>
-                                        </div>
-                                        <div className="mt-4 flex items-center justify-between">
-                                            <div>Discount(%)</div>
-                                            <div>{orderData?.discounts?.length > 0 && orderData?.discounts[0]?.amount?.amount}</div>
-                                            <div className="cursor-pointer" onClick={() => setDiscountOpen(true)}>
+                                            {/* <div>{orderData?.shippingPrice?.gross?.amount}</div> */}
+                                            {/* <div className="cursor-pointer" onClick={() => setShippingOpen(true)}>
                                                 <IconPencil />
-                                            </div>
+                                            </div> */}
                                         </div>
+                                        {orderData?.discounts?.length > 0 && (
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <div>Discount</div>
+                                                <div>{orderData?.discounts[0]?.amount?.amount}</div>
+                                            </div>
+                                        )}
                                         <div className="mt-4 flex items-center justify-between font-semibold">
                                             <div>Total</div>
                                             <div>{orderData?.total?.gross?.amount}</div>
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* {btnOpen ? (
-                                    <div className="mt-3 flex  flex-row-reverse gap-1">
-                                        <button type="button" className="btn btn-primary" onClick={() => addItem()}>
-                                            Save
-                                        </button>
-                                        <button type="button" className="btn btn-outline-primary" onClick={() => setbtnOpen(false)}>
-                                            cancel
-                                        </button>
-                                        <button type="button" className="btn btn-outline-primary">
-                                            Add tax
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-outline-primary"
-                                            onClick={() => {
-                                                setShippingPrice(0);
-                                                setShippingIsEdit(false);
-                                                setShippingOpen(true);
-                                            }}
-                                        >
-                                            Add shipping
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-outline-primary"
-                                            onClick={() => {
-                                                setFeePrice(0);
-                                                setFeeIsEdit(false);
-                                                setFeeOpen(true);
-                                            }}
-                                        >
-                                            Add fee
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-outline-primary"
-                                            onClick={() => {
-                                                setSelectedUser('');
-                                                setQuantity(0);
-                                                setProductIsEdit(false);
-                                                setAddProductOpen(true);
-                                            }}
-                                        >
-                                            Add product(s)
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="mt-6 flex">
-                                        <button type="button" className="btn btn-primary" onClick={() => setbtnOpen(true)}>
-                                            Add Item
-                                        </button>
-                                    </div>
-                                )} */}
                             </div>
                         </div>
 
@@ -1160,6 +1292,28 @@ const Editorder = () => {
                                 <div className="mb-5 border-b border-gray-200 pb-2 ">
                                     <h3 className="text-lg font-semibold">Order Actions</h3>
                                 </div>
+                                <div className="col-span-4 pb-4">
+                                    <div className="items-center justify-between ">
+                                        <label htmlFor="status" className="block pr-2 text-sm font-medium text-gray-700">
+                                            Shipping Provider
+                                        </label>
+                                    </div>
+
+                                    <select className="form-select" value={shippingPatner} onChange={(e) => setShippingPatner(e.target.value)}>
+                                        <option value="">Choose Shipping Provider</option>
+                                        {customerData?.map((item: any) => (
+                                            <option value={item?.node?.id}>{item?.node?.name}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="text"
+                                        className={`form-input mt-4`}
+                                        name="shipping.company"
+                                        placeholder="Tracking number"
+                                        value={trackingNumber}
+                                        onChange={(e) => setTrackingNumber(e.target.value)}
+                                    />
+                                </div>
                                 <div>
                                     <select className="form-select mr-3">
                                         <option value="">Choose An Action</option>
@@ -1167,11 +1321,13 @@ const Editorder = () => {
                                     </select>
                                 </div>
                                 <div className="mt-5 border-t border-gray-200 pb-2 ">
-                                    <div className="flex items-center justify-between pt-3">
-                                        <a href="#" className="text-danger underline">
+                                    <div className=" pt-3">
+                                        {/* <a href="#" className="text-danger underline">
                                             Move To Trash
-                                        </a>
-                                        <button className="btn btn-outline-primary">Update</button>
+                                        </a> */}
+                                        <button onClick={() => handleSubmit()} className="btn btn-outline-primary">
+                                            Update
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1196,22 +1352,6 @@ const Editorder = () => {
                                     ) : (
                                         <span className=" mr-1 border-b border-dotted border-gray-500">No data found</span>
                                     )}
-
-                                    {/* <div className="mb-5">
-                                    <div className="text-gray-500">
-                                        <div className="mb-2 bg-blue-200 p-3">Hi</div>
-                                        <span class="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
-                                        <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
-                                    </div>
-                                </div>
-
-                                <div className="mb-5">
-                                    <div className="text-gray-500">
-                                        <div className="mb-2 bg-pink-200 p-3">Payment to be made upon delivery. Order status changed from Pending payment to Processing.</div>
-                                        <span class="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
-                                        <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
-                                    </div>
-                                </div> */}
                                 </div>
                                 <Formik
                                     initialValues={{ message: '', mail: false }}
@@ -1251,6 +1391,35 @@ const Editorder = () => {
                     </div>
                 </>
             )}
+
+            <Modal
+                addHeader={'Update Quantity'}
+                open={isUpdateQty}
+                close={() => setIsUpdateQty(false)}
+                renderComponent={() => (
+                    <>
+                        <div className="p-5">
+                            <div className="p-5">
+                                <input type="number" className="form-input" value={productQuantity} onChange={(e) => setProductQuantity(e.target.value)} />
+                            </div>
+                            <div className="flex justify-end gap-5">
+                                <button
+                                    onClick={() => setIsUpdateQty(false)}
+                                    className="rounded border border-black bg-transparent px-4 py-2 font-semibold text-black hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => updateQuantity()}
+                                    className="rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-500 hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                >
+                                    Update
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                )}
+            />
 
             <Modal
                 addHeader={'Update Discount'}
@@ -1295,6 +1464,30 @@ const Editorder = () => {
             />
 
             <Modal
+                addHeader={'Transaction reference'}
+                open={isPaymentOpen}
+                close={() => setIsPaymentOpen(false)}
+                renderComponent={() => (
+                    <div className="p-5 pb-7">
+                        <form onSubmit={updateDiscount}>
+                            <div className="flex w-full">
+                                <input type="text" className="form-input" placeholder="Reference" value={reference} onChange={(e: any) => setReference(e.target.value)} />
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-end">
+                                <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setIsPaymentOpen(false)}>
+                                    Cancel
+                                </button>
+                                <button type="button" onClick={() => updatePaymentStatus()} className="btn btn-primary ltr:ml-4 rtl:mr-4">
+                                    Confirm
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+            />
+
+            <Modal
                 addHeader={'Update shipping Cost'}
                 open={shippingOpen}
                 close={() => setShippingOpen(false)}
@@ -1329,6 +1522,108 @@ const Editorder = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                )}
+            />
+            <Modal
+                edit={isOrderOpen}
+                addHeader={'Shipments'}
+                open={isOrderOpen}
+                close={() => setIsOrderOpen(false)}
+                renderComponent={() => (
+                    <>
+                        <div className="overflow-scroll p-5">
+                            <div className="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th className="w-1">Product</th>
+                                            <th className="w-1">Image</th>
+
+                                            <th className="w-1">Cost</th>
+                                            <th className="w-1">Qty</th>
+                                            <th className="w-1">Stock</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {fullfillData?.length > 0 &&
+                                            fullfillData?.map((item: any, index) => (
+                                                <tr className="panel align-top" key={index}>
+                                                    <td>{item?.productName}</td>
+
+                                                    <td>
+                                                        <img src={profilePic(item?.thumbnail?.url)} alt="Selected" className="object-cover" />
+                                                    </td>
+                                                    <td>{item?.variant?.sku}</td>
+                                                    <td>
+                                                        <div>{item?.quantity}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div>{stocks(item)}</div>
+                                                    </td>
+                                                    {/* <td>
+                                                        <div>{item?.totalPrice?.gross?.amount}</div>
+                                                    </td> */}
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex justify-end gap-5">
+                                <button
+                                    onClick={() => {
+                                        setIsOrderOpen(false);
+                                    }}
+                                    className="rounded border border-black bg-transparent px-4 py-2 font-semibold text-black hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    // disabled={!isFullfiled()}
+                                    onClick={() => orderStateUpdate()}
+                                    className="rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-500 hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                >
+                                    Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                )}
+            />
+
+            <Modal
+                addHeader={'Select a Currency'}
+                open={isOpenChannel}
+                close={() => setIsOpenChannel(true)}
+                renderComponent={() => (
+                    <div className="p-5">
+                        <select
+                            className="form-select"
+                            value={selectedCurrency}
+                            onChange={(val) => {
+                                const selectedCurrency: any = val.target.value;
+                                setSelectedCurrency(selectedCurrency);
+                            }}
+                        >
+                            <option value="" disabled selected>
+                                Select a currency
+                            </option>
+                            {channels?.map((item) => (
+                                <option key={item?.value} value={item?.value}>
+                                    {item?.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        <div className="mt-8 flex items-center justify-end">
+                            <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setIsOpenChannel(false)}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4" onClick={() => createDraftOrder()}>
+                                Confirm
+                            </button>
+                        </div>
                     </div>
                 )}
             />

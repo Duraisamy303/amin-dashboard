@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2';
+import placeholder from '../public/assets/images/placeholder.png';
 
 export const capitalizeFLetter = (string = '') => {
     if (string.length > 0) {
@@ -83,6 +84,49 @@ export const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => 
         });
 };
 
+export const Success = (message: string) => {
+    const toast = Swal.mixin({
+        toast: true,
+        position: 'top',
+        showConfirmButton: false,
+        timer: 3000,
+        // Merge provided options with default options
+    });
+
+    toast.fire({
+        icon: 'success',
+        title: message,
+        padding: '10px 20px',
+    });
+};
+
+export const Failure = (message: string) => {
+    const toast = Swal.mixin({
+        toast: true,
+        position: 'top',
+        showConfirmButton: false,
+        timer: 3000,
+        // Merge provided options with default options
+    });
+
+    toast.fire({
+        icon: 'error',
+        title: message,
+        padding: '10px 20px',
+    });
+};
+
+export const checkChannel = () => {
+    let channel = '';
+    const channels = localStorage.getItem('channel');
+    if (!channels) {
+        channel = 'INR';
+    } else {
+        channel = channels;
+    }
+    return channel;
+};
+
 export const sampleParams = {
     after: null,
     first: 100,
@@ -145,18 +189,98 @@ export const uploadImage = async (productId: any, file: any) => {
         });
 
         const data = await response.json();
-        console.log("data",data); // Response from the server
-        return data
+        console.log('data', data); // Response from the server
+        return data;
     } catch (error) {
         console.error('Error:', error);
     }
 };
 
-export const getValueByKey = (metadata:any[], key:string) => {
-    const item = metadata.find(item => item.key === key);
+export const getValueByKey = (metadata: any[], key: string) => {
+    const item = metadata.find((item) => item.key === key);
     return item ? item.value : null;
 };
 
 export const isEmptyObject = (obj) => {
-    return Object.values(obj).every(value => value === "");
+    return Object.values(obj).every((value) => value === '');
 };
+
+export const UserDropdownData = (shippingProvider: any) => {
+    if (shippingProvider) {
+        if (shippingProvider && shippingProvider?.search?.edges?.length > 0) {
+            const dropdownData = shippingProvider?.search?.edges?.map((item) => ({
+                value: item.node?.id,
+                label: `${item?.node?.firstName} -${item?.node?.lastName}`,
+            }));
+            return dropdownData;
+        } else {
+        }
+    }
+};
+
+export const CountryDropdownData = (countryData: any) => {
+    if (countryData) {
+        if (countryData && countryData?.shop && countryData?.shop?.countries?.length > 0) {
+            return countryData?.shop?.countries;
+        }
+    } else {
+        return [];
+    }
+};
+
+export const billingAddress = {
+    firstName: '',
+    lastName: '',
+    company: '',
+    address_1: '',
+    address_2: '',
+    city: '',
+    state: '',
+    country: '',
+    email: '',
+    phone: '',
+    paymentMethod: '',
+    transactionId: '',
+    countryArea: '',
+    pincode: '',
+};
+
+export const shippingAddress = {
+    firstName: '',
+    lastName: '',
+    company: '',
+    address_1: '',
+    address_2: '',
+    city: '',
+    state: '',
+    country: '',
+    email: '',
+    phone: '',
+    paymentMethod: '',
+    transactionId: '',
+    countryArea: '',
+    pincode: '',
+};
+
+export const profilePic = (profile: any) => {
+    let profiles;
+    if (profile) {
+        profiles = profile;
+    } else if (profile == undefined) {
+        profiles = placeholder;
+    } else {
+        profiles = placeholder;
+    }
+    return profiles;
+};
+
+export const channels = [
+    {
+        value: 'INR',
+        label: 'INR',
+    },
+    {
+        value: 'USD',
+        label: 'USD',
+    },
+];
