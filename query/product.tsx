@@ -93,32 +93,88 @@ export const DELETE_PRODUCT = gql`
 `;
 
 export const CATEGORY_LIST = gql`
-    query CategoryList($first: Int!, $after: String, $channel: String!) {
-        categories(first: $first, after: $after) {
-            edges {
-                node {
-                    id
-                    name
-                    description
-                    products(channel: $channel) {
-                        totalCount
-                    }
-                }
-            }
+query CategoryList($first: Int!, $after: String, $channel: String!) {
+    categories(first: $first, after: $after) {
+      edges {
+        node {
+          id
+          name
+          description
+          products(channel: $channel) {
+            totalCount
+            __typename
+          }
+          __typename
+          parent {
+            id
+            name
+          }
         }
+        __typename
+      }
+      __typename
     }
+  }
 `;
 
 export const CREATE_CATEGORY = gql`
-    mutation CategoryCreate($input: CategoryInput!) {
-        categoryCreate(input: $input) {
+    mutation CategoryCreate($parent: ID, $input: CategoryInput!) {
+        categoryCreate(parent: $parent, input: $input) {
             category {
-                id
-                name
-                description
-                slug
+                ...CategoryDetails
+                __typename
             }
+            errors {
+                ...ProductError
+                __typename
+            }
+            __typename
         }
+    }
+
+    fragment CategoryDetails on Category {
+        id
+        ...Metadata
+        backgroundImage {
+            alt
+            url
+            __typename
+        }
+        name
+        slug
+        description
+        seoDescription
+        seoTitle
+        parent {
+            id
+            __typename
+        }
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+
+    fragment ProductError on ProductError {
+        code
+        field
+        message
+        __typename
     }
 `;
 

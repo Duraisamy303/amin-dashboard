@@ -284,15 +284,15 @@ const Design = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
+                <div className="mb-5 md:flex flex-col gap-5 md:flex-row md:items-center">
                     <h5 className="text-lg font-semibold dark:text-white-light">Design</h5>
 
-                    <div className="flex ltr:ml-auto rtl:mr-auto">
-                        <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  mr-2 ">
+                    <div className="md:flex md:ltr:ml-auto md:rtl:mr-auto  md:mt-0 mt-5">
+                        <input type="text" className="form-input mr-2 md:w-auto w-full mb-3 md:mb-0" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown md:mr-2 mr-0  mb-3 md:mb-0">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                btnClassName="btn btn-outline-primary dropdown-toggle lg:w-auto w-full"
                                 button={
                                     <>
                                         Bulk Actions
@@ -311,7 +311,7 @@ const Design = () => {
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateDesign()}>
+                        <button type="button" className="btn btn-primary md:w-auto w-full md:mb-0" onClick={() => CreateDesign()}>
                             + Create
                         </button>
                     </div>

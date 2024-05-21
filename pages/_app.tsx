@@ -27,6 +27,7 @@ type AppPropsWithLayout = AppProps & {
 const App = ({ Component, pageProps }: AppPropsWithLayout) => {
     useEffect(() => {
         const token = localStorage.getItem('token');
+console.log('✌️token --->', token);
     }, []);
     const httpLink = createHttpLink({
         uri: 'http://file.prade.in/graphql/',
@@ -34,6 +35,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
 
     const authLink = new ApolloLink((operation, forward) => {
         const token = localStorage.getItem('token');
+
         operation.setContext({
             headers: {
                 Authorization: token ? `JWT ${token}` : '',
@@ -44,14 +46,16 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
 
         return forward(operation);
     });
-
     const client = new ApolloClient({
         link: authLink.concat(httpLink),
         cache: new InMemoryCache(),
     });
 
     const getLayout = Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
-
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+console.log('✌️token --->', token);
+    }, []);
     return (
         <ApolloProvider client={client}>
             <Provider store={store}>

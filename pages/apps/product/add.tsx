@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment, useCallback, useRef } from 'react';
+import { useEffect, useState, Fragment,useCallback, useRef } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -26,9 +26,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import IconEdit from '@/components/Icon/IconEdit';
 import Select from 'react-select';
-import dynamic from 'next/dynamic';
-import 'react-quill/dist/quill.snow.css';
-const ReactQuill = dynamic(import('react-quill'), { ssr: false });
+// import dynamic from 'next/dynamic';
+// import 'react-quill/dist/quill.snow.css';
+// const ReactQuill = dynamic(import('react-quill'), { ssr: false });
 
 import { Tab } from '@headlessui/react';
 import AnimateHeight from 'react-animate-height';
@@ -95,22 +95,26 @@ const ProductAdd = () => {
     const [chooseType, setChooseType] = useState('');
     const [selectedValues, setSelectedValues] = useState<any>({});
 
-    // error message start
 
-    const [productNameErrMsg, setProductNameErrMsg] = useState('');
-    const [slugErrMsg, setSlugErrMsg] = useState('');
-    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
-    const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
-    const [shortDesErrMsg, setShortDesErrMsg] = useState('');
-    const [skuErrMsg, setSkuErrMsg] = useState('');
-    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
-    const [categoryErrMsg, setCategoryErrMsg] = useState('');
+// error message start
 
-    // error message end
+    const [productNameErrMsg, setProductNameErrMsg] = useState("");
+    const [slugErrMsg, setSlugErrMsg] = useState("");
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState("");
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState("");
+    const [shortDesErrMsg, setShortDesErrMsg] = useState("");
+    const [skuErrMsg, setSkuErrMsg] = useState("");
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState("");
+    const [categoryErrMsg, setCategoryErrMsg] = useState("");
+    const [descriptionErrMsg, setDescriptionErrMsg] = useState("");
 
-    const [dropdowndata, setDropdownData] = useState<any>('');
-    const [images, setImages] = useState<any>('');
-    const [imageUrl, setImageUrl] = useState<any>('');
+// error message end
+
+
+
+    const [dropdowndata, setDropdownData] = useState<any>("");
+    const [images, setImages] = useState<any>("");
+    const [imageUrl, setImageUrl] = useState<any>("");
     console.log('images: ', imageUrl);
 
     const [variants, setVariants] = useState([
@@ -124,100 +128,100 @@ const ProductAdd = () => {
         },
     ]);
 
-    // editor start
 
-    const editorRef = useRef(null);
-    const [editorInstance, setEditorInstance] = useState(null);
-    const [content, setContent] = useState('');
 
-    const [value2, setValue2] = useState<any>({
-        time: Date.now(),
-        blocks: [
-            {
-                type: 'paragraph',
-                data: {
-                    text: 'This is the default content.',
-                },
-            },
-        ],
-        version: '2.19.0',
-    });
-    // let count = 0;
-    // editor start
+// editor start
 
-    let editors = { isReady: false };
-    useEffect(() => {
-        if (!editors.isReady) {
-            editor();
-            editors.isReady = true;
-        }
+const editorRef:any = useRef(null);
+const [editorInstance, setEditorInstance] = useState<any>(null);
+const [content, setContent] = useState('');
 
-        return () => {
-            if (editorInstance) {
-                editorInstance?.blocks?.clear();
-            }
-        };
-    }, [value2]);
+// const [value2, setValue2] = useState<any>({
+    
+// });
+// let count = 0;
+// editor start
 
-    // const editorRef = useRef(null); // Define a ref to hold the editor instance
+let editors = { isReady: false };
+useEffect(() => {
+if (!editors.isReady) {
+editor();
+editors.isReady = true;
+}
 
-    const editor = useCallback(() => {
-        // Check if the window object is available and if the editorRef.current is set
-        if (typeof window === 'undefined' || !editorRef.current) return;
+return () => {
+if (editorInstance) {
+  editorInstance?.blocks?.clear();
+}
+};
+}, [ ]);
 
-        // Ensure only one editor instance is created
-        if (editorInstance) {
-            return;
-        }
 
-        console.log('value2: ', value2);
-        // Dynamically import the EditorJS module
-        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
-            // Create a new instance of EditorJS with the appropriate configuration
-            const editor = new EditorJS({
-                holder: editorRef.current,
-                data: value2,
-                tools: {
-                    // Configure tools as needed
-                    header: {
-                        class: require('@editorjs/header'),
-                    },
-                    list: {
-                        class: require('@editorjs/list'),
-                    },
-                    table: {
-                        class: require('@editorjs/table'),
-                    },
-                },
-            });
+// const editorRef = useRef(null); // Define a ref to hold the editor instance
 
-            // Set the editorInstance state variable
-            setEditorInstance(editor);
-        });
+const editor = useCallback(() => {
+// Check if the window object is available and if the editorRef.current is set
+if (typeof window === 'undefined' || !editorRef.current) return;
 
-        // Cleanup function to destroy the current editor instance when the component unmounts
-        return () => {
-            if (editorInstance) {
-                editorInstance?.blocks?.clear();
-            }
-        };
-    }, [editorInstance, value]);
+// Ensure only one editor instance is created
+if (editorInstance) {
+return;
+}
 
-    // editor end
+// console.log('value2: ', value2);
+// Dynamically import the EditorJS module
+import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+// Create a new instance of EditorJS with the appropriate configuration
+const editor = new EditorJS({
+  holder: editorRef.current,
+//   data: value2,
+  tools: {
+    // Configure tools as needed
+    header: {
+      class: require('@editorjs/header'),
+    },
+    list: {
+      class: require('@editorjs/list'),
+    },
+    table: {
+      class: require('@editorjs/table'),
+    },
+  },
+});
 
-    // const handleSave = async () => {
-    //     if (editorInstance) {
-    //         try {
-    //             const savedContent = await editorInstance.save();
-    //             console.log('Editor content:', savedContent);
-    //             setValue2(JSON.stringify(savedContent, null, 2));
-    //         } catch (error) {
-    //             console.error('Failed to save editor content:', error);
-    //         }
-    //     }
-    // };
+// Set the editorInstance state variable
+setEditorInstance(editor);
+});
 
-    // editor end
+// Cleanup function to destroy the current editor instance when the component unmounts
+return () => {
+if (editorInstance) {
+  editorInstance?.blocks?.clear();
+}
+};
+}, [editorInstance, value]);
+
+// editor end
+
+// const handleSave = async () => {
+//     if (editorInstance) {
+//         try {
+//             const savedContent = await editorInstance.save();
+//             console.log('Editor content:', savedContent);
+//             setValue2(JSON.stringify(savedContent, null, 2));
+//         } catch (error) {
+//             console.error('Failed to save editor content:', error);
+//         }
+//     }
+// };
+
+// editor end
+
+
+
+
+
+
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -307,8 +311,8 @@ const ProductAdd = () => {
             stoneType: stoneData?.productStoneTypes,
         };
 
-        const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
-            acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
+        const singleObj = Object.entries(arr1).reduce((acc:any, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }:any) => ({ value: node?.id, label: node?.name }));
             return acc;
         }, {});
 
@@ -340,7 +344,7 @@ const ProductAdd = () => {
 
     const [categoryList, setCategoryList] = useState([]);
     const [collectionList, setCollectionList] = useState([]);
-    const [label, setLabel] = useState('');
+    const [label, setLabel] = useState<any>('');
 
     const [productType, setProductType] = useState([]);
     const [selectedCat, setselectedCat] = useState<any>('');
@@ -432,116 +436,107 @@ const ProductAdd = () => {
     };
 
     const CreateProduct = async () => {
-        // console.log("selectedCat", selectedCat)
-
         setProductNameErrMsg('');
         setSlugErrMsg('');
         setSeoTittleErrMsg('');
         setSeoDescErrMsg('');
-        // setDescriptionErrMsg('');
         setShortDesErrMsg('');
-        // setSkuErrMsg('');
-        // setSalePriceErrMsg('');
         setCategoryErrMsg('');
-
-        // Validate the product name and slug
+        setDescriptionErrMsg('');
+    
         if (productName.trim() === '') {
-            // Update the error message for the product name field
             setProductNameErrMsg('Product name cannot be empty');
         }
-
+    
         if (slug.trim() === '') {
-            // Update the error message for the slug field
             setSlugErrMsg('Slug cannot be empty');
         }
+    
         if (seoTittle.trim() === '') {
-            // Update the error message for the slug field
             setSeoTittleErrMsg('Seo title cannot be empty');
         }
+    
         if (seoDesc.trim() === '') {
             setSeoDescErrMsg('Seo description cannot be empty');
         }
-        // if(description?.trim() === ''){
+        // if(description.trim() === '') {
         //     setDescriptionErrMsg('Description cannot be empty');
         // }
+    
         if (shortDescription?.trim() === '') {
             setShortDesErrMsg('Short description cannot be empty');
         }
-        // if (sku?.trim() === '') {
-        //     setSkuErrMsg('Sku cannot be empty');
-        //     alert('Sku cannot be empty');
-        // }
-        // if (salePrice?.trim() === '') {
-        //     setSalePriceErrMsg('Sale price cannot be empty');
-        //     alert('Sale price cannot be empty');
-        // }
-        if (selectedCat == '') {
+    
+        if (selectedCat === "") {
             setCategoryErrMsg('Category cannot be empty');
         }
-        let tagId: any[] = [];
-
-     tagId = selectedTag?.map((item: any) => item.value);
-
+    
         if (editorInstance) {
             try {
                 const savedContent = await editorInstance.save();
                 console.log('Editor content:', savedContent);
-                setValue2(savedContent);
-                console.log('✌️setValue2 --->', value2);
-            
-
-        try {
-            const catId = selectedCat?.value;
-            let collectionId: any[] = [];
-            if (selectedCollection?.length > 0) {
-                collectionId = selectedCollection?.map((item: any) => item.value);
-            }
-
-            const { data } = await addFormData({
-                variables: {
-                    input: {
-                        attributes: [],
-                        category: catId,
-                        collections: collectionId,
-                        description: JSON.stringify(savedContent),
-                        name: productName,
-                        productType: 'UHJvZHVjdFR5cGU6Mg==',
-                        seo: {
-                            description: seoDesc,
-                            title: seoTittle,
-                        },
-                        tags:tagId,
-                        slug: slug,
-                        // order_no: menuOrder,
-                        ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                        ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
-                        ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
-                        ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
-                        ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
-                    },
-                },
-            });
-
-            if (data?.productCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productCreate?.errors[0]?.message);
-            } else {
-                console.log('CreateProduct: ', data);
-                const productId = data?.productCreate?.product?.id;
-                productChannelListUpdate(productId);
-                if (images?.length > 0) {
-                    images?.map((item: any) => {
-                        const imageUpload = uploadImage(productId, item);
-                        console.log('imageUpload: ', imageUpload);
-                    });
+                // setValue2(savedContent);
+                // console.log('✌️setValue2 --->', value2);
+                
+                const catId = selectedCat?.value;
+                let collectionId:any = [];
+                if (selectedCollection?.length > 0) {
+                    collectionId = selectedCollection.map((item:any) => item.value);
                 }
+    
+
+                console.log("savedContent", savedContent)
+
+                const formattedDescription = JSON.stringify(savedContent);
+
+
+                let tagId: any[] = [];
+                // if (selectedCollection?.length > 0) {
+                tagId = selectedTag?.map((item: any) => item.value);
+
+                const { data } = await addFormData({
+                    variables: {
+                        input: {
+                            attributes: [],
+                            category: catId,
+                            collections: collectionId,
+                            tags: tagId,
+                            description: formattedDescription,
+                            name: productName,
+                            productType: 'UHJvZHVjdFR5cGU6Mg==',
+                            seo: {
+                                description: seoDesc,
+                                title: seoTittle,
+                            },
+                            slug: slug,
+                            ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                            ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
+                            ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
+                            ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
+                            ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
+                        },
+                    },
+                });
+    
+                if (data?.productCreate?.errors?.length > 0) {
+                    console.log('error: ', data?.productCreate?.errors[0]?.message);
+                } else {
+                    console.log('CreateProduct: ', data);
+                    const productId = data?.productCreate?.product?.id;
+                    productChannelListUpdate(productId);
+                    if (images?.length > 0) {
+                        images?.map((item:any) => {
+                            const imageUpload = uploadImage(productId, item);
+                            console.log('imageUpload: ', imageUpload);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.log('error: ', error);
             }
-        } catch (error) {
-            console.log('error: ', error);
+        } else {
+            console.error('Failed to save editor content');
         }
-    } catch (error) {
-        console.error('Failed to save editor content:', error);
-    }
-}
     };
 
     const productChannelListUpdate = async (productId: any) => {
@@ -640,46 +635,47 @@ const ProductAdd = () => {
             });
             if (data?.updateMetadata?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+
+              
             } else {
                 // if (selectedTag?.length > 0) {
-                    // assignsTagToProduct(productId);
-                    console.log('success: ', data);
-                    router.push(`/apps/product/edit?id=${productId}`);
-                    console.log('success: ', data);
+                //     assignsTagToProduct(productId);
+                //     console.log('success: ', data);
                 // }
+                router.push(`/apps/product/edit?id=${productId}`)
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
-    const assignsTagToProduct = async (productId: any) => {
-        try {
-            let tagId: any[] = [];
-            // if (selectedCollection?.length > 0) {
-            tagId = selectedTag?.map((item: any) => item.value);
-            // }
-            console.log('tagId: ', tagId);
+    // const assignsTagToProduct = async (productId: any) => {
+    //     try {
+    //         let tagId: any[] = [];
+    //         // if (selectedCollection?.length > 0) {
+    //         tagId = selectedTag?.map((item:any) => item.value);
+    //         // }
+    //         console.log('tagId: ', tagId);
 
-            const { data } = await assignTagToProduct({
-                variables: {
-                    id: productId,
-                    input: {
-                        tags: tagId,
-                    },
-                },
-                // variables: { email: formData.email, password: formData.password },
-            });
-            if (data?.productUpdate?.errors?.length > 0) {
-                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
-            } else {
-                router.push(`/apps/product/edit?id=${productId}`);
-                console.log('success: ', data);
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
+    //         const { data } = await assignTagToProduct({
+    //             variables: {
+    //                 id: productId,
+    //                 input: {
+    //                     tags: tagId,
+    //                 },
+    //             },
+    //             // variables: { email: formData.email, password: formData.password },
+    //         });
+    //         if (data?.productUpdate?.errors?.length > 0) {
+    //             console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+    //         } else {
+    //             router.push(`/apps/product/edit?id=${productId}`)
+    //             console.log('success: ', data);
+    //         }
+    //     } catch (error) {
+    //         console.log('error: ', error);
+    //     }
+    // };
 
     const handleAddAccordion = () => {
         const selectedType = arr.find((item) => item.type === chooseType);
@@ -689,38 +685,38 @@ const ProductAdd = () => {
         setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
     };
 
-    const handleRemoveAccordion = (type: any) => {
-        setSelectedArr(selectedArr.filter((item: any) => item !== type));
-        setAccordions(accordions.filter((item: any) => item.type !== type));
+    const handleRemoveAccordion = (type:any) => {
+        setSelectedArr(selectedArr.filter((item:any) => item !== type));
+        setAccordions(accordions.filter((item:any) => item.type !== type));
         setOpenAccordion('');
-        const updatedSelectedValues: any = { ...selectedValues };
+        const updatedSelectedValues:any = { ...selectedValues };
         delete updatedSelectedValues[type];
         setSelectedValues(updatedSelectedValues);
     };
 
-    const handleDropdownChange = (event: any, type: any) => {
+    const handleDropdownChange = (event:any, type:any) => {
         setChooseType(type);
     };
 
-    const handleToggleAccordion = (type: any) => {
+    const handleToggleAccordion = (type:any) => {
         setOpenAccordion(openAccordion === type ? '' : type);
     };
 
-    const handleMultiSelectChange = (selectedOptions: any, type: any) => {
-        const selectedValuesForType = selectedOptions.map((option: any) => option.value);
+    const handleMultiSelectChange = (selectedOptions:any, type:any) => {
+        const selectedValuesForType = selectedOptions.map((option:any) => option.value);
         setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
     };
 
-    const handleChange = (index: any, fieldName: any, fieldValue: any) => {
+    const handleChange = (index:any, fieldName:any, fieldValue:any) => {
         setVariants((prevItems) => {
-            const updatedItems: any = [...prevItems];
+            const updatedItems:any = [...prevItems];
             updatedItems[index][fieldName] = fieldValue;
             return updatedItems;
         });
     };
 
     const handleAddItem = () => {
-        setVariants((prevItems: any) => [
+        setVariants((prevItems:any) => [
             ...prevItems,
             {
                 sku: '',
@@ -732,7 +728,7 @@ const ProductAdd = () => {
         ]);
     };
 
-    const handleRemoveVariants = (index: any) => {
+    const handleRemoveVariants = (index:any) => {
         if (index === 0) return; // Prevent removing the first item
         setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
     };
@@ -743,10 +739,10 @@ const ProductAdd = () => {
         console.log('imageUrl: ', imageUrl);
 
         // Push the selected file into the 'images' array
-        setImages((prevImages: any) => [...prevImages, selectedFile]);
+        setImages((prevImages:any) => [...prevImages, selectedFile]);
 
         // Push the blob URL into the 'imageUrl' array
-        setImageUrl((prevUrls: any) => [...prevUrls, imageUrl]);
+        setImageUrl((prevUrls:any) => [...prevUrls, imageUrl]);
 
         setModal4(false);
     };
@@ -767,7 +763,7 @@ const ProductAdd = () => {
                 </div>
 
                 <div className="grid grid-cols-12 gap-4">
-                    <div className=" col-span-9">
+                    <div className=" md:col-span-9 col-span-12">
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 Product Name
@@ -807,14 +803,14 @@ const ProductAdd = () => {
                             <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
                             {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
                         </div> */}
-                        <div className="panel mb-5">
+                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
                             <div ref={editorRef} className="mb-5 border border-gray-200">
-                                <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} />
-                            </div>
-                            {/* {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>} */}
+  {/* <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} /> */}
+</div>
+                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
                             {/* <p>Editor content: {content}</p> */}
                             {/* <button onClick={handleSave} className="btn btn-primary">
                                 Save
@@ -845,11 +841,11 @@ const ProductAdd = () => {
                                     <option value="2">Variable Product</option>
                                 </select>
                             </div> */}
-                            <div className="flex flex-col  sm:flex-row">
+                            <div className="flex flex-col  md:flex-row ">
                                 {isMounted && (
                                     <Tab.Group>
-                                        <div className="mx-10 mb-5 sm:mb-0">
-                                            <Tab.List className="m-auto w-24 text-center font-semibold">
+                                        <div className="mx-10 mb-5 sm:mb-0 ">
+                                            <Tab.List className="md:m-auto w-32 text-center font-semibold flex flex-row  md:flex-col md:mb-0 mb-5 ">
                                                 {/* <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
@@ -875,7 +871,7 @@ const ProductAdd = () => {
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
-                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Attributes
                                                         </button>
@@ -885,7 +881,7 @@ const ProductAdd = () => {
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
-                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Variants
                                                         </button>
@@ -895,7 +891,7 @@ const ProductAdd = () => {
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
-                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Advanced
                                                         </button>
@@ -903,7 +899,7 @@ const ProductAdd = () => {
                                                 </Tab>
                                             </Tab.List>
                                         </div>
-                                        <Tab.Panels>
+                                        <Tab.Panels className="w-full">
                                             {/* <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 mr-4 pr-6">
@@ -911,7 +907,7 @@ const ProductAdd = () => {
                                                             Upsells
                                                         </label>
                                                     </div>
-                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                    <div className="mb-5" style={{ width: '100%' }}>
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={true} />
                                                     </div>
                                                 </div>
@@ -922,7 +918,7 @@ const ProductAdd = () => {
                                                             Cross-sells
                                                         </label>
                                                     </div>
-                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                    <div className="mb-5" style={{ width: '100%' }}>
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
                                                     </div>
                                                 </div>
@@ -930,11 +926,11 @@ const ProductAdd = () => {
 
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
-                                                    <div className="mb-5 pr-3">
+                                                    <div className="mb-5 pr-3" style={{ width: '50%' }}>
                                                         <Select
                                                             placeholder="Select Type"
                                                             options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
-                                                            onChange={(selectedOption: any) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            onChange={(selectedOption:any) => handleDropdownChange(selectedOption, selectedOption.value)}
                                                             value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
                                                         />
                                                     </div>
@@ -947,7 +943,7 @@ const ProductAdd = () => {
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        {accordions.map((item: any) => (
+                                                        {accordions.map((item:any) => (
                                                             <div key={item?.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
                                                                 <button
                                                                     type="button"
@@ -977,15 +973,15 @@ const ProductAdd = () => {
                                                                                             Value(s)
                                                                                         </label>
                                                                                     </div>
-                                                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                                                    <div className="mb-5" style={{ width: '100%' }}>
                                                                                         <Select
                                                                                             placeholder={`Select ${item.type} Name`}
                                                                                             options={item[`${item.type}Name`]}
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value: any) => {
-                                                                                                const option = item[`${item.type}Name`].find((option: any) => option.value === value);
+                                                                                            value={(selectedValues[item.type] || []).map((value:any) => {
+                                                                                                const option = item[`${item.type}Name`].find((option:any) => option.value === value);
                                                                                                 return { value: option.value, label: option.label };
                                                                                             })}
                                                                                         />
@@ -1033,38 +1029,38 @@ const ProductAdd = () => {
                                                             </div>
                                                         )}
                                                         <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
+                                                            <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`name${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                    Variant
+                                                                    Variant:
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="text"
                                                                     id={`name${index}`}
                                                                     name={`name${index}`}
                                                                     value={item.name}
                                                                     onChange={(e) => handleChange(index, 'name', e.target.value)}
-                                                                    style={{ width: '350px' }}
+                                                                    style={{ width: '100%' }}
                                                                     placeholder="Enter variants"
                                                                     className="form-input"
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
+                                                            <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`sku_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
                                                                     SKU
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="text"
                                                                     id={`sku_${index}`}
                                                                     name={`sku_${index}`}
                                                                     value={item.sku}
                                                                     onChange={(e) => handleChange(index, 'sku', e.target.value)}
-                                                                    style={{ width: '350px' }}
+                                                                    style={{ width: '100%' }}
                                                                     placeholder="Enter SKU"
                                                                     className="form-input"
                                                                 />
@@ -1072,12 +1068,12 @@ const ProductAdd = () => {
                                                             </div>
                                                         </div>
                                                         <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4 pr-4">
+                                                            <div className="mb-5 mr-4 pr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`stackMgmt_${index}`} className="block  text-sm font-medium text-gray-700">
                                                                     Stock Management
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="checkbox"
                                                                     id={`stackMgmt_${index}`}
@@ -1091,19 +1087,19 @@ const ProductAdd = () => {
                                                         </div>
                                                         {item.stackMgmt && (
                                                             <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4 ">
+                                                                <div className="mb-5 mr-4 " style={{ width: '20%' }}>
                                                                     <label htmlFor={`quantity_${index}`} className="block  text-sm font-medium text-gray-700">
                                                                         Quantity
                                                                     </label>
                                                                 </div>
-                                                                <div className="mb-5">
+                                                                <div className="mb-5" style={{ width: '80%' }}>
                                                                     <input
                                                                         type="number"
                                                                         id={`quantity_${index}`}
                                                                         name={`quantity_${index}`}
                                                                         value={item.quantity}
                                                                         onChange={(e) => handleChange(index, 'quantity', parseInt(e.target.value))}
-                                                                        style={{ width: '350px' }}
+                                                                        style={{ width: '100%' }}
                                                                         placeholder="Enter Quantity"
                                                                         className="form-input"
                                                                     />
@@ -1111,38 +1107,38 @@ const ProductAdd = () => {
                                                             </div>
                                                         )}
                                                         <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
+                                                            <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`regularPrice_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
                                                                     Regular Price
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="number"
                                                                     id={`regularPrice_${index}`}
                                                                     name={`regularPrice_${index}`}
                                                                     value={item.regularPrice}
                                                                     onChange={(e) => handleChange(index, 'regularPrice', parseFloat(e.target.value))}
-                                                                    style={{ width: '350px' }}
+                                                                    style={{ width: '100%' }}
                                                                     placeholder="Enter Regular Price"
                                                                     className="form-input"
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center">
-                                                            <div className="mb-5 mr-4">
+                                                            <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
                                                                     Sale Price
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="number"
                                                                     id={`salePrice_${index}`}
                                                                     name={`salePrice_${index}`}
                                                                     value={item.salePrice}
                                                                     onChange={(e) => handleChange(index, 'salePrice', parseFloat(e.target.value))}
-                                                                    style={{ width: '350px' }}
+                                                                    style={{ width: '100%' }}
                                                                     placeholder="Enter Sale Price"
                                                                     className="form-input"
                                                                 />
@@ -1165,7 +1161,7 @@ const ProductAdd = () => {
                                                             </label>
                                                         </div>
                                                         <div className="mb-5">
-                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxStatus(e.target.value)}>
+                                                            <select className="form-select w-52 flex-1" style={{ width: '100%' }} onChange={(e) => taxStatus(e.target.value)}>
                                                                 <option value="taxable">Taxable</option>
                                                                 <option value="shipping-only">Shipping Only</option>
                                                                 <option value="none">None</option>
@@ -1179,7 +1175,7 @@ const ProductAdd = () => {
                                                             </label>
                                                         </div>
                                                         <div className="mb-5">
-                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxClass(e.target.value)}>
+                                                            <select className="form-select w-52 flex-1" style={{ width: '100%' }} onChange={(e) => taxClass(e.target.value)}>
                                                                 <option value="standard">Standard</option>
                                                                 <option value="reduced-rate">Reduced rate</option>
                                                                 <option value="zero-rate">Zero rate</option>
@@ -1192,17 +1188,17 @@ const ProductAdd = () => {
                                             <Tab.Panel>
                                                 <div>
                                                     <div className="active flex items-center">
-                                                        <div className="mb-5 mr-4 pr-3">
+                                                        <div className="mb-5 mr-4 pr-3" style={{ width: '20%' }}>
                                                             <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
                                                                 Menu Order
                                                             </label>
                                                         </div>
-                                                        <div className="mb-5">
+                                                        <div className="mb-5" style={{ width: '80%' }}>
                                                             <input
                                                                 type="number"
-                                                                style={{ width: '350px' }}
+                                                                style={{ width: '100%' }}
                                                                 value={menuOrder}
-                                                                onChange={(e) => setMenuOrder(e.target.value)}
+                                                                onChange={(e:any) => setMenuOrder(e.target.value)}
                                                                 placeholder="Enter Menu Order"
                                                                 name="regularPrice"
                                                                 className="form-input"
@@ -1221,7 +1217,7 @@ const ProductAdd = () => {
                                                         </label>
                                                     </div>
                                                     <div className="mb-5">
-                                                        <textarea rows={3} style={{ width: '350px' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
+                                                        <textarea rows={3} style={{ width: '100%' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
                                                     </div>
                                                 </div>
 
@@ -1232,7 +1228,7 @@ const ProductAdd = () => {
                                                         </label>
                                                     </div>
                                                     <div className="mb-5">
-                                                        <input type="number" style={{ width: '350px' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
+                                                        <input type="number" style={{ width: '100%' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
                                                     </div>
                                                 </div>
 
@@ -1265,7 +1261,7 @@ const ProductAdd = () => {
                                 <h5 className=" block text-lg font-medium text-gray-700">Label</h5>
                             </div>
                             <div className="mb-5">
-                                <Select placeholder="Select an label" options={options} value={label} onChange={(val: any) => setLabel(val)} isSearchable={true} />
+                                <Select placeholder="Select an label" options={options} value={label} onChange={(val:any) => setLabel(val)} isSearchable={true} />
                             </div>
                         </div>
 
@@ -1282,7 +1278,7 @@ const ProductAdd = () => {
                                 <div className="col-span-6">
                                     <h5 className="un mb-5 block text-lg font-medium text-gray-700 underline">Mark product as "New" till date</h5>
                                     <div>
-                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="new-label" className="form-input" required />
+                                        <input type="date" style={{ width: '100%' }} placeholder="From.." name="new-label" className="form-input" required />
                                         <p className="mt-2 text-sm text-gray-500">
                                             Specify the end date when the "New" status will be retired. NOTE: "Permanent "New" label" option should be disabled if you use the exact date.
                                         </p>
@@ -1291,8 +1287,8 @@ const ProductAdd = () => {
                             </div>
                         </div> */}
                     </div>
-                    <div className="col-span-3">
-                        <div className="panel">
+                    <div className="md:col-span-3 col-span-12">
+                        <div className="panel md:order-1 order-4">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Publish</h5>
                             </div>
@@ -1439,13 +1435,13 @@ const ProductAdd = () => {
                             <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
                         </div> */}
 
-                        <div className="panel mt-5">
+                        <div className="panel mt-5 md:order-2 order-2">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Gallery</h5>
                             </div>
                             <div className="grid grid-cols-12 gap-3">
                                 {imageUrl?.length > 0 &&
-                                    imageUrl?.map((item: any, index: any) => (
+                                    imageUrl?.map((item:any, index:any) => (
                                         <div className="relative col-span-4">
                                             <img src={item} alt="Product image" className=" object-cover" />
                                             <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
@@ -1467,7 +1463,7 @@ const ProductAdd = () => {
                             </button> */}
                         </div>
 
-                        <div className="panel mt-5">
+                        <div className="panel mt-5  md:order-3 order-4">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Categories</h5>
                             </div>
@@ -1568,7 +1564,7 @@ const ProductAdd = () => {
                             )} */}
                         </div>
 
-                        <div className="panel mt-5">
+                        <div className="panel mt-5  md:order-4 order-1">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Tags</h5>
                             </div>
