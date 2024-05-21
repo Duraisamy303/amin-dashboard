@@ -26,9 +26,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import IconEdit from '@/components/Icon/IconEdit';
 import Select from 'react-select';
-import dynamic from 'next/dynamic';
-import 'react-quill/dist/quill.snow.css';
-const ReactQuill = dynamic(import('react-quill'), { ssr: false });
+// import dynamic from 'next/dynamic';
+// import 'react-quill/dist/quill.snow.css';
+// const ReactQuill = dynamic(import('react-quill'), { ssr: false });
 
 import { Tab } from '@headlessui/react';
 import AnimateHeight from 'react-animate-height';
@@ -841,11 +841,11 @@ if (editorInstance) {
                                     <option value="2">Variable Product</option>
                                 </select>
                             </div> */}
-                            <div className="flex flex-col  sm:flex-row">
+                            <div className="flex flex-col  md:flex-row ">
                                 {isMounted && (
                                     <Tab.Group>
-                                        <div className="mx-10 mb-5 sm:mb-0">
-                                            <Tab.List className="m-auto w-24 text-center font-semibold">
+                                        <div className="mx-10 mb-5 sm:mb-0 ">
+                                            <Tab.List className="md:m-auto w-32 text-center font-semibold flex flex-row  md:flex-col md:mb-0 mb-5 ">
                                                 {/* <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
@@ -871,7 +871,7 @@ if (editorInstance) {
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
-                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Attributes
                                                         </button>
@@ -881,7 +881,7 @@ if (editorInstance) {
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
-                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Variants
                                                         </button>
@@ -891,7 +891,7 @@ if (editorInstance) {
                                                     {({ selected }) => (
                                                         <button
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
-                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-4 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px] dark:border-[#191e3a]`}
                                                         >
                                                             Advanced
                                                         </button>
@@ -899,7 +899,7 @@ if (editorInstance) {
                                                 </Tab>
                                             </Tab.List>
                                         </div>
-                                        <Tab.Panels>
+                                        <Tab.Panels className="w-full">
                                             {/* <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 mr-4 pr-6">
@@ -907,7 +907,7 @@ if (editorInstance) {
                                                             Upsells
                                                         </label>
                                                     </div>
-                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                    <div className="mb-5" style={{ width: '100%' }}>
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={true} />
                                                     </div>
                                                 </div>
@@ -918,7 +918,7 @@ if (editorInstance) {
                                                             Cross-sells
                                                         </label>
                                                     </div>
-                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                    <div className="mb-5" style={{ width: '100%' }}>
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
                                                     </div>
                                                 </div>
@@ -926,7 +926,7 @@ if (editorInstance) {
 
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
-                                                    <div className="mb-5 pr-3">
+                                                    <div className="mb-5 pr-3" style={{ width: '50%' }}>
                                                         <Select
                                                             placeholder="Select Type"
                                                             options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
@@ -973,7 +973,7 @@ if (editorInstance) {
                                                                                             Value(s)
                                                                                         </label>
                                                                                     </div>
-                                                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                                                    <div className="mb-5" style={{ width: '100%' }}>
                                                                                         <Select
                                                                                             placeholder={`Select ${item.type} Name`}
                                                                                             options={item[`${item.type}Name`]}
@@ -1029,38 +1029,38 @@ if (editorInstance) {
                                                             </div>
                                                         )}
                                                         <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
+                                                            <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`name${index}`} className="block pr-5 text-sm font-medium text-gray-700">
-                                                                    Variant
+                                                                    Variant:
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="text"
                                                                     id={`name${index}`}
                                                                     name={`name${index}`}
                                                                     value={item.name}
                                                                     onChange={(e) => handleChange(index, 'name', e.target.value)}
-                                                                    style={{ width: '350px' }}
+                                                                    style={{ width: '100%' }}
                                                                     placeholder="Enter variants"
                                                                     className="form-input"
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
+                                                            <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`sku_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
                                                                     SKU
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="text"
                                                                     id={`sku_${index}`}
                                                                     name={`sku_${index}`}
                                                                     value={item.sku}
                                                                     onChange={(e) => handleChange(index, 'sku', e.target.value)}
-                                                                    style={{ width: '350px' }}
+                                                                    style={{ width: '100%' }}
                                                                     placeholder="Enter SKU"
                                                                     className="form-input"
                                                                 />
@@ -1068,12 +1068,12 @@ if (editorInstance) {
                                                             </div>
                                                         </div>
                                                         <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4 pr-4">
+                                                            <div className="mb-5 mr-4 pr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`stackMgmt_${index}`} className="block  text-sm font-medium text-gray-700">
                                                                     Stock Management
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="checkbox"
                                                                     id={`stackMgmt_${index}`}
@@ -1087,19 +1087,19 @@ if (editorInstance) {
                                                         </div>
                                                         {item.stackMgmt && (
                                                             <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4 ">
+                                                                <div className="mb-5 mr-4 " style={{ width: '20%' }}>
                                                                     <label htmlFor={`quantity_${index}`} className="block  text-sm font-medium text-gray-700">
                                                                         Quantity
                                                                     </label>
                                                                 </div>
-                                                                <div className="mb-5">
+                                                                <div className="mb-5" style={{ width: '80%' }}>
                                                                     <input
                                                                         type="number"
                                                                         id={`quantity_${index}`}
                                                                         name={`quantity_${index}`}
                                                                         value={item.quantity}
                                                                         onChange={(e) => handleChange(index, 'quantity', parseInt(e.target.value))}
-                                                                        style={{ width: '350px' }}
+                                                                        style={{ width: '100%' }}
                                                                         placeholder="Enter Quantity"
                                                                         className="form-input"
                                                                     />
@@ -1107,38 +1107,38 @@ if (editorInstance) {
                                                             </div>
                                                         )}
                                                         <div className="active flex items-center">
-                                                            <div className="mb-5 mr-4">
+                                                            <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`regularPrice_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
                                                                     Regular Price
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="number"
                                                                     id={`regularPrice_${index}`}
                                                                     name={`regularPrice_${index}`}
                                                                     value={item.regularPrice}
                                                                     onChange={(e) => handleChange(index, 'regularPrice', parseFloat(e.target.value))}
-                                                                    style={{ width: '350px' }}
+                                                                    style={{ width: '100%' }}
                                                                     placeholder="Enter Regular Price"
                                                                     className="form-input"
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center">
-                                                            <div className="mb-5 mr-4">
+                                                            <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
                                                                     Sale Price
                                                                 </label>
                                                             </div>
-                                                            <div className="mb-5">
+                                                            <div className="mb-5" style={{ width: '80%' }}>
                                                                 <input
                                                                     type="number"
                                                                     id={`salePrice_${index}`}
                                                                     name={`salePrice_${index}`}
                                                                     value={item.salePrice}
                                                                     onChange={(e) => handleChange(index, 'salePrice', parseFloat(e.target.value))}
-                                                                    style={{ width: '350px' }}
+                                                                    style={{ width: '100%' }}
                                                                     placeholder="Enter Sale Price"
                                                                     className="form-input"
                                                                 />
@@ -1161,7 +1161,7 @@ if (editorInstance) {
                                                             </label>
                                                         </div>
                                                         <div className="mb-5">
-                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxStatus(e.target.value)}>
+                                                            <select className="form-select w-52 flex-1" style={{ width: '100%' }} onChange={(e) => taxStatus(e.target.value)}>
                                                                 <option value="taxable">Taxable</option>
                                                                 <option value="shipping-only">Shipping Only</option>
                                                                 <option value="none">None</option>
@@ -1175,7 +1175,7 @@ if (editorInstance) {
                                                             </label>
                                                         </div>
                                                         <div className="mb-5">
-                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxClass(e.target.value)}>
+                                                            <select className="form-select w-52 flex-1" style={{ width: '100%' }} onChange={(e) => taxClass(e.target.value)}>
                                                                 <option value="standard">Standard</option>
                                                                 <option value="reduced-rate">Reduced rate</option>
                                                                 <option value="zero-rate">Zero rate</option>
@@ -1188,15 +1188,15 @@ if (editorInstance) {
                                             <Tab.Panel>
                                                 <div>
                                                     <div className="active flex items-center">
-                                                        <div className="mb-5 mr-4 pr-3">
+                                                        <div className="mb-5 mr-4 pr-3" style={{ width: '20%' }}>
                                                             <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
                                                                 Menu Order
                                                             </label>
                                                         </div>
-                                                        <div className="mb-5">
+                                                        <div className="mb-5" style={{ width: '80%' }}>
                                                             <input
                                                                 type="number"
-                                                                style={{ width: '350px' }}
+                                                                style={{ width: '100%' }}
                                                                 value={menuOrder}
                                                                 onChange={(e:any) => setMenuOrder(e.target.value)}
                                                                 placeholder="Enter Menu Order"
@@ -1217,7 +1217,7 @@ if (editorInstance) {
                                                         </label>
                                                     </div>
                                                     <div className="mb-5">
-                                                        <textarea rows={3} style={{ width: '350px' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
+                                                        <textarea rows={3} style={{ width: '100%' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
                                                     </div>
                                                 </div>
 
@@ -1228,7 +1228,7 @@ if (editorInstance) {
                                                         </label>
                                                     </div>
                                                     <div className="mb-5">
-                                                        <input type="number" style={{ width: '350px' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
+                                                        <input type="number" style={{ width: '100%' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
                                                     </div>
                                                 </div>
 
@@ -1278,7 +1278,7 @@ if (editorInstance) {
                                 <div className="col-span-6">
                                     <h5 className="un mb-5 block text-lg font-medium text-gray-700 underline">Mark product as "New" till date</h5>
                                     <div>
-                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="new-label" className="form-input" required />
+                                        <input type="date" style={{ width: '100%' }} placeholder="From.." name="new-label" className="form-input" required />
                                         <p className="mt-2 text-sm text-gray-500">
                                             Specify the end date when the "New" status will be retired. NOTE: "Permanent "New" label" option should be disabled if you use the exact date.
                                         </p>
