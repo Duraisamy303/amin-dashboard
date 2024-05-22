@@ -20,29 +20,47 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
-import { CREATE_DESIGN, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, ORDER_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
+import { CREATE_DESIGN, CREATE_DRAFT_ORDER, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, ORDER_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
 import moment from 'moment';
 import { useRouter } from 'next/router';
+import Modal from '@/components/Modal';
+import { useSetState } from '@/utils/functions';
+import dayjs from 'dayjs';
 
 const Orders = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
+    const [state, setState] = useSetState({
+        isOpenChannel: false,
+        currency: [
+            {
+                value: 'INR',
+                label: 'INR',
+            },
+            {
+                value: 'USD',
+                label: 'USD',
+            },
+        ],
+        selectedCurrency: '',
+    });
+
+    const [draftOrder] = useMutation(CREATE_DRAFT_ORDER);
+
     const dispatch = useDispatch();
+
     useEffect(() => {
         dispatch(setPageTitle('Checkbox Table'));
     });
-const router = useRouter()
+    const router = useRouter();
 
     const { error, data: finishData } = useQuery(ORDER_LIST, {
-        variables: { channel: 'india-channel', first: 20 },
+        variables: { channel: 'india-channel', first: 100 },
     });
-
-    console.log('finishData: ', finishData);
 
     const [finishList, setFinishList] = useState([]);
     const [loading, setLoading] = useState(false);
-    console.log("finishList: ", finishList);
 
     useEffect(() => {
         getFinishList();
@@ -51,13 +69,15 @@ const router = useRouter()
     const getFinishList = () => {
         setLoading(true);
         if (finishData) {
+            console.log("finishData: ", finishData);
             if (finishData && finishData.orders && finishData.orders?.edges?.length > 0) {
                 const newData = finishData.orders?.edges.map((item: any) => ({
                     ...item.node,
                     order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
-                    date: moment(item?.node?.updatedAt).format('MMM d, yyyy'),
-                    status: item?.node?.paymentStatus,
+                    date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
+                    status: item?.node?.status,
                     total: item?.node?.total.gross.amount,
+                    payment: item?.node?.paymentStatus,
                 }));
                 console.log('newData: ', newData);
                 setFinishList(newData);
@@ -202,13 +222,12 @@ const router = useRouter()
         router.push(`/orders/editorder?id=${record.id}`);
     };
 
-   
     // category table create
     const CreateOrder = () => {
         // setModal1(true);
         // setModalTitle(null);
         // setModalContant(null);
-        router.push('/orders/addorder');
+        router.push('/orders/new-order');
     };
 
     // view categotry
@@ -287,7 +306,28 @@ const router = useRouter()
     };
 
     // completed category delete option
+    const handleSetChannel = () => {
+        createDraftOrder();
+    };
 
+    const createDraftOrder = async () => {
+        try {
+            const { data } = await draftOrder({
+                variables: {
+                    input: {
+                        channelId: state.selectedCurrency == 'USD' ? 'Q2hhbm5lbDox' : 'Q2hhbm5lbDoy',
+                    },
+                },
+            });
+            localStorage.setItem('channel', state.selectedCurrency);
+            router.push({
+                pathname: '/orders/new-order',
+                query: { orderId: data?.draftOrderCreate?.order?.id },
+            });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
     return (
         <div>
             <div className="panel mt-6">
@@ -318,7 +358,7 @@ const router = useRouter()
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateOrder()}>
+                        <button type="button" className="btn btn-primary" onClick={() => setState({ isOpenChannel: true })}>
                             + Create
                         </button>
                     </div>
@@ -340,21 +380,15 @@ const router = useRouter()
                         >
                             <ul className="!min-w-[120px]">
                                 <li>
-                                    <button type="button">
-                                       All dates
-                                    </button>
+                                    <button type="button">All dates</button>
                                 </li>
 
                                 <li>
-                                    <button type="button">
-                                       April 2024
-                                    </button>
+                                    <button type="button">April 2024</button>
                                 </li>
 
                                 <li>
-                                    <button type="button">
-                                       March 2024
-                                    </button>
+                                    <button type="button">March 2024</button>
                                 </li>
                             </ul>
                         </Dropdown>
@@ -365,7 +399,7 @@ const router = useRouter()
                             btnClassName="btn btn-outline-primary dropdown-toggle"
                             button={
                                 <>
-                                   Filter by Registered Customer
+                                    Filter by Registered Customer
                                     <span>
                                         <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
                                     </span>
@@ -374,15 +408,13 @@ const router = useRouter()
                         >
                             <ul className="!min-w-[120px]">
                                 <li>
-                                    <button type="button">
-                                       Customer Name
-                                    </button>
+                                    <button type="button">Customer Name</button>
                                 </li>
                             </ul>
                         </Dropdown>
                     </div>
                     <div>
-                        <button type="button" className="btn btn-primary" >
+                        <button type="button" className="btn btn-primary">
                             Filter
                         </button>
                     </div>
@@ -393,13 +425,14 @@ const router = useRouter()
                     <div className="datatables">
                         <DataTable
                             className="table-hover whitespace-nowrap"
-                            records={recordsData}
+                            records={finishList}
                             columns={[
                                 // { accessor: 'id', sortable: true },
                                 // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                                { accessor: 'order', sortable: true },
+                                { accessor: 'order', sortable: true, },
                                 { accessor: 'date', sortable: true },
-                                { accessor: 'status', sortable: true },
+                                { accessor: 'status', sortable: true,title: 'Order status'},
+                                { accessor: 'paymentStatus', sortable: true,title: 'Payment status' },
                                 { accessor: 'total', sortable: true },
                                 {
                                     // Custom column for actions
@@ -428,7 +461,7 @@ const router = useRouter()
                                 },
                             ]}
                             highlightOnHover
-                            totalRecords={initialRecords.length}
+                            totalRecords={finishList.length}
                             recordsPerPage={pageSize}
                             page={page}
                             onPageChange={(p) => setPage(p)}
@@ -609,6 +642,42 @@ const router = useRouter()
                     </div>
                 </Dialog>
             </Transition> */}
+
+            <Modal
+                addHeader={'Select a Currency'}
+                open={state.isOpenChannel}
+                close={() => setState({ isOpenChannel: false })}
+                renderComponent={() => (
+                    <div className="p-5">
+                        <select
+                            className="form-select"
+                            value={state.selectedCurrency}
+                            onChange={(val) => {
+                                const selectedCurrency: any = val.target.value;
+                                setState({ selectedCurrency });
+                            }}
+                        >
+                            <option value="" disabled selected>
+                                Select a currency
+                            </option>
+                            {state.currency?.map((item) => (
+                                <option key={item?.value} value={item?.value}>
+                                    {item?.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        <div className="mt-8 flex items-center justify-end">
+                            <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setState({ isOpenChannel: false })}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4" onClick={() => handleSetChannel()}>
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
+            />
         </div>
     );
 };

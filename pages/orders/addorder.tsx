@@ -2,6 +2,7 @@ import React, { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery } from '@apollo/client';
 import {
+    ADD_COUPEN,
     ADD_NEW_LINE,
     COUNTRY_LIST,
     CREATE_DRAFT_ORDER,
@@ -14,6 +15,7 @@ import {
     GET_ORDER_DETAILS,
     SHIPPING_COST_UPDATE,
     STATES_LIST,
+    UPDATE_COUPEN,
     UPDATE_LINE,
 } from '@/query/product';
 import { Loader } from '@mantine/core';
@@ -28,10 +30,9 @@ import IconEdit from '@/components/Icon/IconEdit';
 import Modal from '@/components/Modal';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import Select from 'react-select';
+import { Field, Form, Formik } from 'formik';
 
 const AddOrder = () => {
-    const router = useRouter();
-
     const initialValues = {
         billing: {
             firstName: '',
@@ -67,13 +68,63 @@ const AddOrder = () => {
         },
     };
 
+    const router = useRouter();
+
+    const [quantity, setQuantity] = useState(0);
+
+    const [customerData, setCustomerData] = useState([]);
+    const [selectedCustomer, setSelectedCustomer] = useState('');
+    const [isOpenCoupen, setIsOpenCoupen] = useState(false);
+
+    const [loading, setLoading] = useState(false);
+    const [countryList, setCountryList] = useState([]);
+    const [selectedCountry, setSelectedCountry] = useState([]);
+    const [draftOrderId, setDraftOrderId] = useState([]);
+    const [selectedOption, setSelectedOption] = useState('percentage');
+
+    //List data
+    const [data, setData] = useState<any>([]);
+    const [stateList, setStateList] = useState([]);
+
+    const [btnOpen, setbtnOpen] = useState(false);
+
+    //For fee
+    const [feeOpen, setFeeOpen] = useState(false);
+    const [selectedFee, setSelectedFee] = useState(0);
+    const [orderData, setOrderData] = useState(0);
+    const [feeIsEdit, setFeeIsEdit] = useState(false);
+
+    // For product
+    const [addProductOpen, setAddProductOpen] = useState(false);
+    const [productIsEdit, setProductIsEdit] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState(0);
+    const [selectedProductId, setSelectedProductId] = useState('');
+    const [percentcoupenValue, setPercentCoupenValue] = useState('');
+    const [fixedcoupenValue, setFixedCoupenValue] = useState('');
+
+    const [productList, setProductList] = useState([]);
+    const [productListData, setProductListData] = useState([]);
+
+    //For shipping
+    const [shippingOpen, setShippingOpen] = useState(false);
+    const [shippingPrice, setShippingPrice] = useState(0);
+    const [shippingIsEdit, setShippingIsEdit] = useState(false);
+
+    const [showBillingInputs, setShowBillingInputs] = useState(false);
+    const [showShippingInputs, setShowShippingInputs] = useState(false);
+    const [selectedItems, setSelectedItems] = useState({});
+
     const [formData, setFormData] = useState(initialValues);
     const [errors, setErrors] = useState<any>({});
-    const [isLoadBillingAddress, setIsLoadBillingAddress] = useState(initialValues);
 
     const [addNotes] = useMutation(CREATE_NOTES);
     const [deleteNotes] = useMutation(DELETE_NOTES);
     const [newAddLine] = useMutation(ADD_NEW_LINE);
+    const [updateLine] = useMutation(UPDATE_LINE);
+
+    const [addCoupenAmt] = useMutation(ADD_COUPEN);
+    const [updateCoupenAmt] = useMutation(UPDATE_COUPEN);
+
     const [updateShipping] = useMutation(SHIPPING_COST_UPDATE);
     const [removeLine] = useMutation(DELETE_LINE);
 
@@ -155,48 +206,7 @@ const AddOrder = () => {
         },
     });
 
-    const [orderData, setOrderData] = useState<any>({});
-    const [customerData, setCustomerData] = useState([]);
-    const [selectedCustomer, setSelectedCustomer] = useState('');
-
-    const [loading, setLoading] = useState(false);
-    const [countryList, setCountryList] = useState([]);
-    const [selectedCountry, setSelectedCountry] = useState([]);
-    const [draftOrderId, setDraftOrderId] = useState([]);
-
-    //List data
-    const [data, setData] = useState<any>([]);
-    const [stateList, setStateList] = useState([]);
-
-    const [btnOpen, setbtnOpen] = useState(false);
-
-    //For fee
-    const [feeOpen, setFeeOpen] = useState(false);
-    const [selectedFee, setSelectedFee] = useState(0);
-    const [feePrice, setFeePrice] = useState(0);
-    const [feeIsEdit, setFeeIsEdit] = useState(false);
-
-    // For product
-    const [addProductOpen, setAddProductOpen] = useState(false);
-    const [productIsEdit, setProductIsEdit] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState(0);
-    const [selectedUser, setSelectedUser] = useState('');
-    const [quantity, setQuantity] = useState(0);
-    const [productList, setProductList] = useState([]);
-    const [productListData, setProductListData] = useState([]);
-    console.log('productListData: ', productListData);
-
-    //For shipping
-    const [shippingOpen, setShippingOpen] = useState(false);
-    const [selectedShipping, setSelectedShipping] = useState(0);
-    const [shippingPrice, setShippingPrice] = useState(0);
-    const [shippingIsEdit, setShippingIsEdit] = useState(false);
-
-    const [showBillingInputs, setShowBillingInputs] = useState(false);
-    const [showShippingInputs, setShowShippingInputs] = useState(false);
-    const [selectedItems, setSelectedItems] = useState({});
-
-    const { data: customerAddress } = useQuery(CUSTOMER_ADDRESS, {
+    const { data: customerAddress, refetch: addressRefetch } = useQuery(CUSTOMER_ADDRESS, {
         variables: {
             id: selectedCustomer,
             PERMISSION_HANDLE_CHECKOUTS: true,
@@ -256,11 +266,14 @@ const AddOrder = () => {
             PERMISSION_MANAGE_USERS: true,
         },
     });
-    console.log('productDetails: ', productDetails);
 
     useEffect(() => {
         getCountryList();
     }, [countryData]);
+
+    useEffect(() => {
+        setDiscountValue();
+    }, [productDetails, percentcoupenValue, fixedcoupenValue]);
 
     useEffect(() => {
         createDraftOrder();
@@ -273,6 +286,10 @@ const AddOrder = () => {
     useEffect(() => {
         getProductDetails();
     }, []);
+
+    useEffect(() => {
+        addressRefetch();
+    }, [selectedCustomer]);
 
     useEffect(() => {
         getProductsList();
@@ -403,6 +420,7 @@ const AddOrder = () => {
                     },
                 });
                 console.log('data: ', data);
+                refetch();
 
                 // setData(data.filter((data: any) => data.id !== item.id));
 
@@ -414,84 +432,6 @@ const AddOrder = () => {
         );
 
         // setItems(items.filter((d: any) => d.id !== item.id));
-    };
-
-    const changeQuantityPrice = (type: string, value: string, id: number) => {
-        // const list = items;
-
-        const updatedItems = items.map((item: any) => {
-            if (item.id === id) {
-                // Update the quantity or amount based on the type
-                const updatedValue = type === 'quantity' || type === 'amount' ? Number(value) : value;
-
-                // Calculate the total after updating the quantity or amount
-                const total = Number(item.quantity) * Number(item.amount);
-                console.log('item.quantity: ', item.quantity, item.amount);
-
-                // Return the updated item with the new value and total
-                return {
-                    ...item,
-                    [type]: updatedValue,
-                    total: total,
-                };
-            }
-            return item;
-        });
-        setItems([...updatedItems]);
-
-        console.log('updatedItems: ', updatedItems);
-
-        const item = items.find((d: any) => d.id === id);
-        if (type === 'quantity') {
-            item.quantity = Number(value);
-        }
-        if (type === 'price') {
-            item.amount = Number(value);
-        }
-    };
-
-    const handleUpdateProduct = (e: any) => {
-        e.preventDefault();
-        const newData: any = [...data];
-        newData[selectedProduct] = { user: selectedUser, quantity: quantity, type: 'product' };
-        setData(newData);
-        setAddProductOpen(false);
-        setSelectedUser('');
-        setQuantity(0);
-        setProductIsEdit(false);
-    };
-
-    //For fee
-    const handleAddFee = (e: any) => {
-        e.preventDefault();
-        const product = { user: feePrice, type: 'fee', id: data.length + 1 };
-        console.log('product: ', product);
-        setData([...data, product]);
-        setFeeOpen(false);
-        setFeePrice(0);
-        setFeeIsEdit(false);
-    };
-
-    const handleUpdateFee = (e: any) => {
-        console.log('handleUpdateFee: ');
-        e.preventDefault();
-        const newData: any = [...data];
-        newData[selectedFee] = { ...newData[selectedFee], user: feePrice, type: 'fee' };
-        setData(newData);
-        setFeeOpen(false);
-        setFeePrice(0);
-        setFeeIsEdit(false);
-    };
-
-    //For shipping
-    const handleAddShipping = (e: any) => {
-        e.preventDefault();
-        const product = { user: shippingPrice, type: 'shipping', id: data.length + 1 };
-        console.log('product: ', product);
-        setData([...data, product]);
-        setShippingOpen(false);
-        setShippingPrice(0);
-        setShippingIsEdit(false);
     };
 
     const handleUpdateShipping = async () => {
@@ -583,7 +523,6 @@ const AddOrder = () => {
                         const billingId = customerAddress?.user?.defaultBillingAddress?.id;
                         if (customerAddress?.user?.addresses?.length > 0) {
                             const filter = customerAddress?.user?.addresses?.find((item) => item.id == billingId);
-
                             billing = {
                                 firstName: filter.firstName,
                                 lastName: filter.lastName,
@@ -683,7 +622,7 @@ const AddOrder = () => {
         }
     };
 
-    const handleSelect = (heading, subHeading) => {
+    const handleSelect = (heading: any, subHeading: any) => {
         if (subHeading) {
             setSelectedItems((prevState) => ({
                 ...prevState,
@@ -694,7 +633,7 @@ const AddOrder = () => {
             }));
         } else {
             setSelectedItems((prevState) => {
-                const newState = { ...prevState };
+                const newState: any = { ...prevState };
                 newState[heading] = Object.fromEntries(productList.find((item) => item.name === heading).variants.map(({ name }) => [name, !prevState[heading]?.[name]]));
                 return newState;
             });
@@ -720,10 +659,10 @@ const AddOrder = () => {
 
     const addProducts = async () => {
         try {
-            const selectedSubheadingIds = [];
+            const selectedSubheadingIds: any[] = [];
             productList.forEach(({ name, variants }) => {
                 if (selectedItems[name]) {
-                    variants.forEach(({ name: variantName, id }) => {
+                    variants?.forEach(({ name: variantName, id }) => {
                         if (selectedItems[name][variantName]) {
                             selectedSubheadingIds.push(id);
                         }
@@ -743,7 +682,7 @@ const AddOrder = () => {
             });
             console.log('data: ', data);
             setAddProductOpen(false);
-            setSelectedItems([]);
+            // setSelectedItems([]);
         } catch (error) {
             console.log('error: ', error);
         }
@@ -752,8 +691,96 @@ const AddOrder = () => {
     const updateQuantity = async () => {
         console.log('updateQuantity: ');
         try {
-         
-            console.log('data: ', data);
+            const res = await updateLine({
+                variables: {
+                    id: selectedProductId,
+                    input: {
+                        quantity: quantity,
+                    },
+                },
+            });
+            refetch();
+            setAddProductOpen(false);
+
+            console.log('data: ', res);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const addDiscount = async () => {
+        try {
+            console.log('selectedOption: ', selectedOption);
+            console.log('percentcoupenValue: ', percentcoupenValue);
+            console.log('fixedcoupenValue: ', fixedcoupenValue);
+
+            const res = await addCoupenAmt({
+                variables: {
+                    orderId: draftOrderId,
+                    input: {
+                        reason: '',
+                        value: selectedOption == 'percentage' ? percentcoupenValue : fixedcoupenValue,
+                        valueType: selectedOption.toUpperCase(),
+                    },
+                },
+            });
+            console.log('res: ', res);
+            refetch();
+            setIsOpenCoupen(false);
+            setFixedCoupenValue('');
+            setPercentCoupenValue('');
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const updateDiscount = async () => {
+        try {
+            const res = await updateCoupenAmt({
+                variables: {
+                    discountId: productDetails?.order?.discounts[0]?.id,
+
+                    input: {
+                        reason: '',
+                        value: selectedOption == 'percentage' ? percentcoupenValue : fixedcoupenValue,
+                        valueType: selectedOption.toUpperCase(),
+                    },
+                },
+            });
+            console.log('res: ', res);
+            refetch();
+            setIsOpenCoupen(false);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const setDiscountValue = () => {
+        if (productDetails?.order?.discounts?.length > 0) {
+            setSelectedOption(productDetails?.order?.discounts[0]?.calculationMode.toLowerCase());
+            if (productDetails?.order?.discounts[0]?.calculationMode == 'PERCENTAGE') {
+                setPercentCoupenValue(productDetails?.order?.discounts[0]?.value.toString());
+            } else {
+                setFixedCoupenValue(productDetails?.order?.discounts[0]?.value);
+            }
+        }
+    };
+
+    const SubmittedForm = Yup.object().shape({
+        message: Yup.string().required('Please fill the message'),
+    });
+
+    const onSubmit = async (record: any, { resetForm }: any) => {
+        try {
+            const aaa = { input: { message: record.message }, orderId: draftOrderId, private_note: record.mail };
+
+            const data = await addNotes({
+                variables: { input: { message: record.message }, orderId: draftOrderId, private_note: record.mail },
+            });
+
+            const newData = { ...orderData, events: data?.data?.orderNoteAdd?.order?.events };
+            setOrderData(newData);
+            resetForm();
         } catch (error) {
             console.log('error: ', error);
         }
@@ -781,7 +808,7 @@ const AddOrder = () => {
                                 <div className="mt-8">
                                     <h5 className="mb-3 text-lg font-semibold">General</h5>
                                     <div className="grid grid-cols-12 gap-5">
-                                        <div className="col-span-4">
+                                        {/* <div className="col-span-4">
                                             <label htmlFor="dateTimeCreated" className="block pr-2 text-sm font-medium text-gray-700">
                                                 Date created:
                                             </label>
@@ -798,14 +825,14 @@ const AddOrder = () => {
                                                 <option value="onhold">On Hold</option>
                                                 <option value="completed">Completed</option>
                                             </select>
-                                        </div>
+                                        </div> */}
 
                                         <div className="col-span-4">
                                             <div className=" flex  items-center justify-between">
                                                 <label htmlFor="status" className="block pr-2 text-sm font-medium text-gray-700">
                                                     Customer:
                                                 </label>
-                                                <div>
+                                                {/* <div>
                                                     <p>
                                                         <a href="#" className="mr-2 text-primary">
                                                             Profile
@@ -815,7 +842,7 @@ const AddOrder = () => {
                                                             View Other Orders
                                                         </a>
                                                     </p>
-                                                </div>
+                                                </div> */}
                                             </div>
 
                                             {/* <input list="statusOptions" name="status" className="form-select" /> */}
@@ -826,8 +853,16 @@ const AddOrder = () => {
                                                     const selectedCustomerId: any = val.target.value;
                                                     console.log('selectedCustomerId: ', selectedCustomerId);
                                                     setSelectedCustomer(selectedCustomerId);
+                                                    addressRefetch();
+                                                    setShowBillingInputs(true);
+                                                    setShowShippingInputs(true);
+                                                    // setBillingAddress(val);
+                                                    // setShippingAddress(val);
                                                 }}
                                             >
+                                                <option value="" disabled selected>
+                                                    Select a customer
+                                                </option>
                                                 {customerData?.map((item) => (
                                                     <option key={item?.value} value={item?.value}>
                                                         {item?.label}
@@ -1029,6 +1064,8 @@ const AddOrder = () => {
                                                             // value={selectedCountry}
                                                             // onChange={(e) => getStateList(e.target.value)}
                                                         >
+                                                            <option key={''} disabled value={'Select country'} />
+
                                                             {countryList?.map((item: any) => (
                                                                 <option key={item.code} value={item.code}>
                                                                     {item.country}
@@ -1046,8 +1083,13 @@ const AddOrder = () => {
                                                             id="billingstate"
                                                             name="billing.state"
                                                             value={formData.billing.state}
-                                                            onChange={handleChange}
+                                                            onChange={(e) => {
+                                                                console.log('e: ', e.target.value);
+                                                                handleChange(e);
+                                                            }}
                                                         >
+                                                            <option key={''} disabled value={'Select state'} />
+
                                                             {stateList?.map((item: any) => (
                                                                 <option key={item.raw} value={item.raw}>
                                                                     {item.raw}
@@ -1417,6 +1459,18 @@ const AddOrder = () => {
                                                 <th className="w-1">Cost</th>
                                                 <th className="w-1">Qty</th>
                                                 <th>Total</th>
+                                                {formData?.billing?.state !== '' && (
+                                                    <>
+                                                        {formData?.billing?.state == 'Tamil Nadu' ? (
+                                                            <>
+                                                                <th>SGST</th>
+                                                                <th>CSGT</th>
+                                                            </>
+                                                        ) : (
+                                                            <th>IGST</th>
+                                                        )}
+                                                    </>
+                                                )}
                                                 <th>Action</th>
 
                                                 <th className="w-1"></th>
@@ -1440,7 +1494,7 @@ const AddOrder = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => {
-                                                                setSelectedUser(item.id);
+                                                                setSelectedProductId(item.id);
                                                                 console.log('item: ', item);
                                                                 setQuantity(item.quantity);
                                                                 setAddProductOpen(true);
@@ -1468,20 +1522,24 @@ const AddOrder = () => {
                                                 {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount}
                                             </div>
                                         </div>
-                                        <div className="mt-4 flex items-center justify-between">
+                                        {/* <div className="mt-4 flex items-center justify-between">
                                             <div>Tax(%)</div>
                                             <div>0%</div>
-                                        </div>
-                                        <div className="mt-4 flex items-center justify-between">
-                                            <div>Shipping Rate($)</div>
-                                            <div>
-                                                {productDetails?.order?.shippingPrice?.gross?.currency} {productDetails?.order?.shippingPrice?.gross?.amount}
+                                        </div> */}
+                                        {productDetails?.order?.shippingPrice?.gross?.amount > 0 && (
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <div>Shipping Rate</div>
+                                                <div>
+                                                    {productDetails?.order?.shippingPrice?.gross?.currency} {productDetails?.order?.shippingPrice?.gross?.amount}
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="mt-4 flex items-center justify-between">
-                                            <div>Discount(%)</div>
-                                            <div>0%</div>
-                                        </div>
+                                        )}
+                                        {productDetails?.order?.discounts?.length > 0 && (
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <div>Discount</div>
+                                                <div>{productDetails?.order?.discounts[0]?.value}</div>
+                                            </div>
+                                        )}
                                         <div className="mt-4 flex items-center justify-between font-semibold">
                                             <div>Total</div>
                                             <div>
@@ -1491,60 +1549,29 @@ const AddOrder = () => {
                                     </div>
                                 </div>
 
-                                {btnOpen ? (
-                                    <div className="mt-3 flex  flex-row-reverse gap-2 border-t border-gray-200 pt-5">
-                                        <button type="button" className="btn btn-primary" onClick={() => addItem()}>
-                                            Save
-                                        </button>
-                                        <button type="button" className="btn btn-outline-danger" onClick={() => setbtnOpen(false)}>
-                                            cancel
-                                        </button>
-                                        <button type="button" className="btn btn-outline-primary">
-                                            Add tax
-                                        </button>
+                                <div className="mt-6 flex justify-between  gap-2 border-t border-gray-200 pt-5">
+                                    <div className="flex gap-2">
                                         <button
                                             type="button"
                                             className="btn btn-outline-primary"
                                             onClick={() => {
-                                                setShippingPrice(0);
-                                                setShippingIsEdit(false);
-                                                setShippingOpen(true);
-                                            }}
-                                        >
-                                            Add shipping
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            className="btn btn-outline-primary"
-                                            onClick={() => {
-                                                setSelectedUser('');
                                                 setQuantity(0);
                                                 setProductIsEdit(false);
                                                 setAddProductOpen(true);
-                                                getProductDetails();
                                             }}
                                         >
-                                            Add product(s)
+                                            Add Product
+                                        </button>
+                                        <button type="button" className="btn btn-outline-primary" onClick={() => setIsOpenCoupen(true)}>
+                                            Apply coupon
                                         </button>
                                     </div>
-                                ) : (
-                                    <div className="mt-6 flex justify-between  gap-2 border-t border-gray-200 pt-5">
-                                        <div className="flex gap-2">
-                                            <button type="button" className="btn btn-outline-primary" onClick={() => setbtnOpen(true)}>
-                                                Add Item(s)
-                                            </button>
-                                            <button type="button" className="btn btn-outline-primary">
-                                                Apply coupon
-                                            </button>
-                                        </div>
-                                        <div>
-                                            <button type="button" className="btn btn-primary">
-                                                Recalculate
-                                            </button>
-                                        </div>
+                                    <div>
+                                        <button type="button" className="btn btn-primary">
+                                            Recalculate
+                                        </button>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         </div>
 
@@ -1568,7 +1595,7 @@ const AddOrder = () => {
                                     </div>
                                 </div>
                             </div>
-                            {/* <div className="panel p-5">
+                            <div className="panel p-5">
                                 <div className="mb-5 border-b border-gray-200 pb-2 ">
                                     <h3 className="text-lg font-semibold">Order Notes</h3>
                                 </div>
@@ -1591,20 +1618,20 @@ const AddOrder = () => {
                                     )}
 
                                     <div className="mb-5">
-                                    <div className="text-gray-500">
-                                        <div className="mb-2 bg-blue-200 p-3">Hi</div>
-                                        <span className="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
-                                        <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
+                                        <div className="text-gray-500">
+                                            <div className="mb-2 bg-blue-200 p-3">Hi</div>
+                                            <span className="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
+                                            <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="mb-5">
-                                    <div className="text-gray-500">
-                                        <div className="mb-2 bg-pink-200 p-3">Payment to be made upon delivery. Order status changed from Pending payment to Processing.</div>
-                                        <span Name="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
-                                        <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
+                                    <div className="mb-5">
+                                        <div className="text-gray-500">
+                                            <div className="mb-2 bg-pink-200 p-3">Payment to be made upon delivery. Order status changed from Pending payment to Processing.</div>
+                                            <span Name="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
+                                            <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
+                                        </div>
                                     </div>
-                                </div>
                                 </div>
 
                                 <Formik
@@ -1639,7 +1666,7 @@ const AddOrder = () => {
                                         </Form>
                                     )}
                                 </Formik>
-                            </div> */}
+                            </div>
                         </div>
                     </div>
                     <Modal
@@ -1722,6 +1749,69 @@ const AddOrder = () => {
                                         </div>
                                     </div>
                                 )}
+                            </>
+                        )}
+                    />
+                    {/* Add Coupen */}
+                    <Modal
+                        edit={isOpenCoupen}
+                        addHeader={'Discount this Order by:'}
+                        updateHeader={'Discount this Order by:'}
+                        open={isOpenCoupen}
+                        close={() => setIsOpenCoupen(false)}
+                        renderComponent={() => (
+                            <>
+                                <div className=" overflow-scroll p-3">
+                                    <div className=" items-center justify-center gap-5 ">
+                                        <div className=" flex items-center justify-center gap-5">
+                                            <div className="flex cursor-pointer gap-3">
+                                                <input
+                                                    type="radio"
+                                                    value="percentage"
+                                                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                                                    checked={selectedOption === 'percentage'}
+                                                    onChange={(e) => setSelectedOption(e.target.value)}
+                                                />
+                                                <span onClick={() => setSelectedOption('percentage')}>Percentage</span>
+                                            </div>
+                                            <div className="flex cursor-pointer gap-3">
+                                                <input
+                                                    type="radio"
+                                                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                                                    value="fixed"
+                                                    checked={selectedOption === 'fixed'}
+                                                    onChange={(e) => setSelectedOption(e.target.value)}
+                                                />
+                                                <span onClick={() => setSelectedOption('fixed')}>Fixed Amount</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-5">
+                                            {selectedOption === 'percentage' ? (
+                                                <input type="number" className="form-input mb-5 mt-4" value={percentcoupenValue} onChange={(e) => setPercentCoupenValue(e.target.value)} />
+                                            ) : (
+                                                <input type="number" className="form-input mb-5 mt-4" value={fixedcoupenValue} onChange={(e) => setFixedCoupenValue(e.target.value)} />
+                                            )}
+                                            <span>{selectedOption === 'percentage' ? '%' : 'INR'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end gap-5">
+                                        <button className="rounded border border-black bg-transparent px-4 py-2 font-semibold text-black hover:border-transparent hover:bg-blue-500 hover:text-white">
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                if (productDetails?.order?.discounts?.length > 0) {
+                                                    updateDiscount();
+                                                } else {
+                                                    addDiscount();
+                                                }
+                                            }}
+                                            className="rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-500 hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                        >
+                                            Confirm
+                                        </button>
+                                    </div>
+                                </div>
                             </>
                         )}
                     />
