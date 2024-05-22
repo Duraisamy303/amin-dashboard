@@ -245,15 +245,15 @@ const Finish = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
+                <div className="mb-5 flex-col gap-5 md:flex md:flex-row md:items-center">
                     <h5 className="text-lg font-semibold dark:text-white-light">Shipping Provider</h5>
 
-                    <div className="flex ltr:ml-auto rtl:mr-auto">
-                        <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  mr-2 ">
+                    <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
+                        <input type="text" className="form-input  mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown mb-3 mr-0  md:mb-0 md:mr-2">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                btnClassName="btn btn-outline-primary dropdown-toggle  lg:w-auto w-full"
                                 button={
                                     <>
                                         Bulk Actions
@@ -272,7 +272,7 @@ const Finish = () => {
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateShipping()}>
+                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateShipping()}>
                             + Create
                         </button>
                     </div>
@@ -405,8 +405,8 @@ const Finish = () => {
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
 
-                                                    <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="fullName">Tracking url </label>
+                                                    <div className={submitCount ? (errors.trackingUrl ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="trackingUrl">Tracking url </label>
                                                         <Field name="trackingUrl" type="text" id="trackingUrl" placeholder="Enter Tracking Url" className="form-input" />
 
                                                         {submitCount ? (

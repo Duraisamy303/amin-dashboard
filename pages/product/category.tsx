@@ -24,6 +24,7 @@ import IconEye from '@/components/Icon/IconEye';
 import { useMutation, useQuery } from '@apollo/client';
 import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY } from '@/query/product';
 import ReactQuill from 'react-quill';
+import { PARENT_CATEGORY_LIST } from '@/query/product';
 
 const Category = () => {
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -33,12 +34,13 @@ const Category = () => {
         dispatch(setPageTitle('Checkbox Table'));
     });
 
-    const { error, data: categoryData } = useQuery(CATEGORY_LIST, {
+    const { error, data: categoryData, refetch: categoryListRefetch } = useQuery(CATEGORY_LIST, {
         variables: { channel: 'india-channel', first: 100 },
     });
 
     const [categoryList, setCategoryList] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [parentLists, setParentLists] = useState([]);
 
     useEffect(() => {
         getCategoryList();
@@ -48,14 +50,14 @@ const Category = () => {
         setLoading(true);
         if (categoryData) {
             if (categoryData.categories && categoryData.categories.edges) {
-                const newData = categoryData.categories.edges.map((item) => {
+                const newData = categoryData.categories.edges.map((item: any) => {
                     const jsonObject = JSON.parse(item.node.description || item.node.description);
                     // Extract the text value
                     const textValue = jsonObject?.blocks[0]?.data?.text;
 
                     return {
                         ...item.node,
-
+                        parent: item.node.parent?.name || '',
                         product: item.node.products?.totalCount,
                         textdescription: textValue || '', // Set textValue or empty string if it doesn't exist
                     };
@@ -99,13 +101,26 @@ const Category = () => {
 
     // const [viewModal, setViewModal] = useState(false);
 
+    //    parent category list query
+    const {
+        data: parentList,
+        error: parentListError,
+        refetch,
+    } = useQuery(PARENT_CATEGORY_LIST, {
+        variables: { channel: 'india-channel' },
+    });
+    useEffect(() => {
+        console.log('parentList: ', parentList?.categories?.edges);
+        const getparentCategoryList = parentList?.categories?.edges;
+        setParentLists(getparentCategoryList);
+    });
+
     //Mutation
     const [addCategory] = useMutation(CREATE_CATEGORY);
     const [updateCategory] = useMutation(UPDATE_CATEGORY);
     const [deleteCategory] = useMutation(DELETE_CATEGORY);
     const [bulkDelete] = useMutation(DELETE_CATEGORY);
 
-    console.log('categoryList: ', categoryList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -119,7 +134,6 @@ const Category = () => {
     useEffect(() => {
         setInitialRecords(() => {
             return categoryList.filter((item: any) => {
-                console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -139,7 +153,7 @@ const Category = () => {
 
     // FORM VALIDATION
     const SubmittedForm = Yup.object().shape({
-        name: Yup.string().required('Please fill the Name'),
+        name: Yup.string().required('Please fill the Category Name'),
         // description: Yup.string().required('Please fill the Description'),
         // slug: Yup.string().required('Please fill the Slug'),
         // count: Yup.string().required('Please fill the count'),
@@ -159,41 +173,46 @@ const Category = () => {
                     name: record.name,
                     description: Description,
                 },
+                parent: record.parentCategory,
             };
+            console.log('variables: ', variables);
 
             const { data } = await (modalTitle ? updateCategory({ variables: { ...variables, id: modalContant.id } }) : addCategory({ variables }));
             console.log('data: ', data);
+            categoryListRefetch()
+            // const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
+            // console.log('newData: ', newData);
+            // if (!newData) {
+            //     console.error('Error: New data is undefined.');
+            //     return;
+            // }
 
-            const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
-            console.log('newData: ', newData);
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
+            // const jsonObject = JSON.parse(newData.description || newData.description);
+            // // Extract the text value
+            // const textValue = jsonObject?.blocks[0]?.data?.text;
+            // console.log('✌️textValue --->', textValue);
 
-            const jsonObject = JSON.parse(newData.description || newData.description);
-            // Extract the text value
-            const textValue = jsonObject?.blocks[0]?.data?.text;
-            console.log('✌️textValue --->', textValue);
+            // const finalData = {
+            //     ...newData,
+            //     textdescription: textValue || '',
+            // };
+            // console.log('finalData', finalData);
 
-            const finalData = {
-                ...newData,
-                textdescription: textValue || '',
-            };
-            console.log("finalData", finalData)
+            // const updatedId = finalData.id;
+            // const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
-            const updatedId = finalData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
+            // const updatedDesignList: any = [...recordsData];
+            // if (index !== -1) {
+            //     updatedDesignList[index] = finalData;
+            // } else {
+            //     updatedDesignList.push(finalData);
+            // }
+            // console.log('updatedDesignList', updatedDesignList);
+            // // setCategoryList(updatedDesignList);
+            // setRecordsData(updatedDesignList);
 
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = finalData;
-            } else {
-                updatedDesignList.push(finalData);
-            }
-console.log("updatedDesignList", updatedDesignList)
-            // setCategoryList(updatedDesignList);
-            setRecordsData(updatedDesignList);
+            // getCategoryList();
+
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -215,6 +234,7 @@ console.log("updatedDesignList", updatedDesignList)
 
     // category table edit
     const EditCategory = (record: any) => {
+        console.log('✌️record --->', record);
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
@@ -262,7 +282,6 @@ console.log("updatedDesignList", updatedDesignList)
                 }
             });
     };
-    console.log('mordelContentt', modalContant);
 
     const BulkDeleteCategory = async () => {
         showDeleteAlert(
@@ -312,19 +331,18 @@ console.log("updatedDesignList", updatedDesignList)
     //     textValue = jsonObject?.blocks[0]?.data?.text;
     //   }
 
-    console.log('recordsData', recordsData);
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
+                <div className="mb-5 flex-col gap-5 md:flex md:flex-row md:items-center">
                     <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
 
-                    <div className="flex ltr:ml-auto rtl:mr-auto">
-                        <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  mr-2 ">
+                    <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
+                        <input type="text" className="form-input mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown  mb-3 mr-0  md:mb-0 md:mr-2">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                btnClassName="btn btn-outline-primary dropdown-toggle lg:w-auto w-full"
                                 button={
                                     <>
                                         Bulk Actions
@@ -343,7 +361,7 @@ console.log("updatedDesignList", updatedDesignList)
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateCategory()}>
+                        <button type="button" className="btn btn-primary w-full md:mb-0 md:w-auto" onClick={() => CreateCategory()}>
                             + Create
                         </button>
                     </div>
@@ -363,6 +381,10 @@ console.log("updatedDesignList", updatedDesignList)
                                     accessor: 'textdescription',
                                     sortable: true,
                                     title: 'Description',
+                                },
+                                {
+                                    accessor: 'parent',
+                                    sortable: true,
                                 },
                                 {
                                     accessor: 'product',
@@ -443,14 +465,14 @@ console.log("updatedDesignList", updatedDesignList)
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', textdescription: '' }
+                                                    ? { name: '', textdescription: '', parentCategory: '' }
                                                     : {
                                                           name: modalContant?.name,
                                                           description: modalContant?.textdescription,
 
                                                           //   count: modalContant?.count,
                                                           //   image: modalContant?.image,
-                                                          //   parentCategory: modalContant?.name,
+                                                          parentCategory: modalContant?.parent?.id,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
@@ -524,15 +546,29 @@ console.log("updatedDesignList", updatedDesignList)
                                                         {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div> */}
 
-                                                    {/* <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
+                                                    <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="parentCategory">Parent Category</label>
                                                         <Field as="select" name="parentCategory" className="form-select">
-                                                            <option value="">Open this select menu</option>
+                                                            <option value="">Open this select</option>
+                                                            {parentLists.map((item: any) => {
+                                                                return (
+                                                                    <>
+                                                                        <option value={item?.node?.id}>{item.node?.name}</option>
+                                                                        {item?.node?.children?.edges.map((child: any) => (
+                                                                            <option key={child.id} value={child.node?.id} style={{ paddingLeft: '20px' }}>
+                                                                                -- {child.node?.name}
+                                                                            </option>
+                                                                        ))}
+                                                                    </>
+                                                                );
+                                                            })}
+
+                                                            {/* <option value="">Open this select menu</option>
                                                             <option value="Anklets">Anklets</option>
                                                             <option value="BlackThread">__Black Thread</option>
-                                                            <option value="Kada">__Kada</option>
+                                                            <option value="Kada">__Kada</option> */}
                                                         </Field>
-                                                        {submitCount ? (
+                                                        {/* {submitCount ? (
                                                             errors.parentCategory ? (
                                                                 <div className=" mt-1 text-danger">{errors.parentCategory}</div>
                                                             ) : (
@@ -540,8 +576,8 @@ console.log("updatedDesignList", updatedDesignList)
                                                             )
                                                         ) : (
                                                             ''
-                                                        )}
-                                                    </div> */}
+                                                        )} */}
+                                                    </div>
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
                                                         {modalTitle === null ? 'Submit' : 'Update'}

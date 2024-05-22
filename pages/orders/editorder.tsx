@@ -2,12 +2,14 @@ import React, { Fragment, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery } from '@apollo/client';
 import {
+    CONFIRM_ORDER,
     COUNTRY_LIST,
     CREATE_DRAFT_ORDER,
     CREATE_NOTES,
     CUSTOMER_LIST,
     DELETE_LINE,
     DELETE_NOTES,
+    FINALIZE_ORDER,
     FULLFILL_ORDERS,
     GET_ORDER_DETAILS,
     MARK_US_PAID,
@@ -87,6 +89,7 @@ const Editorder = () => {
     const [draftOrder] = useMutation(CREATE_DRAFT_ORDER);
     const [shippingProviderUpdate] = useMutation(UPDATE_SHIPPING_PROVIDER);
     const [editTrackingNumber] = useMutation(UPDATE_TRACKING_NUMBER);
+    const [confirmNewOrder] = useMutation(CONFIRM_ORDER);
 
     // updateFullfillStatus
 
@@ -137,7 +140,6 @@ const Editorder = () => {
     const [customerData, setCustomerData] = useState([]);
     const [trackingNumber, setTrackingNumber] = useState('');
     const [shippingPatner, setShippingPatner] = useState('');
-    console.log('shippingPatner: ', shippingPatner);
 
     const [isOpenChannel, setIsOpenChannel] = useState(false);
 
@@ -184,6 +186,9 @@ const Editorder = () => {
                 setOrderData(orderDetails?.order);
                 setLines(orderDetails?.order?.lines);
                 setLoading(false);
+                setOrderStatus(orderDetails?.order?.status);
+                setPaymentStatus(orderDetails?.order?.paymentStatus);
+                setTrackingNumber(orderDetails?.order?.trackingNumber);
                 const billing = orderDetails?.order?.billingAddress;
                 const shipping = orderDetails?.order?.shippingAddress;
                 if (orderDetails?.order?.discounts?.length > 0) {
@@ -246,7 +251,6 @@ const Editorder = () => {
         if (shippingProvider) {
             if (shippingProvider && shippingProvider?.shippingCarriers?.edges?.length > 0) {
                 setCustomerData(shippingProvider?.shippingCarriers?.edges);
-                console.log('shippingProvider?.shippingCarriers?.edges: ', shippingProvider?.shippingCarriers?.edges);
                 setLoading(false);
             } else {
                 setLoading(false);
@@ -420,13 +424,15 @@ const Editorder = () => {
     };
     const orderStateUpdate = async () => {
         try {
-            const isQuantity = isFullfiled();
+            const isQuantity = fullfillData?.every((data) => data?.variant?.stocks.every((stock) => data?.quantity <= stock.quantity));
+            //Pendding for loop stock>= quantity
             console.log('isQuantity: ', isQuantity);
-            // if (isQuantity) {
+
+            if (isQuantity) {
                 const modify = fullfillData?.map((item) => ({
                     orderLineId: item.id,
                     stocks: item?.variant?.stocks?.map((data) => ({
-                        quantity: data.quantity,
+                        quantity: item?.quantity,
                         warehouse: data?.warehouse?.id,
                     })),
                 }));
@@ -445,12 +451,13 @@ const Editorder = () => {
                 if (res?.data?.orderFulfill?.errors?.length > 0) {
                     setIsOrderOpen(false);
                 } else {
-                    setOrderStatus(waitingStatus);
+                    setOrderStatus('Shipped');
                     setIsOrderOpen(false);
+                    Success("Order status updated")
                 }
-            // } else {
-            //     Failure('Out of Stock');
-            // }
+            } else {
+                Failure('Out of Stock');
+            }
         } catch (error) {
             Failure(error);
 
@@ -467,6 +474,9 @@ const Editorder = () => {
                 },
             });
             getOrderDetails();
+            setIsPaymentOpen(false);
+            Success("Payment status updated")
+
         } catch (error) {
             console.log('error: ', error);
         }
@@ -541,7 +551,7 @@ const Editorder = () => {
                 variables: {
                     id: 'RnVsZmlsbG1lbnQ6MTY=',
                     input: {
-                        trackingNumber: '123',
+                        trackingNumber,
                         notifyCustomer: true,
                     },
                 },
@@ -553,7 +563,7 @@ const Editorder = () => {
     };
 
     const handleOrderChange = async (status: any) => {
-        if (status == 'shipped') {
+        if (status == 'FULFILLED') {
             setWaitingStatus(status);
             setIsOrderOpen(true);
             const res = await fulfillRefetch();
@@ -564,11 +574,22 @@ const Editorder = () => {
     };
 
     const stocks = (item) => {
-        console.log('item: ', item);
         const stock = item?.quantity + item?.variant?.stocks[0]?.quantity - item?.variant?.stocks[0]?.quantityAllocated;
-        console.log('stock: ', stock);
-
         return stock;
+    };
+
+    const confirmOrder = async (country?: any) => {
+        try {
+            const res = await confirmNewOrder({
+                variables: {
+                    id: id,
+                },
+            });
+            getOrderDetails();
+            Success('Order Confirmed Successfully');
+        } catch (error) {
+            console.log('error: ', error);
+        }
     };
 
     return (
@@ -586,9 +607,14 @@ const Editorder = () => {
                     <div className="grid grid-cols-12 gap-5 ">
                         <div className=" col-span-9 mb-5  ">
                             <div className="panel mb-5 p-5">
-                                <div>
-                                    <h3 className="text-lg font-semibold">Order #13754 Details</h3>
-                                    <p className=" pt-1 text-gray-500">Payment via Cash on delivery. Customer IP: 122.178.161.16</p>
+                                <div className="flex justify-between">
+                                    <h3 className="text-lg font-semibold">{`Order #${orderData?.number} Details`}</h3>
+                                    {orderStatus == 'UNCONFIRMED' && (
+                                        <button type="submit" className="btn btn-outline-primary" onClick={() => confirmOrder()}>
+                                            Order Confirm
+                                        </button>
+                                    )}
+                                    {/* <p className=" pt-1 text-gray-500">Payment via Cash on delivery. Customer IP: 122.178.161.16</p> */}
                                 </div>
                                 <div className="mt-8">
                                     <h5 className="mb-3 text-lg font-semibold">General</h5>
@@ -607,37 +633,41 @@ const Editorder = () => {
                                                 disabled
                                             />
                                         </div>
+                                        {orderStatus != 'UNCONFIRMED' && (
+                                            <>
+                                                <div className="col-span-4">
+                                                    <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                        Order Status:
+                                                    </label>
+                                                    <select disabled={orderStatus == 'FULFILLED'} className="form-select" value={orderStatus} onChange={(e) => handleOrderChange(e.target.value)}>
+                                                        <option value="UNFULFILLED">Processing</option>
+                                                        <option value="FULFILLED">Shipped</option>
+                                                    </select>
+                                                </div>
 
-                                        <div className="col-span-4">
-                                            <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                Order Status:
-                                            </label>
-                                            <select className="form-select" value={orderStatus} onChange={(e) => handleOrderChange(e.target.value)}>
-                                                <option value="processing">Processing</option>
-                                                <option value="shipped">Shipped</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="col-span-4">
-                                            <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                Payment Status:
-                                            </label>
-                                            <select
-                                                className="form-select"
-                                                value={paymentStatus}
-                                                onChange={(e) => {
-                                                    const status = e.target.value;
-                                                    if (status == 'FULLY_CHARGED') {
-                                                        setIsPaymentOpen(true);
-                                                    } else {
-                                                        setPaymentStatus(status);
-                                                    }
-                                                }}
-                                            >
-                                                <option value="NOT_CHARGET">payment pending</option>
-                                                <option value="FULLY_CHARGED">payment completed</option>
-                                            </select>
-                                        </div>
+                                                <div className="col-span-4">
+                                                    <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                        Payment Status:
+                                                    </label>
+                                                    <select
+                                                        disabled={paymentStatus == 'FULLY_CHARGED'}
+                                                        className="form-select"
+                                                        value={paymentStatus}
+                                                        onChange={(e) => {
+                                                            const status = e.target.value;
+                                                            if (status == 'FULLY_CHARGED') {
+                                                                setIsPaymentOpen(true);
+                                                            } else {
+                                                                setPaymentStatus(status);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="NOT_CHARGET">payment pending</option>
+                                                        <option value="FULLY_CHARGED">payment completed</option>
+                                                    </select>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1288,49 +1318,46 @@ const Editorder = () => {
                         </div>
 
                         <div className="col-span-3">
-                            <div className="panel mb-5 p-5">
-                                <div className="mb-5 border-b border-gray-200 pb-2 ">
-                                    <h3 className="text-lg font-semibold">Order Actions</h3>
-                                </div>
-                                <div className="col-span-4 pb-4">
-                                    <div className="items-center justify-between ">
-                                        <label htmlFor="status" className="block pr-2 text-sm font-medium text-gray-700">
-                                            Shipping Provider
-                                        </label>
+                            {orderStatus != 'UNCONFIRMED' && (
+                                <div className="panel mb-5 p-5">
+                                    <div className="mb-5 border-b border-gray-200 pb-2 ">
+                                        <h3 className="text-lg font-semibold">Order Actions</h3>
                                     </div>
+                                    {orderStatus == 'FULFILLED' && (
+                                        <div className="col-span-4 pb-4">
+                                            <div className="items-center justify-between ">
+                                                <label htmlFor="status" className="block pr-2 text-sm font-medium text-gray-700">
+                                                    Shipping Provider
+                                                </label>
+                                            </div>
 
-                                    <select className="form-select" value={shippingPatner} onChange={(e) => setShippingPatner(e.target.value)}>
-                                        <option value="">Choose Shipping Provider</option>
-                                        {customerData?.map((item: any) => (
-                                            <option value={item?.node?.id}>{item?.node?.name}</option>
-                                        ))}
-                                    </select>
-                                    <input
-                                        type="text"
-                                        className={`form-input mt-4`}
-                                        name="shipping.company"
-                                        placeholder="Tracking number"
-                                        value={trackingNumber}
-                                        onChange={(e) => setTrackingNumber(e.target.value)}
-                                    />
-                                </div>
-                                <div>
-                                    <select className="form-select mr-3">
-                                        <option value="">Choose An Action</option>
-                                        <option value="Email Invoice">Email Invoice</option>
-                                    </select>
-                                </div>
-                                <div className="mt-5 border-t border-gray-200 pb-2 ">
-                                    <div className=" pt-3">
-                                        {/* <a href="#" className="text-danger underline">
+                                            <select className="form-select" value={shippingPatner} onChange={(e) => setShippingPatner(e.target.value)}>
+                                                <option value="">Choose Shipping Provider</option>
+                                                {customerData?.map((item: any) => (
+                                                    <option value={item?.node?.id}>{item?.node?.name}</option>
+                                                ))}
+                                            </select>
+                                            <input type="text" className={`form-input mt-4`} placeholder="Tracking number" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <select className="form-select mr-3">
+                                            <option value="">Choose An Action</option>
+                                            <option value="Email Invoice">Email Invoice</option>
+                                        </select>
+                                    </div>
+                                    <div className="mt-5 border-t border-gray-200 pb-2 ">
+                                        <div className=" pt-3">
+                                            {/* <a href="#" className="text-danger underline">
                                             Move To Trash
                                         </a> */}
-                                        <button onClick={() => handleSubmit()} className="btn btn-outline-primary">
-                                            Update
-                                        </button>
+                                            <button onClick={() => handleSubmit()} className="btn btn-outline-primary">
+                                                Update
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                             <div className="panel mb-5 p-5">
                                 <div className="mb-5 border-b border-gray-200 pb-2 ">
                                     <h3 className="text-lg font-semibold">Order Notes</h3>

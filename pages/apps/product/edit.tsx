@@ -69,7 +69,7 @@ const ProductEdit = (props: any) => {
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
 
-    const [value, setValue] = useState({}); // quill text editor
+    const [value, setValue] = useState({});
 
     const [isMounted, setIsMounted] = useState(false); //tabs
     useEffect(() => {
@@ -92,6 +92,19 @@ const ProductEdit = (props: any) => {
     const [selectedCollection, setSelectedCollection] = useState<any>([]);
     const [stackMgmt, setStackMgmt] = useState(false);
     const [publish, setPublish] = useState('published');
+
+    // error message start
+
+    const [productNameErrMsg, setProductNameErrMsg] = useState('');
+    const [slugErrMsg, setSlugErrMsg] = useState('');
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
+    const [shortDesErrMsg, setShortDesErrMsg] = useState('');
+    const [skuErrMsg, setSkuErrMsg] = useState('');
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
+    const [categoryErrMsg, setCategoryErrMsg] = useState('');
+
+    // error message end
 
     // ------------------------------------------New Data--------------------------------------------
     const [quantityTrack, setQuantityTrack] = useState(true);
@@ -195,6 +208,7 @@ const ProductEdit = (props: any) => {
     const [selectedValues, setSelectedValues] = useState<any>({});
     const [dropdowndata, setDropdownData] = useState<any>([]);
     const [dropIndex, setDropIndex] = useState<any>(null);
+    const [descriptionContent, setDescriptionContent] = useState<any>('');
 
     const [variants, setVariants] = useState([
         {
@@ -211,18 +225,29 @@ const ProductEdit = (props: any) => {
     // editor js
     const editorRef: any = useRef(null);
     const [editorInstance, setEditorInstance] = useState<any>(null);
-    let editorInstanceRef: any = useRef(null);
-
-    const isEditorInitialized = useRef(false);
     // const [content, setContent] = useState('');
-    let count = 0;
+    // let count = 0;
 
     // useEffect(() => {
     //     if (count === 0) {
     //         editor();
     //         count = 1;
     //     }
-    // }, [value]);
+    // }, []);
+
+    // let editors = { isReady: false };
+    // useEffect(() => {
+    //   if (!editors.isReady) {
+    //     editor();
+    //     editors.isReady = true;
+    //   }
+
+    //   return () => {
+    //     if (editorInstance) {
+    //       editorInstance?.blocks?.clear();
+    //     }
+    //   };
+    // }, [value, productDetails]);
 
     // State to track whether delete icon should be displayed
 
@@ -264,6 +289,12 @@ const ProductEdit = (props: any) => {
         setDropdownData(singleObj);
     }, [finishData, stoneData, designData, styleData]);
 
+    //     const updateEditorValue = (newValue) => {
+    // console.log('✌️newValue --->', newValue);
+    //         setValue(newValue);
+    //         console.log("value", value)
+    //       }
+
     const productsDetails = async () => {
         try {
             if (productDetails) {
@@ -295,12 +326,22 @@ const ProductEdit = (props: any) => {
                     // console.log('Description --->', Description);
 
                     const Description = data.description;
-                    // editor(Description);
-                    const description1 = { time: 1714207451900, blocks: [{ id: 'EWn3NJZQaf', data: { text: 'TESTING' }, type: 'paragraph' }], version: '2.24.3' };
+                    setDescriptionContent(JSON.parse(Description));
+                    console.log('descriptionContent', descriptionContent);
+                    // const desciption1 = {
+                    //     time: Date.now(),
+                    //     blocks: [
+                    //         {
+                    //             type: 'paragraph',
+                    //             data: {
+                    //                 text: 'This is api  content.',
+                    //             },
+                    //         },
+                    //     ],
+                    //     version: '2.19.0',
+                    // };
 
-                    console.log('✌️Description --->', Description);
-
-                    setValue(description1);
+                    setValue(Description);
 
                     const shortDesc = getValueByKey(data?.metadata, 'short_descripton');
                     setShortDescription(shortDesc);
@@ -382,8 +423,9 @@ const ProductEdit = (props: any) => {
         }
     };
 
-    let editors = { isReady: false };
+    // editor start
 
+    let editors = { isReady: false };
     useEffect(() => {
         if (!editors.isReady) {
             editor();
@@ -395,11 +437,7 @@ const ProductEdit = (props: any) => {
                 editorInstance?.blocks?.clear();
             }
         };
-    }, [value, productDetails]);
-
-    useEffect(() => {
-        setValue({ time: 1714207451900, blocks: [{ id: 'EWn3NJZQaf', data: { text: 'TESTING' }, type: 'paragraph' }], version: '2.24.3' });
-    }, [productDetails]);
+    }, [descriptionContent]);
 
     // const editorRef = useRef(null); // Define a ref to hold the editor instance
 
@@ -412,12 +450,16 @@ const ProductEdit = (props: any) => {
             return;
         }
 
+        // console.log('value2: ', value2);
         // Dynamically import the EditorJS module
         import('@editorjs/editorjs').then(({ default: EditorJS }) => {
             // Create a new instance of EditorJS with the appropriate configuration
+
             const editor = new EditorJS({
                 holder: editorRef.current,
-                data: value,
+            //  data: {
+            //         blocks: descriptionContent || [],
+            //     },
                 tools: {
                     // Configure tools as needed
                     header: {
@@ -431,7 +473,6 @@ const ProductEdit = (props: any) => {
                     },
                 },
             });
-
             // Set the editorInstance state variable
             setEditorInstance(editor);
         });
@@ -442,16 +483,50 @@ const ProductEdit = (props: any) => {
                 editorInstance?.blocks?.clear();
             }
         };
-    }, [editorInstance, value]);
+    }, [editorInstance, descriptionContent]);
+    // editor end
 
-    // useEffect(() => {
+    // const editor = () => {
+    //     // Check if the window object is available and if the editorRef.current is set
+    //     if (typeof window === 'undefined' || !editorRef.current) return;
+
+    //     // Destroy the previous editor instance, if it exists
+    //     if (editorInstance) {
+    //         editorInstance?.blocks?.clear();
+    //     }
+
+    //     console.log('value: ', value);
+    //     // Dynamically import the EditorJS module
+    //     import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+    //         // Create a new instance of EditorJS with the appropriate configuration
+    //         const editor = new EditorJS({
+    //             holder: editorRef.current,
+    //             data: value,
+    //             tools: {
+    //                 // Configure tools as needed
+    //                 header: {
+    //                     class: require('@editorjs/header'),
+    //                 },
+    //                 list: {
+    //                     class: require('@editorjs/list'),
+    //                 },
+    //                 table: {
+    //                     class: require('@editorjs/table'),
+    //                 },
+    //             },
+    //         });
+
+    //         // Set the editorInstance state variable
+    //         setEditorInstance(editor);
+    //     });
+
+    //     // Cleanup function to destroy the current editor instance when the component unmounts
     //     return () => {
-    //         if (editorInstanceRef.current) {
-    //             editorInstanceRef.current.destroy();
-    //             isEditorInitialized.current = false; // Reset the flag
+    //         if (editorInstance) {
+    //             editorInstance?.blocks?.clear();
     //         }
     //     };
-    // }, []);
+    // };
 
     // editor end
 
@@ -599,53 +674,99 @@ const ProductEdit = (props: any) => {
     };
 
     const updateProducts = async () => {
-        console.log('selectedCat: ', selectedCat);
+        setProductNameErrMsg('');
+        setSlugErrMsg('');
+        setSeoTittleErrMsg('');
+        setSeoDescErrMsg('');
+        // setDescriptionErrMsg('');
+        setShortDesErrMsg('');
+        setSkuErrMsg('');
+        setSalePriceErrMsg('');
+        setCategoryErrMsg('');
+
+        // Validate the product name and slug
+        if (productName.trim() === '') {
+            // Update the error message for the product name field
+            setProductNameErrMsg('Product name cannot be empty');
+        }
+
+        if (slug.trim() === '') {
+            // Update the error message for the slug field
+            setSlugErrMsg('Slug cannot be empty');
+        }
+        if (seoTittle.trim() === '') {
+            // Update the error message for the slug field
+            setSeoTittleErrMsg('Seo title cannot be empty');
+        }
+        if (seoDesc.trim() === '') {
+            setSeoDescErrMsg('Seo description cannot be empty');
+        }
+        // if(description?.trim() === ''){
+        //     setDescriptionErrMsg('Description cannot be empty');
+        // }
+        if (shortDescription?.trim() === '') {
+            setShortDesErrMsg('Short description cannot be empty');
+        }
+        // if (sku?.trim() === '') {
+        //     setSkuErrMsg('Sku cannot be empty');
+        //     alert('Sku cannot be empty');
+        // }
+        // if (salePrice?.trim() === '') {
+        //     setSalePriceErrMsg('Sale price cannot be empty');
+        //     alert('Sale price cannot be empty');
+        // }
+        if (selectedCat == '') {
+            setCategoryErrMsg('Category cannot be empty');
+        }
         if (editorInstance) {
             try {
-                // Save editor content
                 const savedContent = await editorInstance.save();
                 console.log('Editor content:', savedContent);
-                // Update state with saved content
-                setValue(savedContent);
-            } catch (error) {
-                console.error('Error saving editor content:', error);
-            }
-        }
-        console.log('selectedCollection: ', selectedCollection);
-        let tagId = selectedTag?.map((item) => item.value) || [];
 
-        console.log('valueDescription', value);
-        const { data } = await updateProduct({
-            variables: {
-                id: id,
-                input: {
-                    attributes: [],
-                    category: selectedCat?.value,
-                    collections: selectedCollection.map((item) => item.value),
-                    tags: tagId,
-                    description: value,
-                    name: productName,
-                    rating: 0,
-                    seo: {
-                        description: seoDesc,
-                        title: seoTittle,
+                console.log('selectedCat: ', selectedCat);
+
+                console.log('selectedCollection: ', selectedCollection);
+                let tagId = selectedTag?.map((item: any) => item.value) || [];
+
+
+                const formattedDescription = JSON.stringify(savedContent);
+console.log('✌️formattedDescription --->', formattedDescription);
+
+                const { data } = await updateProduct({
+                    variables: {
+                        id: id,
+                        input: {
+                            attributes: [],
+                            category: selectedCat?.value,
+                            collections: selectedCollection.map((item: any) => item.value),
+                            tags: tagId,
+                            description: formattedDescription,
+                            name: productName,
+                            rating: 0,
+                            seo: {
+                                description: seoDesc,
+                                title: seoTittle,
+                            },
+                            slug: slug,
+                            ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                            ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
+                            ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
+                            ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
+                            ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
+                        },
+                        firstValues: 10,
                     },
-                    slug: slug,
-                    ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                    ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
-                    ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
-                    ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
-                    ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
-                },
-                firstValues: 10,
-            },
-        });
+                });
 
-        if (data?.productUpdate?.errors?.length > 0) {
-            console.log('Error updating product');
-        } else {
-            productChannelListUpdate();
-            console.log('Product update successful:', data);
+                if (data?.productUpdate?.errors?.length > 0) {
+                    console.log('Error updating product');
+                } else {
+                    productChannelListUpdate();
+                    console.log('Product update successful:', data);
+                }
+            } catch (error) {
+                console.error('Failed to save editor content:', error);
+            }
         }
     };
 
@@ -835,7 +956,7 @@ const ProductEdit = (props: any) => {
             } else {
                 console.log('success: ', data);
                 console.log('selectedTag: ', selectedTag);
-
+                productsDetails()
                 // assignsTagToProduct();
             }
         } catch (error) {
@@ -1008,18 +1129,22 @@ const ProductEdit = (props: any) => {
                                 Product Name
                             </label>
                             <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Enter Your Name" name="name" className="form-input" required />
+                            {productNameErrMsg && <p className="error-message mt-1 text-red-500">{productNameErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 Slug
                             </label>
                             <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="Enter slug" name="name" className="form-input" required />
+                            {slugErrMsg && <p className="error-message mt-1 text-red-500 ">{slugErrMsg}</p>}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 SEO
                             </label>
                             <input type="text" value={seoTittle} onChange={(e) => setSeoTittle(e.target.value)} placeholder="Enter title" name="name" className="form-input" required />
+                            {seoTittleErrMsg && <p className="error-message mt-1 text-red-500 ">{seoTittleErrMsg}</p>}
+
                             <textarea
                                 id="ctnTextarea"
                                 value={seoDesc}
@@ -1029,6 +1154,7 @@ const ProductEdit = (props: any) => {
                                 placeholder="Enter Description"
                                 required
                             ></textarea>
+                            {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
                         </div>
                         {/* <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
@@ -1041,10 +1167,8 @@ const ProductEdit = (props: any) => {
                                 Product description
                             </label>
                             <div ref={editorRef} className="mb-5 border border-gray-200"></div>
-                            {/* <p>Editor content: {content}</p> */}
-                            {/* <button onClick={handleSave} className="btn btn-primary">
-                                Save
-                            </button> */}
+
+                        
                         </div>
 
                         <div className="panel mb-5">
@@ -1060,6 +1184,7 @@ const ProductEdit = (props: any) => {
                                 placeholder="Enter Short Description"
                                 required
                             ></textarea>
+                            {shortDesErrMsg && <p className="error-message mt-1 text-red-500 ">{shortDesErrMsg}</p>}
                         </div>
                         <div className="panel mb-5 ">
                             {/* <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
@@ -1304,6 +1429,8 @@ const ProductEdit = (props: any) => {
                                                                         placeholder="Enter SKU"
                                                                         className="form-input"
                                                                     />
+
+                                                                    {/* {skuErrMsg && <p className="error-message mt-1 text-red-500 ">{skuErrMsg}</p>} */}
                                                                 </div>
                                                             </div>
                                                             <div className="active flex items-center">
@@ -1381,6 +1508,7 @@ const ProductEdit = (props: any) => {
                                                                         placeholder="Enter Sale Price"
                                                                         className="form-input"
                                                                     />
+                                                                    {/* {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>} */}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1757,6 +1885,7 @@ const ProductEdit = (props: any) => {
                             </div>
                             <div className="mb-5">
                                 <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
+                                {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
                             </div>
                             {/* <div className="mb-5">
                                 {isMounted && (

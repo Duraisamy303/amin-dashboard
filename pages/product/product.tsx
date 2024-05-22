@@ -26,7 +26,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import IconEdit from '@/components/Icon/IconEdit';
 import { useMutation, useQuery } from '@apollo/client';
-import { DELETE_PRODUCTS, PRODUCT_LIST } from '@/query/product';
+import { DELETE_PRODUCTS, PRODUCT_LIST, PARENT_CATEGORY_LIST, CATEGORY_FILTER_LIST } from '@/query/product';
 import moment from 'moment';
 
 const ProductList = () => {
@@ -81,6 +81,7 @@ const ProductList = () => {
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [initialRecords, setInitialRecords] = useState([]);
     const [recordsData, setRecordsData] = useState(initialRecords);
+    const [parentLists, setParentLists] = useState([]);
 
     const [deleteProducts] = useMutation(DELETE_PRODUCTS);
 
@@ -91,6 +92,8 @@ const ProductList = () => {
         columnAccessor: 'id',
         direction: 'asc',
     });
+
+    const [selectedCategory, setSelectedCategory] = useState('');
 
     const [filterFormData, setFilterFormData] = useState({
         category: '',
@@ -139,6 +142,78 @@ const ProductList = () => {
         const data = sortBy(initialRecords, sortStatus.columnAccessor);
         setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
     }, [sortStatus]);
+
+    //    parent category list query
+    const {
+        data: parentList,
+        error: parentListError,
+        refetch: parentListRefetch,
+    } = useQuery(PARENT_CATEGORY_LIST, {
+        variables: { channel: 'india-channel' },
+    });
+    const GetcategoryFilterData = () => {
+        const getparentCategoryList = parentList?.categories?.edges;
+        setParentLists(getparentCategoryList);
+    };
+
+    useEffect(() => {
+        GetcategoryFilterData();
+    }, [parentList]);
+
+    const {
+        data: FilterCategoryList,
+        error: FilterCategoryListError,
+        refetch: FilterCategoryListRefetch,
+    } = useQuery(CATEGORY_FILTER_LIST, {
+        variables: { channel: 'india-channel', first: 100, categoryId: selectedCategory },
+    });
+
+    const CategoryFilterList = () => {
+        console.log('FilterCategoryList', FilterCategoryList);
+        // const getFilterCategoryList = FilterCategoryList?.products?.edges;
+        // console.log('✌️getFilterCategoryList --->', getFilterCategoryList);
+        // setRecordsData(getFilterCategoryList);
+
+        setLoading(true);
+
+        if (FilterCategoryList) {
+            if (FilterCategoryList && FilterCategoryList.products && FilterCategoryList.products.edges?.length > 0) {
+                const newData = FilterCategoryList?.products?.edges.map((item: any) => ({
+                    ...item.node,
+                    product: item?.node?.products?.totalCount,
+                    image: item?.node?.thumbnail?.url,
+                    categories: item?.node?.category?.name,
+                    date: item?.node?.updatedAt
+                        ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
+                        : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
+                    price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                }));
+                // const sorting: any = sortBy(newData, 'id');
+                setProductList(newData);
+                setLoading(false);
+
+                // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+            } else if (FilterCategoryList && FilterCategoryList.products && FilterCategoryList.products.edges?.length === 0) {
+                setProductList([]);
+            } else {
+                setLoading(false);
+            }
+        } else {
+            setLoading(false);
+        }
+    };
+
+    const onFilterSubmit = async (e: any) => {
+        e.preventDefault();
+        if (selectedCategory !== '') {
+            await FilterCategoryListRefetch();
+            CategoryFilterList();
+        } else {
+            getProductList();
+        }
+
+        console.log('productListproductList', productList);
+    };
 
     // form submit
     const onSubmit = (record: any, { resetForm }: any) => {
@@ -203,8 +278,8 @@ const ProductList = () => {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
                 }
-                const productIds = selectedRecords?.map((item) => item.id);
-                const { data } = deleteProducts({
+                const productIds = selectedRecords?.map((item: any) => item.id);
+                const { data }: any = deleteProducts({
                     variables: {
                         ids: productIds,
                     },
@@ -224,7 +299,7 @@ const ProductList = () => {
         console.log('record: ', record);
         showDeleteAlert(
             () => {
-                const { data } = deleteProducts({
+                const { data }: any = deleteProducts({
                     variables: {
                         ids: [record.id],
                     },
@@ -245,19 +320,20 @@ const ProductList = () => {
     const CategoryChange = (selectedCategory: string) => {
         console.log('Selected Category:', selectedCategory);
         // Update the state with the selected category
-        setFilterFormData((prevState) => ({
-            ...prevState,
-            category: selectedCategory,
-        }));
+        setSelectedCategory(selectedCategory);
+        // setFilterFormData((prevState) => ({
+        //     ...prevState,
+        //     category: selectedCategory,
+        // }));
     };
 
     const StockStatusChange = (selectedStockStatus: string) => {
         console.log('Selected Stock Status:', selectedStockStatus);
         // Update the state with the selected stock status
-        setFilterFormData((prevState) => ({
-            ...prevState,
-            stock: selectedStockStatus,
-        }));
+        // setFilterFormData((prevState) => ({
+        //     ...prevState,
+        //     stock: selectedStockStatus,
+        // }));
     };
 
     const productTypeChange = (selectedProductType: string) => {
@@ -269,34 +345,25 @@ const ProductList = () => {
         }));
     };
 
-    const onFilterSubmit = (e: any) => {
-        e.preventDefault();
-        console.log('filterFormData', filterFormData);
-
-        setFilterFormData({
-            category: '',
-            stock: '',
-            productType: '',
-        });
-    };
-
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 flex flex-col gap-5 md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
-                    <button type="button" className="btn btn-outline-primary">
-                        Import
-                    </button>
-                    <button type="button" className="btn btn-outline-primary">
-                        Export
-                    </button>
-                    <div className="flex ltr:ml-auto rtl:mr-auto">
-                        <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  mr-2 ">
+                <div className="lg:mb-5 mb-10 flex flex-col gap-5 lg:flex-row lg:items-center">
+                    <div className="flex items-center gap-2">
+                        <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
+                        <button type="button" className="btn btn-outline-primary">
+                            Import
+                        </button>
+                        <button type="button" className="btn btn-outline-primary">
+                            Export
+                        </button>
+                    </div>
+                    <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
+                        <input type="text" className="form-input  mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown mb-3 mr-0  md:mb-0 md:mr-2">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                btnClassName="btn btn-outline-primary dropdown-toggle  lg:w-auto w-full"
                                 button={
                                     <>
                                         Bulk Actions
@@ -315,7 +382,7 @@ const ProductList = () => {
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => CreateProduct()}>
+                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateProduct()}>
                             + Create
                         </button>
                     </div>
@@ -326,9 +393,18 @@ const ProductList = () => {
                         <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 md:flex-row">
                             <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
                                 <option value="">Select a Categories </option>
-                                <option value="Anklets">Anklets</option>
-                                <option value="Earings">Earings</option>
-                                <option value="Palakka">Palakka</option>
+                                {parentLists?.map((item: any) => {
+                                    return (
+                                        <>
+                                            <option value={item?.node?.id}>{item.node?.name}</option>
+                                            {item?.node?.children?.edges.map((child: any) => (
+                                                <option key={child.id} value={child.node?.id} style={{ paddingLeft: '20px' }}>
+                                                    -- {child.node?.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    );
+                                })}
                             </select>
 
                             {/* New select dropdown for stock status */}
@@ -342,7 +418,7 @@ const ProductList = () => {
                                 <option value="sample-product">Simple Product</option>
                                 <option value="variable-product">Variable Product</option>
                             </select>
-                            <button type="submit" className="btn btn-primary py-2.5">
+                            <button type="submit" className="btn btn-primary py-2.5 md:w-auto w-full">
                                 Filter
                             </button>
                         </div>
@@ -357,6 +433,7 @@ const ProductList = () => {
                             // { accessor: 'id', sortable: true },
                             { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                             { accessor: 'name', sortable: true },
+
                             // { accessor: 'sku', sortable: true },
                             // { accessor: 'stock', sortable: true },
                             { accessor: 'price', sortable: true },

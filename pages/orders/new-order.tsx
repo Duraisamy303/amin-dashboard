@@ -699,7 +699,7 @@ export default function Neworder() {
         }
     };
 
-    const finalizeNewOrder = async (country?: any) => {
+    const finalizeNewOrder = async () => {
         try {
             const res = await finalizeOrder({
                 variables: {
