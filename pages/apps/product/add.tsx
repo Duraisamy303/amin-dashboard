@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment,useCallback, useRef } from 'react';
+import { useEffect, useState, Fragment, useCallback, useRef } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -95,26 +95,26 @@ const ProductAdd = () => {
     const [chooseType, setChooseType] = useState('');
     const [selectedValues, setSelectedValues] = useState<any>({});
 
+    // error message start
 
-// error message start
+    const [productNameErrMsg, setProductNameErrMsg] = useState('');
+    const [slugErrMsg, setSlugErrMsg] = useState('');
+    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
+    const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
+    const [shortDesErrMsg, setShortDesErrMsg] = useState('');
+    const [skuErrMsg, setSkuErrMsg] = useState('');
+    const [quantityErrMsg, setQuantityErrMsg] = useState('');
+    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
+    const [categoryErrMsg, setCategoryErrMsg] = useState('');
+    const [descriptionErrMsg, setDescriptionErrMsg] = useState('');
+    const [attributeError, setAttributeError] = useState('');
+    const [variantErrors, setVariantErrors] = useState<any>([]);
 
-    const [productNameErrMsg, setProductNameErrMsg] = useState("");
-    const [slugErrMsg, setSlugErrMsg] = useState("");
-    const [seoTittleErrMsg, setSeoTittleErrMsg] = useState("");
-    const [seoDescErrMsg, setSeoDescErrMsg] = useState("");
-    const [shortDesErrMsg, setShortDesErrMsg] = useState("");
-    const [skuErrMsg, setSkuErrMsg] = useState("");
-    const [salePriceErrMsg, setSalePriceErrMsg] = useState("");
-    const [categoryErrMsg, setCategoryErrMsg] = useState("");
-    const [descriptionErrMsg, setDescriptionErrMsg] = useState("");
+    // error message end
 
-// error message end
-
-
-
-    const [dropdowndata, setDropdownData] = useState<any>("");
-    const [images, setImages] = useState<any>("");
-    const [imageUrl, setImageUrl] = useState<any>("");
+    const [dropdowndata, setDropdownData] = useState<any>('');
+    const [images, setImages] = useState<any>('');
+    const [imageUrl, setImageUrl] = useState<any>('');
     console.log('images: ', imageUrl);
 
     const [variants, setVariants] = useState([
@@ -128,100 +128,91 @@ const ProductAdd = () => {
         },
     ]);
 
+    // editor start
 
+    const editorRef: any = useRef(null);
+    const [editorInstance, setEditorInstance] = useState<any>(null);
+    const [content, setContent] = useState('');
 
-// editor start
+    // const [value2, setValue2] = useState<any>({
 
-const editorRef:any = useRef(null);
-const [editorInstance, setEditorInstance] = useState<any>(null);
-const [content, setContent] = useState('');
+    // });
+    // let count = 0;
+    // editor start
 
-// const [value2, setValue2] = useState<any>({
-    
-// });
-// let count = 0;
-// editor start
+    let editors = { isReady: false };
+    useEffect(() => {
+        if (!editors.isReady) {
+            editor();
+            editors.isReady = true;
+        }
 
-let editors = { isReady: false };
-useEffect(() => {
-if (!editors.isReady) {
-editor();
-editors.isReady = true;
-}
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, []);
 
-return () => {
-if (editorInstance) {
-  editorInstance?.blocks?.clear();
-}
-};
-}, [ ]);
+    // const editorRef = useRef(null); // Define a ref to hold the editor instance
 
+    const editor = useCallback(() => {
+        // Check if the window object is available and if the editorRef.current is set
+        if (typeof window === 'undefined' || !editorRef.current) return;
 
-// const editorRef = useRef(null); // Define a ref to hold the editor instance
+        // Ensure only one editor instance is created
+        if (editorInstance) {
+            return;
+        }
 
-const editor = useCallback(() => {
-// Check if the window object is available and if the editorRef.current is set
-if (typeof window === 'undefined' || !editorRef.current) return;
+        // console.log('value2: ', value2);
+        // Dynamically import the EditorJS module
+        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+            // Create a new instance of EditorJS with the appropriate configuration
+            const editor = new EditorJS({
+                holder: editorRef.current,
+                //   data: value2,
+                tools: {
+                    // Configure tools as needed
+                    header: {
+                        class: require('@editorjs/header'),
+                    },
+                    list: {
+                        class: require('@editorjs/list'),
+                    },
+                    table: {
+                        class: require('@editorjs/table'),
+                    },
+                },
+            });
 
-// Ensure only one editor instance is created
-if (editorInstance) {
-return;
-}
+            // Set the editorInstance state variable
+            setEditorInstance(editor);
+        });
 
-// console.log('value2: ', value2);
-// Dynamically import the EditorJS module
-import('@editorjs/editorjs').then(({ default: EditorJS }) => {
-// Create a new instance of EditorJS with the appropriate configuration
-const editor = new EditorJS({
-  holder: editorRef.current,
-//   data: value2,
-  tools: {
-    // Configure tools as needed
-    header: {
-      class: require('@editorjs/header'),
-    },
-    list: {
-      class: require('@editorjs/list'),
-    },
-    table: {
-      class: require('@editorjs/table'),
-    },
-  },
-});
+        // Cleanup function to destroy the current editor instance when the component unmounts
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, [editorInstance, value]);
 
-// Set the editorInstance state variable
-setEditorInstance(editor);
-});
+    // editor end
 
-// Cleanup function to destroy the current editor instance when the component unmounts
-return () => {
-if (editorInstance) {
-  editorInstance?.blocks?.clear();
-}
-};
-}, [editorInstance, value]);
+    // const handleSave = async () => {
+    //     if (editorInstance) {
+    //         try {
+    //             const savedContent = await editorInstance.save();
+    //             console.log('Editor content:', savedContent);
+    //             setValue2(JSON.stringify(savedContent, null, 2));
+    //         } catch (error) {
+    //             console.error('Failed to save editor content:', error);
+    //         }
+    //     }
+    // };
 
-// editor end
-
-// const handleSave = async () => {
-//     if (editorInstance) {
-//         try {
-//             const savedContent = await editorInstance.save();
-//             console.log('Editor content:', savedContent);
-//             setValue2(JSON.stringify(savedContent, null, 2));
-//         } catch (error) {
-//             console.error('Failed to save editor content:', error);
-//         }
-//     }
-// };
-
-// editor end
-
-
-
-
-
-
+    // editor end
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -311,8 +302,8 @@ if (editorInstance) {
             stoneType: stoneData?.productStoneTypes,
         };
 
-        const singleObj = Object.entries(arr1).reduce((acc:any, [key, value]) => {
-            acc[key] = value?.edges.map(({ node }:any) => ({ value: node?.id, label: node?.name }));
+        const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
             return acc;
         }, {});
 
@@ -443,52 +434,118 @@ if (editorInstance) {
         setShortDesErrMsg('');
         setCategoryErrMsg('');
         setDescriptionErrMsg('');
-    
+        setAttributeError('');
+        setVariantErrors([]);
+
+        let AttributesErrors: any = {};
+        let newVariantErrors: any = [];
+
         if (productName.trim() === '') {
             setProductNameErrMsg('Product name cannot be empty');
         }
-    
+
         if (slug.trim() === '') {
             setSlugErrMsg('Slug cannot be empty');
         }
-    
+
         if (seoTittle.trim() === '') {
             setSeoTittleErrMsg('Seo title cannot be empty');
         }
-    
+
         if (seoDesc.trim() === '') {
             setSeoDescErrMsg('Seo description cannot be empty');
         }
         // if(description.trim() === '') {
         //     setDescriptionErrMsg('Description cannot be empty');
         // }
-    
+
         if (shortDescription?.trim() === '') {
             setShortDesErrMsg('Short description cannot be empty');
         }
-    
-        if (selectedCat === "") {
+
+        if (selectedCat === '') {
             setCategoryErrMsg('Category cannot be empty');
         }
-    
+
+        if (!selectedValues || Object.keys(selectedValues).length === 0) {
+            setAttributeError('');
+        } else {
+            if (selectedValues?.stone?.length === 0) {
+                AttributesErrors.stone = 'Stone cannot be empty';
+            }
+
+            if (selectedValues?.design?.length === 0) {
+                AttributesErrors.design = 'Design cannot be empty';
+            }
+
+            if (selectedValues?.style?.length === 0) {
+                AttributesErrors.style = 'Style cannot be empty';
+            }
+
+            if (selectedValues?.finish?.length === 0) {
+                AttributesErrors.finish = 'finish cannot be empty';
+            }
+
+            setAttributeError(AttributesErrors);
+        }
+
+        if (variants?.length > 0) {
+            variants.forEach((variant, index) => {
+                console.log('✌️variant --->', variant);
+                let errors: any = {};
+
+                if (!variant.sku) {
+                    errors.sku = 'SKU cannot be empty';
+                }
+
+                if (variant.quantity <= 0) {
+                    errors.quantity = 'Quantity must be greater than 0';
+                } else if (isNaN(variant.quantity)) {
+                    errors.quantity = 'Quantity must be a number';
+                }
+
+                if (variant.regularPrice < 0) {
+                    errors.regularPrice = 'Regular Price cannot be negative';
+                } else if (variant.regularPrice == 0) {
+                    errors.regularPrice = 'Regular Price cannot be empty';
+                } else if (isNaN(variant.regularPrice)) {
+                    errors.regularPrice = 'Regular Price must be a number';
+                }
+
+                if (variant.salePrice < 0) {
+                    errors.salePrice = 'Sale Price cannot be negative';
+                } else if (isNaN(variant.salePrice)) {
+                    errors.salePrice = 'Sale Price must be a number';
+                } else if (variant.regularPrice < variant.salePrice) {
+                    errors.salePrice = 'sale price is greater than Regular price';
+                }
+
+                if (!variant.stackMgmt) {
+                    errors.stackMgmt = 'Check Stack Management';
+                }
+
+                newVariantErrors[index] = errors;
+            });
+
+            setVariantErrors(newVariantErrors);
+        }
+
         if (editorInstance) {
             try {
                 const savedContent = await editorInstance.save();
                 console.log('Editor content:', savedContent);
                 // setValue2(savedContent);
                 // console.log('✌️setValue2 --->', value2);
-                
-                const catId = selectedCat?.value;
-                let collectionId:any = [];
-                if (selectedCollection?.length > 0) {
-                    collectionId = selectedCollection.map((item:any) => item.value);
-                }
-    
 
-                console.log("savedContent", savedContent)
+                const catId = selectedCat?.value;
+                let collectionId: any = [];
+                if (selectedCollection?.length > 0) {
+                    collectionId = selectedCollection.map((item: any) => item.value);
+                }
+
+                console.log('savedContent', savedContent);
 
                 const formattedDescription = JSON.stringify(savedContent);
-
 
                 let tagId: any[] = [];
                 // if (selectedCollection?.length > 0) {
@@ -517,7 +574,7 @@ if (editorInstance) {
                         },
                     },
                 });
-    
+
                 if (data?.productCreate?.errors?.length > 0) {
                     console.log('error: ', data?.productCreate?.errors[0]?.message);
                 } else {
@@ -525,7 +582,7 @@ if (editorInstance) {
                     const productId = data?.productCreate?.product?.id;
                     productChannelListUpdate(productId);
                     if (images?.length > 0) {
-                        images?.map((item:any) => {
+                        images?.map((item: any) => {
                             const imageUpload = uploadImage(productId, item);
                             console.log('imageUpload: ', imageUpload);
                         });
@@ -635,14 +692,12 @@ if (editorInstance) {
             });
             if (data?.updateMetadata?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
-
-              
             } else {
                 // if (selectedTag?.length > 0) {
                 //     assignsTagToProduct(productId);
                 //     console.log('success: ', data);
                 // }
-                router.push(`/apps/product/edit?id=${productId}`)
+                router.push(`/apps/product/edit?id=${productId}`);
             }
         } catch (error) {
             console.log('error: ', error);
@@ -685,38 +740,38 @@ if (editorInstance) {
         setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
     };
 
-    const handleRemoveAccordion = (type:any) => {
-        setSelectedArr(selectedArr.filter((item:any) => item !== type));
-        setAccordions(accordions.filter((item:any) => item.type !== type));
+    const handleRemoveAccordion = (type: any) => {
+        setSelectedArr(selectedArr.filter((item: any) => item !== type));
+        setAccordions(accordions.filter((item: any) => item.type !== type));
         setOpenAccordion('');
-        const updatedSelectedValues:any = { ...selectedValues };
+        const updatedSelectedValues: any = { ...selectedValues };
         delete updatedSelectedValues[type];
         setSelectedValues(updatedSelectedValues);
     };
 
-    const handleDropdownChange = (event:any, type:any) => {
+    const handleDropdownChange = (event: any, type: any) => {
         setChooseType(type);
     };
 
-    const handleToggleAccordion = (type:any) => {
+    const handleToggleAccordion = (type: any) => {
         setOpenAccordion(openAccordion === type ? '' : type);
     };
 
-    const handleMultiSelectChange = (selectedOptions:any, type:any) => {
-        const selectedValuesForType = selectedOptions.map((option:any) => option.value);
+    const handleMultiSelectChange = (selectedOptions: any, type: any) => {
+        const selectedValuesForType = selectedOptions.map((option: any) => option.value);
         setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
     };
 
-    const handleChange = (index:any, fieldName:any, fieldValue:any) => {
+    const handleChange = (index: any, fieldName: any, fieldValue: any) => {
         setVariants((prevItems) => {
-            const updatedItems:any = [...prevItems];
+            const updatedItems: any = [...prevItems];
             updatedItems[index][fieldName] = fieldValue;
             return updatedItems;
         });
     };
 
     const handleAddItem = () => {
-        setVariants((prevItems:any) => [
+        setVariants((prevItems: any) => [
             ...prevItems,
             {
                 sku: '',
@@ -728,7 +783,7 @@ if (editorInstance) {
         ]);
     };
 
-    const handleRemoveVariants = (index:any) => {
+    const handleRemoveVariants = (index: any) => {
         if (index === 0) return; // Prevent removing the first item
         setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
     };
@@ -739,16 +794,17 @@ if (editorInstance) {
         console.log('imageUrl: ', imageUrl);
 
         // Push the selected file into the 'images' array
-        setImages((prevImages:any) => [...prevImages, selectedFile]);
+        setImages((prevImages: any) => [...prevImages, selectedFile]);
 
         // Push the blob URL into the 'imageUrl' array
-        setImageUrl((prevUrls:any) => [...prevUrls, imageUrl]);
+        setImageUrl((prevUrls: any) => [...prevUrls, imageUrl]);
 
         setModal4(false);
     };
 
     // -------------------------------------New Added-------------------------------------------------------
 
+    console.log('variants: ', variants);
     return (
         <div>
             <div className="  mt-6">
@@ -763,7 +819,7 @@ if (editorInstance) {
                 </div>
 
                 <div className="grid grid-cols-12 gap-4">
-                    <div className=" md:col-span-9 col-span-12">
+                    <div className=" col-span-12 md:col-span-9">
                         <div className="panel mb-5">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                                 Product Name
@@ -803,13 +859,13 @@ if (editorInstance) {
                             <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
                             {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
                         </div> */}
-                         <div className="panel mb-5">
+                        <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
                             <div ref={editorRef} className="mb-5 border border-gray-200">
-  {/* <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} /> */}
-</div>
+                                {/* <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} /> */}
+                            </div>
                             {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
                             {/* <p>Editor content: {content}</p> */}
                             {/* <button onClick={handleSave} className="btn btn-primary">
@@ -845,7 +901,7 @@ if (editorInstance) {
                                 {isMounted && (
                                     <Tab.Group>
                                         <div className="mx-10 mb-5 sm:mb-0 ">
-                                            <Tab.List className="md:m-auto w-32 text-center font-semibold flex flex-row  md:flex-col md:mb-0 mb-5 ">
+                                            <Tab.List className="mb-5 flex w-32 flex-row text-center font-semibold  md:m-auto md:mb-0 md:flex-col ">
                                                 {/* <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
@@ -930,7 +986,7 @@ if (editorInstance) {
                                                         <Select
                                                             placeholder="Select Type"
                                                             options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
-                                                            onChange={(selectedOption:any) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            onChange={(selectedOption: any) => handleDropdownChange(selectedOption, selectedOption.value)}
                                                             value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
                                                         />
                                                     </div>
@@ -943,7 +999,7 @@ if (editorInstance) {
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        {accordions.map((item:any) => (
+                                                        {accordions.map((item: any) => (
                                                             <div key={item?.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
                                                                 <button
                                                                     type="button"
@@ -980,11 +1036,12 @@ if (editorInstance) {
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value:any) => {
-                                                                                                const option = item[`${item.type}Name`].find((option:any) => option.value === value);
+                                                                                            value={(selectedValues[item.type] || []).map((value: any) => {
+                                                                                                const option = item[`${item.type}Name`].find((option: any) => option.value === value);
                                                                                                 return { value: option.value, label: option.label };
                                                                                             })}
                                                                                         />
+                                                                                        {attributeError[item.type] && <p className="error-message mt-1 text-red-500">{attributeError[item.type]}</p>}
                                                                                         {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
                                                                                         {/* <div className="flex justify-between">
                                                                                         <div className="flex">
@@ -1064,7 +1121,7 @@ if (editorInstance) {
                                                                     placeholder="Enter SKU"
                                                                     className="form-input"
                                                                 />
-                                                                {skuErrMsg && <p className="error-message mt-1 text-red-500 ">{skuErrMsg}</p>}
+                                                                {variantErrors[index]?.sku && <p className="error-message mt-1 text-red-500">{variantErrors[index].sku}</p>}
                                                             </div>
                                                         </div>
                                                         <div className="active flex items-center">
@@ -1083,6 +1140,7 @@ if (editorInstance) {
                                                                     className="form-checkbox"
                                                                 />
                                                                 <span>Track stock quantity for this product</span>
+                                                                {variantErrors[index]?.stackMgmt && <p className="error-message mt-1 text-red-500">{variantErrors[index].stackMgmt}</p>}
                                                             </div>
                                                         </div>
                                                         {item.stackMgmt && (
@@ -1103,6 +1161,7 @@ if (editorInstance) {
                                                                         placeholder="Enter Quantity"
                                                                         className="form-input"
                                                                     />
+                                                                    {variantErrors[index]?.quantity && <p className="error-message mt-1 text-red-500">{variantErrors[index].quantity}</p>}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1123,6 +1182,7 @@ if (editorInstance) {
                                                                     placeholder="Enter Regular Price"
                                                                     className="form-input"
                                                                 />
+                                                                {variantErrors[index]?.regularPrice && <p className="error-message mt-1 text-red-500">{variantErrors[index].regularPrice}</p>}
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center">
@@ -1142,7 +1202,7 @@ if (editorInstance) {
                                                                     placeholder="Enter Sale Price"
                                                                     className="form-input"
                                                                 />
-                                                                {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>}
+                                                                {variantErrors[index]?.salePrice && <p className="error-message mt-1 text-red-500">{variantErrors[index].salePrice}</p>}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1198,7 +1258,7 @@ if (editorInstance) {
                                                                 type="number"
                                                                 style={{ width: '100%' }}
                                                                 value={menuOrder}
-                                                                onChange={(e:any) => setMenuOrder(e.target.value)}
+                                                                onChange={(e: any) => setMenuOrder(e.target.value)}
                                                                 placeholder="Enter Menu Order"
                                                                 name="regularPrice"
                                                                 className="form-input"
@@ -1261,7 +1321,7 @@ if (editorInstance) {
                                 <h5 className=" block text-lg font-medium text-gray-700">Label</h5>
                             </div>
                             <div className="mb-5">
-                                <Select placeholder="Select an label" options={options} value={label} onChange={(val:any) => setLabel(val)} isSearchable={true} />
+                                <Select placeholder="Select an label" options={options} value={label} onChange={(val: any) => setLabel(val)} isSearchable={true} />
                             </div>
                         </div>
 
@@ -1287,8 +1347,8 @@ if (editorInstance) {
                             </div>
                         </div> */}
                     </div>
-                    <div className="md:col-span-3 col-span-12">
-                        <div className="panel md:order-1 order-4">
+                    <div className="col-span-12 md:col-span-3">
+                        <div className="panel order-4 md:order-1">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Publish</h5>
                             </div>
@@ -1435,13 +1495,13 @@ if (editorInstance) {
                             <p className="mt-5 cursor-pointer text-danger underline">Remove product image</p>
                         </div> */}
 
-                        <div className="panel mt-5 md:order-2 order-2">
+                        <div className="panel order-2 mt-5 md:order-2">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Gallery</h5>
                             </div>
                             <div className="grid grid-cols-12 gap-3">
                                 {imageUrl?.length > 0 &&
-                                    imageUrl?.map((item:any, index:any) => (
+                                    imageUrl?.map((item: any, index: any) => (
                                         <div className="relative col-span-4">
                                             <img src={item} alt="Product image" className=" object-cover" />
                                             <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
@@ -1463,7 +1523,7 @@ if (editorInstance) {
                             </button> */}
                         </div>
 
-                        <div className="panel mt-5  md:order-3 order-4">
+                        <div className="panel order-4  mt-5 md:order-3">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Categories</h5>
                             </div>
@@ -1564,7 +1624,7 @@ if (editorInstance) {
                             )} */}
                         </div>
 
-                        <div className="panel mt-5  md:order-4 order-1">
+                        <div className="panel order-1  mt-5 md:order-4">
                             <div className="mb-5 border-b border-gray-200 pb-2">
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Tags</h5>
                             </div>
