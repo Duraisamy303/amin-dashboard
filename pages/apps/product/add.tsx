@@ -1280,7 +1280,6 @@ const ProductAdd = () => {
                                                         <textarea rows={3} style={{ width: '100%' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
                                                     </div>
                                                 </div>
-
                                                 <div className="active flex items-center border-t border-gray-200 pt-5">
                                                     <div className="mb-5 mr-4 pr-3">
                                                         <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
