@@ -27,7 +27,7 @@ import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useMutation } from '@apollo/client';
-import { Failure, Success, channels, profilePic, sampleParams, showDeleteAlert } from '@/utils/functions';
+import { Failure, NotesMsg, Success, channels, profilePic, sampleParams, showDeleteAlert } from '@/utils/functions';
 import Swal from 'sweetalert2';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconX from '@/components/Icon/IconX';
@@ -160,6 +160,7 @@ const Editorder = () => {
     const [showBillingInputs, setShowBillingInputs] = useState(false);
     const [showShippingInputs, setShowShippingInputs] = useState(false);
     const [waitingStatus, setWaitingStatus] = useState('');
+    const [notesList, setNotesList] = useState([]);
 
     useEffect(() => {
         getOrderData();
@@ -184,6 +185,24 @@ const Editorder = () => {
         if (orderDetails) {
             if (orderDetails && orderDetails?.order) {
                 setOrderData(orderDetails?.order);
+
+                const filteredArray = orderDetails?.order?.events?.filter(
+                    (item) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
+                );
+                console.log('filteredArray: ', filteredArray);
+
+                const result = filteredArray?.map((item) => {
+                    const secondItem = NotesMsg.find((i) => i.type === item.type);
+                    return {
+                        type: item.type,
+                        message: item.type === 'NOTE_ADDED' ? item.message : secondItem.message,
+                        id: item.id,
+                        date:item.date
+
+                    };
+                });
+                console.log('result: ', result);
+                setNotesList(result);
                 setLines(orderDetails?.order?.lines);
                 setLoading(false);
                 setOrderStatus(orderDetails?.order?.status);
@@ -294,6 +313,7 @@ const Editorder = () => {
     };
 
     const removeNotes = (item: any) => {
+        console.log("item: ", item);
         showDeleteAlert(
             async () => {
                 await deleteNotes({
@@ -453,7 +473,7 @@ const Editorder = () => {
                 } else {
                     setOrderStatus('Shipped');
                     setIsOrderOpen(false);
-                    Success("Order status updated")
+                    Success('Order status updated');
                 }
             } else {
                 Failure('Out of Stock');
@@ -475,8 +495,7 @@ const Editorder = () => {
             });
             getOrderDetails();
             setIsPaymentOpen(false);
-            Success("Payment status updated")
-
+            Success('Payment status updated');
         } catch (error) {
             console.log('error: ', error);
         }
@@ -1363,16 +1382,18 @@ const Editorder = () => {
                                     <h3 className="text-lg font-semibold">Order Notes</h3>
                                 </div>
                                 <div className="mb-5 border-b border-gray-200 pb-2 ">
-                                    {orderData?.events?.length > 0 ? (
-                                        orderData?.events?.map((data: any) => (
+                                    {notesList?.length > 0 ? (
+                                        notesList?.map((data: any) => (
                                             <div className="mb-5">
                                                 <div className="text-gray-500">
                                                     <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
                                                     <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>
                                                     {data?.user && data?.user?.email && `by ${data.user.email}`}
-                                                    <span className="ml-2 cursor-pointer text-danger" onClick={() => removeNotes(data)}>
-                                                        Delete note
-                                                    </span>
+                                                    {data?.type == 'NOTE_ADDED' && (
+                                                        <span className="ml-2 cursor-pointer text-danger" onClick={() => removeNotes(data)}>
+                                                            Delete note
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))

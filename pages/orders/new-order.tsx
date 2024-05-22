@@ -20,7 +20,7 @@ import {
     UPDATE_SHIPPING_COST,
 } from '@/query/product';
 import { productsDropdown, setBilling, setShipping } from '@/utils/commonFunction';
-import { CountryDropdownData, Success, UserDropdownData, billingAddress, checkChannel, isEmptyObject, profilePic, shippingAddress, showDeleteAlert, useSetState } from '@/utils/functions';
+import { CountryDropdownData, NotesMsg, Success, UserDropdownData, billingAddress, checkChannel, isEmptyObject, profilePic, shippingAddress, showDeleteAlert, useSetState } from '@/utils/functions';
 import { billingValidation } from '@/utils/validation';
 import { useMutation, useQuery } from '@apollo/client';
 import { Field, Form, Formik } from 'formik';
@@ -228,7 +228,6 @@ export default function Neworder() {
         },
     });
 
-
     // For get Customer list
     useEffect(() => {
         getCustomer();
@@ -313,7 +312,25 @@ export default function Neworder() {
 
             if (productDetails && productDetails?.order && productDetails?.order?.events?.length > 0) {
                 const list = productDetails?.order?.events;
-                setState({ notesList: list, loading: false });
+                const filteredArray = list.filter(
+                    (item) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
+                );
+                console.log('filteredArray: ', filteredArray);
+
+                const result = filteredArray?.map((item) => {
+                    const secondItem = NotesMsg.find((i) => i.type === item.type);
+                    return {
+                        type: item.type,
+                        message: item.type === 'NOTE_ADDED' ? item.message : secondItem.message,
+                        id: item.id,
+                        date:item.date
+
+
+                    };
+                });
+                console.log('result: ', result);
+
+                setState({ notesList: result, loading: false });
             } else {
                 setState({ loading: false });
             }
@@ -549,7 +566,7 @@ export default function Neworder() {
                 },
             });
             getOrderData();
-            setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '',productIsEdit:false,addProductOpen:false });
+            setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '', productIsEdit: false, addProductOpen: false });
             Success('Product Updated Successfully');
         } catch (error) {
             console.log('error: ', error);
@@ -1491,9 +1508,11 @@ export default function Neworder() {
                                                 <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
                                                 <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>
                                                 {data?.user && data?.user?.email && `by ${data.user.email}`}
+                                                {data?.type == "NOTE_ADDED" &&
                                                 <span className="ml-2 cursor-pointer text-danger" onClick={() => removeNotes(data)}>
                                                     Delete note
                                                 </span>
+                                                }
                                             </div>
                                         </div>
                                     );
@@ -1561,10 +1580,9 @@ export default function Neworder() {
                 addHeader={'Add Product'}
                 updateHeader={'Update Product'}
                 open={state.addProductOpen}
-                close={() => setState({ addProductOpen: false,productIsEdit:false })}
+                close={() => setState({ addProductOpen: false, productIsEdit: false })}
                 renderComponent={() => (
                     <>
-                       
                         {state.productIsEdit ? (
                             <div className="p-5">
                                 <div className="p-5">
@@ -1573,7 +1591,7 @@ export default function Neworder() {
                                 <div className="flex justify-end gap-5">
                                     <button
                                         onClick={() => {
-                                            setState({ selectedItems: {}, addProductOpen: false ,productIsEdit:false});
+                                            setState({ selectedItems: {}, addProductOpen: false, productIsEdit: false });
                                         }}
                                         className="rounded border border-black bg-transparent px-4 py-2 font-semibold text-black hover:border-transparent hover:bg-blue-500 hover:text-white"
                                     >
@@ -1589,9 +1607,9 @@ export default function Neworder() {
                             </div>
                         ) : (
                             <div className="overflow-scroll p-5">
-                                 <div className="p-3">
-                            <input type="text" className="form-input w-full p-3" placeholder="Search..." value={state.search} onChange={(e) => setState({ search: e.target.value })} />
-                        </div>
+                                <div className="p-3">
+                                    <input type="text" className="form-input w-full p-3" placeholder="Search..." value={state.search} onChange={(e) => setState({ search: e.target.value })} />
+                                </div>
                                 {state.productList?.map(({ name, variants, thumbnail }) => (
                                     <div key={name}>
                                         <div className="flex gap-3">
