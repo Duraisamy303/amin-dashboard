@@ -284,3 +284,9 @@ export const channels = [
         label: 'USD',
     },
 ];
+
+export const NotesMsg = [
+    { type: 'CONFIRMED', message: 'Order was confirmed' },
+    { type: 'FULFILLMENT_FULFILLED_ITEMS', message: 'Fulfilled {quantity} items' },
+    { type: 'ORDER_MARKED_AS_PAID', message: 'Order was marked as paid' },
+];

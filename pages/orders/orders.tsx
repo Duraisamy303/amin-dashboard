@@ -69,7 +69,6 @@ const Orders = () => {
     const getFinishList = () => {
         setLoading(true);
         if (finishData) {
-            console.log("finishData: ", finishData);
             if (finishData && finishData.orders && finishData.orders?.edges?.length > 0) {
                 const newData = finishData.orders?.edges.map((item: any) => ({
                     ...item.node,
