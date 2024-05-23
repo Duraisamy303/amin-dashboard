@@ -452,7 +452,7 @@ const ProductList = () => {
                                                 <IconEdit className="h-4.5 w-4.5" />
                                             </button>
                                             <button className="flex hover:text-info" onClick={() => {
-    window.open(`http://www1.prade.in/shop/?id=${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
+    window.open(`http://www1.prade.in/product-details/${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
 }}
 >
                                                 {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
