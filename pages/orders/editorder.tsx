@@ -197,17 +197,22 @@ const Editorder = () => {
                         type: item.type,
                         message: item.type === 'NOTE_ADDED' ? item.message : secondItem.message,
                         id: item.id,
-                        date:item.date
-
+                        date: item.date,
                     };
                 });
-                console.log('result: ', result);
+                if (orderDetails?.order?.courierPartner) {
+                    setShippingPatner(orderDetails?.order?.courierPartner?.id);
+                }
+
+                if (orderDetails?.order?.fulfillments?.length > 0) {
+                    setTrackingNumber(orderDetails?.order?.fulfillments[0]?.trackingNumber);
+                }
+
                 setNotesList(result);
                 setLines(orderDetails?.order?.lines);
                 setLoading(false);
                 setOrderStatus(orderDetails?.order?.status);
                 setPaymentStatus(orderDetails?.order?.paymentStatus);
-                setTrackingNumber(orderDetails?.order?.trackingNumber);
                 const billing = orderDetails?.order?.billingAddress;
                 const shipping = orderDetails?.order?.shippingAddress;
                 if (orderDetails?.order?.discounts?.length > 0) {
@@ -313,7 +318,6 @@ const Editorder = () => {
     };
 
     const removeNotes = (item: any) => {
-        console.log("item: ", item);
         showDeleteAlert(
             async () => {
                 await deleteNotes({
@@ -337,22 +341,6 @@ const Editorder = () => {
 
     const ShippingInputs = () => {
         setShowShippingInputs(!showShippingInputs);
-    };
-
-    //delete Product to this order
-    const deleteProduct = async (item: any) => {
-        try {
-            const res = await deleteLine({
-                variables: {
-                    id: item.id,
-                },
-            });
-            getOrderData();
-            // setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '' });
-            // Success('Product Deleted Successfully');
-        } catch (error) {
-            console.log('error: ', error);
-        }
     };
 
     const validationSchema = Yup.object().shape({
@@ -410,10 +398,6 @@ const Editorder = () => {
             });
     };
 
-    const handleAddOrder = () => {
-        router.push('/orders/new-order');
-    };
-
     const updateDiscount = async () => {
         const { data } = await updateDiscounts({
             variables: {
@@ -438,15 +422,9 @@ const Editorder = () => {
         });
     };
 
-    const isFullfiled = () => {
-        const isQuantity = fullfillData?.every((item: any) => item.variant.quantityAvailable >= item.quantity);
-        return isQuantity;
-    };
     const orderStateUpdate = async () => {
         try {
             const isQuantity = fullfillData?.every((data) => data?.variant?.stocks.every((stock) => data?.quantity <= stock.quantity));
-            //Pendding for loop stock>= quantity
-            console.log('isQuantity: ', isQuantity);
 
             if (isQuantity) {
                 const modify = fullfillData?.map((item) => ({
@@ -559,6 +537,7 @@ const Editorder = () => {
                 },
             });
             getOrderDetails();
+            Success('Shipping provider updated');
         } catch (error) {
             console.log('error: ', error);
         }
@@ -568,7 +547,7 @@ const Editorder = () => {
         try {
             const res = await editTrackingNumber({
                 variables: {
-                    id: 'RnVsZmlsbG1lbnQ6MTY=',
+                    id: orderDetails?.order?.fulfillments[0]?.id,
                     input: {
                         trackingNumber,
                         notifyCustomer: true,
@@ -1232,7 +1211,9 @@ const Editorder = () => {
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>Item</th>
+                                                <th>Product</th>
+                                                <th>Image</th>
+
                                                 <th className="w-1">Cost</th>
                                                 <th className="w-1">Qty</th>
                                                 <th>Total</th>
@@ -1244,8 +1225,10 @@ const Editorder = () => {
                                             {lines?.length > 0 &&
                                                 lines?.map((item: any, index: any) => (
                                                     <tr className="panel align-top" key={index}>
+                                                        <td>{item?.productName}</td>
+
                                                         <td>
-                                                            <img src={item?.thumbnail?.url} alt="Selected" className="object-cover" />
+                                                            <img src={item?.thumbnail?.url} height={100} width={100} alt="Selected" className="object-cover" />
                                                         </td>
                                                         <td>{item?.unitPrice?.gross?.amount}</td>
                                                         <td>
@@ -1377,7 +1360,7 @@ const Editorder = () => {
                                     </div>
                                 </div>
                             )}
-                            <div className="panel mb-5 p-5">
+                            <div className="panel max-h-[810px]  overflow-y-auto p-5">
                                 <div className="mb-5 border-b border-gray-200 pb-2 ">
                                     <h3 className="text-lg font-semibold">Order Notes</h3>
                                 </div>
@@ -1600,7 +1583,7 @@ const Editorder = () => {
                                                     <td>{item?.productName}</td>
 
                                                     <td>
-                                                        <img src={profilePic(item?.thumbnail?.url)} alt="Selected" className="object-cover" />
+                                                        <img src={profilePic(item?.thumbnail?.url)} height={100} alt="Selected" className="object-cover" />
                                                     </td>
                                                     <td>{item?.variant?.sku}</td>
                                                     <td>
