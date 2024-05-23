@@ -65,6 +65,9 @@ const Orders = () => {
     const [loading, setLoading] = useState(false);
     const [exportBy, setExportBy] = useState('');
 
+    // error message
+    const [currencyPopup, setCurrencyPopup] = useState('');
+
     useEffect(() => {
         getFinishList();
     }, [finishData]);
@@ -312,7 +315,12 @@ const Orders = () => {
 
     // completed category delete option
     const handleSetChannel = () => {
-        createDraftOrder();
+        setCurrencyPopup('');
+        if (state.selectedCurrency == '') {
+            setCurrencyPopup('required this field');
+        } else {
+            createDraftOrder();
+        }
     };
 
     const createDraftOrder = async () => {
@@ -371,17 +379,12 @@ const Orders = () => {
         }
     };
 
-   
-
-
-    const filter=async()=>{
+    const filter = async () => {
         try {
-            
         } catch (error) {
-            console.log("error: ", error);
-            
+            console.log('error: ', error);
         }
-    }
+    };
 
     return (
         <div>
@@ -472,7 +475,7 @@ const Orders = () => {
                             </Dropdown> */}
                         </div>
                         <div>
-                            <button type="button" className="btn btn-primary" onClick={()=>filter()}>
+                            <button type="button" className="btn btn-primary" onClick={() => filter()}>
                                 Filter
                             </button>
                         </div>
@@ -773,12 +776,13 @@ const Orders = () => {
                             <option value="" disabled selected>
                                 Select a currency
                             </option>
-                            {state.currency?.map((item) => (
+                            {state.currency?.map((item: any) => (
                                 <option key={item?.value} value={item?.value}>
                                     {item?.label}
                                 </option>
                             ))}
                         </select>
+                        {currencyPopup && <div className="mt-1 text-sm text-red-400">{currencyPopup}</div>}
 
                         <div className="mt-8 flex items-center justify-end">
                             <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setState({ isOpenChannel: false })}>
