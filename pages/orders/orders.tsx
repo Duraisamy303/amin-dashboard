@@ -356,7 +356,7 @@ const Orders = () => {
     const excelDownload = () => {
         console.log('allData: ', allData);
 
-        const excelData = allData?.map((item) => {
+        const excelData = allData?.map((item:any) => {
             const res = {
                 OrderNumber: item?.node?.number,
                 CustomerName: ` ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
