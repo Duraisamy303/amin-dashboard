@@ -287,6 +287,59 @@ export const channels = [
 
 export const NotesMsg = [
     { type: 'CONFIRMED', message: 'Order was confirmed' },
-    { type: 'FULFILLMENT_FULFILLED_ITEMS', message: 'Fulfilled {quantity} items' },
-    { type: 'ORDER_MARKED_AS_PAID', message: 'Order was marked as paid' },
+    { type: 'FULFILLMENT_FULFILLED_ITEMS', message: 'Order status changed from Processing to Completed' },
+    { type: 'ORDER_MARKED_AS_PAID', message: 'Order Payment status changed from Pending to Completed.' },
 ];
+
+export const objIsEmpty = (obj: object) => {
+    for (let key in obj) {
+        if (obj.hasOwnProperty(key)) return false;
+    }
+    return true;
+};
+
+export const handleExportByChange = (e) => {
+    const selectedValue = e;
+
+    // Get current date
+    const currentDate = new Date();
+
+    // Initialize variables for date range
+    let gteDate, lteDate;
+
+    switch (selectedValue) {
+        case 'weekly':
+            gteDate = new Date(currentDate);
+            gteDate.setDate(currentDate.getDate() - 6); // Start of the week
+            lteDate = currentDate; // Today
+            break;
+        case 'monthly':
+            gteDate = new Date(currentDate);
+            gteDate.setDate(currentDate.getDate() - 29);
+            lteDate = currentDate; // Today
+            break;
+        case '3Months':
+            gteDate = new Date(currentDate);
+            gteDate.setDate(currentDate.getDate() - 89); // 90 days ago
+            lteDate = currentDate; // Today
+            break;
+        case '6Months':
+            gteDate = new Date(currentDate);
+            gteDate.setDate(currentDate.getDate() - 179); // 180 days ago
+            lteDate = currentDate; // Today
+            break;
+        case 'year':
+            gteDate = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), currentDate.getDate()); // 1 year ago
+            lteDate = currentDate; // Today
+            break;
+        default:
+            // For default or empty option, set date range to null
+            gteDate = null;
+            lteDate = null;
+    }
+    const body = {
+        gte: gteDate,
+        lte: lteDate,
+    };
+    return body;
+};

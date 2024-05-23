@@ -18,9 +18,24 @@ import {
     UPDATE_DRAFT_ORDER,
     UPDATE_LINE,
     UPDATE_SHIPPING_COST,
+    UPDATE_SHIPPING_COUNTRY,
 } from '@/query/product';
 import { productsDropdown, setBilling, setShipping } from '@/utils/commonFunction';
-import { CountryDropdownData, NotesMsg, Success, UserDropdownData, billingAddress, checkChannel, isEmptyObject, profilePic, shippingAddress, showDeleteAlert, useSetState } from '@/utils/functions';
+import {
+    CountryDropdownData,
+    Failure,
+    NotesMsg,
+    Success,
+    UserDropdownData,
+    billingAddress,
+    checkChannel,
+    isEmptyObject,
+    objIsEmpty,
+    profilePic,
+    shippingAddress,
+    showDeleteAlert,
+    useSetState,
+} from '@/utils/functions';
 import { billingValidation } from '@/utils/validation';
 import { useMutation, useQuery } from '@apollo/client';
 import { Field, Form, Formik } from 'formik';
@@ -86,70 +101,19 @@ export default function Neworder() {
 
     const [addNotes] = useMutation(CREATE_NOTES);
     const [deleteNotes] = useMutation(DELETE_NOTES);
+    const [updateShippingAddress] = useMutation(UPDATE_SHIPPING_COUNTRY);
 
     const { data: customer } = useQuery(CUSTOMER_LIST, {
         variables: {
             after: null,
             first: 50,
             query: '',
-            PERMISSION_HANDLE_CHECKOUTS: true,
-            PERMISSION_HANDLE_PAYMENTS: true,
-            PERMISSION_HANDLE_TAXES: true,
-            PERMISSION_IMPERSONATE_USER: true,
-            PERMISSION_MANAGE_APPS: true,
-            PERMISSION_MANAGE_CHANNELS: true,
-            PERMISSION_MANAGE_CHECKOUTS: true,
-            PERMISSION_MANAGE_DISCOUNTS: true,
-            PERMISSION_MANAGE_GIFT_CARD: true,
-            PERMISSION_MANAGE_MENUS: true,
-            PERMISSION_MANAGE_OBSERVABILITY: true,
-            PERMISSION_MANAGE_ORDERS: true,
-            PERMISSION_MANAGE_ORDERS_IMPORT: true,
-            PERMISSION_MANAGE_PAGES: true,
-            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_PLUGINS: true,
-            PERMISSION_MANAGE_PRODUCTS: true,
-            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_SETTINGS: true,
-            PERMISSION_MANAGE_SHIPPING: true,
-            PERMISSION_MANAGE_STAFF: true,
-            PERMISSION_MANAGE_TAXES: true,
-            PERMISSION_MANAGE_TRANSLATIONS: true,
-            PERMISSION_MANAGE_USERS: true,
         },
     });
 
     const { data: countryData } = useQuery(COUNTRY_LIST);
 
-    const { data: customerAddress, refetch: addressRefetch } = useQuery(CUSTOMER_ADDRESS, {
-        variables: {
-            id: state.selectedCustomerId,
-            PERMISSION_HANDLE_CHECKOUTS: true,
-            PERMISSION_HANDLE_PAYMENTS: true,
-            PERMISSION_HANDLE_TAXES: true,
-            PERMISSION_IMPERSONATE_USER: true,
-            PERMISSION_MANAGE_APPS: true,
-            PERMISSION_MANAGE_CHANNELS: true,
-            PERMISSION_MANAGE_CHECKOUTS: true,
-            PERMISSION_MANAGE_DISCOUNTS: true,
-            PERMISSION_MANAGE_GIFT_CARD: true,
-            PERMISSION_MANAGE_MENUS: true,
-            PERMISSION_MANAGE_OBSERVABILITY: true,
-            PERMISSION_MANAGE_ORDERS: true,
-            PERMISSION_MANAGE_ORDERS_IMPORT: true,
-            PERMISSION_MANAGE_PAGES: true,
-            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_PLUGINS: true,
-            PERMISSION_MANAGE_PRODUCTS: true,
-            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_SETTINGS: true,
-            PERMISSION_MANAGE_SHIPPING: true,
-            PERMISSION_MANAGE_STAFF: true,
-            PERMISSION_MANAGE_TAXES: true,
-            PERMISSION_MANAGE_TRANSLATIONS: true,
-            PERMISSION_MANAGE_USERS: true,
-        },
-    });
+    const { data: customerAddress, refetch: addressRefetch } = useQuery(CUSTOMER_ADDRESS);
 
     const { data: stateData, refetch: stateRefetch } = useQuery(STATES_LIST, {
         variables: { code: state.billingAddress.country },
@@ -163,32 +127,9 @@ export default function Neworder() {
         variables: {
             id: orderId,
             isStaffUser: true,
-            PERMISSION_HANDLE_CHECKOUTS: true,
-            PERMISSION_HANDLE_PAYMENTS: true,
-            PERMISSION_HANDLE_TAXES: true,
-            PERMISSION_IMPERSONATE_USER: true,
-            PERMISSION_MANAGE_APPS: true,
-            PERMISSION_MANAGE_CHANNELS: true,
-            PERMISSION_MANAGE_CHECKOUTS: true,
-            PERMISSION_MANAGE_DISCOUNTS: true,
-            PERMISSION_MANAGE_GIFT_CARD: true,
-            PERMISSION_MANAGE_MENUS: true,
-            PERMISSION_MANAGE_OBSERVABILITY: true,
-            PERMISSION_MANAGE_ORDERS: true,
-            PERMISSION_MANAGE_ORDERS_IMPORT: true,
-            PERMISSION_MANAGE_PAGES: true,
-            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_PLUGINS: true,
-            PERMISSION_MANAGE_PRODUCTS: true,
-            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_SETTINGS: true,
-            PERMISSION_MANAGE_SHIPPING: true,
-            PERMISSION_MANAGE_STAFF: true,
-            PERMISSION_MANAGE_TAXES: true,
-            PERMISSION_MANAGE_TRANSLATIONS: true,
-            PERMISSION_MANAGE_USERS: true,
         },
     });
+
 
     const { data: productData } = useQuery(FILTER_PRODUCT_LIST, {
         variables: {
@@ -249,6 +190,7 @@ export default function Neworder() {
         try {
             setState({ loading: true });
             const funRes = UserDropdownData(customer);
+            console.log('funRes: ', funRes);
             setState({ customerList: funRes, loading: false });
         } catch (error) {
             setState({ loading: false });
@@ -298,13 +240,14 @@ export default function Neworder() {
     // Get Order Details
     useEffect(() => {
         getOrderDetails();
-    }, [orderId, productDetails]);
+    }, [productDetails]);
 
     const getOrderDetails = () => {
         setState({ loading: true });
         if (productDetails) {
             if (productDetails && productDetails?.order && productDetails?.order?.lines?.length > 0) {
                 const list = productDetails?.order?.lines;
+                console.log('list: ', list);
                 setState({ lineList: list, loading: false });
             } else {
                 setState({ loading: false });
@@ -315,7 +258,6 @@ export default function Neworder() {
                 const filteredArray = list.filter(
                     (item) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
                 );
-                console.log('filteredArray: ', filteredArray);
 
                 const result = filteredArray?.map((item) => {
                     const secondItem = NotesMsg.find((i) => i.type === item.type);
@@ -323,12 +265,9 @@ export default function Neworder() {
                         type: item.type,
                         message: item.type === 'NOTE_ADDED' ? item.message : secondItem.message,
                         id: item.id,
-                        date:item.date
-
-
+                        date: item.date,
                     };
                 });
-                console.log('result: ', result);
 
                 setState({ notesList: result, loading: false });
             } else {
@@ -386,10 +325,13 @@ export default function Neworder() {
         try {
             if (state.selectedCustomerId != '' && state.selectedCustomerId != undefined) {
                 const funRes: any = await setBilling(customerAddress);
-                setState({ billingAddress: funRes });
-                updateShippingAmount(funRes?.country);
+                if (!objIsEmpty(funRes)) {
+                    setState({ billingAddress: funRes });
+                } else {
+                    setState({ billingAddress: billingAddress });
+                }
             } else {
-                alert('Please choose customer');
+                Failure('Please choose customer');
             }
         } catch (error) {
             console.log('error: ', error);
@@ -400,21 +342,25 @@ export default function Neworder() {
         try {
             if (state.selectedCustomerId != '' && state.selectedCustomerId != undefined) {
                 const funRes: any = await setShipping(customerAddress);
-                setState({ shippingAddress: funRes });
-                updateShippingAmount(funRes?.country);
+                if (!objIsEmpty(funRes)) {
+                    setState({ shippingAddress: funRes });
+                    shippingCoutryChange(funRes?.country);
+                } else {
+                    setState({ shippingAddress: shippingAddress });
+                }
             } else {
-                alert('Please choose customer');
+                Failure('Please choose customer');
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
-    const updateShippingAmount = async (country) => {
+    const updateShippingAmount = async () => {
         try {
             const channel = checkChannel();
             const isINR = channel === 'INR';
-            const shippingCountry = country || state.shippingAddress.country;
+            const shippingCountry = state.shippingAddress.country;
             const isIndia = shippingCountry === 'IN';
 
             let shippingMethod = '';
@@ -446,16 +392,6 @@ export default function Neworder() {
             [heading]: Object.fromEntries(state.productList.find((item) => item.name === heading).variants.map(({ name }) => [name, !isHeadingChecked])),
         };
         setState({ selectedItems: newSelectedItems });
-        // setState((prevState) => {
-        //     const isHeadingChecked = prevState.selectedItems[heading] && Object.values(prevState.selectedItems[heading]).every((value) => value);
-        //     const newSelectedItems = {
-        //         ...prevState.selectedItems,
-        //         [heading]: Object.fromEntries(
-        //             prevState.productList.find((item) => item.name === heading).variants.map(({ name }) => [name, !isHeadingChecked])
-        //         ),
-        //     };
-        //     return { selectedItems: newSelectedItems };
-        // });
     };
 
     const handleSelect = (heading, subHeading) => {
@@ -483,38 +419,6 @@ export default function Neworder() {
             newSelectedItems[heading] = Object.fromEntries(state.productList.find((item) => item.name === heading).variants.map(({ name }) => [name, !isHeadingChecked]));
         }
         setState({ selectedItems: newSelectedItems });
-
-        // setState((prevState) => {
-        //     const newSelectedItems = { ...prevState.selectedItems };
-
-        //     if (subHeading) {
-        //         newSelectedItems[heading] = {
-        //             ...prevState.selectedItems[heading],
-        //             [subHeading]: !prevState.selectedItems[heading]?.[subHeading],
-        //         };
-
-        //         // Check if all children are selected or not
-        //         const allSelected = Object.values(newSelectedItems[heading]).every((value) => value);
-        //         const anySelected = Object.values(newSelectedItems[heading]).some((value) => value);
-
-        //         if (allSelected) {
-        //             newSelectedItems[heading] = Object.fromEntries(
-        //                 Object.entries(newSelectedItems[heading]).map(([name]) => [name, true])
-        //             );
-        //         }
-
-        //         if (!anySelected) {
-        //             delete newSelectedItems[heading];
-        //         }
-        //     } else {
-        //         const isHeadingChecked = prevState.selectedItems[heading] && Object.values(prevState.selectedItems[heading]).every((value) => value);
-        //         newSelectedItems[heading] = Object.fromEntries(
-        //             prevState.productList.find((item) => item.name === heading).variants.map(({ name }) => [name, !isHeadingChecked])
-        //         );
-        //     }
-
-        //     return { selectedItems: newSelectedItems };
-        // });
     };
 
     const handleSubHeadingSelect = (heading, subHeading) => {
@@ -582,6 +486,7 @@ export default function Neworder() {
                 },
             });
             getOrderData();
+
             setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '' });
             Success('Product Deleted Successfully');
         } catch (error) {
@@ -731,6 +636,63 @@ export default function Neworder() {
         }
     };
 
+    const handleChangeCustomer = async (val: any) => {
+        {
+            const selectedCustomerId: any = val.target.value;
+            setState({ selectedCustomerId: selectedCustomerId });
+            await addressRefetch({ id: selectedCustomerId });
+        }
+    };
+
+    const shippingCoutryChange = async (country) => {
+        try {
+            stateRefetch();
+            await updateShippingAddress({
+                variables: {
+                    checkoutId: orderId,
+                    shippingAddress: {
+                        country,
+                    },
+                },
+            });
+            setState({
+                selectedCountry1: country,
+                selectedState1: '',
+            });
+        } catch (e) {
+            console.log('e: ', e);
+        }
+    };
+
+    const updateAddress = async () => {
+        try {
+            const data = await updateDraftOrder({
+                variables: {
+                    id: orderId,
+                    input: {
+                        shippingAddress: {
+                            city: state.shippingAddress.city,
+                            cityArea: '',
+                            companyName: state.shippingAddress.company,
+                            country: state.shippingAddress.country,
+                            countryArea: state.shippingAddress.state,
+                            firstName: state.shippingAddress.firstName,
+                            lastName: state.shippingAddress.lastName,
+                            phone: state.shippingAddress.phone,
+                            postalCode: state.shippingAddress.pincode,
+                            streetAddress1: state.shippingAddress.address_1,
+                            streetAddress2: state.shippingAddress.address_2,
+                        },
+                    },
+                },
+            });
+            updateShippingAmount();
+            getOrderData();
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
     return (
         <>
             <div className="panel mb-5 flex items-center justify-between gap-3 p-5 ">
@@ -756,21 +718,7 @@ export default function Neworder() {
                                         </label>
                                     </div>
 
-                                    <select
-                                        className="form-select"
-                                        value={state.selectedCustomer}
-                                        onChange={(val) => {
-                                            const selectedCustomerId: any = val.target.value;
-                                            console.log('selectedCustomerId: ', selectedCustomerId);
-                                            setState({ selectedCustomerId: selectedCustomerId });
-                                            // setSelectedCustomer(selectedCustomerId);
-                                            addressRefetch();
-                                            // setShowBillingInputs(true);
-                                            // setShowShippingInputs(true);
-                                            // setBillingAddress(val);
-                                            // setShippingAddress(val);
-                                        }}
-                                    >
+                                    <select className="form-select" value={state.selectedCustomer} onChange={(val) => handleChangeCustomer(val)}>
                                         <option value="" disabled selected>
                                             Select a customer
                                         </option>
@@ -1199,7 +1147,7 @@ export default function Neworder() {
                                                 onChange={(e) => {
                                                     handleShippingChange(e);
                                                     shippingStateRefetch();
-                                                    updateShippingAmount(e.target.value);
+                                                    shippingCoutryChange(e.target.value);
                                                 }}
                                             >
                                                 <option value="Select a country">Select a country</option>
@@ -1333,6 +1281,11 @@ export default function Neworder() {
                                 </>
                             )}
                         </div>
+                        <div className="flex w-full">
+                            <button type="button" className="btn btn-primary" onClick={() => updateAddress()}>
+                                Update Address
+                            </button>
+                        </div>
                     </div>
                     {/* Product table  */}
                     <div className="panel p-5">
@@ -1421,11 +1374,11 @@ export default function Neworder() {
                                         </div>
                                     ))}
 
-                                {productDetails?.order?.shippingMethods > 0 && (
+                                {productDetails?.order?.shippingMethods?.length > 0 && (
                                     <div className="mt-4 flex items-center justify-between">
                                         <div>Shipping Rate</div>
                                         <div>
-                                            {productDetails?.order?.shippingPrice?.gross?.currency} {productDetails?.order?.shippingPrice?.gross?.amount}
+                                            {productDetails?.order?.shippingMethods[0]?.price?.currency} {productDetails?.order?.shippingMethods[0]?.price?.amount}
                                         </div>
                                     </div>
                                 )}
@@ -1465,11 +1418,6 @@ export default function Neworder() {
                                     Apply coupon
                                 </button>
                             </div>
-                            <div>
-                                <button type="button" className="btn btn-primary">
-                                    Recalculate
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1495,7 +1443,7 @@ export default function Neworder() {
                             </div>
                         </div>
                     </div>
-                    <div className="panel h-[520px] overflow-scroll p-5">
+                    <div className="panel max-h-[810px]  overflow-y-auto p-5">
                         <div className="mb-5 border-b border-gray-200 pb-2 ">
                             <h3 className="text-lg font-semibold">Order Notes</h3>
                         </div>
@@ -1508,11 +1456,11 @@ export default function Neworder() {
                                                 <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
                                                 <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>
                                                 {data?.user && data?.user?.email && `by ${data.user.email}`}
-                                                {data?.type == "NOTE_ADDED" &&
-                                                <span className="ml-2 cursor-pointer text-danger" onClick={() => removeNotes(data)}>
-                                                    Delete note
-                                                </span>
-                                                }
+                                                {data?.type == 'NOTE_ADDED' && (
+                                                    <span className="ml-2 cursor-pointer text-danger" onClick={() => removeNotes(data)}>
+                                                        Delete note
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     );

@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment } from 'react';
+import { useEffect, useState, Fragment, useRef } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../store/themeConfigSlice';
@@ -20,16 +20,18 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
-import { CREATE_DESIGN, CREATE_DRAFT_ORDER, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, ORDER_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
+import { CREATE_DESIGN, CREATE_DRAFT_ORDER, CREATE_FINISH, DELETE_FINISH, EXPORT_LIST, FINISH_LIST, ORDER_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 import Modal from '@/components/Modal';
-import { useSetState } from '@/utils/functions';
+import { handleExportByChange, useSetState } from '@/utils/functions';
 import dayjs from 'dayjs';
 
 const Orders = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+
+    const tableRef = useRef(null);
 
     const [state, setState] = useSetState({
         isOpenChannel: false,
@@ -61,6 +63,7 @@ const Orders = () => {
 
     const [finishList, setFinishList] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [exportBy, setExportBy] = useState('');
 
     useEffect(() => {
         getFinishList();
@@ -125,6 +128,9 @@ const Orders = () => {
     const [updateOrder] = useMutation(UPDATE_FINISH);
     const [deleteDesign] = useMutation(DELETE_FINISH);
     const [bulkDelete] = useMutation(DELETE_FINISH);
+
+    const { data: ExportList, refetch: exportListeRefetch } = useQuery(EXPORT_LIST);
+    console.log('ExportList: ', ExportList);
 
     useEffect(() => {
         setPage(1);
@@ -327,6 +333,56 @@ const Orders = () => {
             console.log('error: ', error);
         }
     };
+
+    const handleChangeDuration = async (e) => {
+        try {
+            setExportBy(e);
+            const response = handleExportByChange(e);
+            console.log('response: ', response);
+
+            const res = await exportListeRefetch({
+                first: 1000,
+                filter: {
+                    // created: {
+                    //     gte: moment(response.gte).format('YYYY-MM-DD'),
+                    //     lte: moment(response.lte).format('YYYY-MM-DD'),
+                    // },
+                    customer: 'Durai',
+                    // search: '730',
+                },
+                sort: {
+                    direction: 'DESC',
+                    field: 'NUMBER',
+                },
+            });
+
+            const newData = res.data?.orders?.edges.map((item: any) => ({
+                ...item.node,
+                order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
+                date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
+                status: item?.node?.status,
+                total: item?.node?.total.gross.amount,
+                payment: item?.node?.paymentStatus,
+            }));
+            setFinishList(newData);
+            console.log('res: ', res);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+   
+
+
+    const filter=async()=>{
+        try {
+            
+        } catch (error) {
+            console.log("error: ", error);
+            
+        }
+    }
+
     return (
         <div>
             <div className="panel mt-6">
@@ -363,75 +419,133 @@ const Orders = () => {
                     </div>
                 </div>
 
-                <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
-                    <div className="dropdown  mr-2 ">
-                        <Dropdown
-                            placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                            btnClassName="btn btn-outline-primary dropdown-toggle"
-                            button={
-                                <>
-                                    All dates
-                                    <span>
-                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
-                                    </span>
-                                </>
-                            }
-                        >
-                            <ul className="!min-w-[120px]">
-                                <li>
-                                    <button type="button">All dates</button>
-                                </li>
+                <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-center">
+                    <div className="flex">
+                        <div className="dropdown  mr-2 ">
+                            <Dropdown
+                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
+                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                button={
+                                    <>
+                                        All dates
+                                        <span>
+                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
+                                        </span>
+                                    </>
+                                }
+                            >
+                                <ul className="!min-w-[120px]">
+                                    <li>
+                                        <button type="button">All dates</button>
+                                    </li>
 
-                                <li>
-                                    <button type="button">April 2024</button>
-                                </li>
+                                    <li>
+                                        <button type="button">April 2024</button>
+                                    </li>
 
-                                <li>
-                                    <button type="button">March 2024</button>
-                                </li>
-                            </ul>
-                        </Dropdown>
+                                    <li>
+                                        <button type="button">March 2024</button>
+                                    </li>
+                                </ul>
+                            </Dropdown>
+                        </div>
+                        <div className="dropdown  mr-2 ">
+                            <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+
+                            {/* <Dropdown
+                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
+                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                button={
+                                    <>
+                                        Filter by Registered Customer
+                                        <span>
+                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
+                                        </span>
+                                    </>
+                                }
+                            >
+                                <ul className="!min-w-[120px]">
+                                    <li>
+                                        <button type="button">Customer Name</button>
+                                    </li>
+                                </ul>
+                            </Dropdown> */}
+                        </div>
+                        <div>
+                            <button type="button" className="btn btn-primary" onClick={()=>filter()}>
+                                Filter
+                            </button>
+                        </div>
                     </div>
-                    <div className="dropdown  mr-2 ">
-                        <Dropdown
-                            placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                            btnClassName="btn btn-outline-primary dropdown-toggle"
-                            button={
-                                <>
-                                    Filter by Registered Customer
-                                    <span>
-                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
-                                    </span>
-                                </>
-                            }
-                        >
-                            <ul className="!min-w-[120px]">
-                                <li>
-                                    <button type="button">Customer Name</button>
-                                </li>
-                            </ul>
-                        </Dropdown>
-                    </div>
-                    <div>
-                        <button type="button" className="btn btn-primary">
-                            Filter
-                        </button>
+                    <div className="flex ">
+                        <div className="dropdown  mr-2 ">
+                            <select id="priority" className="form-select" value={exportBy} onChange={(e) => handleChangeDuration(e.target.value)}>
+                                <option value="">Select duration</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="3Months">Last 3 Months</option>
+                                <option value="6Months">Last 6 Months</option>
+                                <option value="year">Last year</option>
+                            </select>
+                            {/* <Dropdown
+                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
+                                btnClassName="btn btn-outline-primary dropdown-toggle"
+                                value={exportBy}
+                                onChange={(val) => {
+                                    console.log(val);
+                                    setExportBy(val);
+                                }}
+                                button={
+                                    <>
+                                        Export By
+                                        <span>
+                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
+                                        </span>
+                                    </>
+                                }
+                            >
+                                <ul className="!min-w-[120px]">
+                                    <li>
+                                        <button type="button">Weekly</button>
+                                    </li>
+                                    <li>
+                                        <button type="button">Monthly</button>
+                                    </li>
+                                    <li>
+                                        <button type="button">Last 3 Months</button>
+                                    </li>
+                                    <li>
+                                        <button type="button">Last 6 Months</button>
+                                    </li>
+                                    <li>
+                                        <button type="button">Last year</button>
+                                    </li>
+                                </ul>
+                            </Dropdown> */}
+                        </div>
+                        <div>
+                            <button type="button" className="btn btn-primary" onClick={() => onDownload()}>
+                                Export
+                            </button>
+                        </div>
                     </div>
                 </div>
+
                 {loading ? (
                     <Loader />
                 ) : (
                     <div className="datatables">
                         <DataTable
+                            ref={tableRef}
                             className="table-hover whitespace-nowrap"
-                            records={finishList}
+                            records={initialRecords}
                             columns={[
                                 // { accessor: 'id', sortable: true },
                                 // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                                { accessor: 'order', sortable: true, },
+                                { accessor: 'order', sortable: true },
                                 { accessor: 'date', sortable: true },
-                                { accessor: 'status', sortable: true,title: 'Order status'},
-                                { accessor: 'paymentStatus', sortable: true,title: 'Payment status' },
+                                { accessor: 'status', sortable: true, title: 'Order status' },
+                                { accessor: 'paymentStatus', sortable: true, title: 'Payment status' },
                                 { accessor: 'total', sortable: true },
                                 {
                                     // Custom column for actions
@@ -460,7 +574,7 @@ const Orders = () => {
                                 },
                             ]}
                             highlightOnHover
-                            totalRecords={finishList.length}
+                            totalRecords={initialRecords.length}
                             recordsPerPage={pageSize}
                             page={page}
                             onPageChange={(p) => setPage(p)}

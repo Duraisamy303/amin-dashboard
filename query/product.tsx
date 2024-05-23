@@ -93,28 +93,28 @@ export const DELETE_PRODUCT = gql`
 `;
 
 export const CATEGORY_LIST = gql`
-query CategoryList($first: Int!, $after: String, $channel: String!) {
-    categories(first: $first, after: $after) {
-      edges {
-        node {
-          id
-          name
-          description
-          products(channel: $channel) {
-            totalCount
+    query CategoryList($first: Int!, $after: String, $channel: String!) {
+        categories(first: $first, after: $after) {
+            edges {
+                node {
+                    id
+                    name
+                    description
+                    products(channel: $channel) {
+                        totalCount
+                        __typename
+                    }
+                    __typename
+                    parent {
+                        id
+                        name
+                    }
+                }
+                __typename
+            }
             __typename
-          }
-          __typename
-          parent {
-            id
-            name
-          }
         }
-        __typename
-      }
-      __typename
     }
-  }
 `;
 
 export const CREATE_CATEGORY = gql`
@@ -401,7 +401,7 @@ export const DELETE_STYLE = gql`
 
 export const ORDER_LIST = gql`
     query GetOrdersList {
-        orders(first: 100) {
+        orders(first: 1000) {
             edges {
                 node {
                     id
@@ -4888,6 +4888,11 @@ export const GET_ORDER_DETAILS = gql`
         order(id: $id) {
             ...OrderDetailsWithMetadata
             __typename
+            courierPartner {
+                id
+                name
+                trackingUrl
+            }
         }
         shop {
             countries {
@@ -5684,6 +5689,24 @@ export const DELETE_NOTES = gql`
                 message
             }
         }
+    }
+`;
+export const UPDATE_SHIPPING_COUNTRY = gql`
+    mutation checkoutShippingAddressUpdate($checkoutId: ID!, $shippingAddress: AddressInput!, $validationRules: CheckoutAddressValidationRules) {
+        checkoutShippingAddressUpdate(id: $checkoutId, shippingAddress: $shippingAddress, validationRules: $validationRules) {
+            errors {
+                ...CheckoutErrorFragment
+                __typename
+            }
+
+            __typename
+        }
+    }
+    fragment CheckoutErrorFragment on CheckoutError {
+        message
+        field
+        code
+        __typename
     }
 `;
 
@@ -9152,10 +9175,33 @@ export const CUSTOMER_ADDRESS = gql`
         defaultBillingAddress {
             id
             __typename
+            city
+            country {
+                country
+            }
+            countryArea
+            lastName
+            firstName
+            phone
+            streetAddress1
+            streetAddress2
+            postalCode
+            __typename
         }
         defaultShippingAddress {
             id
             __typename
+            city
+            country {
+                country
+            }
+            countryArea
+            lastName
+            firstName
+            phone
+            streetAddress1
+            streetAddress2
+            postalCode
         }
         __typename
     }
@@ -11154,5 +11200,69 @@ export const CATEGORY_FILTER_LIST = gql`
             __typename
         }
         __typename
+    }
+`;
+
+export const EXPORT_LIST = gql`
+    query OrdersExport($first: Int!, $filter: OrderFilterInput, $sort: OrderSortingInput) {
+        orders(first: $first, filter: $filter, sortBy: $sort) {
+            edges {
+                node {
+                    shippingAddress {
+                        firstName
+                        lastName
+                        phone
+                        streetAddress1
+                        streetAddress2
+                        countryArea
+                        country {
+                            country
+                        }
+                        city
+                    }
+                    userEmail
+                    created
+                    paymentStatusDisplay
+                    channel {
+                        currencyCode
+                    }
+                    total {
+                        gross {
+                            amount
+                            currency
+                        }
+                        tax {
+                            amount
+                            currency
+                        }
+                    }
+                    shippingPrice {
+                        gross {
+                            amount
+                            currency
+                        }
+                    }
+                    id
+                    lines {
+                        productName
+                        productSku
+                        totalPrice {
+                            gross {
+                                amount
+                                currency
+                            }
+                        }
+                    }
+                    number
+                    user {
+                        lastName
+                        firstName
+                    }
+                    updatedAt
+                    status
+                    paymentStatus
+                }
+            }
+        }
     }
 `;
