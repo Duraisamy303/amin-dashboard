@@ -119,12 +119,12 @@ const Editorder = () => {
     });
 
     const [orderData, setOrderData] = useState({});
+    // console.log("orderData: ", orderData?.invoices);
     const [discountOpen, setDiscountOpen] = useState(false);
     const [isUpdateQty, setIsUpdateQty] = useState(false);
     const [productQuantity, setProductQuantity] = useState('');
     const [isEdited, setIsEdited] = useState({});
     const [fullfillData, setFullfillData] = useState([]);
-    console.log('fullfillData: ', fullfillData);
 
     const [paymentStatus, setPaymentStatus] = useState('');
     const [selectedCurrency, setSelectedCurrency] = useState('');
@@ -589,6 +589,19 @@ const Editorder = () => {
             console.log('error: ', error);
         }
     };
+    const generateInvoice = async (country?: any) => {
+        try {
+            const res = await confirmNewOrder({
+                variables: {
+                    id: id,
+                },
+            });
+            getOrderDetails();
+            Success('Order Confirmed Successfully');
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
     return (
         <>
@@ -633,15 +646,17 @@ const Editorder = () => {
                                         </div>
                                         {orderStatus != 'UNCONFIRMED' && (
                                             <>
-                                                <div className="col-span-4">
-                                                    <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                        Order Status:
-                                                    </label>
-                                                    <select disabled={orderStatus == 'FULFILLED'} className="form-select" value={orderStatus} onChange={(e) => handleOrderChange(e.target.value)}>
-                                                        <option value="UNFULFILLED">Processing</option>
-                                                        <option value="FULFILLED">Shipped</option>
-                                                    </select>
-                                                </div>
+                                                {paymentStatus == 'FULLY_CHARGED' && (
+                                                    <div className="col-span-4">
+                                                        <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                            Order Status:
+                                                        </label>
+                                                        <select disabled={orderStatus == 'FULFILLED'} className="form-select" value={orderStatus} onChange={(e) => handleOrderChange(e.target.value)}>
+                                                            <option value="UNFULFILLED">Processing</option>
+                                                            <option value="FULFILLED">Shipped</option>
+                                                        </select>
+                                                    </div>
+                                                )}
 
                                                 <div className="col-span-4">
                                                     <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
@@ -1417,6 +1432,18 @@ const Editorder = () => {
                                         </Form>
                                     )}
                                 </Formik>
+                            </div>
+                            <div className="panel max-h-[810px]  overflow-y-auto p-5">
+                                <div className="mb-5 border-b border-gray-200 pb-2 ">
+                                    <h3 className="text-lg font-semibold">Invoice</h3>
+                                </div>
+                                {orderData?.invoices?.length>0 &&
+                                <div className="flex justify-end">
+                                    <button type="submit" className="btn btn-primary" onClick={() => generateInvoice()}>
+                                        Generate
+                                    </button>
+                                </div>
+                                }
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2';
 import placeholder from '../public/assets/images/placeholder.png';
+import * as FileSaver from 'file-saver';
+import XLSX from 'sheetjs-style';
 
 export const capitalizeFLetter = (string = '') => {
     if (string.length > 0) {
@@ -343,3 +345,43 @@ export const handleExportByChange = (e) => {
     };
     return body;
 };
+export const downloadExlcel = (excelData, fileName) => {
+    const filetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8';
+    const fileExtension = '.xlsx';
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: filetype });
+    FileSaver.saveAs(data, fileName + fileExtension);
+};
+
+export const getCurrentDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    let month = (now.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-indexed
+    let day = now.getDate().toString().padStart(2, '0');
+    let hours = now.getHours().toString().padStart(2, '0');
+    let minutes = now.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+export const mintDateTime = (date) => {
+    const now = new Date(date);
+    const year = now.getFullYear();
+    let month = (now.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-indexed
+    let day = now.getDate().toString().padStart(2, '0');
+    let hours = now.getHours().toString().padStart(2, '0');
+    let minutes = now.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+export const roundOff = (price:any) => {
+    let round = "";
+    if (price) {
+      round = Math.ceil(price)?.toFixed(2);
+    } else {
+      round = price;
+    }
+    return round;
+  };
+  

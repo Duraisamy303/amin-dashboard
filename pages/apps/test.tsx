@@ -4,6 +4,7 @@ import * as FileSaver from 'file-saver';
 import XLSX from 'sheetjs-style';
 import { useQuery } from '@apollo/client';
 import { EXPORT_LIST } from '@/query/product';
+import { downloadExlcel } from '@/utils/functions';
 
 export default function Test() {
     const { data: ExportList, refetch: exportListeRefetch } = useQuery(EXPORT_LIST);
@@ -39,19 +40,19 @@ export default function Test() {
         });
         console.log('res: ', res);
 
-        const dats = res.data?.orders?.edges?.map((item) => {
+        const excelData = res.data?.orders?.edges?.map((item) => {
             const res = {
                 OrderNumber: item?.node?.number,
                 CustomerName: ` ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
-                EmailID: item?.node?.shippingAddress?.userEmail,
+                EmailID: item?.node?.userEmail,
                 PhoneNumber: item?.node?.shippingAddress?.phone,
                 Address1: item?.node?.shippingAddress?.streetAddress1,
                 Address2: item?.node?.shippingAddress?.streetAddress2,
                 Country: item?.node?.shippingAddress?.country?.country,
                 City: item?.node?.shippingAddress?.city,
-                ProductsName: item?.node?.lines?.map((data) => data?.productName),
-                ProductPrice: item?.node?.lines?.map((data) => data?.totalPrice?.gross?.amount),
-                ProductSKU: item?.node?.lines?.map((data) => data?.productSku),
+                ProductsName: item?.node?.lines?.map((data) => data?.productName).join(','),
+                ProductPrice: item?.node?.lines?.map((data) => data?.totalPrice?.gross?.amount).join(','),
+                ProductSKU: item?.node?.lines?.map((data) => data?.productSku).join(','),
                 DateOfPurchase: '',
                 PaymentStatus: item?.node?.paymentStatus,
                 Currency: item?.node?.total?.gross?.currency,
@@ -62,27 +63,8 @@ export default function Test() {
             };
             return res;
         });
-        console.log('dats: ', dats);
 
-        const excelData = [
-            {
-                fName: 'Durai',
-                Age: '20',
-            },
-            {
-                fName: 'Durai2',
-                Age: '20',
-            },
-            {
-                fName: 'Durai2',
-                Age: '20',
-            },
-        ];
-        // const ws = XLSX.utils.json_to_sheet(excelData);
-        // const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
-        // const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        // const data = new Blob([excelBuffer], { type: filetype });
-        // FileSaver.saveAs(data, 'fileName' + fileExtension);
+        downloadExlcel(excelData, 'Orders');
     };
 
     return (
