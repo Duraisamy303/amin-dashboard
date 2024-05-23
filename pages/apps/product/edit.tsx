@@ -697,15 +697,15 @@ const ProductEdit = (props: any) => {
             hasError = true;
         }
     
-        if (slug.trim() === '') {
+        if (slug?.trim() === '') {
             setSlugErrMsg('Slug cannot be empty');
             hasError = true;
         }
-        if (seoTittle.trim() === '') {
+        if (seoTittle?.trim() === '') {
             setSeoTittleErrMsg('Seo title cannot be empty');
             hasError = true;
         }
-        if (seoDesc.trim() === '') {
+        if (seoDesc?.trim() === '') {
             setSeoDescErrMsg('Seo description cannot be empty');
             hasError = true;
         }
