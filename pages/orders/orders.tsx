@@ -25,7 +25,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 import Modal from '@/components/Modal';
-import { handleExportByChange, useSetState } from '@/utils/functions';
+import { downloadExlcel, getCurrentDateTime, handleExportByChange, mintDateTime, showDeleteAlert, useSetState } from '@/utils/functions';
 import dayjs from 'dayjs';
 
 const Orders = () => {
@@ -62,8 +62,12 @@ const Orders = () => {
     });
 
     const [finishList, setFinishList] = useState([]);
+    const [allData, setAllData] = useState([]);
+
     const [loading, setLoading] = useState(false);
     const [exportBy, setExportBy] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [startDate, setStartDate] = useState(getCurrentDateTime());
 
     // error message
     const [currencyPopup, setCurrencyPopup] = useState('');
@@ -80,9 +84,9 @@ const Orders = () => {
                     ...item.node,
                     order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
                     date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
-                    status: item?.node?.status,
-                    total: item?.node?.total.gross.amount,
-                    payment: item?.node?.paymentStatus,
+                    total: item?.node?.total.gross.amount ,
+                    status: item?.node?.status == 'FULFILLED' ? 'Completed' : 'UNCONFIRMED' ? 'UnConfirmed' : 'Processing',
+                    paymentStatus: item?.node?.paymentStatus== "NOT_CHARGED"?"Pending" : "Completed",
                 }));
                 console.log('newData: ', newData);
                 setFinishList(newData);
@@ -133,7 +137,6 @@ const Orders = () => {
     const [bulkDelete] = useMutation(DELETE_FINISH);
 
     const { data: ExportList, refetch: exportListeRefetch } = useQuery(EXPORT_LIST);
-    console.log('ExportList: ', ExportList);
 
     useEffect(() => {
         setPage(1);
@@ -230,50 +233,6 @@ const Orders = () => {
         router.push(`/orders/editorder?id=${record.id}`);
     };
 
-    // category table create
-    const CreateOrder = () => {
-        // setModal1(true);
-        // setModalTitle(null);
-        // setModalContant(null);
-        router.push('/orders/new-order');
-    };
-
-    // view categotry
-    // const ViewOrder = (record: any) => {
-    //     setViewModal(true);
-    // };
-
-    // delete Alert Message
-    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
-        const swalWithBootstrapButtons = Swal.mixin({
-            customClass: {
-                confirmButton: 'btn btn-secondary',
-                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
-                popup: 'sweet-alerts',
-            },
-            buttonsStyling: false,
-        });
-
-        swalWithBootstrapButtons
-            .fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, cancel!',
-                reverseButtons: true,
-                padding: '2em',
-            })
-            .then((result) => {
-                if (result.isConfirmed) {
-                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    onCancel(); // Call the onCancel function if the user cancels the deletion
-                }
-            });
-    };
-
     const BulkDeleteOrder = async () => {
         showDeleteAlert(
             () => {
@@ -344,18 +303,104 @@ const Orders = () => {
 
     const handleChangeDuration = async (e) => {
         try {
-            setExportBy(e);
-            const response = handleExportByChange(e);
-            console.log('response: ', response);
+            if (e) {
+                if (e == 'custom') {
+                    setExportBy(e);
+                } else {
+                    setExportBy(e);
+                    filterByDateAndYear(e);
+                }
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
+    const filterByDateAndYear = async (e) => {
+        const response = handleExportByChange(e);
+        console.log('response: ', response);
+
+        const res = await exportListeRefetch({
+            first: 100,
+            filter: {
+                created: {
+                    gte: moment(response.gte).format('YYYY-MM-DD'),
+                    lte: moment(response.lte).format('YYYY-MM-DD'),
+                },
+                // customer: 'Durai',
+                // search: '730',
+            },
+            sort: {
+                direction: 'DESC',
+                field: 'NUMBER',
+            },
+        });
+        SetFinalDate(res);
+
+        console.log('res: ', res);
+    };
+
+    const SetFinalDate = (res) => {
+        const newData = res.data?.orders?.edges.map((item: any) => ({
+            ...item.node,
+            order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
+            date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
+            total: item?.node?.total.gross.amount,
+            status: item?.node?.status == 'FULFILLED' ? 'Completed' : 'UNCONFIRMED' ? 'UnConfirmed' : 'Processing',
+            paymentStatus: item?.node?.paymentStatus== "NOT_CHARGED"?"Pending" : "Processing",
+        }));
+        setFinishList(newData);
+        setAllData(res.data?.orders?.edges);
+    };
+
+    const excelDownload = () => {
+        console.log('allData: ', allData);
+
+        const excelData = allData?.map((item) => {
+            const res = {
+                OrderNumber: item?.node?.number,
+                CustomerName: ` ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
+                EmailID: item?.node?.userEmail,
+                PhoneNumber: item?.node?.shippingAddress?.phone,
+                Address1: item?.node?.shippingAddress?.streetAddress1,
+                Address2: item?.node?.shippingAddress?.streetAddress2,
+                Country: item?.node?.shippingAddress?.country?.country,
+                City: item?.node?.shippingAddress?.city,
+                ProductsName: item?.node?.lines?.map((data) => data?.productName).join(','),
+                ProductPrice: item?.node?.lines?.map((data) => data?.totalPrice?.gross?.amount).join(','),
+                ProductSKU: item?.node?.lines?.map((data) => data?.productSku).join(','),
+                DateOfPurchase: moment(item?.node?.updatedAt).format('YYYY-MM-DD'),
+                PaymentStatus: item?.node?.paymentStatus,
+                Currency: item?.node?.total?.gross?.currency,
+                PurchaseTotal: item?.node?.total?.gross?.amount,
+                Discount: 0,
+                Shipping: item?.node?.shippingPrice?.gross?.amount,
+                GST: item?.node?.total?.tax?.amount,
+            };
+            return res;
+        });
+
+        downloadExlcel(excelData, 'Orders');
+        console.log('excelData: ', excelData);
+    };
+
+    const filter = async () => {
+        try {
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const filterByDates = async (e) => {
+        try {
             const res = await exportListeRefetch({
-                first: 1000,
+                first: 100,
                 filter: {
-                    // created: {
-                    //     gte: moment(response.gte).format('YYYY-MM-DD'),
-                    //     lte: moment(response.lte).format('YYYY-MM-DD'),
-                    // },
-                    customer: 'Durai',
+                    created: {
+                        gte: moment(startDate).format('YYYY-MM-DD'),
+                        lte: moment(e).format('YYYY-MM-DD'),
+                    },
+                    // customer: 'Durai',
                     // search: '730',
                 },
                 sort: {
@@ -364,23 +409,7 @@ const Orders = () => {
                 },
             });
 
-            const newData = res.data?.orders?.edges.map((item: any) => ({
-                ...item.node,
-                order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
-                date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
-                status: item?.node?.status,
-                total: item?.node?.total.gross.amount,
-                payment: item?.node?.paymentStatus,
-            }));
-            setFinishList(newData);
-            console.log('res: ', res);
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const filter = async () => {
-        try {
+            SetFinalDate(res);
         } catch (error) {
             console.log('error: ', error);
         }
@@ -393,7 +422,15 @@ const Orders = () => {
                     <h5 className="text-lg font-semibold dark:text-white-light">Orders</h5>
 
                     <div className="flex ltr:ml-auto rtl:mr-auto">
-                        <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <button type="button" className="btn btn-primary" onClick={() => setState({ isOpenChannel: true })}>
+                            + Create
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-center">
+                    <div className="flex">
+                        <input type="text" className="form-input mr-2 w-[300px]" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
                         <div className="dropdown  mr-2 ">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
@@ -416,130 +453,69 @@ const Orders = () => {
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary" onClick={() => setState({ isOpenChannel: true })}>
-                            + Create
-                        </button>
-                    </div>
-                </div>
-
-                <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-center">
-                    <div className="flex">
-                        <div className="dropdown  mr-2 ">
-                            <Dropdown
-                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
-                                button={
-                                    <>
-                                        All dates
-                                        <span>
-                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
-                                        </span>
-                                    </>
-                                }
-                            >
-                                <ul className="!min-w-[120px]">
-                                    <li>
-                                        <button type="button">All dates</button>
-                                    </li>
-
-                                    <li>
-                                        <button type="button">April 2024</button>
-                                    </li>
-
-                                    <li>
-                                        <button type="button">March 2024</button>
-                                    </li>
-                                </ul>
-                            </Dropdown>
-                        </div>
-                        <div className="dropdown  mr-2 ">
-                            <input type="text" className="form-input mr-2 w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-
-                            {/* <Dropdown
-                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
-                                button={
-                                    <>
-                                        Filter by Registered Customer
-                                        <span>
-                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
-                                        </span>
-                                    </>
-                                }
-                            >
-                                <ul className="!min-w-[120px]">
-                                    <li>
-                                        <button type="button">Customer Name</button>
-                                    </li>
-                                </ul>
-                            </Dropdown> */}
-                        </div>
-                        <div>
-                            <button type="button" className="btn btn-primary" onClick={() => filter()}>
-                                Filter
-                            </button>
-                        </div>
                     </div>
                     <div className="flex ">
-                        <div className="dropdown  mr-2 ">
-                            <select id="priority" className="form-select" value={exportBy} onChange={(e) => handleChangeDuration(e.target.value)}>
+                        <div className="dropdown  mr-2  w-[200px]">
+                            <select id="priority" className="form-select " value={exportBy} onChange={(e) => handleChangeDuration(e.target.value)}>
                                 <option value="">Select duration</option>
                                 <option value="weekly">Weekly</option>
                                 <option value="monthly">Monthly</option>
                                 <option value="3Months">Last 3 Months</option>
                                 <option value="6Months">Last 6 Months</option>
                                 <option value="year">Last year</option>
+                                <option value="custom">Custom</option>
                             </select>
-                            {/* <Dropdown
-                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle"
-                                value={exportBy}
-                                onChange={(val) => {
-                                    console.log(val);
-                                    setExportBy(val);
-                                }}
-                                button={
-                                    <>
-                                        Export By
-                                        <span>
-                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
-                                        </span>
-                                    </>
-                                }
-                            >
-                                <ul className="!min-w-[120px]">
-                                    <li>
-                                        <button type="button">Weekly</button>
-                                    </li>
-                                    <li>
-                                        <button type="button">Monthly</button>
-                                    </li>
-                                    <li>
-                                        <button type="button">Last 3 Months</button>
-                                    </li>
-                                    <li>
-                                        <button type="button">Last 6 Months</button>
-                                    </li>
-                                    <li>
-                                        <button type="button">Last year</button>
-                                    </li>
-                                </ul>
-                            </Dropdown> */}
                         </div>
                         <div>
-                            <button type="button" className="btn btn-primary" onClick={() => onDownload()}>
+                            <button type="button" className="btn btn-primary w-[95px]" onClick={() => excelDownload()}>
                                 Export
                             </button>
                         </div>
                     </div>
                 </div>
-
+                {exportBy == 'custom' && (
+                    <div className="flex justify-end gap-4 pb-4">
+                        <div className="col-span-4">
+                            <label htmlFor="dateTimeCreated" className="block pr-2 text-sm font-medium text-gray-700">
+                                Start Date:
+                            </label>
+                            <input
+                                type="datetime-local"
+                                value={startDate}
+                                onChange={(e) => {
+                                    setStartDate(e.target.value);
+                                }}
+                                id="dateTimeCreated"
+                                name="dateTimeCreated"
+                                className="form-input"
+                                max={getCurrentDateTime()}
+                            />
+                        </div>
+                        <div className="col-span-4">
+                            <label htmlFor="dateTimeCreated" className="block pr-2 text-sm font-medium text-gray-700">
+                                End date:
+                            </label>
+                            <input
+                                type="datetime-local"
+                                value={endDate}
+                                onChange={(e) => {
+                                    setEndDate(e.target.value);
+                                    filterByDates(e.target.value);
+                                }}
+                                id="dateTimeCreated"
+                                name="dateTimeCreated"
+                                className="form-input"
+                                max={getCurrentDateTime()}
+                                min={mintDateTime(startDate || new Date())}
+                            />
+                        </div>
+                    </div>
+                )}
                 {loading ? (
                     <Loader />
                 ) : (
                     <div className="datatables">
                         <DataTable
-                            ref={tableRef}
                             className="table-hover whitespace-nowrap"
                             records={initialRecords}
                             columns={[

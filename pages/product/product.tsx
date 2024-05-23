@@ -351,12 +351,12 @@ const ProductList = () => {
                 <div className="lg:mb-5 mb-10 flex flex-col gap-5 lg:flex-row lg:items-center">
                     <div className="flex items-center gap-2">
                         <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
-                        <button type="button" className="btn btn-outline-primary">
+                        {/* <button type="button" className="btn btn-outline-primary">
                             Import
                         </button>
                         <button type="button" className="btn btn-outline-primary">
                             Export
-                        </button>
+                        </button> */}
                     </div>
                     <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
                         <input type="text" className="form-input  mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -390,7 +390,7 @@ const ProductList = () => {
 
                 <div className="mb-5 ">
                     <form onSubmit={onFilterSubmit}>
-                        <div className="mx-auto flex max-w-[1200px] flex-col items-center gap-4 md:flex-row">
+                        <div className="mx-auto flex  col-4 items-center gap-4 md:flex-row">
                             <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
                                 <option value="">Select a Categories </option>
                                 {parentLists?.map((item: any) => {
@@ -408,7 +408,7 @@ const ProductList = () => {
                             </select>
 
                             {/* New select dropdown for stock status */}
-                            <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>
+                            {/* <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>
                                 <option value="">Filter By Stock Status</option>
                                 <option value="In Stock">In Stock</option>
                                 <option value="Out Of Stock">Out Of Stock</option>
@@ -417,7 +417,7 @@ const ProductList = () => {
                             <select className="form-select flex-1" onChange={(e) => productTypeChange(e.target.value)}>
                                 <option value="sample-product">Simple Product</option>
                                 <option value="variable-product">Variable Product</option>
-                            </select>
+                            </select> */}
                             <button type="submit" className="btn btn-primary py-2.5 md:w-auto w-full">
                                 Filter
                             </button>
