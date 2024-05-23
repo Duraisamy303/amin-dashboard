@@ -103,6 +103,8 @@ const ProductEdit = (props: any) => {
     const [skuErrMsg, setSkuErrMsg] = useState('');
     const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
     const [categoryErrMsg, setCategoryErrMsg] = useState('');
+    const [attributeError, setAttributeError] = useState('');
+    const [variantErrors, setVariantErrors] = useState<any>([]);
 
     // error message end
 
@@ -457,9 +459,9 @@ const ProductEdit = (props: any) => {
 
             const editor = new EditorJS({
                 holder: editorRef.current,
-            //  data: {
-            //         blocks: descriptionContent || [],
-            //     },
+                //  data: {
+                //         blocks: descriptionContent || [],
+                //     },
                 tools: {
                     // Configure tools as needed
                     header: {
@@ -678,60 +680,137 @@ const ProductEdit = (props: any) => {
         setSlugErrMsg('');
         setSeoTittleErrMsg('');
         setSeoDescErrMsg('');
-        // setDescriptionErrMsg('');
         setShortDesErrMsg('');
         setSkuErrMsg('');
         setSalePriceErrMsg('');
         setCategoryErrMsg('');
-
+        setAttributeError('');
+        setVariantErrors([]);
+    
+        let AttributesErrors: any = {};
+        let newVariantErrors: any = [];
+        let hasError = false; // Variable to track validation errors
+    
         // Validate the product name and slug
         if (productName.trim() === '') {
-            // Update the error message for the product name field
             setProductNameErrMsg('Product name cannot be empty');
+            hasError = true;
         }
-
+    
         if (slug.trim() === '') {
-            // Update the error message for the slug field
             setSlugErrMsg('Slug cannot be empty');
+            hasError = true;
         }
         if (seoTittle.trim() === '') {
-            // Update the error message for the slug field
             setSeoTittleErrMsg('Seo title cannot be empty');
+            hasError = true;
         }
         if (seoDesc.trim() === '') {
             setSeoDescErrMsg('Seo description cannot be empty');
+            hasError = true;
         }
-        // if(description?.trim() === ''){
-        //     setDescriptionErrMsg('Description cannot be empty');
-        // }
         if (shortDescription?.trim() === '') {
             setShortDesErrMsg('Short description cannot be empty');
+            hasError = true;
         }
-        // if (sku?.trim() === '') {
-        //     setSkuErrMsg('Sku cannot be empty');
-        //     alert('Sku cannot be empty');
-        // }
-        // if (salePrice?.trim() === '') {
-        //     setSalePriceErrMsg('Sale price cannot be empty');
-        //     alert('Sale price cannot be empty');
-        // }
         if (selectedCat == '') {
             setCategoryErrMsg('Category cannot be empty');
+            hasError = true;
         }
+        if (!selectedValues || Object.keys(selectedValues).length === 0) {
+            setAttributeError('');
+        } else {
+            if (selectedValues?.stone?.length === 0) {
+                AttributesErrors.stone = 'Stone cannot be empty';
+                hasError = true;
+            }
+    
+            if (selectedValues?.design?.length === 0) {
+                AttributesErrors.design = 'Design cannot be empty';
+                hasError = true;
+            }
+    
+            if (selectedValues?.style?.length === 0) {
+                AttributesErrors.style = 'Style cannot be empty';
+                hasError = true;
+            }
+    
+            if (selectedValues?.finish?.length === 0) {
+                AttributesErrors.finish = 'Finish cannot be empty';
+                hasError = true;
+            }
+    
+            setAttributeError(AttributesErrors);
+        }
+    
+        if (variants?.length > 0) {
+            variants.forEach((variant, index) => {
+                let errors: any = {};
+    
+                if (!variant.sku) {
+                    errors.sku = 'SKU cannot be empty';
+                    hasError = true;
+                }
+    
+                if (variant.quantity <= 0) {
+                    errors.quantity = 'Quantity must be greater than 0';
+                    hasError = true;
+                } else if (isNaN(variant.quantity)) {
+                    errors.quantity = 'Quantity must be a number';
+                    hasError = true;
+                }
+    
+                if (variant.regularPrice < 0) {
+                    errors.regularPrice = 'Regular Price cannot be negative';
+                    hasError = true;
+                } else if (variant.regularPrice == 0) {
+                    errors.regularPrice = 'Regular Price cannot be empty';
+                    hasError = true;
+                } else if (isNaN(variant.regularPrice)) {
+                    errors.regularPrice = 'Regular Price must be a number';
+                    hasError = true;
+                }
+    
+                if (variant.salePrice < 0) {
+                    errors.salePrice = 'Sale Price cannot be negative';
+                    hasError = true;
+                } else if (isNaN(variant.salePrice)) {
+                    errors.salePrice = 'Sale Price must be a number';
+                    hasError = true;
+                } else if (variant.regularPrice < variant.salePrice) {
+                    errors.salePrice = 'Sale price is greater than Regular price';
+                    hasError = true;
+                }
+    
+                if (!variant.stackMgmt) {
+                    errors.stackMgmt = 'Check Stack Management';
+                    hasError = true;
+                }
+    
+                newVariantErrors[index] = errors;
+            });
+    
+            setVariantErrors(newVariantErrors);
+        }
+    
+        // If there are any errors, do not proceed with the update
+        if (hasError) {
+            return;
+        }
+    
         if (editorInstance) {
             try {
                 const savedContent = await editorInstance.save();
                 console.log('Editor content:', savedContent);
-
+    
                 console.log('selectedCat: ', selectedCat);
-
+    
                 console.log('selectedCollection: ', selectedCollection);
                 let tagId = selectedTag?.map((item: any) => item.value) || [];
-
-
+    
                 const formattedDescription = JSON.stringify(savedContent);
-console.log('✌️formattedDescription --->', formattedDescription);
-
+                console.log('✌️formattedDescription --->', formattedDescription);
+    
                 const { data } = await updateProduct({
                     variables: {
                         id: id,
@@ -757,7 +836,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                         firstValues: 10,
                     },
                 });
-
+    
                 if (data?.productUpdate?.errors?.length > 0) {
                     console.log('Error updating product');
                 } else {
@@ -769,7 +848,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
             }
         }
     };
-
+    
     const productChannelListUpdate = async () => {
         try {
             const { data } = await updateProductChannelList({
@@ -956,7 +1035,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
             } else {
                 console.log('success: ', data);
                 console.log('selectedTag: ', selectedTag);
-                productsDetails()
+                productsDetails();
                 // assignsTagToProduct();
             }
         } catch (error) {
@@ -1167,8 +1246,6 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                 Product description
                             </label>
                             <div ref={editorRef} className="mb-5 border border-gray-200"></div>
-
-                        
                         </div>
 
                         <div className="panel mb-5">
@@ -1196,11 +1273,11 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                     <option value="2">Variable Product</option>
                                 </select>
                             </div> */}
-                            <div className="flex flex-col  sm:flex-row">
+                            <div className="flex flex-col  md:flex-row">
                                 {isMounted && (
                                     <Tab.Group>
                                         <div className="mx-10 mb-5 sm:mb-0">
-                                            <Tab.List className="m-auto w-24 text-center font-semibold">
+                                            <Tab.List className="mb-5 flex w-32 flex-row text-center font-semibold  md:m-auto md:mb-0 md:flex-col ">
                                                 {/* <Tab as={Fragment}>
                                                     {({ selected }) => (
                                                         <button
@@ -1254,7 +1331,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                 </Tab>
                                             </Tab.List>
                                         </div>
-                                        <Tab.Panels>
+                                        <Tab.Panels className="w-full">
                                             {/* <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 mr-4 pr-6">
@@ -1262,7 +1339,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                             Upsells
                                                         </label>
                                                     </div>
-                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                    <div className="mb-5" style={{ width: '100%' }}>
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={true} />
                                                     </div>
                                                 </div>
@@ -1273,7 +1350,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                             Cross-sells
                                                         </label>
                                                     </div>
-                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                    <div className="mb-5" style={{ width: '100%' }}>
                                                         <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
                                                     </div>
                                                 </div>
@@ -1281,7 +1358,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
 
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
-                                                    <div className="mb-5 pr-3">
+                                                    <div className="mb-5 pr-3" style={{ width: '50%' }}>
                                                         <Select
                                                             placeholder="Select Type"
                                                             options={optionsVal.filter((option: any) => !selectedArr?.includes(option.value))}
@@ -1328,7 +1405,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                                                             Value(s)
                                                                                         </label>
                                                                                     </div>
-                                                                                    <div className="mb-5" style={{ width: '350px' }}>
+                                                                                    <div className="mb-5" style={{ width: '100%' }}>
                                                                                         {/* <Select
                                                                                             placeholder={`Select ${item.type} Name`}
                                                                                             options={item[`${item.type}Name`]}
@@ -1349,6 +1426,8 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                                                                 return option ? { value: option.value, label: option.label } : null;
                                                                                             })}
                                                                                         />
+                                                                                        {attributeError[item.type] && <p className="error-message mt-1 text-red-500">{attributeError[item.type]}</p>}
+
                                                                                         {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
                                                                                         {/* <div className="flex justify-between">
                                                                                         <div className="flex">
@@ -1394,52 +1473,53 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                                 </div>
                                                             )}
                                                             <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4">
+                                                                <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                     <label htmlFor={`name${index}`} className="block pr-5 text-sm font-medium text-gray-700">
                                                                         Variant
                                                                     </label>
                                                                 </div>
-                                                                <div className="mb-5">
+                                                                <div className="mb-5" style={{ width: '80%' }}>
                                                                     <input
                                                                         type="text"
                                                                         id={`name${index}`}
                                                                         name={`name${index}`}
                                                                         value={item.name}
                                                                         onChange={(e) => handleChange(index, 'name', e.target.value)}
-                                                                        style={{ width: '350px' }}
+                                                                        style={{ width: '100%' }}
                                                                         placeholder="Enter variants"
                                                                         className="form-input"
                                                                     />
                                                                 </div>
                                                             </div>
                                                             <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4">
+                                                                <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                     <label htmlFor={`sku_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
                                                                         SKU
                                                                     </label>
                                                                 </div>
-                                                                <div className="mb-5">
+                                                                <div className="mb-5" style={{ width: '80%' }}>
                                                                     <input
                                                                         type="text"
                                                                         id={`sku_${index}`}
                                                                         name={`sku_${index}`}
                                                                         value={item.sku}
                                                                         onChange={(e) => handleChange(index, 'sku', e.target.value)}
-                                                                        style={{ width: '350px' }}
+                                                                        style={{ width: '100%' }}
                                                                         placeholder="Enter SKU"
                                                                         className="form-input"
                                                                     />
+                                                                    {variantErrors[index]?.sku && <p className="error-message mt-1 text-red-500">{variantErrors[index].sku}</p>}
 
                                                                     {/* {skuErrMsg && <p className="error-message mt-1 text-red-500 ">{skuErrMsg}</p>} */}
                                                                 </div>
                                                             </div>
                                                             <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4 pr-4">
+                                                                <div className="mb-5 mr-4 pr-4" style={{ width: '20%' }}>
                                                                     <label htmlFor={`stackMgmt_${index}`} className="block  text-sm font-medium text-gray-700">
                                                                         Stock Management
                                                                     </label>
                                                                 </div>
-                                                                <div className="mb-5">
+                                                                <div className="mb-5" style={{ width: '80%' }}>
                                                                     <input
                                                                         type="checkbox"
                                                                         id={`stackMgmt_${index}`}
@@ -1449,65 +1529,70 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                                         className="form-checkbox"
                                                                     />
                                                                     <span>Track stock quantity for this product</span>
+                                                                    {variantErrors[index]?.stackMgmt && <p className="error-message mt-1 text-red-500">{variantErrors[index].stackMgmt}</p>}
                                                                 </div>
                                                             </div>
                                                             {item.stackMgmt && (
                                                                 <div className="active flex items-center">
-                                                                    <div className="mb-5 mr-4 ">
+                                                                    <div className="mb-5 mr-4 " style={{ width: '20%' }}>
                                                                         <label htmlFor={`quantity_${index}`} className="block  text-sm font-medium text-gray-700">
                                                                             Quantity
                                                                         </label>
                                                                     </div>
-                                                                    <div className="mb-5">
+                                                                    <div className="mb-5" style={{ width: '80%' }}>
                                                                         <input
                                                                             type="number"
                                                                             id={`quantity_${index}`}
                                                                             name={`quantity_${index}`}
                                                                             value={item?.quantity}
                                                                             onChange={(e) => handleChange(index, 'quantity', parseInt(e.target.value))}
-                                                                            style={{ width: '350px' }}
+                                                                            style={{ width: '100%' }}
                                                                             placeholder="Enter Quantity"
                                                                             className="form-input"
                                                                         />
+                                                                        {variantErrors[index]?.quantity && <p className="error-message mt-1 text-red-500">{variantErrors[index].quantity}</p>}
                                                                     </div>
                                                                 </div>
                                                             )}
                                                             <div className="active flex items-center">
-                                                                <div className="mb-5 mr-4">
+                                                                <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                     <label htmlFor={`regularPrice_${index}`} className="block pr-5 text-sm font-medium text-gray-700">
                                                                         Regular Price
                                                                     </label>
                                                                 </div>
-                                                                <div className="mb-5">
+                                                                <div className="mb-5" style={{ width: '80%' }}>
                                                                     <input
                                                                         type="number"
                                                                         id={`regularPrice_${index}`}
                                                                         name={`regularPrice_${index}`}
                                                                         value={item.regularPrice}
                                                                         onChange={(e) => handleChange(index, 'regularPrice', parseFloat(e.target.value))}
-                                                                        style={{ width: '350px' }}
+                                                                        style={{ width: '100%' }}
                                                                         placeholder="Enter Regular Price"
                                                                         className="form-input"
                                                                     />
+                                                                    {variantErrors[index]?.regularPrice && <p className="error-message mt-1 text-red-500">{variantErrors[index].regularPrice}</p>}
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center">
-                                                                <div className="mb-5 mr-4">
+                                                                <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                     <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
                                                                         Sale Price
                                                                     </label>
                                                                 </div>
-                                                                <div className="mb-5">
+                                                                <div className="mb-5" style={{ width: '80%' }}>
                                                                     <input
                                                                         type="number"
                                                                         id={`salePrice_${index}`}
                                                                         name={`salePrice_${index}`}
                                                                         value={item.salePrice}
                                                                         onChange={(e) => handleChange(index, 'salePrice', parseFloat(e.target.value))}
-                                                                        style={{ width: '350px' }}
+                                                                        style={{ width: '100%' }}
                                                                         placeholder="Enter Sale Price"
                                                                         className="form-input"
                                                                     />
+                                                                    {variantErrors[index]?.salePrice && <p className="error-message mt-1 text-red-500">{variantErrors[index].salePrice}</p>}
+
                                                                     {/* {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>} */}
                                                                 </div>
                                                             </div>
@@ -1528,7 +1613,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                             </label>
                                                         </div>
                                                         <div className="mb-5">
-                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxStatus(e.target.value)}>
+                                                            <select className="form-select w-52 flex-1" style={{ width: '100%' }} onChange={(e) => taxStatus(e.target.value)}>
                                                                 <option value="taxable">Taxable</option>
                                                                 <option value="shipping-only">Shipping Only</option>
                                                                 <option value="none">None</option>
@@ -1542,7 +1627,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                             </label>
                                                         </div>
                                                         <div className="mb-5">
-                                                            <select className="form-select w-52 flex-1" style={{ width: '350px' }} onChange={(e) => taxClass(e.target.value)}>
+                                                            <select className="form-select w-52 flex-1" style={{ width: '100%' }} onChange={(e) => taxClass(e.target.value)}>
                                                                 <option value="standard">Standard</option>
                                                                 <option value="reduced-rate">Reduced rate</option>
                                                                 <option value="zero-rate">Zero rate</option>
@@ -1555,15 +1640,15 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                             <Tab.Panel>
                                                 <div>
                                                     <div className="active flex items-center">
-                                                        <div className="mb-5 mr-4 pr-3">
+                                                        <div className="mb-5 mr-4 pr-3" style={{ width: '20%' }}>
                                                             <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
                                                                 Menu Order
                                                             </label>
                                                         </div>
-                                                        <div className="mb-5">
+                                                        <div className="mb-5" style={{ width: '80%' }}>
                                                             <input
                                                                 type="number"
-                                                                style={{ width: '350px' }}
+                                                                style={{ width: '100%' }}
                                                                 value={menuOrder}
                                                                 onChange={(e: any) => setMenuOrder(e.target.value)}
                                                                 placeholder="Enter Menu Order"
@@ -1584,7 +1669,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                         </label>
                                                     </div>
                                                     <div className="mb-5">
-                                                        <textarea rows={3} style={{ width: '350px' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
+                                                        <textarea rows={3} style={{ width: '100%' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
                                                     </div>
                                                 </div>
 
@@ -1595,7 +1680,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                                         </label>
                                                     </div>
                                                     <div className="mb-5">
-                                                        <input type="number" style={{ width: '350px' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
+                                                        <input type="number" style={{ width: '100%' }} placeholder="Enter Regular Price" name="regularPrice" className="form-input" required />
                                                     </div>
                                                 </div>
 
@@ -1645,7 +1730,7 @@ console.log('✌️formattedDescription --->', formattedDescription);
                                 <div className="col-span-6">
                                     <h5 className="un mb-5 block text-lg font-medium text-gray-700 underline">Mark product as "New" till date</h5>
                                     <div>
-                                        <input type="date" style={{ width: '350px' }} placeholder="From.." name="new-label" className="form-input" required />
+                                        <input type="date" style={{ width: '100%' }} placeholder="From.." name="new-label" className="form-input" required />
                                         <p className="mt-2 text-sm text-gray-500">
                                             Specify the end date when the "New" status will be retired. NOTE: "Permanent "New" label" option should be disabled if you use the exact date.
                                         </p>
