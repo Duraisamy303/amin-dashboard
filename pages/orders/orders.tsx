@@ -25,7 +25,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 import Modal from '@/components/Modal';
-import { downloadExlcel, getCurrentDateTime, handleExportByChange, mintDateTime, showDeleteAlert, useSetState } from '@/utils/functions';
+import { OrderStatus, PaymentStatus, downloadExlcel, formatCurrency, getCurrentDateTime, handleExportByChange, mintDateTime, showDeleteAlert, useSetState } from '@/utils/functions';
 import dayjs from 'dayjs';
 
 const Orders = () => {
@@ -77,16 +77,7 @@ const Orders = () => {
         setLoading(true);
         if (finishData) {
             if (finishData && finishData.orders && finishData.orders?.edges?.length > 0) {
-                const newData = finishData.orders?.edges.map((item: any) => ({
-                    ...item.node,
-                    order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
-                    date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
-                    total: item?.node?.total.gross.amount ,
-                    status: item?.node?.status == 'FULFILLED' ? 'Completed' : 'UNCONFIRMED' ? 'UnConfirmed' : 'Processing',
-                    paymentStatus: item?.node?.paymentStatus== "NOT_CHARGED"?"Pending" : "Completed",
-                }));
-                console.log('newData: ', newData);
-                setFinishList(newData);
+                SetFinalDate(finishData.orders?.edges);
                 setLoading(false);
             } else {
                 setLoading(false);
@@ -147,7 +138,7 @@ const Orders = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return finishList.filter((item: any) => {
+            return finishList?.filter((item: any) => {
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -327,60 +318,52 @@ const Orders = () => {
                 field: 'NUMBER',
             },
         });
-        SetFinalDate(res);
-
         console.log('res: ', res);
+
+        SetFinalDate(res?.data?.orders?.edges);
     };
 
     const SetFinalDate = (res) => {
-        const newData = res.data?.orders?.edges.map((item: any) => ({
+        const newData = res?.map((item: any) => ({
             ...item.node,
             order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
             date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
-            total: item?.node?.total.gross.amount,
-            status: item?.node?.status == 'FULFILLED' ? 'Completed' : 'UNCONFIRMED' ? 'UnConfirmed' : 'Processing',
-            paymentStatus: item?.node?.paymentStatus== "NOT_CHARGED"?"Pending" : "Processing",
+            total: `${formatCurrency(item?.node?.total.gross.currency)}${item?.node?.total.gross.amount}`,
+            status: OrderStatus(item?.node?.status),
+            paymentStatus: PaymentStatus(item?.node?.paymentStatus),
         }));
         setFinishList(newData);
-        setAllData(res.data?.orders?.edges);
+        setAllData(res);
     };
 
     const excelDownload = () => {
-        console.log('allData: ', allData);
-
         const excelData = allData?.map((item) => {
+            const data = item?.node;
             const res = {
-                OrderNumber: item?.node?.number,
-                CustomerName: ` ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
-                EmailID: item?.node?.userEmail,
-                PhoneNumber: item?.node?.shippingAddress?.phone,
-                Address1: item?.node?.shippingAddress?.streetAddress1,
-                Address2: item?.node?.shippingAddress?.streetAddress2,
-                Country: item?.node?.shippingAddress?.country?.country,
-                City: item?.node?.shippingAddress?.city,
-                ProductsName: item?.node?.lines?.map((data) => data?.productName).join(','),
-                ProductPrice: item?.node?.lines?.map((data) => data?.totalPrice?.gross?.amount).join(','),
-                ProductSKU: item?.node?.lines?.map((data) => data?.productSku).join(','),
-                DateOfPurchase: moment(item?.node?.updatedAt).format('YYYY-MM-DD'),
-                PaymentStatus: item?.node?.paymentStatus,
-                Currency: item?.node?.total?.gross?.currency,
-                PurchaseTotal: item?.node?.total?.gross?.amount,
+                OrderNumber: data?.number,
+                CustomerName: ` ${data?.user?.firstName}${data?.user?.lastName}`,
+                EmailID: data?.userEmail,
+                PhoneNumber: data?.shippingAddress?.phone,
+                Address1: data?.shippingAddress?.streetAddress1,
+                Address2: data?.shippingAddress?.streetAddress2,
+                Country: data?.shippingAddress?.country?.country,
+                City: data?.shippingAddress?.city,
+                ProductsName: data?.lines?.map((data) => data?.productName).join(','),
+                ProductPrice: data?.lines?.map((data) => data?.totalPrice?.gross?.amount).join(','),
+                ProductSKU: data?.lines?.map((data) => data?.productSku).join(','),
+                DateOfPurchase: moment(data?.updatedAt).format('YYYY-MM-DD'),
+                PaymentStatus: data?.paymentStatus,
+                Currency: data?.total?.gross?.currency,
+                PurchaseTotal: data?.total?.gross?.amount,
                 Discount: 0,
-                Shipping: item?.node?.shippingPrice?.gross?.amount,
-                GST: item?.node?.total?.tax?.amount,
+                Shipping: data?.shippingPrice?.gross?.amount,
+                GST: data?.total?.tax?.amount,
             };
             return res;
         });
 
         downloadExlcel(excelData, 'Orders');
         console.log('excelData: ', excelData);
-    };
-
-    const filter = async () => {
-        try {
-        } catch (error) {
-            console.log('error: ', error);
-        }
     };
 
     const filterByDates = async (e) => {
@@ -401,7 +384,7 @@ const Orders = () => {
                 },
             });
 
-            SetFinalDate(res);
+            SetFinalDate(res?.data?.orders?.edges);
         } catch (error) {
             console.log('error: ', error);
         }

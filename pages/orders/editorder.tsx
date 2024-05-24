@@ -5,7 +5,9 @@ import {
     CONFIRM_ORDER,
     COUNTRY_LIST,
     CREATE_DRAFT_ORDER,
+    CREATE_INVOICE,
     CREATE_NOTES,
+    CREATE_PAYSLIP,
     CUSTOMER_LIST,
     DELETE_LINE,
     DELETE_NOTES,
@@ -18,7 +20,9 @@ import {
     SHIPPING_COST_UPDATE,
     SHIPPING_LIST,
     STATES_LIST,
+    UPDATE_INVOICE,
     UPDATE_LINE,
+    UPDATE_PAYSLIP,
     UPDATE_SHIPPING_PROVIDER,
     UPDATE_TRACKING_NUMBER,
 } from '@/query/product';
@@ -27,7 +31,7 @@ import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useMutation } from '@apollo/client';
-import { Failure, NotesMsg, Success, channels, profilePic, sampleParams, showDeleteAlert } from '@/utils/functions';
+import { Failure, NotesMsg, Success, channels, formatCurrency, getCurrentDateTime, mintDateTime, profilePic, sampleParams, showDeleteAlert } from '@/utils/functions';
 import Swal from 'sweetalert2';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconX from '@/components/Icon/IconX';
@@ -35,6 +39,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import IconEdit from '@/components/Icon/IconEdit';
 import Modal from '@/components/Modal';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
+import IconDownload from '@/components/Icon/IconDownload';
 
 const Editorder = () => {
     const router = useRouter();
@@ -91,6 +96,11 @@ const Editorder = () => {
     const [editTrackingNumber] = useMutation(UPDATE_TRACKING_NUMBER);
     const [confirmNewOrder] = useMutation(CONFIRM_ORDER);
 
+    const [createInvoice] = useMutation(CREATE_INVOICE);
+    const [updatesInvoice] = useMutation(UPDATE_INVOICE);
+    const [createPayslip] = useMutation(CREATE_PAYSLIP);
+    const [updatePayslip] = useMutation(UPDATE_PAYSLIP);
+
     // updateFullfillStatus
 
     const {
@@ -119,10 +129,16 @@ const Editorder = () => {
     });
 
     const [orderData, setOrderData] = useState({});
-    // console.log("orderData: ", orderData?.invoices);
+    console.log('orderData: ', orderData?.invoices);
     const [discountOpen, setDiscountOpen] = useState(false);
+    const [openInvoice, setOpenInvoice] = useState(false);
+
     const [isUpdateQty, setIsUpdateQty] = useState(false);
     const [productQuantity, setProductQuantity] = useState('');
+    const [invoiceNumber, setInvoiceNumber] = useState('');
+
+    const [invoiceDate, setInvoiceDate] = useState('');
+
     const [isEdited, setIsEdited] = useState({});
     const [fullfillData, setFullfillData] = useState([]);
 
@@ -153,7 +169,9 @@ const Editorder = () => {
     const [stateList, setStateList] = useState([]);
 
     const [loading, setLoading] = useState(false);
-
+    const [isOpenPayslip, setIsOpenPayslip] = useState(false);
+    const [slipNumber, setSlipNumber] = useState('');
+    const [slipDate, setSlipDate] = useState('');
     //For shipping
     const [shippingOpen, setShippingOpen] = useState(false);
     const [shippingPrice, setShippingPrice] = useState(0);
@@ -184,8 +202,22 @@ const Editorder = () => {
         setLoading(true);
         if (orderDetails) {
             if (orderDetails && orderDetails?.order) {
+                //Invoice
+
+                if (orderDetails?.order?.invoices?.length > 0) {
+                    setInvoiceNumber(orderDetails?.order?.invoices[0]?.number);
+                    setInvoiceDate(mintDateTime(orderDetails?.order?.invoices[0]?.createdAt));
+                }
+
                 setOrderData(orderDetails?.order);
 
+                //Payslip
+                {orderDetails?.order?.metadata?.length>0 &&
+                setSlipDate(mintDateTime(orderDetails?.order?.metadata[0]?.value));
+                setSlipNumber(orderDetails?.order?.metadata[1]?.value);
+            }
+
+                //Status
                 const filteredArray = orderDetails?.order?.events?.filter(
                     (item) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
                 );
@@ -589,15 +621,66 @@ const Editorder = () => {
             console.log('error: ', error);
         }
     };
+
     const generateInvoice = async (country?: any) => {
         try {
-            const res = await confirmNewOrder({
+            const res = await createInvoice({
                 variables: {
-                    id: id,
+                    orderId: id,
                 },
             });
             getOrderDetails();
-            Success('Order Confirmed Successfully');
+            Success('Invoice generated Successfully');
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const updateInvoice = async (country?: any) => {
+        try {
+            const res = await updatesInvoice({
+                variables: {
+                    invoiceid: orderData?.invoices[0]?.id,
+                    input: {
+                        number: invoiceNumber,
+                        createdAt: invoiceDate,
+                    },
+                },
+            });
+            getOrderDetails();
+            setOpenInvoice(false);
+            Success('Invoice Updated Successfully');
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const generatePayslip = async (country?: any) => {
+        try {
+            const res = await updatePayslip({
+                variables: {
+                    id,
+                    input: [
+                        {
+                            key: 'packing_slip_number:',
+                            value: slipNumber,
+                        },
+                        {
+                            key: 'packing_slip_date:',
+                            value: slipDate,
+                        },
+                    ],
+                    keysToDelete: [],
+                },
+            });
+            console.log('generatePayslip: ', res);
+            const response = await createPayslip({
+                variables: { orderId: id },
+            });
+            console.log('after: ', res);
+            getOrderDetails();
+            Success('Payslip updated Successfully');
+            setIsOpenPayslip(false);
         } catch (error) {
             console.log('error: ', error);
         }
@@ -1245,12 +1328,15 @@ const Editorder = () => {
                                                         <td>
                                                             <img src={item?.thumbnail?.url} height={100} width={100} alt="Selected" className="object-cover" />
                                                         </td>
-                                                        <td>{item?.unitPrice?.gross?.amount}</td>
+                                                        <td>
+                                                            {formatCurrency(item?.unitPrice?.gross?.currency)}
+                                                            {item?.unitPrice?.gross?.amount}
+                                                        </td>
                                                         <td>
                                                             <div>{item?.quantity}</div>
                                                         </td>
                                                         <td>
-                                                            <div>{item?.totalPrice?.gross?.amount}</div>
+                                                            <div>{`${formatCurrency(item?.totalPrice?.gross?.currency)}${item?.totalPrice?.gross?.amount}`}</div>
                                                         </td>
                                                         {/* <td>
                                                             <button
@@ -1434,16 +1520,83 @@ const Editorder = () => {
                                 </Formik>
                             </div>
                             <div className="panel max-h-[810px]  overflow-y-auto p-5">
-                                <div className="mb-5 border-b border-gray-200 pb-2 ">
+                                <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
                                     <h3 className="text-lg font-semibold">Invoice</h3>
+                                    {orderData?.invoices?.length > 0 && (
+                                        <button type="submit" className="btn btn-outline-primary" onClick={() => router.push(orderData?.invoices[0]?.url)}>
+                                            <IconDownload />
+                                        </button>
+                                    )}
                                 </div>
-                                {orderData?.invoices?.length>0 &&
-                                <div className="flex justify-end">
-                                    <button type="submit" className="btn btn-primary" onClick={() => generateInvoice()}>
-                                        Generate
-                                    </button>
+                                {orderData?.invoices?.length > 0 ? (
+                                    <div className="pt-4">
+                                        <div className="flex justify-between">
+                                            <p>Number</p>
+                                            <p>{orderData?.invoices[0]?.number}</p>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <p>Date</p>
+                                            <p>{moment(orderData?.invoices[0]?.createdAt).format('YYYY/MM/DD')}</p>
+                                        </div>
+                                        <div className="flex justify-end pt-3">
+                                            <button type="submit" className="btn btn-primary" onClick={() => setOpenInvoice(true)}>
+                                                Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    orderStatus == 'FULFILLED' && (
+                                        <div className="flex justify-end">
+                                            <button type="submit" className="btn btn-primary" onClick={() => generateInvoice()}>
+                                                Generate
+                                            </button>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                            <div className="panel max-h-[810px]  overflow-y-auto p-5">
+                                <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
+                                    <h3 className="text-lg font-semibold">Payslip</h3>
+
+                                    {orderData?.metadata?.length > 0 && (
+                                        <button type="submit" className="btn btn-outline-primary" onClick={() => router.push('http://file.prade.in/' + orderData?.metadata[2]?.value)}>
+                                            <IconDownload />
+                                        </button>
+                                    )}
                                 </div>
-                                }
+                                {orderData?.metadata?.length > 0 ? (
+                                    <div className="pt-4">
+                                        <div className="flex justify-between">
+                                            <p>Number</p>
+                                            <p>{orderData?.metadata[1]?.value}</p>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <p>Date</p>
+                                            <p>{moment(orderData?.metadata[0]?.value).format('YYYY/MM/DD')}</p>
+                                        </div>
+                                        <div className="flex justify-end pt-3">
+                                            <button
+                                                type="submit"
+                                                className="btn btn-primary"
+                                                onClick={() => {
+                                                    setSlipDate(mintDateTime(slipDate));
+                                                    setSlipNumber(slipNumber);
+                                                    setIsOpenPayslip(true);
+                                                }}
+                                            >
+                                                Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    orderStatus == 'FULFILLED' && (
+                                        <div className="flex justify-end">
+                                            <button type="submit" className="btn btn-primary" onClick={() => setIsOpenPayslip(true)}>
+                                                Generate
+                                            </button>
+                                        </div>
+                                    )
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1538,6 +1691,75 @@ const Editorder = () => {
                                 </button>
                                 <button type="button" onClick={() => updatePaymentStatus()} className="btn btn-primary ltr:ml-4 rtl:mr-4">
                                     Confirm
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+            />
+            <Modal
+                addHeader={'Update Payslip'}
+                open={isOpenPayslip}
+                close={() => setIsOpenPayslip(false)}
+                renderComponent={() => (
+                    <div className="p-5 pb-7">
+                        <form className="flex flex-col gap-3">
+                            <div className=" w-full">
+                                <input type="text" className="form-input" placeholder="Slip Number" value={slipNumber} onChange={(e: any) => setSlipNumber(e.target.value)} />
+                            </div>
+
+                            <div className="flex w-full">
+                                <input
+                                    type="datetime-local"
+                                    min={getCurrentDateTime()}
+                                    value={moment(slipDate).format('YYYY-MM-DDTHH:mm')}
+                                    onChange={(e) => setSlipDate(e.target.value)}
+                                    id="dateTimeCreated"
+                                    name="dateTimeCreated"
+                                    className="form-input"
+                                />
+                                {/* <input type="text" className="form-input" placeholder="Slip Date" value={slipDate} onChange={(e: any) => slipDate(e.target.value)} /> */}
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-end">
+                                <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setIsOpenPayslip(false)}>
+                                    Cancel
+                                </button>
+                                <button type="button" onClick={() => generatePayslip()} className="btn btn-primary ltr:ml-4 rtl:mr-4">
+                                    Confirm
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
+            />
+
+            <Modal
+                addHeader={'Update Invoice'}
+                open={openInvoice}
+                close={() => setOpenInvoice(false)}
+                renderComponent={() => (
+                    <div className="p-5 pb-7">
+                        <form onSubmit={updateDiscount}>
+                            <div className="w-full flex-col">
+                                <input type="text" className="form-input" placeholder="Reference" value={invoiceNumber} onChange={(e: any) => setInvoiceNumber(e.target.value)} />
+                                <input
+                                    type="datetime-local"
+                                    min={getCurrentDateTime()}
+                                    value={moment(invoiceDate).format('YYYY-MM-DDTHH:mm')}
+                                    onChange={(e) => setInvoiceDate(e.target.value)}
+                                    id="dateTimeCreated"
+                                    name="dateTimeCreated"
+                                    className="form-input"
+                                />
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-end">
+                                <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setOpenInvoice(false)}>
+                                    Cancel
+                                </button>
+                                <button type="button" onClick={() => updateInvoice()} className="btn btn-primary ltr:ml-4 rtl:mr-4">
+                                    Update
                                 </button>
                             </div>
                         </form>

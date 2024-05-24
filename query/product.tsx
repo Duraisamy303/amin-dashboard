@@ -446,6 +446,120 @@ export const SHIPPING_LIST = gql`
         }
     }
 `;
+
+export const CREATE_INVOICE = gql`
+    mutation InvoiceRequest($orderId: ID!) {
+        invoiceRequest(orderId: $orderId) {
+            errors {
+                ...InvoiceError
+                __typename
+            }
+            invoice {
+                ...Invoice
+                __typename
+            }
+            order {
+                id
+                invoices {
+                    ...Invoice
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment InvoiceError on InvoiceError {
+        code
+        field
+        message
+        __typename
+    }
+
+    fragment Invoice on Invoice {
+        id
+        number
+        createdAt
+        url
+        status
+        __typename
+    }
+`;
+
+export const UPDATE_INVOICE = gql`
+    mutation InvoiceUpdate($invoiceid: ID!, $input: UpdateInvoiceInput!) {
+        invoiceUpdate(id: $invoiceid, input: $input) {
+            errors {
+                message
+            }
+            invoice {
+                createdAt
+            }
+        }
+    }
+`;
+
+export const UPDATE_PAYSLIP = gql`
+    mutation OrderUpdateMetadata($id: ID!, $input: [MetadataInput!]!, $keysToDelete: [String!]!) {
+        updateMetadata(id: $id, input: $input) {
+            errors {
+                ...MetadataError
+                __typename
+            }
+            item {
+                ...Metadata
+                ... on Node {
+                    id
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+        deleteMetadata(id: $id, keys: $keysToDelete) {
+            errors {
+                ...MetadataError
+                __typename
+            }
+            item {
+                ...Metadata
+                ... on Node {
+                    id
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment MetadataError on MetadataError {
+        code
+        field
+        message
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+`;
+
 export const ORDER_FULFILL_SETTING = gql`
     query OrderFulfillSettings {
         shop {
@@ -457,6 +571,35 @@ export const ORDER_FULFILL_SETTING = gql`
     fragment ShopOrderSettings on Shop {
         fulfillmentAutoApprove
         fulfillmentAllowUnpaid
+        __typename
+    }
+`;
+
+export const CREATE_PAYSLIP = gql`
+    mutation InvoiceRequest($orderId: ID!) {
+        payslipRequest(orderId: $orderId) {
+            errors {
+                ...PayslipError
+                __typename
+            }
+
+            order {
+                id
+                metadata {
+                    key
+                    value
+                }
+
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment PayslipError on InvoiceError {
+        code
+        field
+        message
         __typename
     }
 `;
@@ -4886,6 +5029,10 @@ export const ADD_COUPEN = gql`
 export const GET_ORDER_DETAILS = gql`
     query OrderDetailsWithMetadata($id: ID!, $isStaffUser: Boolean!) {
         order(id: $id) {
+            metadata {
+                key
+                value
+              }
             ...OrderDetailsWithMetadata
             __typename
             courierPartner {

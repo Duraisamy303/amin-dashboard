@@ -375,13 +375,40 @@ export const mintDateTime = (date) => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-export const roundOff = (price:any) => {
-    let round = "";
+export const roundOff = (price: any) => {
+    let round = '';
     if (price) {
-      round = Math.ceil(price)?.toFixed(2);
+        round = Math.ceil(price)?.toFixed(2);
     } else {
-      round = price;
+        round = price;
     }
     return round;
-  };
-  
+};
+
+export const formatCurrency = (currency) => {
+    if (currency === 'INR') {
+        return '₹';
+    } else {
+        return '$';
+    }
+};
+
+export const OrderStatus = (status) => {
+    if (status === 'FULFILLED') {
+        return 'Completed';
+    } else if(status == "UNCONFIRMED") {
+        return 'UnConfirmed';
+    }else {
+        return 'Processing';
+    }
+};
+
+
+export const PaymentStatus = (status) => {
+    if (status === 'NOT_CHARGED') {
+        return 'Pending';
+    } else {
+        return 'Completed';
+    }
+};
+
