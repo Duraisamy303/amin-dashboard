@@ -69,6 +69,9 @@ const Orders = () => {
     const [endDate, setEndDate] = useState('');
     const [startDate, setStartDate] = useState(getCurrentDateTime());
 
+    // error message
+    const [currencyPopup, setCurrencyPopup] = useState('');
+
     useEffect(() => {
         getFinishList();
     }, [finishData]);
@@ -262,7 +265,12 @@ const Orders = () => {
 
     // completed category delete option
     const handleSetChannel = () => {
-        createDraftOrder();
+        setCurrencyPopup('');
+        if (state.selectedCurrency == '') {
+            setCurrencyPopup('required this field');
+        } else {
+            createDraftOrder();
+        }
     };
 
     const createDraftOrder = async () => {
@@ -727,12 +735,13 @@ const Orders = () => {
                             <option value="" disabled selected>
                                 Select a currency
                             </option>
-                            {state.currency?.map((item) => (
+                            {state.currency?.map((item: any) => (
                                 <option key={item?.value} value={item?.value}>
                                     {item?.label}
                                 </option>
                             ))}
                         </select>
+                        {currencyPopup && <div className="mt-1 text-sm text-red-400">{currencyPopup}</div>}
 
                         <div className="mt-8 flex items-center justify-end">
                             <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setState({ isOpenChannel: false })}>

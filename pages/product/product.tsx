@@ -348,7 +348,7 @@ const ProductList = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="lg:mb-5 mb-10 flex flex-col gap-5 lg:flex-row lg:items-center">
+                <div className="mb-10 flex flex-col gap-5 lg:mb-5 lg:flex-row lg:items-center">
                     <div className="flex items-center gap-2">
                         <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
                         {/* <button type="button" className="btn btn-outline-primary">
@@ -390,7 +390,7 @@ const ProductList = () => {
 
                 <div className="mb-5 ">
                     <form onSubmit={onFilterSubmit}>
-                        <div className="mx-auto flex  col-4 items-center gap-4 md:flex-row">
+                        <div className="col-4 mx-auto  flex items-center gap-4 md:flex-row">
                             <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
                                 <option value="">Select a Categories </option>
                                 {parentLists?.map((item: any) => {
@@ -418,7 +418,7 @@ const ProductList = () => {
                                 <option value="sample-product">Simple Product</option>
                                 <option value="variable-product">Variable Product</option>
                             </select> */}
-                            <button type="submit" className="btn btn-primary py-2.5 md:w-auto w-full">
+                            <button type="submit" className="btn btn-primary w-full py-2.5 md:w-auto">
                                 Filter
                             </button>
                         </div>
@@ -451,7 +451,12 @@ const ProductList = () => {
                                             <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/edit?id=${row.id}`)}>
                                                 <IconEdit className="h-4.5 w-4.5" />
                                             </button>
-                                            <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/view?id=${row.id}`)}>
+                                            <button
+                                                className="flex hover:text-info"
+                                                onClick={() => {
+                                                    window.open(`http://www1.prade.in/product-details/${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
+                                                }}
+                                            >
                                                 {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
                                                 <IconEye />
                                             </button>

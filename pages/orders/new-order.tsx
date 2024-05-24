@@ -41,7 +41,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import { Field, Form, Formik } from 'formik';
 import moment from 'moment';
 import { useRouter } from 'next/router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import * as Yup from 'yup';
 
@@ -88,7 +88,16 @@ export default function Neworder() {
         productIsEdit: false,
         addProductOpen: false,
         selectedItems: {},
+
+        // error messages
     });
+
+    const [customerErrMsg, setCustomerErrMsg] = useState('');
+    const [billingErrMsg, setBillingErrMsg] = useState<any>({});
+    const [shippingErrMsg, setShippingErrMsg] = useState<any>({});
+    const [precentageErrMsg, setPercentageErrMsg] = useState<any>('');
+    const [fixedErrMsg, setFixedErrMsg] = useState<any>('');
+    const [couponOptionErrMsg, setCouponOptionErrMsg] = useState('');
 
     const [newAddLine] = useMutation(ADD_NEW_LINE);
     const [updateLine] = useMutation(UPDATE_LINE);
@@ -129,7 +138,6 @@ export default function Neworder() {
             isStaffUser: true,
         },
     });
-
 
     const { data: productData } = useQuery(FILTER_PRODUCT_LIST, {
         variables: {
@@ -256,11 +264,11 @@ export default function Neworder() {
             if (productDetails && productDetails?.order && productDetails?.order?.events?.length > 0) {
                 const list = productDetails?.order?.events;
                 const filteredArray = list.filter(
-                    (item) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
+                    (item: any) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
                 );
 
-                const result = filteredArray?.map((item) => {
-                    const secondItem = NotesMsg.find((i) => i.type === item.type);
+                const result = filteredArray?.map((item: any) => {
+                    const secondItem: any = NotesMsg.find((i) => i.type === item.type);
                     return {
                         type: item.type,
                         message: item.type === 'NOTE_ADDED' ? item.message : secondItem.message,
@@ -385,16 +393,16 @@ export default function Neworder() {
     };
 
     //Add new Product to this order
-    const handleHeadingSelect = (heading) => {
+    const handleHeadingSelect = (heading: any) => {
         const isHeadingChecked = state.selectedItems[heading] && Object.values(state.selectedItems[heading]).every((value) => value);
         const newSelectedItems = {
             ...state.selectedItems,
-            [heading]: Object.fromEntries(state.productList.find((item) => item.name === heading).variants.map(({ name }) => [name, !isHeadingChecked])),
+            [heading]: Object.fromEntries(state.productList.find((item: any) => item.name === heading).variants.map(({ name }: any) => [name, !isHeadingChecked])),
         };
         setState({ selectedItems: newSelectedItems });
     };
 
-    const handleSelect = (heading, subHeading) => {
+    const handleSelect = (heading: any, subHeading: any) => {
         const newSelectedItems = { ...state.selectedItems };
 
         if (subHeading) {
@@ -416,21 +424,21 @@ export default function Neworder() {
             }
         } else {
             const isHeadingChecked = state.selectedItems[heading] && Object.values(state.selectedItems[heading]).every((value) => value);
-            newSelectedItems[heading] = Object.fromEntries(state.productList.find((item) => item.name === heading).variants.map(({ name }) => [name, !isHeadingChecked]));
+            newSelectedItems[heading] = Object.fromEntries(state.productList.find((item: any) => item.name === heading).variants.map(({ name }: any) => [name, !isHeadingChecked]));
         }
         setState({ selectedItems: newSelectedItems });
     };
 
-    const handleSubHeadingSelect = (heading, subHeading) => {
+    const handleSubHeadingSelect = (heading: any, subHeading: any) => {
         handleSelect(heading, subHeading);
     };
 
     const addProducts = async () => {
         try {
-            const selectedSubheadingIds = [];
-            state.productList.forEach(({ name, variants }) => {
+            const selectedSubheadingIds: any = [];
+            state.productList.forEach(({ name, variants }: any) => {
                 if (state.selectedItems[name]) {
-                    variants.forEach(({ name: variantName, id }) => {
+                    variants.forEach(({ name: variantName, id }: any) => {
                         if (state.selectedItems[name][variantName]) {
                             selectedSubheadingIds.push(id);
                         }
@@ -438,7 +446,7 @@ export default function Neworder() {
                 }
             });
 
-            const input = selectedSubheadingIds.map((item) => ({
+            const input = selectedSubheadingIds.map((item: any) => ({
                 quantity: 1,
                 variantId: item,
             }));
@@ -496,6 +504,22 @@ export default function Neworder() {
 
     //Add discount to this order
     const addDiscount = async () => {
+        setPercentageErrMsg('');
+        setFixedErrMsg('');
+        setCouponOptionErrMsg(''); // Clear any previous error message
+
+        // Validate coupon option selection
+        if (state.coupenOption !== 'percentage' && state.coupenOption !== 'fixed') {
+            setCouponOptionErrMsg('Please select this field'); // Set error message if no option is selected
+            return; // Stop form submission if validation fails
+        }
+
+        if (state.coupenOption == 'percentage' && !state.percentcoupenValue) {
+            setPercentageErrMsg('Please Enter Percentage');
+        }
+        if (state.coupenOption == 'fixed' && !state.fixedcoupenValue) {
+            setFixedErrMsg('Please Enter Fixed Value');
+        }
         try {
             const res = await addCoupenAmt({
                 variables: {
@@ -519,6 +543,21 @@ export default function Neworder() {
 
     //Update discount to this order
     const updateDiscount = async () => {
+        setPercentageErrMsg('');
+        setFixedErrMsg('');
+        setCouponOptionErrMsg(''); // Clear any previous error message
+
+        // Validate coupon option selection
+        if (state.coupenOption !== 'percentage' && state.coupenOption !== 'fixed') {
+            setCouponOptionErrMsg('Please select this field'); // Set error message if no option is selected
+            return; // Stop form submission if validation fails
+        }
+        if (state.coupenOption == 'percentage' && !state.percentcoupenValue) {
+            setPercentageErrMsg('Please Enter Percentage');
+        }
+        if (state.coupenOption == 'fixed' && !state.fixedcoupenValue) {
+            setFixedErrMsg('Please Enter Fixed Value');
+        }
         try {
             console.log('state.percentcoupenValue: ', state.coupenOption, state.percentcoupenValue, state.fixedcoupenValue);
 
@@ -579,6 +618,14 @@ export default function Neworder() {
     };
 
     const createOrder = async () => {
+        setCustomerErrMsg('');
+        if (!state.selectedCustomerId) {
+            setCustomerErrMsg('required this field');
+        }
+        if (state.lineList.length == 0) {
+            Failure('Please add product to order');
+        }
+
         try {
             const data = await updateDraftOrder({
                 variables: {
@@ -644,7 +691,7 @@ export default function Neworder() {
         }
     };
 
-    const shippingCoutryChange = async (country) => {
+    const shippingCoutryChange = async (country: any) => {
         try {
             stateRefetch();
             await updateShippingAddress({
@@ -665,6 +712,73 @@ export default function Neworder() {
     };
 
     const updateAddress = async () => {
+        setBillingErrMsg({});
+        setShippingErrMsg({});
+
+        let newBillingErrMsg: any = {};
+        let newShippingErrMsg: any = {};
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^[0-9]{10,15}$/;
+        const pincodeRegex = /^[0-9]{5,10}$/;
+
+        console.log('billingAddress: ', state.billingAddress);
+        console.log('shippingAddress: ', state.shippingAddress);
+
+        const requiredFields = ['firstName', 'lastName', 'company', 'address_1', 'address_2', 'city', 'state', 'country'];
+
+        requiredFields.forEach((field) => {
+            if (!state?.billingAddress?.[field]) {
+                newBillingErrMsg[field] = 'required this field';
+            }
+            if (!state?.shippingAddress?.[field]) {
+                newShippingErrMsg[field] = 'required this field';
+            }
+        });
+
+        if (!state?.billingAddress?.pincode) {
+            newBillingErrMsg.pincode = 'required this field';
+        } else if (!pincodeRegex.test(state.billingAddress.pincode)) {
+            newBillingErrMsg.pincode = 'invalid pincode';
+        }
+
+        if (!state?.billingAddress?.phone) {
+            newBillingErrMsg.phone = 'required this field';
+        } else if (!phoneRegex.test(state.billingAddress.phone)) {
+            newBillingErrMsg.phone = 'invalid phone number';
+        }
+
+        if (!state?.billingAddress?.email) {
+            newBillingErrMsg.email = 'required this field';
+        } else if (!emailRegex.test(state.billingAddress.email)) {
+            newBillingErrMsg.email = 'invalid email';
+        }
+
+        if (!state?.shippingAddress?.pincode) {
+            newShippingErrMsg.pincode = 'required this field';
+        } else if (!pincodeRegex.test(state.shippingAddress.pincode)) {
+            newShippingErrMsg.pincode = 'invalid pincode';
+        }
+
+        if (!state?.shippingAddress?.phone) {
+            newShippingErrMsg.phone = 'required this field';
+        } else if (!phoneRegex.test(state.shippingAddress.phone)) {
+            newShippingErrMsg.phone = 'invalid phone number';
+        }
+
+        if (!state?.shippingAddress?.email) {
+            newShippingErrMsg.email = 'required this field';
+        } else if (!emailRegex.test(state.shippingAddress.email)) {
+            newShippingErrMsg.email = 'invalid email';
+        }
+        console.log('newshippingerror: ', newShippingErrMsg);
+
+        setShippingErrMsg(newShippingErrMsg);
+        setBillingErrMsg(newBillingErrMsg);
+        if (Object.keys(newShippingErrMsg).length > 0 || Object.keys(newBillingErrMsg).length > 0) {
+            return;
+        }
+
         try {
             const data = await updateDraftOrder({
                 variables: {
@@ -693,6 +807,7 @@ export default function Neworder() {
         }
     };
 
+    console.log('state.lineList: ', state.lineList);
     return (
         <>
             <div className="panel mb-5 flex items-center justify-between gap-3 p-5 ">
@@ -728,11 +843,12 @@ export default function Neworder() {
                                             </option>
                                         ))}
                                     </select>
+                                    {customerErrMsg && <p className="text-red-500">{customerErrMsg}</p>}
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div className="mt-8 grid grid-cols-12 gap-5">
+                    <div className="panel mt-8 grid grid-cols-12 gap-5 p-5">
                         {/* Billing Address */}
                         <div className="col-span-6 mr-5">
                             <div className="flex w-52 items-center justify-between">
@@ -802,7 +918,8 @@ export default function Neworder() {
                                                 value={state.billingAddress?.firstName}
                                                 onChange={handleChange}
                                             />
-                                            {state.billingAddress['billing.firstName'] && <div className="mt-1 text-danger">{state.billingAddress['billing.firstName']}</div>}
+                                            {billingErrMsg?.firstName && <div className="mt-1 text-danger">{billingErrMsg.firstName}</div>}
+                                            {/* {state.billingAddress['billing.firstName'] && <div className="mt-1 text-danger">{state.billingAddress['billing.firstName']}</div>} */}
                                         </div>
                                         <div className="col-span-6">
                                             <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
@@ -815,6 +932,7 @@ export default function Neworder() {
                                                 value={state.billingAddress?.lastName}
                                                 onChange={handleChange}
                                             />
+                                            {billingErrMsg.lastName && <div className="mt-1 text-danger">{billingErrMsg.lastName}</div>}
                                             {state.billingAddress['billing.lastName'] && <div className="mt-1 text-danger">{state.billingAddress['billing.lastName']}</div>}
                                         </div>
                                     </div>
@@ -831,6 +949,7 @@ export default function Neworder() {
                                                 value={state.billingAddress?.company}
                                                 onChange={handleChange}
                                             />
+                                            {billingErrMsg?.company && <div className="mt-1 text-danger">{billingErrMsg.company}</div>}
                                             {state.billingAddress['billing.company'] && <div className="mt-1 text-danger">{state.billingAddress['billing.company']}</div>}
                                         </div>
                                     </div>
@@ -847,6 +966,7 @@ export default function Neworder() {
                                                 value={state.billingAddress?.address_1}
                                                 onChange={handleChange}
                                             />
+                                            {billingErrMsg.address_1 && <div className="mt-1 text-danger">{billingErrMsg.address_1}</div>}
                                             {state.billingAddress['billing.address_1'] && <div className="mt-1 text-danger">{state.billingAddress['billing.address_1']}</div>}
                                         </div>
                                         <div className="col-span-6">
@@ -860,6 +980,7 @@ export default function Neworder() {
                                                 value={state.billingAddress?.address_2}
                                                 onChange={handleChange}
                                             />
+                                            {billingErrMsg.address_2 && <div className="mt-1 text-danger">{billingErrMsg.address_2}</div>}
                                             {state.billingAddress['billing.address_2'] && <div className="mt-1 text-danger">{state.billingAddress['billing.address_2']}</div>}
                                         </div>
                                     </div>
@@ -887,6 +1008,7 @@ export default function Neworder() {
                                                     </option>
                                                 ))}
                                             </select>
+                                            {billingErrMsg.country && <div className="mt-1 text-danger">{billingErrMsg.country}</div>}
                                             {state.billingAddress['billing.country'] && <div className="mt-1 text-danger">{state.billingAddress['billing.country']}</div>}
                                         </div>
                                         <div className="col-span-6">
@@ -910,6 +1032,7 @@ export default function Neworder() {
                                                     </option>
                                                 ))}
                                             </select>
+                                            {billingErrMsg.state && <div className="mt-1 text-danger">{billingErrMsg.state}</div>}
                                             {state.billingAddress['billing.state'] && <div className="mt-1 text-danger">{state.billingAddress['billing.state']}</div>}
                                         </div>
                                     </div>
@@ -926,6 +1049,7 @@ export default function Neworder() {
                                                 value={state.billingAddress?.city}
                                                 onChange={handleChange}
                                             />
+                                            {billingErrMsg.city && <div className="mt-1 text-danger">{billingErrMsg.city}</div>}
                                             {state.billingAddress['billing.city'] && <div className="mt-1 text-danger">{state.billingAddress['billing.city']}</div>}
                                         </div>
                                         <div className="col-span-6">
@@ -939,6 +1063,7 @@ export default function Neworder() {
                                                 value={state.billingAddress?.pincode}
                                                 onChange={handleChange}
                                             />
+                                            {billingErrMsg.pincode && <div className="mt-1 text-danger">{billingErrMsg.pincode}</div>}
                                             {state.billingAddress['billing.pincode'] && <div className="mt-1 text-danger">{state.billingAddress['billing.pincode']}</div>}
                                         </div>
                                     </div>
@@ -953,9 +1078,10 @@ export default function Neworder() {
                                                 className={`form-input ${state.billingAddress['billing.email'] && 'border border-danger focus:border-danger'}`}
                                                 name="billing.email"
                                                 value={state.billingAddress?.email}
-                                                maxLength={10}
+                                                // maxLength={10}
                                                 onChange={handleChange}
                                             />
+                                            {billingErrMsg.email && <div className="mt-1 text-danger">{billingErrMsg.email}</div>}
                                             {state.billingAddress['billing.email'] && <div className="mt-1 text-danger">{state.billingAddress['billing.email']}</div>}
                                             {/* <input type="mail" className="form-input" name="billing.email" value={state.billingAddress?.email} onChange={handleChange} /> */}
 
@@ -973,6 +1099,7 @@ export default function Neworder() {
                                                 maxLength={10}
                                                 onChange={handleChange}
                                             />
+                                            {billingErrMsg.phone && <div className="mt-1 text-danger">{billingErrMsg.phone}</div>}
                                             {state.billingAddress['billing.phone'] && <div className="mt-1 text-danger">{state.billingAddress['billing.phone']}</div>}
                                         </div>
                                     </div>
@@ -1072,6 +1199,7 @@ export default function Neworder() {
                                                 value={state.shippingAddress.firstName}
                                                 onChange={handleShippingChange}
                                             />
+                                            {shippingErrMsg.firstName && <div className="mt-1 text-danger">{shippingErrMsg.firstName}</div>}
                                             {state.shippingAddress['shipping.firstName'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.firstName']}</div>}
                                         </div>
                                         <div className="col-span-6">
@@ -1085,6 +1213,7 @@ export default function Neworder() {
                                                 value={state.shippingAddress.lastName}
                                                 onChange={handleShippingChange}
                                             />
+                                            {shippingErrMsg.lastName && <div className="mt-1 text-danger">{shippingErrMsg.lastName}</div>}
                                             {state.shippingAddress['shipping.lastName'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.lastName']}</div>}
                                         </div>
                                     </div>
@@ -1101,6 +1230,7 @@ export default function Neworder() {
                                                 value={state.shippingAddress.company}
                                                 onChange={handleShippingChange}
                                             />
+                                            {shippingErrMsg.company && <div className="mt-1 text-danger">{shippingErrMsg.company}</div>}
                                             {state.shippingAddress['shipping.company'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.company']}</div>}
                                         </div>
                                     </div>
@@ -1117,6 +1247,7 @@ export default function Neworder() {
                                                 value={state.shippingAddress.address_1}
                                                 onChange={handleShippingChange}
                                             />
+                                            {shippingErrMsg.address_1 && <div className="mt-1 text-danger">{shippingErrMsg.address_1}</div>}
                                             {state.shippingAddress['shipping.address_1'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.address_1']}</div>}
                                         </div>
                                         <div className="col-span-6">
@@ -1130,6 +1261,7 @@ export default function Neworder() {
                                                 value={state.shippingAddress.address_2}
                                                 onChange={handleShippingChange}
                                             />
+                                            {shippingErrMsg.address_2 && <div className="mt-1 text-danger">{shippingErrMsg.address_2}</div>}
                                             {state.shippingAddress['shipping.address_2'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.address_2']}</div>}
                                         </div>
                                     </div>
@@ -1158,6 +1290,7 @@ export default function Neworder() {
                                                     </option>
                                                 ))}
                                             </select>
+                                            {shippingErrMsg.country && <div className="mt-1 text-danger">{shippingErrMsg.country}</div>}
                                             {state.shippingAddress['shipping.country'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.country']}</div>}
                                         </div>
                                         <div className="col-span-6">
@@ -1179,6 +1312,7 @@ export default function Neworder() {
                                                     </option>
                                                 ))}
                                             </select>
+                                            {shippingErrMsg.state && <div className="mt-1 text-danger">{shippingErrMsg.state}</div>}
                                             {state.shippingAddress['shipping.state'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.state']}</div>}
                                         </div>
                                     </div>
@@ -1195,6 +1329,7 @@ export default function Neworder() {
                                                 value={state.shippingAddress.city}
                                                 onChange={handleShippingChange}
                                             />
+                                            {shippingErrMsg.city && <div className="mt-1 text-danger">{shippingErrMsg.city}</div>}
                                             {state.shippingAddress['shipping.city'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.city']}</div>}
                                         </div>
                                         <div className="col-span-6">
@@ -1208,6 +1343,7 @@ export default function Neworder() {
                                                 value={state.shippingAddress.pincode}
                                                 onChange={handleShippingChange}
                                             />
+                                            {shippingErrMsg.pincode && <div className="mt-1 text-danger">{shippingErrMsg.pincode}</div>}
                                             {state.shippingAddress['shipping.pincode'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.pincode']}</div>}
                                         </div>
                                     </div>
@@ -1222,9 +1358,10 @@ export default function Neworder() {
                                                 className={`form-input ${state.shippingAddress['shipping.email'] && 'border border-danger focus:border-danger'}`}
                                                 name="shipping.email"
                                                 value={state.shippingAddress.email}
-                                                maxLength={10}
+                                                // maxLength={10}
                                                 onChange={handleShippingChange}
                                             />
+                                            {shippingErrMsg.email && <div className="mt-1 text-danger">{shippingErrMsg.email}</div>}
                                             {state.shippingAddress['shipping.email'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.email']}</div>}
                                         </div>
                                         <div className="col-span-6">
@@ -1239,6 +1376,7 @@ export default function Neworder() {
                                                 maxLength={10}
                                                 onChange={handleShippingChange}
                                             />
+                                            {shippingErrMsg.phone && <div className="mt-1 text-danger">{shippingErrMsg.phone}</div>}
                                             {state.shippingAddress['shipping.phone'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.phone']}</div>}
                                         </div>
                                     </div>
@@ -1281,14 +1419,16 @@ export default function Neworder() {
                                 </>
                             )}
                         </div>
-                        <div className="flex w-full">
-                            <button type="button" className="btn btn-primary" onClick={() => updateAddress()}>
-                                Update Address
-                            </button>
+                        <div className="col-span-12 ">
+                            <div className="flex justify-end">
+                                <button type="button" className="btn btn-primary" onClick={() => updateAddress()}>
+                                    Update Address
+                                </button>
+                            </div>
                         </div>
                     </div>
                     {/* Product table  */}
-                    <div className="panel p-5">
+                    <div className="panel mt-8 p-5">
                         <div className="table-responsive">
                             <table>
                                 <thead>
@@ -1558,7 +1698,7 @@ export default function Neworder() {
                                 <div className="p-3">
                                     <input type="text" className="form-input w-full p-3" placeholder="Search..." value={state.search} onChange={(e) => setState({ search: e.target.value })} />
                                 </div>
-                                {state.productList?.map(({ name, variants, thumbnail }) => (
+                                {state.productList?.map(({ name, variants, thumbnail }: any) => (
                                     <div key={name}>
                                         <div className="flex gap-3">
                                             <input
@@ -1571,7 +1711,7 @@ export default function Neworder() {
                                             <div>{name}</div>
                                         </div>
                                         <ul>
-                                            {variants?.map(({ name: variantName, sku, costPrice, pricing }) => (
+                                            {variants?.map(({ name: variantName, sku, costPrice, pricing }: any) => (
                                                 <li key={variantName} style={{ paddingLeft: '10px', padding: '20px' }}>
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex">
@@ -1628,7 +1768,7 @@ export default function Neworder() {
                 close={() => setState({ isOpenCoupen: false })}
                 renderComponent={() => (
                     <>
-                        <div className="overflow-scroll p-3">
+                        <div className=" p-3">
                             <div className="flex items-center justify-center gap-5">
                                 <div className="flex cursor-pointer items-center gap-3">
                                     <input
@@ -1649,10 +1789,11 @@ export default function Neworder() {
                                     <span onClick={() => setState({ coupenOption: 'fixed' })}>Fixed Amount</span>
                                 </div>
                             </div>
+                            {couponOptionErrMsg && <div className="text-red-500">{couponOptionErrMsg}</div>}
                             <div className="flex items-center gap-5">
                                 <input
                                     type="number"
-                                    className="form-input mb-5 mt-4"
+                                    className="form-input mt-4"
                                     value={state.coupenOption === 'percentage' ? state.percentcoupenValue : state.fixedcoupenValue}
                                     onChange={(e) => {
                                         const value = e.target.value;
@@ -1664,8 +1805,13 @@ export default function Neworder() {
                                 />
                                 <span>{state.coupenOption === 'percentage' ? '%' : 'INR'}</span>
                             </div>
-                            <div className="flex justify-end gap-5">
-                                <button className="rounded border border-black bg-transparent px-4 py-2 font-semibold text-black hover:border-transparent hover:bg-blue-500 hover:text-white">
+                            {precentageErrMsg && <div className="mt-1 text-red-500">{precentageErrMsg}</div>}
+                            {fixedErrMsg && <div className="mt-1 text-red-500">{fixedErrMsg}</div>}{' '}
+                            <div className="mt-5 flex justify-end gap-5">
+                                <button
+                                    className="rounded border border-black bg-transparent px-4 py-2 font-semibold text-black hover:border-transparent hover:bg-blue-500 hover:text-white"
+                                    onClick={() => setState({ isOpenCoupen: false })}
+                                >
                                     Cancel
                                 </button>
                                 <button
