@@ -57,6 +57,8 @@ const ProductList = () => {
                         ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
                         : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
                     price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                    status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
+
                 }));
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
@@ -128,7 +130,7 @@ const ProductList = () => {
                     // item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
                     item.name.toLowerCase().includes(search.toLowerCase()) ||
-                    // item.sku.toLowerCase().includes(search.toLowerCase()) ||
+                    item.status.toLowerCase().includes(search.toLowerCase()) ||
                     // item.stock.toLowerCase().includes(search.toLowerCase()) ||
                     // item.price.toString().includes(search.toLowerCase()) ||
                     // item.categories.toLowerCase().includes(search.toLowerCase()) ||
@@ -188,6 +190,8 @@ const ProductList = () => {
                         : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
                     price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
                 }));
+                console.log("newData: ", newData);
+
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
                 setLoading(false);
@@ -435,7 +439,7 @@ const ProductList = () => {
                             { accessor: 'name', sortable: true },
 
                             // { accessor: 'sku', sortable: true },
-                            // { accessor: 'stock', sortable: true },
+                            { accessor: 'status', sortable: true },
                             { accessor: 'price', sortable: true },
                             // { accessor: 'categories', sortable: true },
                             // { accessor: 'tags', sortable: true },

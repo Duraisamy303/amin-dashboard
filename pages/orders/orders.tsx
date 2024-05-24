@@ -56,10 +56,44 @@ const Orders = () => {
         dispatch(setPageTitle('Checkbox Table'));
     });
     const router = useRouter();
+    const variables = {
+        first: 100,
+        filter: {
+            created: null,
+        },
+        sort: {
+            direction: 'DESC',
+            field: 'NUMBER',
+        },
+        PERMISSION_HANDLE_CHECKOUTS: true,
+        PERMISSION_HANDLE_PAYMENTS: true,
+        PERMISSION_HANDLE_TAXES: true,
+        PERMISSION_IMPERSONATE_USER: true,
+        PERMISSION_MANAGE_APPS: true,
+        PERMISSION_MANAGE_CHANNELS: true,
+        PERMISSION_MANAGE_CHECKOUTS: true,
+        PERMISSION_MANAGE_DISCOUNTS: true,
+        PERMISSION_MANAGE_GIFT_CARD: true,
+        PERMISSION_MANAGE_MENUS: true,
+        PERMISSION_MANAGE_OBSERVABILITY: true,
+        PERMISSION_MANAGE_ORDERS: true,
+        PERMISSION_MANAGE_ORDERS_IMPORT: true,
+        PERMISSION_MANAGE_PAGES: true,
+        PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
+        PERMISSION_MANAGE_PLUGINS: true,
+        PERMISSION_MANAGE_PRODUCTS: true,
+        PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
+        PERMISSION_MANAGE_SETTINGS: true,
+        PERMISSION_MANAGE_SHIPPING: true,
+        PERMISSION_MANAGE_STAFF: true,
+        PERMISSION_MANAGE_TAXES: true,
+        PERMISSION_MANAGE_TRANSLATIONS: true,
+        PERMISSION_MANAGE_USERS: true,
+    };
 
-    const { error, data: finishData } = useQuery(ORDER_LIST, {
-        variables: { channel: 'india-channel', first: 100 },
-    });
+    console.log('variables: ', variables);
+
+    const { data: finishData } = useQuery(ORDER_LIST, { variables });
 
     const [finishList, setFinishList] = useState([]);
     const [allData, setAllData] = useState([]);

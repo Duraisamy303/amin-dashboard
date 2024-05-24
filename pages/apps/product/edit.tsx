@@ -43,6 +43,7 @@ import {
     DELETE_VARIENT,
     DESIGN_LIST,
     FINISH_LIST,
+    PRODUCTS_MEDIA_ORDERS,
     PRODUCT_CAT_LIST,
     PRODUCT_DETAILS,
     PRODUCT_FULL_DETAILS,
@@ -86,7 +87,7 @@ const ProductEdit = (props: any) => {
     const [seoDesc, setSeoDesc] = useState('');
 
     const [shortDescription, setShortDescription] = useState('');
-    const [sku, setSku] = useState('');
+    const [description, setDescription] = useState('');
     const [quantity, setQuantity] = useState('');
     const [regularPrice, setRegularPrice] = useState('');
     const [selectedCollection, setSelectedCollection] = useState<any>([]);
@@ -128,7 +129,7 @@ const ProductEdit = (props: any) => {
     };
 
     // -------------------------------------New Added-------------------------------------------------------
-    const { data: productDetails } = useQuery(PRODUCT_FULL_DETAILS, {
+    const { data: productDetails ,refetch:productDataRefetch} = useQuery(PRODUCT_FULL_DETAILS, {
         variables: { channel: 'india-channel', id: id },
     });
 
@@ -175,6 +176,7 @@ const ProductEdit = (props: any) => {
     const [updateVariant] = useMutation(UPDATE_VARIANT);
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
     const [assignTagToProduct] = useMutation(ASSIGN_TAG_PRODUCT);
+    const [mediaReorder]=useMutation(PRODUCTS_MEDIA_ORDERS)
 
     const [removeImage] = useMutation(REMOVE_IMAGE);
     const [updateProduct] = useMutation(UPDATE_PRODUCT);
@@ -350,6 +352,8 @@ const ProductEdit = (props: any) => {
 
                     const label = getValueByKey(data?.metadata, 'label');
                     setLabel({ value: label, label: label });
+                    const desc = getValueByKey(data?.metadata, 'description');
+                    setDescription(desc);
 
                     setMediaData(data?.media);
                     setThumbnail(data?.thumbnail?.url);
@@ -686,17 +690,17 @@ const ProductEdit = (props: any) => {
         setCategoryErrMsg('');
         setAttributeError('');
         setVariantErrors([]);
-    
+
         let AttributesErrors: any = {};
         let newVariantErrors: any = [];
         let hasError = false; // Variable to track validation errors
-    
+
         // Validate the product name and slug
         if (productName.trim() === '') {
             setProductNameErrMsg('Product name cannot be empty');
             hasError = true;
         }
-    
+
         if (slug?.trim() === '') {
             setSlugErrMsg('Slug cannot be empty');
             hasError = true;
@@ -724,34 +728,33 @@ const ProductEdit = (props: any) => {
                 AttributesErrors.stone = 'Stone cannot be empty';
                 hasError = true;
             }
-    
+
             if (selectedValues?.design?.length === 0) {
                 AttributesErrors.design = 'Design cannot be empty';
                 hasError = true;
             }
-    
+
             if (selectedValues?.style?.length === 0) {
                 AttributesErrors.style = 'Style cannot be empty';
                 hasError = true;
             }
-    
+
             if (selectedValues?.finish?.length === 0) {
                 AttributesErrors.finish = 'Finish cannot be empty';
                 hasError = true;
             }
-    
+
             setAttributeError(AttributesErrors);
         }
-    
         if (variants?.length > 0) {
             variants.forEach((variant, index) => {
                 let errors: any = {};
-    
+
                 if (!variant.sku) {
                     errors.sku = 'SKU cannot be empty';
                     hasError = true;
                 }
-    
+
                 if (variant.quantity <= 0) {
                     errors.quantity = 'Quantity must be greater than 0';
                     hasError = true;
@@ -759,7 +762,7 @@ const ProductEdit = (props: any) => {
                     errors.quantity = 'Quantity must be a number';
                     hasError = true;
                 }
-    
+
                 if (variant.regularPrice < 0) {
                     errors.regularPrice = 'Regular Price cannot be negative';
                     hasError = true;
@@ -770,7 +773,7 @@ const ProductEdit = (props: any) => {
                     errors.regularPrice = 'Regular Price must be a number';
                     hasError = true;
                 }
-    
+
                 if (variant.salePrice < 0) {
                     errors.salePrice = 'Sale Price cannot be negative';
                     hasError = true;
@@ -781,36 +784,37 @@ const ProductEdit = (props: any) => {
                     errors.salePrice = 'Sale price is greater than Regular price';
                     hasError = true;
                 }
-    
+
                 if (!variant.stackMgmt) {
                     errors.stackMgmt = 'Check Stack Management';
                     hasError = true;
                 }
-    
+
                 newVariantErrors[index] = errors;
             });
-    
+
             setVariantErrors(newVariantErrors);
         }
-    
+
+
         // If there are any errors, do not proceed with the update
-        if (hasError) {
-            return;
-        }
-    
-        if (editorInstance) {
+        // if (hasError) {
+        //     return;
+        // }
+
+        // if (editorInstance) {
             try {
-                const savedContent = await editorInstance.save();
-                console.log('Editor content:', savedContent);
-    
-                console.log('selectedCat: ', selectedCat);
-    
-                console.log('selectedCollection: ', selectedCollection);
+                // const savedContent = await editorInstance.save();
+                // console.log('Editor content:', savedContent);
+
+                // console.log('selectedCat: ', selectedCat);
+
+                // console.log('selectedCollection: ', selectedCollection);
                 let tagId = selectedTag?.map((item: any) => item.value) || [];
-    
-                const formattedDescription = JSON.stringify(savedContent);
-                console.log('✌️formattedDescription --->', formattedDescription);
-    
+
+                // const formattedDescription = JSON.stringify(savedContent);
+                // console.log('✌️formattedDescription --->', formattedDescription);
+
                 const { data } = await updateProduct({
                     variables: {
                         id: id,
@@ -819,7 +823,7 @@ const ProductEdit = (props: any) => {
                             category: selectedCat?.value,
                             collections: selectedCollection.map((item: any) => item.value),
                             tags: tagId,
-                            description: formattedDescription,
+                            // description: formattedDescription,
                             name: productName,
                             rating: 0,
                             seo: {
@@ -836,7 +840,7 @@ const ProductEdit = (props: any) => {
                         firstValues: 10,
                     },
                 });
-    
+
                 if (data?.productUpdate?.errors?.length > 0) {
                     console.log('Error updating product');
                 } else {
@@ -846,9 +850,9 @@ const ProductEdit = (props: any) => {
             } catch (error) {
                 console.error('Failed to save editor content:', error);
             }
-        }
+        // }
     };
-    
+
     const productChannelListUpdate = async () => {
         try {
             const { data } = await updateProductChannelList({
@@ -1025,6 +1029,10 @@ const ProductEdit = (props: any) => {
                             key: 'label',
                             value: label.value,
                         },
+                        {
+                            key: 'description',
+                            value: description,
+                        },
                     ],
                     keysToDelete: [],
                 },
@@ -1036,6 +1044,7 @@ const ProductEdit = (props: any) => {
                 console.log('success: ', data);
                 console.log('selectedTag: ', selectedTag);
                 productsDetails();
+                productDataRefetch()
                 // assignsTagToProduct();
             }
         } catch (error) {
@@ -1165,12 +1174,13 @@ const ProductEdit = (props: any) => {
             newImages.splice(newIndex, 0, draggedImage);
             setImages(newImages);
             const updatedImg = newImages?.map((item) => item.id);
-            // const { data } = await mediaReorder({
-            //     variables: {
-            //         mediaIds: updatedImg,
-            //         productId: id,
-            //     },
-            // });
+            const { data } = await mediaReorder({
+                variables: {
+                    mediaIds: updatedImg,
+                    productId: id,
+                },
+            });
+            productDataRefetch()
         }
     };
     // -------------------------------------New Added-------------------------------------------------------
@@ -1245,7 +1255,17 @@ const ProductEdit = (props: any) => {
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
-                            <div ref={editorRef} className="mb-5 border border-gray-200"></div>
+                            <textarea
+                                id="ctnTextarea"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={5}
+                                className="form-textarea mt-5"
+                                placeholder="Enter Description"
+                                required
+                            ></textarea>
+                            {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
+                            {/* <div ref={editorRef} className="mb-5 border border-gray-200"></div> */}
                         </div>
 
                         <div className="panel mb-5">

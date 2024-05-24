@@ -13,6 +13,7 @@ import {
     FILTER_PRODUCT_LIST,
     FINALIZE_ORDER,
     GET_ORDER_DETAILS,
+    PRODUCT_SEARCH,
     STATES_LIST,
     UPDATE_COUPEN,
     UPDATE_DRAFT_ORDER,
@@ -36,7 +37,7 @@ import {
     showDeleteAlert,
     useSetState,
 } from '@/utils/functions';
-import { billingValidation } from '@/utils/validation';
+import { AddressValidation, billingValidation } from '@/utils/validation';
 import { useMutation, useQuery } from '@apollo/client';
 import { Field, Form, Formik } from 'formik';
 import moment from 'moment';
@@ -123,6 +124,7 @@ export default function Neworder() {
     const { data: countryData } = useQuery(COUNTRY_LIST);
 
     const { data: customerAddress, refetch: addressRefetch } = useQuery(CUSTOMER_ADDRESS);
+    const { data: searchProduct, refetch: searchProductRefetch } = useQuery(PRODUCT_SEARCH);
 
     const { data: stateData, refetch: stateRefetch } = useQuery(STATES_LIST, {
         variables: { code: state.billingAddress.country },
@@ -139,41 +141,30 @@ export default function Neworder() {
         },
     });
 
-    const { data: productData } = useQuery(FILTER_PRODUCT_LIST, {
+    const channels = () => {
+        let channel = '';
+        if (typeof window !== 'undefined') {
+            const channels = localStorage.getItem('channel');
+            if (!channels) {
+                channel = 'INR';
+            } else {
+                channel = channels;
+            }
+        }
+        return channel;
+    };
+
+    const { data: productData, refetch: productRefetch } = useQuery(FILTER_PRODUCT_LIST, {
         variables: {
             after: null,
             first: 100,
             query: '',
-            channel: 'india-channel',
+            channel: channels() == 'INR' ? 'india-channel' : 'default-channel',
             address: {
                 country: 'IN',
             },
             isPublished: true,
             stockAvailability: 'IN_STOCK',
-            PERMISSION_HANDLE_CHECKOUTS: true,
-            PERMISSION_HANDLE_PAYMENTS: true,
-            PERMISSION_HANDLE_TAXES: true,
-            PERMISSION_IMPERSONATE_USER: true,
-            PERMISSION_MANAGE_APPS: true,
-            PERMISSION_MANAGE_CHANNELS: true,
-            PERMISSION_MANAGE_CHECKOUTS: true,
-            PERMISSION_MANAGE_DISCOUNTS: true,
-            PERMISSION_MANAGE_GIFT_CARD: true,
-            PERMISSION_MANAGE_MENUS: true,
-            PERMISSION_MANAGE_OBSERVABILITY: true,
-            PERMISSION_MANAGE_ORDERS: true,
-            PERMISSION_MANAGE_ORDERS_IMPORT: true,
-            PERMISSION_MANAGE_PAGES: true,
-            PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_PLUGINS: true,
-            PERMISSION_MANAGE_PRODUCTS: true,
-            PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
-            PERMISSION_MANAGE_SETTINGS: true,
-            PERMISSION_MANAGE_SHIPPING: true,
-            PERMISSION_MANAGE_STAFF: true,
-            PERMISSION_MANAGE_TAXES: true,
-            PERMISSION_MANAGE_TRANSLATIONS: true,
-            PERMISSION_MANAGE_USERS: true,
         },
     });
 
@@ -198,7 +189,6 @@ export default function Neworder() {
         try {
             setState({ loading: true });
             const funRes = UserDropdownData(customer);
-            console.log('funRes: ', funRes);
             setState({ customerList: funRes, loading: false });
         } catch (error) {
             setState({ loading: false });
@@ -255,10 +245,9 @@ export default function Neworder() {
         if (productDetails) {
             if (productDetails && productDetails?.order && productDetails?.order?.lines?.length > 0) {
                 const list = productDetails?.order?.lines;
-                console.log('list: ', list);
                 setState({ lineList: list, loading: false });
             } else {
-                setState({ loading: false });
+                setState({ loading: false, lineList: [] });
             }
 
             if (productDetails && productDetails?.order && productDetails?.order?.events?.length > 0) {
@@ -366,7 +355,7 @@ export default function Neworder() {
 
     const updateShippingAmount = async () => {
         try {
-            const channel = checkChannel();
+            const channel = channels();
             const isINR = channel === 'INR';
             const shippingCountry = state.shippingAddress.country;
             const isIndia = shippingCountry === 'IN';
@@ -397,7 +386,7 @@ export default function Neworder() {
         const isHeadingChecked = state.selectedItems[heading] && Object.values(state.selectedItems[heading]).every((value) => value);
         const newSelectedItems = {
             ...state.selectedItems,
-            [heading]: Object.fromEntries(state.productList.find((item: any) => item.name === heading).variants.map(({ name }: any) => [name, !isHeadingChecked])),
+            [heading]: Object.fromEntries(state.productList?.find((item: any) => item?.name === heading)?.variants?.map(({ name }: any) => [name, !isHeadingChecked])),
         };
         setState({ selectedItems: newSelectedItems });
     };
@@ -493,9 +482,8 @@ export default function Neworder() {
                     id: item.id,
                 },
             });
-            getOrderData();
-
             setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '' });
+            getOrderData();
             Success('Product Deleted Successfully');
         } catch (error) {
             console.log('error: ', error);
@@ -559,7 +547,6 @@ export default function Neworder() {
             setFixedErrMsg('Please Enter Fixed Value');
         }
         try {
-            console.log('state.percentcoupenValue: ', state.coupenOption, state.percentcoupenValue, state.fixedcoupenValue);
 
             const res = await updateCoupenAmt({
                 variables: {
@@ -575,9 +562,6 @@ export default function Neworder() {
             getOrderData();
             setState({ selectedOption: 'percentage', isOpenCoupen: false, percentcoupenValue: '', fixedcoupenValue: '' });
 
-            console.log('res: ', res);
-            // refetch();
-            // setIsOpenCoupen(false);
         } catch (error) {
             console.log('error: ', error);
         }
@@ -661,7 +645,6 @@ export default function Neworder() {
                     },
                 },
             });
-            console.log('createOrder: ', data);
             finalizeNewOrder();
         } catch (error) {
             console.log('error: ', error);
@@ -714,73 +697,14 @@ export default function Neworder() {
     const updateAddress = async () => {
         setBillingErrMsg({});
         setShippingErrMsg({});
-
-        let newBillingErrMsg: any = {};
-        let newShippingErrMsg: any = {};
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phoneRegex = /^[0-9]{10,15}$/;
-        const pincodeRegex = /^[0-9]{5,10}$/;
-
-        console.log('billingAddress: ', state.billingAddress);
-        console.log('shippingAddress: ', state.shippingAddress);
-
-        const requiredFields = ['firstName', 'lastName', 'company', 'address_1', 'address_2', 'city', 'state', 'country'];
-
-        requiredFields.forEach((field) => {
-            if (!state?.billingAddress?.[field]) {
-                newBillingErrMsg[field] = 'required this field';
-            }
-            if (!state?.shippingAddress?.[field]) {
-                newShippingErrMsg[field] = 'required this field';
-            }
-        });
-
-        if (!state?.billingAddress?.pincode) {
-            newBillingErrMsg.pincode = 'required this field';
-        } else if (!pincodeRegex.test(state.billingAddress.pincode)) {
-            newBillingErrMsg.pincode = 'invalid pincode';
-        }
-
-        if (!state?.billingAddress?.phone) {
-            newBillingErrMsg.phone = 'required this field';
-        } else if (!phoneRegex.test(state.billingAddress.phone)) {
-            newBillingErrMsg.phone = 'invalid phone number';
-        }
-
-        if (!state?.billingAddress?.email) {
-            newBillingErrMsg.email = 'required this field';
-        } else if (!emailRegex.test(state.billingAddress.email)) {
-            newBillingErrMsg.email = 'invalid email';
-        }
-
-        if (!state?.shippingAddress?.pincode) {
-            newShippingErrMsg.pincode = 'required this field';
-        } else if (!pincodeRegex.test(state.shippingAddress.pincode)) {
-            newShippingErrMsg.pincode = 'invalid pincode';
-        }
-
-        if (!state?.shippingAddress?.phone) {
-            newShippingErrMsg.phone = 'required this field';
-        } else if (!phoneRegex.test(state.shippingAddress.phone)) {
-            newShippingErrMsg.phone = 'invalid phone number';
-        }
-
-        if (!state?.shippingAddress?.email) {
-            newShippingErrMsg.email = 'required this field';
-        } else if (!emailRegex.test(state.shippingAddress.email)) {
-            newShippingErrMsg.email = 'invalid email';
-        }
-        console.log('newshippingerror: ', newShippingErrMsg);
-
-        setShippingErrMsg(newShippingErrMsg);
-        setBillingErrMsg(newBillingErrMsg);
-        if (Object.keys(newShippingErrMsg).length > 0 || Object.keys(newBillingErrMsg).length > 0) {
+        const address = AddressValidation(state);
+        setShippingErrMsg(address.shippingAddress);
+        setBillingErrMsg(address.billingAddress);
+        if (Object.keys(address.shippingAddress).length > 0 || Object.keys(address.billingAddress).length > 0) {
             return;
         }
-
         try {
-            const data = await updateDraftOrder({
+            await updateDraftOrder({
                 variables: {
                     id: orderId,
                     input: {
@@ -807,7 +731,39 @@ export default function Neworder() {
         }
     };
 
-    console.log('state.lineList: ', state.lineList);
+    const handleSearch = async (e) => {
+        try {
+            setState({ search: e });
+            let channel = '';
+            if (channels() == 'INR') {
+                channel = 'india-channel';
+            } else {
+                channel = 'default-channel';
+            }
+            const res = await searchProductRefetch({
+                channel,
+                query: e,
+            });
+            if (e?.length > 0) {
+                setState({ productList: res?.data?.products?.edges?.map((item) => item.node) });
+            } else {
+                const { data } = await productRefetch({
+                    after: null,
+                    first: 100,
+                    query: '',
+                    channel: channels() == 'INR' ? 'india-channel' : 'default-channel',
+                    address: {
+                        country: 'IN',
+                    },
+                });
+
+                const funRes = await productsDropdown(data);
+                setState({ productList: funRes, loading: false });
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
     return (
         <>
             <div className="panel mb-5 flex items-center justify-between gap-3 p-5 ">
@@ -996,7 +952,6 @@ export default function Neworder() {
                                                 name="billing.country"
                                                 value={state.billingAddress?.country}
                                                 onChange={(e) => {
-                                                    console.log('e: ', e.target.value);
                                                     handleChange(e);
                                                     stateRefetch();
                                                 }}
@@ -1021,7 +976,6 @@ export default function Neworder() {
                                                 name="billing.state"
                                                 value={state.billingAddress?.state}
                                                 onChange={(e) => {
-                                                    console.log('e: ', e.target.value);
                                                     handleChange(e);
                                                 }}
                                             >
@@ -1465,7 +1419,6 @@ export default function Neworder() {
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        console.log('item: ', item);
                                                         setState({ editProduct: item, productIsEdit: true, addProductOpen: true, quantity: item?.quantity });
                                                     }}
                                                 >
@@ -1694,51 +1647,54 @@ export default function Neworder() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="overflow-scroll p-5">
+                            <div className="h-[700px] p-5 ">
                                 <div className="p-3">
-                                    <input type="text" className="form-input w-full p-3" placeholder="Search..." value={state.search} onChange={(e) => setState({ search: e.target.value })} />
+                                    <input type="text" className="form-input w-full p-3" placeholder="Search..." value={state.search} onChange={(e) => handleSearch(e.target.value)} />
                                 </div>
-                                {state.productList?.map(({ name, variants, thumbnail }: any) => (
-                                    <div key={name}>
-                                        <div className="flex gap-3">
-                                            <input
-                                                type="checkbox"
-                                                className="form-checkbox"
-                                                checked={state.selectedItems[name] && Object.values(state.selectedItems[name])?.every((value) => value)}
-                                                onChange={() => handleHeadingSelect(name)}
-                                            />
-                                            <img src={thumbnail?.url} height={30} width={30} />
-                                            <div>{name}</div>
+                                <div className="h-[550px] overflow-scroll">
+                                    {/* Product list */}
+                                    {state.productList?.map(({ name, variants, thumbnail }: any) => (
+                                        <div key={name}>
+                                            <div className="flex gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    className="form-checkbox"
+                                                    checked={state.selectedItems[name] && Object.values(state.selectedItems[name])?.every((value) => value)}
+                                                    onChange={() => handleHeadingSelect(name)}
+                                                />
+                                                <img src={profilePic(thumbnail?.url)} height={30} width={30} alt={name} />
+                                                <div>{name}</div>
+                                            </div>
+                                            <ul>
+                                                {variants?.map(({ name: variantName, sku, costPrice, pricing }: any) => (
+                                                    <li key={variantName} style={{ paddingLeft: '10px', padding: '20px' }}>
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="form-checkbox"
+                                                                    checked={state.selectedItems[name]?.[variantName]}
+                                                                    onChange={() => handleSubHeadingSelect(name, variantName)}
+                                                                />
+                                                                <div>
+                                                                    <div> {variantName}</div>
+                                                                    <div> {sku}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex">
+                                                                <div>
+                                                                    <div> {costPrice}</div>
+                                                                    <div> {pricing?.price?.gross?.amount}</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
-                                        <ul>
-                                            {variants?.map(({ name: variantName, sku, costPrice, pricing }: any) => (
-                                                <li key={variantName} style={{ paddingLeft: '10px', padding: '20px' }}>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex">
-                                                            <input
-                                                                type="checkbox"
-                                                                className="form-checkbox"
-                                                                checked={state.selectedItems[name]?.[variantName]}
-                                                                onChange={() => handleSubHeadingSelect(name, variantName)}
-                                                            />
-                                                            <div>
-                                                                <div> {variantName}</div>
-                                                                <div> {sku}</div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex">
-                                                            <div>
-                                                                <div> {costPrice}</div>
-                                                                <div> {pricing?.price?.gross?.amount}</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                ))}
-                                <div className="flex justify-end gap-5">
+                                    ))}
+                                </div>
+                                <div className="flex justify-end gap-5 pt-2">
                                     <button
                                         onClick={() => {
                                             setState({ selectedItems: {}, addProductOpen: false });

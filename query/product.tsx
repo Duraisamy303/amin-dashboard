@@ -75,6 +75,7 @@ export const PRODUCT_LIST = gql`
         updatedAt
         channelListings {
             publishedAt
+            isPublished
             __typename
         }
         __typename
@@ -409,26 +410,33 @@ export const ORDER_LIST = gql`
                         gross {
                             currency
                             amount
+                            __typename
                         }
+                        __typename
                     }
                     user {
                         email
                         firstName
                         lastName
                         id
+                        __typename
                     }
                     updatedAt
                     number
                     paymentStatus
                     status
+                    __typename
                 }
+                __typename
             }
             pageInfo {
                 endCursor
                 hasNextPage
                 hasPreviousPage
                 startCursor
+                __typename
             }
+            __typename
         }
     }
 `;
@@ -5032,7 +5040,7 @@ export const GET_ORDER_DETAILS = gql`
             metadata {
                 key
                 value
-              }
+            }
             ...OrderDetailsWithMetadata
             __typename
             courierPartner {
@@ -7665,6 +7673,38 @@ export const PRODUCT_LIST_TAGS = gql`
     }
 `;
 
+export const SEND_INVOICE = gql`
+    mutation InvoiceEmailSend($id: ID!) {
+        invoiceSendNotification(id: $id) {
+            errors {
+                ...InvoiceError
+                __typename
+            }
+            invoice {
+                ...Invoice
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment InvoiceError on InvoiceError {
+        code
+        field
+        message
+        __typename
+    }
+
+    fragment Invoice on Invoice {
+        id
+        number
+        createdAt
+        url
+        status
+        __typename
+    }
+`;
+
 export const ASSIGN_TAG_PRODUCT = gql`
     mutation UpdateProduct($id: ID!, $input: ProductInput!) {
         productUpdate(id: $id, input: $input) {
@@ -7674,6 +7714,48 @@ export const ASSIGN_TAG_PRODUCT = gql`
                 description
                 tags {
                     name
+                }
+            }
+        }
+    }
+`;
+
+export const PRODUCT_SEARCH = gql`
+    query ProductSearchbyName($query: String!, $channel: String!) {
+        products(first: 100, channel: $channel, search: $query, sortBy: { direction: DESC, field: NAME }) {
+            edges {
+                node {
+                    id
+                    name
+                    defaultVariant {
+                        id
+                        name
+                    }
+                    thumbnail {
+                        url
+                    }
+                    pricing {
+                        priceRange {
+                            start {
+                                gross {
+                                    amount
+                                }
+                            }
+                            stop {
+                                gross {
+                                    amount
+                                }
+                            }
+                        }
+                    }
+                    variants {
+                        id
+                        images {
+                            url
+                            id
+                        }
+                        name
+                    }
                 }
             }
         }
@@ -7695,7 +7777,6 @@ export const FILTER_PRODUCT_LIST = gql`
                         id
                         name
                         sku
-                        costPrice
                         pricing(address: $address) {
                             priceUndiscounted {
                                 gross {

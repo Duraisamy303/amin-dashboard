@@ -118,16 +118,16 @@ export const Failure = (message: string) => {
     });
 };
 
-export const checkChannel = () => {
-    let channel = '';
-    const channels = localStorage.getItem('channel');
-    if (!channels) {
-        channel = 'INR';
-    } else {
-        channel = channels;
-    }
-    return channel;
-};
+// export const checkChannel = () => {
+//     let channel = '';
+//     const channels = localStorage.getItem('channel');
+//     if (!channels) {
+//         channel = 'INR';
+//     } else {
+//         channel = channels;
+//     }
+//     return channel;
+// };
 
 export const sampleParams = {
     after: null,

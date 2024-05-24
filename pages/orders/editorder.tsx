@@ -17,6 +17,7 @@ import {
     MARK_US_PAID,
     ORDER_DISCOUNT_UPDATE,
     ORDER_FULFILL_DATA,
+    SEND_INVOICE,
     SHIPPING_COST_UPDATE,
     SHIPPING_LIST,
     STATES_LIST,
@@ -100,6 +101,7 @@ const Editorder = () => {
     const [updatesInvoice] = useMutation(UPDATE_INVOICE);
     const [createPayslip] = useMutation(CREATE_PAYSLIP);
     const [updatePayslip] = useMutation(UPDATE_PAYSLIP);
+    const [sendInvoice] = useMutation(SEND_INVOICE);
 
     // updateFullfillStatus
 
@@ -212,10 +214,10 @@ const Editorder = () => {
                 setOrderData(orderDetails?.order);
 
                 //Payslip
-                {orderDetails?.order?.metadata?.length>0 &&
-                setSlipDate(mintDateTime(orderDetails?.order?.metadata[0]?.value));
-                setSlipNumber(orderDetails?.order?.metadata[1]?.value);
-            }
+                {
+                    orderDetails?.order?.metadata?.length > 0 && setSlipDate(mintDateTime(orderDetails?.order?.metadata[0]?.value));
+                    setSlipNumber(orderDetails?.order?.metadata[1]?.value);
+                }
 
                 //Status
                 const filteredArray = orderDetails?.order?.events?.filter(
@@ -681,6 +683,20 @@ const Editorder = () => {
             getOrderDetails();
             Success('Payslip updated Successfully');
             setIsOpenPayslip(false);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const invoiceSend = async () => {
+        try {
+            const res = await sendInvoice({
+                variables: {
+                    id: orderData?.invoices[0]?.id,
+                },
+            });
+            Success("Invoice sent Successfully");
+
         } catch (error) {
             console.log('error: ', error);
         }
@@ -1523,8 +1539,8 @@ const Editorder = () => {
                                 <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
                                     <h3 className="text-lg font-semibold">Invoice</h3>
                                     {orderData?.invoices?.length > 0 && (
-                                        <button type="submit" className="btn btn-outline-primary" onClick={() => router.push(orderData?.invoices[0]?.url)}>
-                                            <IconDownload />
+                                        <button type="submit" onClick={() => setOpenInvoice(true)}>
+                                            <IconEdit />
                                         </button>
                                     )}
                                 </div>
@@ -1538,9 +1554,12 @@ const Editorder = () => {
                                             <p>Date</p>
                                             <p>{moment(orderData?.invoices[0]?.createdAt).format('YYYY/MM/DD')}</p>
                                         </div>
-                                        <div className="flex justify-end pt-3">
-                                            <button type="submit" className="btn btn-primary" onClick={() => setOpenInvoice(true)}>
-                                                Update
+                                        <div className="flex justify-between pt-3">
+                                            <button type="submit" className="btn btn-primary" onClick={() => invoiceSend()}>
+                                                Send
+                                            </button>
+                                            <button type="submit" className="btn btn-outline-primary" onClick={() => router.push(orderData?.invoices[0]?.url)}>
+                                                <IconDownload />
                                             </button>
                                         </div>
                                     </div>
@@ -1559,8 +1578,16 @@ const Editorder = () => {
                                     <h3 className="text-lg font-semibold">Payslip</h3>
 
                                     {orderData?.metadata?.length > 0 && (
-                                        <button type="submit" className="btn btn-outline-primary" onClick={() => router.push('http://file.prade.in/' + orderData?.metadata[2]?.value)}>
-                                            <IconDownload />
+                                        <button
+                                            type="submit"
+                                            // className="btn btn-outline-primary"
+                                            onClick={() => {
+                                                setSlipDate(mintDateTime(slipDate));
+                                                setSlipNumber(slipNumber);
+                                                setIsOpenPayslip(true);
+                                            }}
+                                        >
+                                            <IconEdit />
                                         </button>
                                     )}
                                 </div>
@@ -1574,17 +1601,12 @@ const Editorder = () => {
                                             <p>Date</p>
                                             <p>{moment(orderData?.metadata[0]?.value).format('YYYY/MM/DD')}</p>
                                         </div>
-                                        <div className="flex justify-end pt-3">
-                                            <button
-                                                type="submit"
-                                                className="btn btn-primary"
-                                                onClick={() => {
-                                                    setSlipDate(mintDateTime(slipDate));
-                                                    setSlipNumber(slipNumber);
-                                                    setIsOpenPayslip(true);
-                                                }}
-                                            >
-                                                Update
+                                        <div className="flex justify-between pt-3">
+                                            <button type="submit" className="btn btn-primary" onClick={() => setOpenInvoice(true)}>
+                                                Send
+                                            </button>
+                                            <button type="submit" className="btn btn-outline-primary" onClick={() => router.push('http://file.prade.in/' + orderData?.metadata[2]?.value)}>
+                                                <IconDownload />
                                             </button>
                                         </div>
                                     </div>

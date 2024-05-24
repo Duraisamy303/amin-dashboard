@@ -77,7 +77,8 @@ const ProductAdd = () => {
     const [seoDesc, setSeoDesc] = useState('');
 
     const [shortDescription, setShortDescription] = useState('');
-    const [sku, setSku] = useState('');
+
+    const [description, setDescription] = useState('');
     const [quantity, setQuantity] = useState('');
     const [regularPrice, setRegularPrice] = useState('');
     const [selectedCollection, setSelectedCollection] = useState([]);
@@ -130,89 +131,7 @@ const ProductAdd = () => {
 
     // editor start
 
-    const editorRef: any = useRef(null);
     const [editorInstance, setEditorInstance] = useState<any>(null);
-    const [content, setContent] = useState('');
-
-    // const [value2, setValue2] = useState<any>({
-
-    // });
-    // let count = 0;
-    // editor start
-
-    let editors = { isReady: false };
-    useEffect(() => {
-        if (!editors.isReady) {
-            editor();
-            editors.isReady = true;
-        }
-
-        return () => {
-            if (editorInstance) {
-                editorInstance?.blocks?.clear();
-            }
-        };
-    }, []);
-
-    // const editorRef = useRef(null); // Define a ref to hold the editor instance
-
-    const editor = useCallback(() => {
-        // Check if the window object is available and if the editorRef.current is set
-        if (typeof window === 'undefined' || !editorRef.current) return;
-
-        // Ensure only one editor instance is created
-        if (editorInstance) {
-            return;
-        }
-
-        // console.log('value2: ', value2);
-        // Dynamically import the EditorJS module
-        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
-            // Create a new instance of EditorJS with the appropriate configuration
-            const editor = new EditorJS({
-                holder: editorRef.current,
-                //   data: value2,
-                tools: {
-                    // Configure tools as needed
-                    header: {
-                        class: require('@editorjs/header'),
-                    },
-                    list: {
-                        class: require('@editorjs/list'),
-                    },
-                    table: {
-                        class: require('@editorjs/table'),
-                    },
-                },
-            });
-
-            // Set the editorInstance state variable
-            setEditorInstance(editor);
-        });
-
-        // Cleanup function to destroy the current editor instance when the component unmounts
-        return () => {
-            if (editorInstance) {
-                editorInstance?.blocks?.clear();
-            }
-        };
-    }, [editorInstance, value]);
-
-    // editor end
-
-    // const handleSave = async () => {
-    //     if (editorInstance) {
-    //         try {
-    //             const savedContent = await editorInstance.save();
-    //             console.log('Editor content:', savedContent);
-    //             setValue2(JSON.stringify(savedContent, null, 2));
-    //         } catch (error) {
-    //             console.error('Failed to save editor content:', error);
-    //         }
-    //     }
-    // };
-
-    // editor end
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -419,7 +338,6 @@ const ProductAdd = () => {
 
     const selectCat = (cat: any) => {
         setselectedCat(cat);
-        console.log('cat: ', cat);
     };
 
     const selectedCollections = (data: any) => {
@@ -455,9 +373,9 @@ const ProductAdd = () => {
         if (seoDesc.trim() === '') {
             setSeoDescErrMsg('Seo description cannot be empty');
         }
-        // if(description.trim() === '') {
-        //     setDescriptionErrMsg('Description cannot be empty');
-        // }
+        if (description.trim() === '') {
+            setDescriptionErrMsg('Description cannot be empty');
+        }
 
         if (shortDescription?.trim() === '') {
             setShortDesErrMsg('Short description cannot be empty');
@@ -513,11 +431,11 @@ const ProductAdd = () => {
                 }
 
                 if (variant.salePrice < 0) {
-                    errors.salePrice = 'Sale Price cannot be negative';
+                    errors.salePrice = 'Sale price cannot be negative';
                 } else if (isNaN(variant.salePrice)) {
                     errors.salePrice = 'Sale Price must be a number';
                 } else if (variant.regularPrice < variant.salePrice) {
-                    errors.salePrice = 'sale price is greater than Regular price';
+                    errors.salePrice = 'Sale price is greater than Regular price';
                 }
 
                 if (!variant.stackMgmt) {
@@ -530,69 +448,65 @@ const ProductAdd = () => {
             setVariantErrors(newVariantErrors);
         }
 
-        if (editorInstance) {
-            try {
-                const savedContent = await editorInstance.save();
-                console.log('Editor content:', savedContent);
-                // setValue2(savedContent);
-                // console.log('✌️setValue2 --->', value2);
+        try {
+            // const savedContent = await editorInstance.save();
+            // console.log('Editor content:', savedContent);
+            // setValue2(savedContent);
+            // console.log('✌️setValue2 --->', value2);
 
-                const catId = selectedCat?.value;
-                let collectionId: any = [];
-                if (selectedCollection?.length > 0) {
-                    collectionId = selectedCollection.map((item: any) => item.value);
-                }
-
-                console.log('savedContent', savedContent);
-
-                const formattedDescription = JSON.stringify(savedContent);
-
-                let tagId: any[] = [];
-                // if (selectedCollection?.length > 0) {
-                tagId = selectedTag?.map((item: any) => item.value);
-
-                const { data } = await addFormData({
-                    variables: {
-                        input: {
-                            attributes: [],
-                            category: catId,
-                            collections: collectionId,
-                            tags: tagId,
-                            description: formattedDescription,
-                            name: productName,
-                            productType: 'UHJvZHVjdFR5cGU6Mg==',
-                            seo: {
-                                description: seoDesc,
-                                title: seoTittle,
-                            },
-                            slug: slug,
-                            ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                            ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
-                            ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
-                            ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
-                            ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
-                        },
-                    },
-                });
-
-                if (data?.productCreate?.errors?.length > 0) {
-                    console.log('error: ', data?.productCreate?.errors[0]?.message);
-                } else {
-                    console.log('CreateProduct: ', data);
-                    const productId = data?.productCreate?.product?.id;
-                    productChannelListUpdate(productId);
-                    if (images?.length > 0) {
-                        images?.map((item: any) => {
-                            const imageUpload = uploadImage(productId, item);
-                            console.log('imageUpload: ', imageUpload);
-                        });
-                    }
-                }
-            } catch (error) {
-                console.log('error: ', error);
+            const catId = selectedCat?.value;
+            let collectionId: any = [];
+            if (selectedCollection?.length > 0) {
+                collectionId = selectedCollection.map((item: any) => item.value);
             }
-        } else {
-            console.error('Failed to save editor content');
+
+            // console.log('savedContent', savedContent);
+
+            // const formattedDescription = JSON.stringify(savedContent);
+
+            let tagId: any[] = [];
+            // if (selectedCollection?.length > 0) {
+            tagId = selectedTag?.map((item: any) => item.value);
+
+            const { data } = await addFormData({
+                variables: {
+                    input: {
+                        attributes: [],
+                        category: catId,
+                        collections: collectionId,
+                        tags: tagId,
+                        // description: formattedDescription,
+                        name: productName,
+                        productType: 'UHJvZHVjdFR5cGU6Mg==',
+                        seo: {
+                            description: seoDesc,
+                            title: seoTittle,
+                        },
+                        slug: slug,
+                        ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                        ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
+                        ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
+                        ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
+                        ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
+                    },
+                },
+            });
+
+            if (data?.productCreate?.errors?.length > 0) {
+                console.log('error: ', data?.productCreate?.errors[0]?.message);
+            } else {
+                console.log('CreateProduct: ', data);
+                const productId = data?.productCreate?.product?.id;
+                productChannelListUpdate(productId);
+                if (images?.length > 0) {
+                    images?.map((item: any) => {
+                        const imageUpload = uploadImage(productId, item);
+                        console.log('imageUpload: ', imageUpload);
+                    });
+                }
+            }
+        } catch (error) {
+            console.log('error: ', error);
         }
     };
 
@@ -684,6 +598,10 @@ const ProductAdd = () => {
                         {
                             key: 'label',
                             value: label.value,
+                        },
+                        {
+                            key: 'description',
+                            value: description,
                         },
                     ],
                     keysToDelete: [],
@@ -852,25 +770,21 @@ const ProductAdd = () => {
                             ></textarea>
                             {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
                         </div>
-                        {/* <div className="panel mb-5">
-                            <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
-                                Product description
-                            </label>
-                            <ReactQuill id="editor" theme="snow" value={value} onChange={setValue} />
-                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
-                        </div> */}
+
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
-                            <div ref={editorRef} className="mb-5 border border-gray-200">
-                                {/* <div dangerouslySetInnerHTML={{ __html: value2?.blocks.map((block: any) => block.data.html).join('') }} /> */}
-                            </div>
+                            <textarea
+                                id="ctnTextarea"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={3}
+                                className="form-textarea"
+                                placeholder="Enter Description"
+                                required
+                            ></textarea>
                             {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
-                            {/* <p>Editor content: {content}</p> */}
-                            {/* <button onClick={handleSave} className="btn btn-primary">
-                                Save
-                            </button> */}
                         </div>
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">

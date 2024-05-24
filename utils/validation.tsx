@@ -32,3 +32,61 @@ export const billingValidation = Yup.object().shape({
 //     paymentMethod: Yup.string().required('PaymentMethod is required'),
 //     transactionId: Yup.string().required('TransactionId is required'),
 // }),
+
+export const AddressValidation = (state: any) => {
+    let newBillingErrMsg: any = {};
+    let newShippingErrMsg: any = {};
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[0-9]{10,15}$/;
+    const pincodeRegex = /^[0-9]{5,10}$/;
+
+    const requiredFields = ['firstName', 'lastName', 'company', 'address_1', 'address_2', 'city', 'state', 'country'];
+
+    requiredFields.forEach((field) => {
+        if (!state?.billingAddress?.[field]) {
+            newBillingErrMsg[field] = 'Required this field';
+        }
+        if (!state?.shippingAddress?.[field]) {
+            newShippingErrMsg[field] = 'Required this field';
+        }
+    });
+
+    if (!state?.billingAddress?.pincode) {
+        newBillingErrMsg.pincode = 'Required this field';
+    } else if (!pincodeRegex.test(state.billingAddress.pincode)) {
+        newBillingErrMsg.pincode = 'invalid pincode';
+    }
+
+    if (!state?.billingAddress?.phone) {
+        newBillingErrMsg.phone = 'Required this field';
+    } else if (!phoneRegex.test(state.billingAddress.phone)) {
+        newBillingErrMsg.phone = 'invalid phone number';
+    }
+
+    if (!state?.billingAddress?.email) {
+        newBillingErrMsg.email = 'Required this field';
+    } else if (!emailRegex.test(state.billingAddress.email)) {
+        newBillingErrMsg.email = 'invalid email';
+    }
+
+    if (!state?.shippingAddress?.pincode) {
+        newShippingErrMsg.pincode = 'Required this field';
+    } else if (!pincodeRegex.test(state.shippingAddress.pincode)) {
+        newShippingErrMsg.pincode = 'invalid pincode';
+    }
+
+    if (!state?.shippingAddress?.phone) {
+        newShippingErrMsg.phone = 'Required this field';
+    } else if (!phoneRegex.test(state.shippingAddress.phone)) {
+        newShippingErrMsg.phone = 'invalid phone number';
+    }
+
+    if (!state?.shippingAddress?.email) {
+        newShippingErrMsg.email = 'Required this field';
+    } else if (!emailRegex.test(state.shippingAddress.email)) {
+        newShippingErrMsg.email = 'invalid email';
+    }
+    console.log('newshippingerror: ', newShippingErrMsg);
+    return { billingAddress: newBillingErrMsg, shippingAddress: newShippingErrMsg };
+};
