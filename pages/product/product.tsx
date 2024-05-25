@@ -28,13 +28,14 @@ import IconEdit from '@/components/Icon/IconEdit';
 import { useMutation, useQuery } from '@apollo/client';
 import { DELETE_PRODUCTS, PRODUCT_LIST, PARENT_CATEGORY_LIST, CATEGORY_FILTER_LIST } from '@/query/product';
 import moment from 'moment';
+import { formatCurrency, roundOff } from '@/utils/functions';
 
 const ProductList = () => {
     const router = useRouter();
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const { error, data: productData } = useQuery(PRODUCT_LIST, {
-        variables: { channel: 'india-channel', first: 100 }, // Pass variables here
+        variables: { channel: 'india-channel', first: 100, direction: 'DESC', field: 'CREATED_AT' }, // Pass variables here
     });
 
     const [productList, setProductList] = useState([]);
@@ -52,12 +53,15 @@ const ProductList = () => {
                     ...item.node,
                     product: item?.node?.products?.totalCount,
                     image: item?.node?.thumbnail?.url,
-                    categories: item?.node?.category?.name,
+                    categories: item?.node?.category?.name?item?.node?.category?.name:"-",
                     date: item?.node?.updatedAt
                         ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
                         : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
-                    price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                    price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
+                    sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
+                    tags: item?.node?.tags?.length>0 ?item?.node?.tags?.map((item)=>item.name)?.join(","):"-",
+
 
                 }));
                 // const sorting: any = sortBy(newData, 'id');
@@ -130,6 +134,8 @@ const ProductList = () => {
                     // item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
                     item.name.toLowerCase().includes(search.toLowerCase()) ||
+                    item.sku.toLowerCase().includes(search.toLowerCase()) ||
+
                     item.status.toLowerCase().includes(search.toLowerCase()) ||
                     // item.stock.toLowerCase().includes(search.toLowerCase()) ||
                     // item.price.toString().includes(search.toLowerCase()) ||
@@ -184,13 +190,18 @@ const ProductList = () => {
                     ...item.node,
                     product: item?.node?.products?.totalCount,
                     image: item?.node?.thumbnail?.url,
-                    categories: item?.node?.category?.name,
+                    categories: item?.node?.category?.name?item?.node?.category?.name:"-",
                     date: item?.node?.updatedAt
                         ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
                         : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
-                    price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                    // price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                    price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
+                    status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
+                    sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
+                    tags: item?.node?.tags?.length>0 ?item?.node?.tags?.map((item)=>item.name)?.join(","):"-",
+                    // shipmentTracking: item?.node?.shipments?.length>0?item
                 }));
-                console.log("newData: ", newData);
+                console.log('newData: ', newData);
 
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
@@ -438,11 +449,11 @@ const ProductList = () => {
                             { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                             { accessor: 'name', sortable: true },
 
-                            // { accessor: 'sku', sortable: true },
+                            { accessor: 'sku', sortable: true },
                             { accessor: 'status', sortable: true },
                             { accessor: 'price', sortable: true },
-                            // { accessor: 'categories', sortable: true },
-                            // { accessor: 'tags', sortable: true },
+                            { accessor: 'categories', sortable: true },
+                            // { accessor: 'tags', sortable: true ,cellsStyle:{width:"100%",flexWrap:"wrap"}},
                             { accessor: 'date', sortable: true },
                             {
                                 // Custom column for actions

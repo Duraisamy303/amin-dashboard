@@ -32,7 +32,7 @@ import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useMutation } from '@apollo/client';
-import { Failure, NotesMsg, Success, channels, formatCurrency, getCurrentDateTime, mintDateTime, profilePic, sampleParams, showDeleteAlert } from '@/utils/functions';
+import { Failure, NotesMsg, Success, addCommasToNumber, channels, formatCurrency, getCurrentDateTime, mintDateTime, profilePic, roundOff, sampleParams, showDeleteAlert } from '@/utils/functions';
 import Swal from 'sweetalert2';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconX from '@/components/Icon/IconX';
@@ -41,6 +41,7 @@ import IconEdit from '@/components/Icon/IconEdit';
 import Modal from '@/components/Modal';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import IconDownload from '@/components/Icon/IconDownload';
+import IconLoader from '@/components/Icon/IconLoader';
 
 const Editorder = () => {
     const router = useRouter();
@@ -131,7 +132,6 @@ const Editorder = () => {
     });
 
     const [orderData, setOrderData] = useState({});
-    console.log('orderData: ', orderData?.invoices);
     const [discountOpen, setDiscountOpen] = useState(false);
     const [openInvoice, setOpenInvoice] = useState(false);
 
@@ -171,6 +171,8 @@ const Editorder = () => {
     const [stateList, setStateList] = useState([]);
 
     const [loading, setLoading] = useState(false);
+    const [confirmLoading, setConfirmLoading] = useState(false);
+
     const [isOpenPayslip, setIsOpenPayslip] = useState(false);
     const [slipNumber, setSlipNumber] = useState('');
     const [slipDate, setSlipDate] = useState('');
@@ -612,12 +614,14 @@ const Editorder = () => {
 
     const confirmOrder = async (country?: any) => {
         try {
+            setConfirmLoading(true);
             const res = await confirmNewOrder({
                 variables: {
                     id: id,
                 },
             });
             getOrderDetails();
+            setConfirmLoading(false);
             Success('Order Confirmed Successfully');
         } catch (error) {
             console.log('error: ', error);
@@ -695,8 +699,7 @@ const Editorder = () => {
                     id: orderData?.invoices[0]?.id,
                 },
             });
-            Success("Invoice sent Successfully");
-
+            Success('Invoice sent Successfully');
         } catch (error) {
             console.log('error: ', error);
         }
@@ -721,7 +724,7 @@ const Editorder = () => {
                                     <h3 className="text-lg font-semibold">{`Order #${orderData?.number} Details`}</h3>
                                     {orderStatus == 'UNCONFIRMED' && (
                                         <button type="submit" className="btn btn-outline-primary" onClick={() => confirmOrder()}>
-                                            Order Confirm
+                                            {confirmLoading ? <IconLoader /> : ' Order Confirm'}
                                         </button>
                                     )}
                                     {/* <p className=" pt-1 text-gray-500">Payment via Cash on delivery. Customer IP: 122.178.161.16</p> */}
@@ -1344,15 +1347,18 @@ const Editorder = () => {
                                                         <td>
                                                             <img src={item?.thumbnail?.url} height={100} width={100} alt="Selected" className="object-cover" />
                                                         </td>
-                                                        <td>
+                                                        <td>{`${formatCurrency(item?.unitPrice?.gross?.currency)}${addCommasToNumber(item?.unitPrice?.gross?.amount)}`} </td>
+
+                                                        {/* <td>
                                                             {formatCurrency(item?.unitPrice?.gross?.currency)}
                                                             {item?.unitPrice?.gross?.amount}
-                                                        </td>
+                                                        </td> */}
                                                         <td>
                                                             <div>{item?.quantity}</div>
                                                         </td>
                                                         <td>
-                                                            <div>{`${formatCurrency(item?.totalPrice?.gross?.currency)}${item?.totalPrice?.gross?.amount}`}</div>
+                                                            <div> {`${formatCurrency(item?.totalPrice?.gross?.currency)}${addCommasToNumber(item?.totalPrice?.gross?.amount)}`}</div>{' '}
+                                                            {/* <div>{`${formatCurrency(item?.totalPrice?.gross?.currency)}${item?.totalPrice?.gross?.amount}`}</div> */}
                                                         </td>
                                                         {/* <td>
                                                             <button
@@ -1381,7 +1387,7 @@ const Editorder = () => {
                                     <div className="sm:w-2/5">
                                         <div className="flex items-center justify-between">
                                             <div>Subtotal</div>
-                                            <div>{orderData?.subtotal?.gross?.amount}</div>
+                                            <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount)}`}</div>
                                         </div>
                                         {formData?.billing?.state !== '' &&
                                             (formData?.shipping?.state == 'Tamil Nadu' ? (
@@ -1389,13 +1395,17 @@ const Editorder = () => {
                                                     <div className="mt-4 flex items-center justify-between">
                                                         <div>SGST</div>
                                                         <div>
-                                                            {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2}
+                                                            <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
+
+                                                            {/* {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2} */}
                                                         </div>
                                                     </div>
                                                     <div className="mt-4 flex items-center justify-between">
                                                         <div>CSGT</div>
                                                         <div>
-                                                            {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2}
+                                                            <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
+
+                                                            {/* {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2} */}
                                                         </div>
                                                     </div>
                                                 </>
@@ -1403,7 +1413,9 @@ const Editorder = () => {
                                                 <div className="mt-4 flex items-center justify-between">
                                                     <div>IGST</div>
                                                     <div>
-                                                        {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount}
+                                                        <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount)}`}</div>
+
+                                                        {/* {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount} */}
                                                     </div>
                                                 </div>
                                             ))}
@@ -1414,7 +1426,9 @@ const Editorder = () => {
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Shipping Rate</div>
                                             <div>
-                                                {orderData?.shippingPrice?.gross?.currency} {orderData?.shippingPrice?.gross?.amount}
+                                                <div>{`${formatCurrency(orderData?.shippingPrice?.gross?.currency)}${addCommasToNumber(orderData?.shippingPrice?.gross?.amount)}`}</div>
+
+                                                {/* {orderData?.shippingPrice?.gross?.currency} {orderData?.shippingPrice?.gross?.amount} */}
                                             </div>
                                             {/* <div>{orderData?.shippingPrice?.gross?.amount}</div> */}
                                             {/* <div className="cursor-pointer" onClick={() => setShippingOpen(true)}>
@@ -1429,7 +1443,9 @@ const Editorder = () => {
                                         )}
                                         <div className="mt-4 flex items-center justify-between font-semibold">
                                             <div>Total</div>
-                                            <div>{orderData?.total?.gross?.amount}</div>
+                                            <div>{`${formatCurrency(orderData?.total?.gross?.currency)}${addCommasToNumber(orderData?.total?.gross?.amount)}`}</div>
+
+                                            {/* <div>{orderData?.total?.gross?.amount}</div> */}
                                         </div>
                                     </div>
                                 </div>
@@ -1535,44 +1551,7 @@ const Editorder = () => {
                                     )}
                                 </Formik>
                             </div>
-                            <div className="panel max-h-[810px]  overflow-y-auto p-5">
-                                <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
-                                    <h3 className="text-lg font-semibold">Invoice</h3>
-                                    {orderData?.invoices?.length > 0 && (
-                                        <button type="submit" onClick={() => setOpenInvoice(true)}>
-                                            <IconEdit />
-                                        </button>
-                                    )}
-                                </div>
-                                {orderData?.invoices?.length > 0 ? (
-                                    <div className="pt-4">
-                                        <div className="flex justify-between">
-                                            <p>Number</p>
-                                            <p>{orderData?.invoices[0]?.number}</p>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <p>Date</p>
-                                            <p>{moment(orderData?.invoices[0]?.createdAt).format('YYYY/MM/DD')}</p>
-                                        </div>
-                                        <div className="flex justify-between pt-3">
-                                            <button type="submit" className="btn btn-primary" onClick={() => invoiceSend()}>
-                                                Send
-                                            </button>
-                                            <button type="submit" className="btn btn-outline-primary" onClick={() => router.push(orderData?.invoices[0]?.url)}>
-                                                <IconDownload />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    orderStatus == 'FULFILLED' && (
-                                        <div className="flex justify-end">
-                                            <button type="submit" className="btn btn-primary" onClick={() => generateInvoice()}>
-                                                Generate
-                                            </button>
-                                        </div>
-                                    )
-                                )}
-                            </div>
+
                             <div className="panel max-h-[810px]  overflow-y-auto p-5">
                                 <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
                                     <h3 className="text-lg font-semibold">Payslip</h3>
@@ -1614,6 +1593,45 @@ const Editorder = () => {
                                     orderStatus == 'FULFILLED' && (
                                         <div className="flex justify-end">
                                             <button type="submit" className="btn btn-primary" onClick={() => setIsOpenPayslip(true)}>
+                                                Generate
+                                            </button>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+
+                            <div className="panel max-h-[810px]  overflow-y-auto p-5">
+                                <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
+                                    <h3 className="text-lg font-semibold">Invoice</h3>
+                                    {orderData?.invoices?.length > 0 && (
+                                        <button type="submit" onClick={() => setOpenInvoice(true)}>
+                                            <IconEdit />
+                                        </button>
+                                    )}
+                                </div>
+                                {orderData?.invoices?.length > 0 ? (
+                                    <div className="pt-4">
+                                        <div className="flex justify-between">
+                                            <p>Number</p>
+                                            <p>{orderData?.invoices[0]?.number}</p>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <p>Date</p>
+                                            <p>{moment(orderData?.invoices[0]?.createdAt).format('YYYY/MM/DD')}</p>
+                                        </div>
+                                        <div className="flex justify-between pt-3">
+                                            <button type="submit" className="btn btn-primary" onClick={() => invoiceSend()}>
+                                                Send
+                                            </button>
+                                            <button type="submit" className="btn btn-outline-primary" onClick={() => router.push(orderData?.invoices[0]?.url)}>
+                                                <IconDownload />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    orderStatus == 'FULFILLED' && (
+                                        <div className="flex justify-end">
+                                            <button type="submit" className="btn btn-primary" onClick={() => generateInvoice()}>
                                                 Generate
                                             </button>
                                         </div>
@@ -1767,7 +1785,8 @@ const Editorder = () => {
                                 <input type="text" className="form-input" placeholder="Reference" value={invoiceNumber} onChange={(e: any) => setInvoiceNumber(e.target.value)} />
                                 <input
                                     type="datetime-local"
-                                    min={getCurrentDateTime()}
+                                    min={mintDateTime(slipDate) || getCurrentDateTime()}
+                                    max={getCurrentDateTime()}
                                     value={moment(invoiceDate).format('YYYY-MM-DDTHH:mm')}
                                     onChange={(e) => setInvoiceDate(e.target.value)}
                                     id="dateTimeCreated"
@@ -1854,9 +1873,10 @@ const Editorder = () => {
                                                     <td>{item?.productName}</td>
 
                                                     <td>
-                                                        <img src={profilePic(item?.thumbnail?.url)} height={100} alt="Selected" className="object-cover" />
+                                                        <img src={profilePic(item?.thumbnail?.url)} height={80} alt="Selected" className="object-cover" />
                                                     </td>
                                                     <td>{item?.variant?.sku}</td>
+
                                                     <td>
                                                         <div>{item?.quantity}</div>
                                                     </td>

@@ -1,12 +1,16 @@
 import { gql } from '@apollo/client';
 
 export const PRODUCT_LIST = gql`
-    query ProductListPaginated($channel: String!, $first: Int!, $after: String) {
-        products(first: $first, after: $after, channel: $channel) {
+    query ProductListPaginated($channel: String!, $first: Int!, $after: String, $direction: OrderDirection!, $field: ProductOrderField!) {
+        products(first: $first, after: $after, channel: $channel, sortBy: { direction: $direction, field: $field }) {
             totalCount
             edges {
                 node {
                     ...ProductListItem
+                    tags {
+                        name
+                        id
+                      }
                     __typename
                 }
                 cursor
@@ -65,7 +69,11 @@ export const PRODUCT_LIST = gql`
         }
         variants {
             id
+            sku
             __typename
+        }
+        defaultVariant {
+            sku
         }
         images {
             url
@@ -401,8 +409,8 @@ export const DELETE_STYLE = gql`
 `;
 
 export const ORDER_LIST = gql`
-    query GetOrdersList {
-        orders(first: 1000) {
+    query GetOrdersList($first: Int!, $direction: OrderDirection!, $field: OrderSortField!) {
+        orders(first: $first, sortBy: { direction: $direction, field: $field }) {
             edges {
                 node {
                     id
@@ -425,6 +433,12 @@ export const ORDER_LIST = gql`
                     number
                     paymentStatus
                     status
+                    invoices {
+                        id
+                        number
+                        createdAt
+                        url
+                      }
                     __typename
                 }
                 __typename
@@ -11425,6 +11439,7 @@ export const CATEGORY_FILTER_LIST = gql`
         updatedAt
         channelListings {
             publishedAt
+            isPublished
             __typename
         }
         __typename

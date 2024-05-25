@@ -25,7 +25,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 import Modal from '@/components/Modal';
-import { OrderStatus, PaymentStatus, downloadExlcel, formatCurrency, getCurrentDateTime, handleExportByChange, mintDateTime, showDeleteAlert, useSetState } from '@/utils/functions';
+import { OrderStatus, PaymentStatus, addCommasToNumber, downloadExlcel, formatCurrency, getCurrentDateTime, handleExportByChange, mintDateTime, showDeleteAlert, useSetState } from '@/utils/functions';
 import dayjs from 'dayjs';
 
 const Orders = () => {
@@ -58,40 +58,9 @@ const Orders = () => {
     const router = useRouter();
     const variables = {
         first: 100,
-        filter: {
-            created: null,
-        },
-        sort: {
-            direction: 'DESC',
-            field: 'NUMBER',
-        },
-        PERMISSION_HANDLE_CHECKOUTS: true,
-        PERMISSION_HANDLE_PAYMENTS: true,
-        PERMISSION_HANDLE_TAXES: true,
-        PERMISSION_IMPERSONATE_USER: true,
-        PERMISSION_MANAGE_APPS: true,
-        PERMISSION_MANAGE_CHANNELS: true,
-        PERMISSION_MANAGE_CHECKOUTS: true,
-        PERMISSION_MANAGE_DISCOUNTS: true,
-        PERMISSION_MANAGE_GIFT_CARD: true,
-        PERMISSION_MANAGE_MENUS: true,
-        PERMISSION_MANAGE_OBSERVABILITY: true,
-        PERMISSION_MANAGE_ORDERS: true,
-        PERMISSION_MANAGE_ORDERS_IMPORT: true,
-        PERMISSION_MANAGE_PAGES: true,
-        PERMISSION_MANAGE_PAGE_TYPES_AND_ATTRIBUTES: true,
-        PERMISSION_MANAGE_PLUGINS: true,
-        PERMISSION_MANAGE_PRODUCTS: true,
-        PERMISSION_MANAGE_PRODUCT_TYPES_AND_ATTRIBUTES: true,
-        PERMISSION_MANAGE_SETTINGS: true,
-        PERMISSION_MANAGE_SHIPPING: true,
-        PERMISSION_MANAGE_STAFF: true,
-        PERMISSION_MANAGE_TAXES: true,
-        PERMISSION_MANAGE_TRANSLATIONS: true,
-        PERMISSION_MANAGE_USERS: true,
+        direction: 'DESC',
+        field: 'CREATED_AT',
     };
-
-    console.log('variables: ', variables);
 
     const { data: finishData } = useQuery(ORDER_LIST, { variables });
 
@@ -137,17 +106,12 @@ const Orders = () => {
     }, [finishList]);
 
     // Log initialRecords when it changes
-    useEffect(() => {
-        console.log('initialRecords: ', initialRecords);
-    }, [initialRecords]);
+    useEffect(() => {}, [initialRecords]);
 
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
 
     const [search, setSearch] = useState('');
-    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
-        columnAccessor: 'id',
-        direction: 'asc',
-    });
+    const [sortStatus, setSortStatus] = useState({});
 
     const [modal1, setModal1] = useState(false);
     const [modalTitle, setModalTitle] = useState(null);
@@ -176,14 +140,12 @@ const Orders = () => {
     useEffect(() => {
         setInitialRecords(() => {
             return finishList?.filter((item: any) => {
-                return (
-                    item.id.toString().includes(search.toLowerCase()) ||
-                    // item.image.toLowerCase().includes(search.toLowerCase()) ||
-                    item.order.toLowerCase().includes(search.toLowerCase())
-                    // item.description.toLowerCase().includes(search.toLowerCase()) ||
-                    // item.slug.toLowerCase().includes(search.toLowerCase()) ||
-                    // item.count.toString().includes(search.toLowerCase())
-                );
+                return item?.id.toString()?.includes(search.toLowerCase()) ||
+                // item.image.toLowerCase().includes(search.toLowerCase()) ||
+               item?.order.toLowerCase()?.includes(search.toLowerCase())
+                // item.description.toLowerCase().includes(search.toLowerCase()) ||
+                // item.slug.toLowerCase().includes(search.toLowerCase()) ||
+                // item.count.toString().includes(search.toLowerCase())
             });
         });
     }, [search]);
@@ -213,10 +175,8 @@ const Orders = () => {
             };
 
             const { data } = await (modalTitle ? updateOrder({ variables: { ...variables, id: modalContant.id } }) : addOrder({ variables }));
-            console.log('data: ', data);
 
             const newData = modalTitle ? data?.productFinishUpdate?.productFinish : data?.productFinishCreate?.productFinish;
-            console.log('newData: ', newData);
 
             if (!newData) {
                 console.error('Error: New data is undefined.');
@@ -370,9 +330,11 @@ const Orders = () => {
             ...item.node,
             order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
             date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
-            total: `${formatCurrency(item?.node?.total.gross.currency)}${item?.node?.total.gross.amount}`,
+            total: `${formatCurrency(item?.node?.total.gross.currency)}${addCommasToNumber(item?.node?.total.gross.amount)}`,
             status: OrderStatus(item?.node?.status),
             paymentStatus: PaymentStatus(item?.node?.paymentStatus),
+            invoice:item?.node?.invoices?.length>0?item?.node?.invoices[0]?.number:"-",
+
         }));
         setFinishList(newData);
         setAllData(res);
@@ -539,6 +501,9 @@ const Orders = () => {
                                 // { accessor: 'id', sortable: true },
                                 // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                                 { accessor: 'order', sortable: true },
+                                { accessor: 'invoice', sortable: true,title:"Invoice Number" },
+
+                            
                                 { accessor: 'date', sortable: true },
                                 { accessor: 'status', sortable: true, title: 'Order status' },
                                 { accessor: 'paymentStatus', sortable: true, title: 'Payment status' },

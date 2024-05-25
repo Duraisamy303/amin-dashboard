@@ -28,8 +28,10 @@ import {
     NotesMsg,
     Success,
     UserDropdownData,
+    addCommasToNumber,
     billingAddress,
     checkChannel,
+    formatCurrency,
     isEmptyObject,
     objIsEmpty,
     profilePic,
@@ -446,9 +448,9 @@ export default function Neworder() {
                     input,
                 },
             });
-
-            Success('New Product Added Successfully');
+            updateShippingAmount();
             getOrderData();
+            Success('New Product Added Successfully');
             setState({ addProductOpen: false });
         } catch (error) {
             console.log('error: ', error);
@@ -547,7 +549,6 @@ export default function Neworder() {
             setFixedErrMsg('Please Enter Fixed Value');
         }
         try {
-
             const res = await updateCoupenAmt({
                 variables: {
                     discountId: productDetails?.order?.discounts[0]?.id,
@@ -561,7 +562,6 @@ export default function Neworder() {
             });
             getOrderData();
             setState({ selectedOption: 'percentage', isOpenCoupen: false, percentcoupenValue: '', fixedcoupenValue: '' });
-
         } catch (error) {
             console.log('error: ', error);
         }
@@ -726,6 +726,7 @@ export default function Neworder() {
             });
             updateShippingAmount();
             getOrderData();
+            Success('Address updated successfully');
         } catch (error) {
             console.log('error: ', error);
         }
@@ -1402,18 +1403,21 @@ export default function Neworder() {
                                         <tr className="align-top" key={index}>
                                             <td>{item?.productName}</td>
                                             <td>
-                                                <img src={profilePic(item?.thumbnail?.url)} />
+                                                <img src={profilePic(item?.thumbnail?.url)} height={80} width={80} />
                                             </td>
                                             <td>{item?.productSku}</td>
+                                            <td>{`${formatCurrency(item?.unitPrice?.gross?.currency)}${addCommasToNumber(item?.unitPrice?.gross?.amount)}`} </td>
 
-                                            <td>
-                                                {item?.totalPrice?.gross?.currency} {item?.totalPrice?.gross?.amount}
-                                            </td>
+                                            {/* <td>
+                                                  
+                                                {item?.unitPrice?.gross?.currency} {item?.unitPrice?.gross?.amount}
+                                            </td> */}
                                             <td>{item?.quantity}</td>
+                                            <td>{`${formatCurrency(item?.totalPrice?.gross?.currency)}${addCommasToNumber(item?.totalPrice?.gross?.amount)}`} </td>
 
-                                            <td>
+                                            {/* <td>
                                                 {item?.totalPrice?.gross?.currency} {item?.totalPrice?.gross?.amount}
-                                            </td>
+                                            </td> */}
 
                                             <td>
                                                 <button
@@ -1439,7 +1443,9 @@ export default function Neworder() {
                                 <div className="flex items-center justify-between">
                                     <div>Subtotal</div>
                                     <div>
-                                        {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount}
+                                        {`${formatCurrency(productDetails?.order?.subtotal?.gross?.currency)}${addCommasToNumber(productDetails?.order?.total?.gross?.amount)}`}
+
+                                        {/* {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount} */}
                                     </div>
                                 </div>
                                 {state.shippingAddress?.state !== '' &&
@@ -1448,13 +1454,17 @@ export default function Neworder() {
                                             <div className="mt-4 flex items-center justify-between">
                                                 <div>SGST</div>
                                                 <div>
-                                                    {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount}
+                                                    {`${formatCurrency(productDetails?.order?.subtotal?.gross?.currency)}${addCommasToNumber(productDetails?.order?.subtotal?.gross?.amount / 2)}`}
+
+                                                    {/* {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount} */}
                                                 </div>
                                             </div>
                                             <div className="mt-4 flex items-center justify-between">
                                                 <div>CSGT</div>
                                                 <div>
-                                                    {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount}
+                                                    {`${formatCurrency(productDetails?.order?.subtotal?.gross?.currency)}${addCommasToNumber(productDetails?.order?.subtotal?.gross?.amount / 2)}`}
+
+                                                    {/* {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount} */}
                                                 </div>
                                             </div>
                                         </>
@@ -1462,7 +1472,11 @@ export default function Neworder() {
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>IGST</div>
                                             <div>
-                                                {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount}
+                                                {`${formatCurrency(productDetails?.order?.subtotal?.gross?.currency)}${addCommasToNumber(productDetails?.order?.subtotal?.gross?.amount)}`}
+
+                                                {/* {`${formatCurrency(productDetails?.order?.subtotal?.gross?.currency)}${addCommasToNumber(productDetails?.subtotal?.total?.gross?.amount)}`} */}
+
+                                                {/* {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount} */}
                                             </div>
                                         </div>
                                     ))}
@@ -1471,7 +1485,11 @@ export default function Neworder() {
                                     <div className="mt-4 flex items-center justify-between">
                                         <div>Shipping Rate</div>
                                         <div>
-                                            {productDetails?.order?.shippingMethods[0]?.price?.currency} {productDetails?.order?.shippingMethods[0]?.price?.amount}
+                                            {`${formatCurrency(productDetails?.order?.shippingMethods[0]?.price?.currency)}${addCommasToNumber(
+                                                productDetails?.order?.shippingMethods[0]?.price?.amount
+                                            )}`}
+
+                                            {/* {productDetails?.order?.shippingMethods[0]?.price?.currency} {productDetails?.order?.shippingMethods[0]?.price?.amount} */}
                                         </div>
                                     </div>
                                 )}
@@ -1480,16 +1498,26 @@ export default function Neworder() {
                                     <div className="mt-4 flex items-center justify-between">
                                         <div>Discount</div>
                                         {productDetails?.order?.discounts[0]?.calculationMode == 'PERCENTAGE' ? (
-                                            <div>{`(${productDetails?.order?.discounts[0]?.value}%) ${productDetails?.order?.discounts[0]?.amount?.currency} ${productDetails?.order?.discounts[0]?.amount?.amount} `}</div>
+                                            <div>
+                                                {`${`(${productDetails?.order?.discounts[0]?.value}%)`} ${formatCurrency(productDetails?.order?.discounts[0]?.amount?.currency)}${addCommasToNumber(
+                                                    productDetails?.order?.discounts[0]?.amount?.amount
+                                                )}`}
+                                            </div>
                                         ) : (
-                                            <div>{`${productDetails?.order?.discounts[0]?.amount?.currency} ${productDetails?.order?.discounts[0]?.amount?.amount}`}</div>
+                                            <div>{`${formatCurrency(productDetails?.order?.discounts[0]?.amount?.currency)}${addCommasToNumber(
+                                                productDetails?.order?.discounts[0]?.amount?.amount
+                                            )}`}</div>
+                                            // <div>{`(${productDetails?.order?.discounts[0]?.value}%) ${productDetails?.order?.discounts[0]?.amount?.currency} ${productDetails?.order?.discounts[0]?.amount?.amount} `}</div>
+                                            // <div>{`${productDetails?.order?.discounts[0]?.amount?.currency} ${productDetails?.order?.discounts[0]?.amount?.amount}`}</div>
                                         )}
                                     </div>
                                 )}
                                 <div className="mt-4 flex items-center justify-between font-semibold">
                                     <div>Total</div>
                                     <div>
-                                        {productDetails?.order?.total?.gross?.currency} {productDetails?.order?.total?.gross?.amount}
+                                        {`${formatCurrency(productDetails?.order?.total?.gross?.currency)}${addCommasToNumber(productDetails?.order?.total?.gross?.amount)}`}
+
+                                        {/* {productDetails?.order?.total?.gross?.currency} {productDetails?.order?.total?.gross?.amount} */}
                                     </div>
                                 </div>
                             </div>
@@ -1684,7 +1712,9 @@ export default function Neworder() {
                                                             <div className="flex">
                                                                 <div>
                                                                     <div> {costPrice}</div>
-                                                                    <div> {pricing?.price?.gross?.amount}</div>
+                                                                    <div> {`${formatCurrency(pricing?.price?.gross?.currency)}${addCommasToNumber(pricing?.price?.gross?.amount)}`}</div>
+
+                                                                    {/* <div> {pricing?.price?.gross?.amount}</div> */}
                                                                 </div>
                                                             </div>
                                                         </div>

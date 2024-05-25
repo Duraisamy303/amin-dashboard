@@ -59,7 +59,7 @@ import {
     UPDATE_VARIANT,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { getValueByKey, sampleParams, uploadImage } from '@/utils/functions';
+import { Success, getValueByKey, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
 const ProductEdit = (props: any) => {
     const router = useRouter();
 
@@ -129,7 +129,7 @@ const ProductEdit = (props: any) => {
     };
 
     // -------------------------------------New Added-------------------------------------------------------
-    const { data: productDetails ,refetch:productDataRefetch} = useQuery(PRODUCT_FULL_DETAILS, {
+    const { data: productDetails, refetch: productDataRefetch } = useQuery(PRODUCT_FULL_DETAILS, {
         variables: { channel: 'india-channel', id: id },
     });
 
@@ -176,7 +176,7 @@ const ProductEdit = (props: any) => {
     const [updateVariant] = useMutation(UPDATE_VARIANT);
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
     const [assignTagToProduct] = useMutation(ASSIGN_TAG_PRODUCT);
-    const [mediaReorder]=useMutation(PRODUCTS_MEDIA_ORDERS)
+    const [mediaReorder] = useMutation(PRODUCTS_MEDIA_ORDERS);
 
     const [removeImage] = useMutation(REMOVE_IMAGE);
     const [updateProduct] = useMutation(UPDATE_PRODUCT);
@@ -640,11 +640,19 @@ const ProductEdit = (props: any) => {
     };
 
     const multiImageDelete = async (item: any) => {
-        const { data } = await removeImage({
-            variables: { id: item.id },
-        });
-        const pendingImg = data?.productMediaDelete?.product?.media;
-        setImages(pendingImg);
+        showDeleteAlert(
+            async () => {
+                const { data } = await removeImage({
+                    variables: { id: item.id },
+                });
+                const pendingImg = data?.productMediaDelete?.product?.media;
+                setImages(pendingImg);
+                Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
+            },
+            () => {
+                Swal.fire('Cancelled', 'Your Image List is safe :)', 'error');
+            }
+        );
     };
 
     // Function to handle upload button click
@@ -796,60 +804,59 @@ const ProductEdit = (props: any) => {
             setVariantErrors(newVariantErrors);
         }
 
-
         // If there are any errors, do not proceed with the update
         // if (hasError) {
         //     return;
         // }
 
         // if (editorInstance) {
-            try {
-                // const savedContent = await editorInstance.save();
-                // console.log('Editor content:', savedContent);
+        try {
+            // const savedContent = await editorInstance.save();
+            // console.log('Editor content:', savedContent);
 
-                // console.log('selectedCat: ', selectedCat);
+            // console.log('selectedCat: ', selectedCat);
 
-                // console.log('selectedCollection: ', selectedCollection);
-                let tagId = selectedTag?.map((item: any) => item.value) || [];
+            // console.log('selectedCollection: ', selectedCollection);
+            let tagId = selectedTag?.map((item: any) => item.value) || [];
 
-                // const formattedDescription = JSON.stringify(savedContent);
-                // console.log('✌️formattedDescription --->', formattedDescription);
+            // const formattedDescription = JSON.stringify(savedContent);
+            // console.log('✌️formattedDescription --->', formattedDescription);
 
-                const { data } = await updateProduct({
-                    variables: {
-                        id: id,
-                        input: {
-                            attributes: [],
-                            category: selectedCat?.value,
-                            collections: selectedCollection.map((item: any) => item.value),
-                            tags: tagId,
-                            // description: formattedDescription,
-                            name: productName,
-                            rating: 0,
-                            seo: {
-                                description: seoDesc,
-                                title: seoTittle,
-                            },
-                            slug: slug,
-                            ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                            ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
-                            ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
-                            ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
-                            ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
+            const { data } = await updateProduct({
+                variables: {
+                    id: id,
+                    input: {
+                        attributes: [],
+                        category: selectedCat?.value,
+                        collections: selectedCollection.map((item: any) => item.value),
+                        tags: tagId,
+                        // description: formattedDescription,
+                        name: productName,
+                        rating: 0,
+                        seo: {
+                            description: seoDesc,
+                            title: seoTittle,
                         },
-                        firstValues: 10,
+                        slug: slug,
+                        ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
+                        ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
+                        ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
+                        ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
+                        ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
                     },
-                });
+                    firstValues: 10,
+                },
+            });
 
-                if (data?.productUpdate?.errors?.length > 0) {
-                    console.log('Error updating product');
-                } else {
-                    productChannelListUpdate();
-                    console.log('Product update successful:', data);
-                }
-            } catch (error) {
-                console.error('Failed to save editor content:', error);
+            if (data?.productUpdate?.errors?.length > 0) {
+                console.log('Error updating product');
+            } else {
+                productChannelListUpdate();
+                console.log('Product update successful:', data);
             }
+        } catch (error) {
+            console.error('Failed to save editor content:', error);
+        }
         // }
     };
 
@@ -1041,10 +1048,8 @@ const ProductEdit = (props: any) => {
             if (data?.updateMetadata?.errors?.length > 0) {
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
-                console.log('success: ', data);
-                console.log('selectedTag: ', selectedTag);
-                productsDetails();
-                productDataRefetch()
+                Success('Product updated successfully');
+                productDataRefetch();
                 // assignsTagToProduct();
             }
         } catch (error) {
@@ -1180,7 +1185,7 @@ const ProductEdit = (props: any) => {
                     productId: id,
                 },
             });
-            productDataRefetch()
+            productDataRefetch();
         }
     };
     // -------------------------------------New Added-------------------------------------------------------
@@ -1619,11 +1624,11 @@ const ProductEdit = (props: any) => {
                                                         </div>
                                                     );
                                                 })}
-                                                {/* <div className="mb-5">
+                                              <div className="mb-5">
                                                     <button type="button" className=" btn btn-primary flex justify-end" onClick={handleAddItem}>
                                                         Add item
                                                     </button>
-                                                </div> */}
+                                                </div> 
 
                                                 {/* <div>
                                                     <div className="flex items-center">
@@ -1937,18 +1942,18 @@ const ProductEdit = (props: any) => {
                                 {images?.length > 0 &&
                                     images?.map((item: any, index: any) => (
                                         <>
-                                            {/* <div className=" relative h-20 w-20 "> */}
+                                            {/* <div className=" relative h-10 w-10  flex"> */}
 
                                             <div
                                                 key={item.id}
-                                                className="relative col-span-4"
+                                                className="h-15 w-15 overflow-hidden relative col-span-4 bg-black"
                                                 draggable
                                                 onDragStart={(e) => handleDragStart(e, item.id, index)}
                                                 onDragOver={handleDragOver}
                                                 onDrop={(e) => handleDrop(e, index)}
                                                 // style={{ width: '33.33%', padding: '5px' }}
                                             >
-                                                <img src={item?.url} alt="Selected" className="object-cover" />
+                                                <img src={item?.url} alt="Selected" className=" h-full w-full overflow-auto object-contain" />
 
                                                 {/* Delete icon */}
 
@@ -1956,6 +1961,7 @@ const ProductEdit = (props: any) => {
                                                     <IconTrashLines />
                                                 </button>
                                             </div>
+                                            {/* </div> */}
                                         </>
                                     ))}
 

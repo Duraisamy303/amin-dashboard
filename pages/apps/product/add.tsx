@@ -51,7 +51,7 @@ import {
     UPDATE_PRODUCT_CHANNEL,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { sampleParams, uploadImage } from '@/utils/functions';
+import { Success, sampleParams, uploadImage } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
 import { cA } from '@fullcalendar/core/internal-common';
 const ProductAdd = () => {
@@ -615,6 +615,7 @@ const ProductAdd = () => {
                 //     assignsTagToProduct(productId);
                 //     console.log('success: ', data);
                 // }
+                Success("Product created successfully")
                 router.push(`/apps/product/edit?id=${productId}`);
             }
         } catch (error) {
@@ -770,22 +771,6 @@ const ProductAdd = () => {
                             ></textarea>
                             {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
                         </div>
-
-                        <div className="panel mb-5">
-                            <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
-                                Product description
-                            </label>
-                            <textarea
-                                id="ctnTextarea"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                rows={3}
-                                className="form-textarea"
-                                placeholder="Enter Description"
-                                required
-                            ></textarea>
-                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
-                        </div>
                         <div className="panel mb-5">
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product Short description
@@ -801,6 +786,22 @@ const ProductAdd = () => {
                             ></textarea>
                             {shortDesErrMsg && <p className="error-message mt-1 text-red-500 ">{shortDesErrMsg}</p>}
                         </div>
+                        <div className="panel mb-5">
+                            <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
+                                Product description
+                            </label>
+                            <textarea
+                                id="ctnTextarea"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                rows={6}
+                                className="form-textarea"
+                                placeholder="Enter Description"
+                                required
+                            ></textarea>
+                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
+                        </div>
+                      
                         <div className="panel mb-5 ">
                             {/* <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
                                 <label htmlFor="name" className="mt-2 block  pr-5 text-sm font-semibold text-gray-700">

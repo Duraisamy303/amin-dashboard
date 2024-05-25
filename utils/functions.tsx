@@ -24,6 +24,7 @@ export const getPrice = () => {
     let price;
 };
 
+
 export const shortData = (selectValue: any, products: any) => {
     if (!selectValue || !products?.length) {
         return null;
@@ -374,15 +375,18 @@ export const mintDateTime = (date) => {
     let minutes = now.getMinutes().toString().padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
-
-export const roundOff = (price: any) => {
-    let round = '';
+export const roundOff = (price) => {
+    let roundedPrice = '';
     if (price) {
-        round = Math.ceil(price)?.toFixed(2);
+        const roundedValue = Math.ceil(price);
+        roundedPrice = roundedValue.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
     } else {
-        round = price;
+        roundedPrice = price;
     }
-    return round;
+    return roundedPrice;
 };
 
 export const formatCurrency = (currency) => {
@@ -392,6 +396,18 @@ export const formatCurrency = (currency) => {
         return '$';
     }
 };
+
+export const addCommasToNumber = (value) => {
+    if (typeof value === 'number') {
+        return value.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    } else {
+        return value;
+    }
+};
+
 
 export const OrderStatus = (status) => {
     if (status === 'FULFILLED') {
