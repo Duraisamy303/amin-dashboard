@@ -432,60 +432,66 @@ export const DELETE_STYLE = gql`
 `;
 
 export const ORDER_LIST = gql`
-query GetOrdersList($first: Int!, $direction: OrderDirection!, $field: OrderSortField!) {
-    orders(first: $first, sortBy: {direction: $direction, field: $field}) {
-      edges {
-        node {
-          id
-          total {
-            gross {
-              currency
-              amount
-              __typename
+    query GetOrdersList($first: Int!, $direction: OrderDirection!, $field: OrderSortField!) {
+        orders(first: $first, sortBy: { direction: $direction, field: $field }) {
+            edges {
+                node {
+                    id
+                    total {
+                        gross {
+                            currency
+                            amount
+                            __typename
+                        }
+                        __typename
+                    }
+                    user {
+                        email
+                        firstName
+                        lastName
+                        id
+                        __typename
+                    }
+                    updatedAt
+                    number
+                    paymentStatus
+                    status
+                    invoices {
+                        id
+                        number
+                        createdAt
+                        url
+                        __typename
+                    }
+                    __typename
+                    courierPartner {
+                        id
+                        name
+                        trackingUrl
+                        __typename
+                    }
+                    chargeStatus
+                    fulfillments {
+                        trackingNumber
+                        __typename
+                    }
+                    billingAddress {
+                        firstName
+                        lastName
+                    }
+                }
+                __typename
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                __typename
             }
             __typename
-          }
-          user {
-            email
-            firstName
-            lastName
-            id
-            __typename
-          }
-          updatedAt
-          number
-          paymentStatus
-          status
-          invoices {
-            id
-            number
-            createdAt
-            url
-            __typename
-          }
-          __typename
-          courierPartner {
-            id
-            name
-            trackingUrl
-          }
-          chargeStatus
-          fulfillments {
-            trackingNumber
-          }
         }
-        __typename
-      }
-      pageInfo {
-        endCursor
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        __typename
-      }
-      __typename
     }
-  }
 `;
 
 export const SHIPPING_LIST = gql`

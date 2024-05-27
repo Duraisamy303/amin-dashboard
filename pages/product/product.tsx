@@ -28,11 +28,11 @@ import IconEdit from '@/components/Icon/IconEdit';
 import { useMutation, useQuery } from '@apollo/client';
 import { DELETE_PRODUCTS, PRODUCT_LIST, PARENT_CATEGORY_LIST, CATEGORY_FILTER_LIST } from '@/query/product';
 import moment from 'moment';
-import { formatCurrency, roundOff } from '@/utils/functions';
+import { Failure, formatCurrency, roundOff } from '@/utils/functions';
 
 const ProductList = () => {
     const router = useRouter();
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const { error, data: productData } = useQuery(PRODUCT_LIST, {
         variables: { channel: 'india-channel', first: 100, direction: 'DESC', field: 'CREATED_AT' }, // Pass variables here
@@ -463,15 +463,21 @@ const ProductList = () => {
                                             <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/edit?id=${row.id}`)}>
                                                 <IconEdit className="h-4.5 w-4.5" />
                                             </button>
+                                            {/* {row?.status == 'Published' && ( */}
                                             <button
                                                 className="flex hover:text-info"
                                                 onClick={() => {
-                                                    window.open(`http://www1.prade.in/product-details/${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
+                                                    if (row.status == 'Draft') {
+                                                        Failure('Product is Draft !');
+                                                    } else {
+                                                        window.open(`http://www1.prade.in/product-details/${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
+                                                    }
                                                 }}
                                             >
                                                 {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
                                                 <IconEye />
                                             </button>
+                                            {/* )} */}
 
                                             <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
                                                 <IconTrashLines />

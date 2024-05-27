@@ -201,6 +201,8 @@ const Editorder = () => {
     const [waitingStatus, setWaitingStatus] = useState('');
     const [notesList, setNotesList] = useState([]);
     const [updateLoading, setUpdateLoading] = useState(false);
+    const [trackingError, setTrackingError] = useState(false);
+    const [shippingError, setShippingError] = useState(false);
 
     useEffect(() => {
         getOrderData();
@@ -604,8 +606,17 @@ const Editorder = () => {
     const handleSubmit = async () => {
         try {
             setUpdateLoading(true);
-            updateShippingProvider();
-            updateTrackingNumber();
+            if (shippingPatner == '') {
+                setShippingError(true);
+            } else if (trackingNumber == '') {
+                setTrackingError(true);
+            } else {
+                updateShippingProvider();
+                updateTrackingNumber();
+                setUpdateLoading(false);
+                setTrackingError(false);
+                setShippingError(false);
+            }
             setUpdateLoading(false);
         } catch (error) {
             setUpdateLoading(false);
@@ -1587,7 +1598,9 @@ const Editorder = () => {
                                                     <option value={item?.node?.id}>{item?.node?.name}</option>
                                                 ))}
                                             </select>
+                                            {shippingPatner == '' && shippingError && <div className=" text-danger">Required this field</div>}
                                             <input type="text" className={`form-input mt-4`} placeholder="Tracking number" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} />
+                                            {trackingNumber == '' && trackingError && <div className=" text-danger">Required this field</div>}
                                         </div>
                                     )}
                                     <div>
@@ -1898,22 +1911,21 @@ const Editorder = () => {
                         <form onSubmit={updateDiscount}>
                             <div className="w-full flex-col ">
                                 <div className="flex gap-3">
-                                    <div className='w-[30%]'>
-                                    <input type="text" disabled className="form-input" placeholder="Reference" value={'PR2425'} />
+                                    <div className="w-[30%]">
+                                        <input type="text" disabled className="form-input" placeholder="Reference" value={'PR2425'} />
                                     </div>
-                                    <div className='w-[70%]'>
-
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="Invoice number"
-                                        value={invoiceNumber}
-                                        maxLength={4}
-                                        onChange={(e: any) => {
-                                            const inputValue = e.target.value;
-                                            setInvoiceNumber(inputValue);
-                                        }}
-                                    />
+                                    <div className="w-[70%]">
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Invoice number"
+                                            value={invoiceNumber}
+                                            maxLength={4}
+                                            onChange={(e: any) => {
+                                                const inputValue = e.target.value;
+                                                setInvoiceNumber(inputValue);
+                                            }}
+                                        />
                                     </div>
                                 </div>
                                 <div className="pt-5">
@@ -2080,7 +2092,6 @@ const Editorder = () => {
                             </button>
                             <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4" onClick={() => handleSetChannel()}>
                                 {currencyLoading ? <IconLoader /> : 'Confirm'}
-
                             </button>
                         </div>
                     </div>

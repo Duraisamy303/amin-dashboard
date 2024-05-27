@@ -1,3 +1,4 @@
+import IconLoader from '@/components/Icon/IconLoader';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import Modal from '@/components/Modal';
@@ -92,7 +93,9 @@ export default function Neworder() {
         productIsEdit: false,
         addProductOpen: false,
         selectedItems: {},
-
+        updateAddressLoading: false,
+        productLoading: false,
+        updateProductLoad: false,
         // error messages
     });
 
@@ -426,9 +429,11 @@ export default function Neworder() {
     const handleSubHeadingSelect = (heading: any, subHeading: any) => {
         handleSelect(heading, subHeading);
     };
+    console.log('productList', state.productList);
 
     const addProducts = async () => {
         try {
+            setState({ productLoading: true });
             const selectedSubheadingIds: any = [];
             state.productList.forEach(({ name, variants }: any) => {
                 if (state.selectedItems[name]) {
@@ -439,23 +444,30 @@ export default function Neworder() {
                     });
                 }
             });
+            if (selectedSubheadingIds?.length > 0) {
+                const input = selectedSubheadingIds.map((item: any) => ({
+                    quantity: 1,
+                    variantId: item,
+                }));
 
-            const input = selectedSubheadingIds.map((item: any) => ({
-                quantity: 1,
-                variantId: item,
-            }));
-
-            const data = await newAddLine({
-                variables: {
-                    id: orderId,
-                    input,
-                },
-            });
-            updateShippingAmount();
-            getOrderData();
-            Success('New Product Added Successfully');
-            setState({ addProductOpen: false });
+                const data = await newAddLine({
+                    variables: {
+                        id: orderId,
+                        input,
+                    },
+                });
+                updateShippingAmount();
+                getOrderData();
+                setState({ productLoading: false });
+                Success('New Product Added Successfully');
+                setState({ addProductOpen: false, selectedItems: [] });
+            } else {
+                setState({ productLoading: false });
+                Failure('Please select a product');
+            }
         } catch (error) {
+            setState({ productLoading: false });
+
             console.log('error: ', error);
         }
     };
@@ -463,6 +475,7 @@ export default function Neworder() {
     //Update Product to this order
     const updateQuantity = async () => {
         try {
+            setState({ updateProductLoad: true });
             const res = await updateLine({
                 variables: {
                     id: state.editProduct.id,
@@ -472,9 +485,11 @@ export default function Neworder() {
                 },
             });
             getOrderData();
-            setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '', productIsEdit: false, addProductOpen: false });
+            setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '', productIsEdit: false, addProductOpen: false, updateProductLoad: false });
             Success('Product Updated Successfully');
         } catch (error) {
+            setState({ updateProductLoad: false });
+
             console.log('error: ', error);
         }
     };
@@ -482,14 +497,30 @@ export default function Neworder() {
     //Update Product to this order
     const deleteProduct = async (item: any) => {
         try {
-            const res = await deleteLine({
-                variables: {
-                    id: item.id,
+            showDeleteAlert(
+                async () => {
+                    const res = await deleteLine({
+                        variables: {
+                            id: item.id,
+                        },
+                    });
+                    setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '' });
+                    getOrderData();
+                    Swal.fire('Deleted!', 'Your product have been deleted.', 'success');
                 },
-            });
-            setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '' });
-            getOrderData();
-            Success('Product Deleted Successfully');
+                () => {
+                    Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
+                }
+            );
+
+            // const res = await deleteLine({
+            //     variables: {
+            //         id: item.id,
+            //     },
+            // });
+            // setState({ isOpenProductAdd: false, isEditProduct: false, editProduct: {}, productQuantity: '' });
+            // getOrderData();
+            // Success('Product Deleted Successfully');
         } catch (error) {
             console.log('error: ', error);
         }
@@ -679,7 +710,8 @@ export default function Neworder() {
     const handleChangeCustomer = async (val: any) => {
         {
             const selectedCustomerId: any = val.target.value;
-            setState({ selectedCustomerId: selectedCustomerId });
+            setState({ selectedCustomerId: selectedCustomerId, showShippingInputs: true, showBillingInputs: true });
+
             await addressRefetch({ id: selectedCustomerId });
         }
     };
@@ -704,7 +736,14 @@ export default function Neworder() {
         }
     };
 
+    console.log('state.selectedCustomer: ', state.selectedCustomer);
+
     const updateAddress = async () => {
+        if (state.selectedCustomerId == '') {
+            Failure('Please select customer');
+            return false;
+        }
+        setState({ setUpdateAddressLoading: true });
         setBillingErrMsg({});
         setShippingErrMsg({});
         const address = AddressValidation(state);
@@ -736,8 +775,12 @@ export default function Neworder() {
             });
             updateShippingAmount();
             getOrderData();
+            setState({ setUpdateAddressLoading: false });
+
             Success('Address updated successfully');
         } catch (error) {
+            setState({ setUpdateAddressLoading: false });
+
             console.log('error: ', error);
         }
     };
@@ -800,7 +843,13 @@ export default function Neworder() {
                                         </label>
                                     </div>
 
-                                    <select className="form-select" value={state.selectedCustomer} onChange={(val) => handleChangeCustomer(val)}>
+                                    <select
+                                        className="form-select"
+                                        value={state.selectedCustomer}
+                                        onChange={(val) => {
+                                            handleChangeCustomer(val);
+                                        }}
+                                    >
                                         <option value="" disabled selected>
                                             Select a customer
                                         </option>
@@ -1387,7 +1436,7 @@ export default function Neworder() {
                         <div className="col-span-12 ">
                             <div className="flex justify-end">
                                 <button type="button" className="btn btn-primary" onClick={() => updateAddress()}>
-                                    Update Address
+                                    {state.updateAddressLoading ? <IconLoader /> : 'Update Address'}
                                 </button>
                             </div>
                         </div>
@@ -1680,7 +1729,7 @@ export default function Neworder() {
                                         onClick={() => updateQuantity()}
                                         className="rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-500 hover:border-transparent hover:bg-blue-500 hover:text-white"
                                     >
-                                        Update
+                                        {state.updateProductLoad ? <IconLoader /> : 'Update'}
                                     </button>
                                 </div>
                             </div>
@@ -1747,7 +1796,7 @@ export default function Neworder() {
                                         onClick={() => addProducts()}
                                         className="rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-500 hover:border-transparent hover:bg-blue-500 hover:text-white"
                                     >
-                                        Confirm
+                                        {state.productLoading ? <IconLoader /> : 'Confirm'}
                                     </button>
                                 </div>
                             </div>

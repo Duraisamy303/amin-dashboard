@@ -25,7 +25,19 @@ import { useMutation, useQuery } from '@apollo/client';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 import Modal from '@/components/Modal';
-import { OrderStatus, PaymentStatus, addCommasToNumber, downloadExlcel, formatCurrency, getCurrentDateTime, handleExportByChange, mintDateTime, showDeleteAlert, useSetState } from '@/utils/functions';
+import {
+    OrderStatus,
+    PaymentStatus,
+    addCommasToNumber,
+    downloadExlcel,
+    formatCurrency,
+    getCurrentDateTime,
+    handleExportByChange,
+    mintDateTime,
+    objIsEmpty,
+    showDeleteAlert,
+    useSetState,
+} from '@/utils/functions';
 import dayjs from 'dayjs';
 import IconLoader from '@/components/Icon/IconLoader';
 import Link from 'next/link';
@@ -273,7 +285,7 @@ const Orders = () => {
     const handleSetChannel = () => {
         setCurrencyPopup('');
         if (state.selectedCurrency == '') {
-            setCurrencyPopup('required this field');
+            setCurrencyPopup('Required this field');
         } else {
             createDraftOrder();
         }
@@ -341,10 +353,20 @@ const Orders = () => {
         SetFinalDate(res?.data?.orders?.edges);
     };
 
+    const orderNumber = (item) => {
+        let label = '';
+        if (item?.node?.user?.firstName == "") {
+            label = `#${item?.node?.number} ${item.node?.billingAddress?.firstName} ${item.node?.billingAddress?.lastName}`;
+        } else {
+            label = `#${item?.node?.number} ${item?.node?.user?.firstName} ${item?.node?.user?.lastName}`;
+        }
+        return label;
+    };
+
     const SetFinalDate = (res) => {
         const newData = res?.map((item: any) => ({
             ...item.node,
-            order: `#${item?.node?.number} ${item?.node?.user?.firstName}${item?.node?.user?.lastName}`,
+            order: orderNumber(item),
             date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
             total: `${formatCurrency(item?.node?.total.gross.currency)}${addCommasToNumber(item?.node?.total.gross.amount)}`,
             status: OrderStatus(item?.node?.status),
@@ -537,18 +559,13 @@ const Orders = () => {
                                     sortable: true,
                                     title: 'Shipment Tracking',
                                     render: (item) => {
-                                        return (
-                                            <Link
-                                                href={`${item?.courierPartner?.trackingUrl}${item?.fulfillments[0]?.trackingNumber}
-                                            }`}
-                                                target="_blank"
-                                            >
+                                        return item?.courierPartner && item?.fulfillments?.length > 0 ? (
+                                            <Link href={`${item?.courierPartner?.trackingUrl}${item?.fulfillments[0]?.trackingNumber}`.trim()} target="_blank">
                                                 <div>{item?.courierPartner?.name}</div>
                                                 <div>{item?.fulfillments[0]?.trackingNumber}</div>
-                                                {/* {`${item?.courierPartner?.name}${item?.fulfillments[0]?.trackingNumber}`} */}
-
-                                                {/* {value} */}
                                             </Link>
+                                        ) : (
+                                            <div>-</div>
                                         );
                                     },
                                 },
