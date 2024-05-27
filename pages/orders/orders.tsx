@@ -27,6 +27,8 @@ import { useRouter } from 'next/router';
 import Modal from '@/components/Modal';
 import { OrderStatus, PaymentStatus, addCommasToNumber, downloadExlcel, formatCurrency, getCurrentDateTime, handleExportByChange, mintDateTime, showDeleteAlert, useSetState } from '@/utils/functions';
 import dayjs from 'dayjs';
+import IconLoader from '@/components/Icon/IconLoader';
+import Link from 'next/link';
 
 const Orders = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -68,6 +70,8 @@ const Orders = () => {
     const [allData, setAllData] = useState([]);
 
     const [loading, setLoading] = useState(false);
+    const [currencyLoading, setCurrencyLoading] = useState(false);
+
     const [exportBy, setExportBy] = useState('');
     const [endDate, setEndDate] = useState('');
     const [startDate, setStartDate] = useState(getCurrentDateTime());
@@ -97,12 +101,14 @@ const Orders = () => {
     const PAGE_SIZES = [10, 20, 30, 50, 100];
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
+    console.log('initialRecords: ', initialRecords);
     const [recordsData, setRecordsData] = useState([]);
 
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(finishList, 'id'));
+        setInitialRecords(finishList);
+        console.log('finishList: ', finishList);
     }, [finishList]);
 
     // Log initialRecords when it changes
@@ -111,11 +117,15 @@ const Orders = () => {
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
 
     const [search, setSearch] = useState('');
-    const [sortStatus, setSortStatus] = useState({});
+    // const [sortStatus, setSortStatus] = useState({});
 
     const [modal1, setModal1] = useState(false);
     const [modalTitle, setModalTitle] = useState(null);
     const [modalContant, setModalContant] = useState<any>(null);
+    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
+        columnAccessor: 'id',
+        direction: 'asc',
+    });
 
     // const [viewModal, setViewModal] = useState(false);
 
@@ -140,9 +150,11 @@ const Orders = () => {
     useEffect(() => {
         setInitialRecords(() => {
             return finishList?.filter((item: any) => {
-                return item?.id.toString()?.includes(search.toLowerCase()) ||
-                // item.image.toLowerCase().includes(search.toLowerCase()) ||
-               item?.order.toLowerCase()?.includes(search.toLowerCase())
+                return (
+                    item?.id.toString()?.includes(search.toLowerCase()) ||
+                    // item.image.toLowerCase().includes(search.toLowerCase()) ||
+                    item?.order.toLowerCase()?.includes(search.toLowerCase())
+                );
                 // item.description.toLowerCase().includes(search.toLowerCase()) ||
                 // item.slug.toLowerCase().includes(search.toLowerCase()) ||
                 // item.count.toString().includes(search.toLowerCase())
@@ -269,6 +281,7 @@ const Orders = () => {
 
     const createDraftOrder = async () => {
         try {
+            setCurrencyLoading(true);
             const { data } = await draftOrder({
                 variables: {
                     input: {
@@ -277,11 +290,14 @@ const Orders = () => {
                 },
             });
             localStorage.setItem('channel', state.selectedCurrency);
+            setCurrencyLoading(false);
             router.push({
                 pathname: '/orders/new-order',
                 query: { orderId: data?.draftOrderCreate?.order?.id },
             });
         } catch (error) {
+            setCurrencyLoading(false);
+
             console.log('error: ', error);
         }
     };
@@ -333,9 +349,19 @@ const Orders = () => {
             total: `${formatCurrency(item?.node?.total.gross.currency)}${addCommasToNumber(item?.node?.total.gross.amount)}`,
             status: OrderStatus(item?.node?.status),
             paymentStatus: PaymentStatus(item?.node?.paymentStatus),
-            invoice:item?.node?.invoices?.length>0?item?.node?.invoices[0]?.number:"-",
+            invoice: item?.node?.invoices?.length > 0 ? item?.node?.invoices[0]?.number : '-',
+            shipmentTracking: item?.node?.fulfillments?.length > 0 ? `${item?.node?.courierPartner?.name}\n${item?.node?.fulfillments[0]?.trackingNumber}` : '-',
 
+            // shipmentTracking:item?.node?.fulfillments?.length>0 ?{`${item?.node?.courierPartner?.name} ${"\n"} ${item?.node?.courierPartner?.trackingUrl}${item?.node?.fulfillments[0]?.trackingNumber}`}:"-"
         }));
+
+        console.log(
+            'item?.node?.fulfillments',
+            res?.map((item) => item?.node?.fulfillments)
+        );
+
+        console.log('newData: ');
+
         setFinishList(newData);
         setAllData(res);
     };
@@ -501,12 +527,32 @@ const Orders = () => {
                                 // { accessor: 'id', sortable: true },
                                 // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                                 { accessor: 'order', sortable: true },
-                                { accessor: 'invoice', sortable: true,title:"Invoice Number" },
+                                { accessor: 'invoice', sortable: true, title: 'Invoice Number' },
 
-                            
                                 { accessor: 'date', sortable: true },
                                 { accessor: 'status', sortable: true, title: 'Order status' },
                                 { accessor: 'paymentStatus', sortable: true, title: 'Payment status' },
+                                {
+                                    accessor: 'shipmentTracking',
+                                    sortable: true,
+                                    title: 'Shipment Tracking',
+                                    render: (item) => {
+                                        return (
+                                            <Link
+                                                href={`${item?.courierPartner?.trackingUrl}${item?.fulfillments[0]?.trackingNumber}
+                                            }`}
+                                                target="_blank"
+                                            >
+                                                <div>{item?.courierPartner?.name}</div>
+                                                <div>{item?.fulfillments[0]?.trackingNumber}</div>
+                                                {/* {`${item?.courierPartner?.name}${item?.fulfillments[0]?.trackingNumber}`} */}
+
+                                                {/* {value} */}
+                                            </Link>
+                                        );
+                                    },
+                                },
+
                                 { accessor: 'total', sortable: true },
                                 {
                                     // Custom column for actions
@@ -747,7 +793,7 @@ const Orders = () => {
                                 Cancel
                             </button>
                             <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4" onClick={() => handleSetChannel()}>
-                                Confirm
+                                {currencyLoading ? <IconLoader /> : 'Confirm'}
                             </button>
                         </div>
                     </div>

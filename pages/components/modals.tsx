@@ -3,7 +3,7 @@ import CodeHighlight from '../../components/Highlight';
 import { useState, Fragment, useEffect, useRef } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../../store';
+
 import { Tab } from '@headlessui/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -29,7 +29,7 @@ const Modals = () => {
     });
     const items = ['carousel1.jpeg', 'carousel2.jpeg', 'carousel3.jpeg'];
 
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [codeArr, setCodeArr] = useState<string[]>([]);
     const toggleCode = (name: string) => {
@@ -63,7 +63,7 @@ const Modals = () => {
     const [modal21, setModal21] = useState(false);
     const [modal22, setModal22] = useState(false);
 
-    const themeConfig = useSelector((state: IRootState) => state.themeConfig);
+    const themeConfig = useSelector((state:any) => state.themeConfig);
 
     return (
         <div>

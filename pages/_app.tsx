@@ -53,7 +53,7 @@ const App = ({ Component, pageProps }: AppPropsWithLayout) => {
     const getLayout = Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
     useEffect(() => {
         const token = localStorage.getItem('token');
-console.log('✌️token --->', token);
+        console.log('✌️token --->', token);
     }, []);
     return (
         <ApolloProvider client={client}>

@@ -5,7 +5,6 @@ import { Dialog, Transition } from '@headlessui/react';
 import 'react-quill/dist/quill.snow.css';
 import Dropdown from '../../components/Dropdown';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../../store';
 import { setPageTitle } from '../../store/themeConfigSlice';
 import dynamic from 'next/dynamic';
 import IconClipboardText from '@/components/Icon/IconClipboardText';
@@ -596,7 +595,7 @@ const Todolist = () => {
         });
     };
 
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     return (
         <div>
@@ -629,10 +628,10 @@ const Todolist = () => {
                                     }}
                                 >
                                     <div className="flex items-center">
-                                        <IconListCheck className="w-4.5 h-4.5 shrink-0" />
+                                        <IconListCheck className="h-4.5 w-4.5 shrink-0" />
                                         <div className="ltr:ml-3 rtl:mr-3">Inbox</div>
                                     </div>
-                                    <div className="whitespace-nowrap rounded-md bg-primary-light py-0.5 px-2 font-semibold dark:bg-[#060818]">
+                                    <div className="whitespace-nowrap rounded-md bg-primary-light px-2 py-0.5 font-semibold dark:bg-[#060818]">
                                         {allTasks && allTasks.filter((d) => d.status !== 'trash').length}
                                     </div>
                                 </button>
@@ -647,10 +646,10 @@ const Todolist = () => {
                                     }}
                                 >
                                     <div className="flex items-center">
-                                        <IconThumbUp className="w-5 h-5 shrink-0" />
+                                        <IconThumbUp className="h-5 w-5 shrink-0" />
                                         <div className="ltr:ml-3 rtl:mr-3">Done</div>
                                     </div>
-                                    <div className="whitespace-nowrap rounded-md bg-primary-light py-0.5 px-2 font-semibold dark:bg-[#060818]">
+                                    <div className="whitespace-nowrap rounded-md bg-primary-light px-2 py-0.5 font-semibold dark:bg-[#060818]">
                                         {allTasks && allTasks.filter((d) => d.status === 'complete').length}
                                     </div>
                                 </button>
@@ -668,7 +667,7 @@ const Todolist = () => {
                                         <IconStar className="shrink-0" />
                                         <div className="ltr:ml-3 rtl:mr-3">Important</div>
                                     </div>
-                                    <div className="whitespace-nowrap rounded-md bg-primary-light py-0.5 px-2 font-semibold dark:bg-[#060818]">
+                                    <div className="whitespace-nowrap rounded-md bg-primary-light px-2 py-0.5 font-semibold dark:bg-[#060818]">
                                         {allTasks && allTasks.filter((d) => d.status === 'important').length}
                                     </div>
                                 </button>
@@ -699,7 +698,7 @@ const Todolist = () => {
                                         setSelectedTab('team');
                                     }}
                                 >
-                                    <IconSquareRotated className="fill-success shrink-0" />
+                                    <IconSquareRotated className="shrink-0 fill-success" />
                                     <div className="ltr:ml-3 rtl:mr-3">Team</div>
                                 </button>
                                 <button
@@ -712,7 +711,7 @@ const Todolist = () => {
                                         setSelectedTab('low');
                                     }}
                                 >
-                                    <IconSquareRotated className="fill-warning shrink-0" />
+                                    <IconSquareRotated className="shrink-0 fill-warning" />
                                     <div className="ltr:ml-3 rtl:mr-3">Low</div>
                                 </button>
 
@@ -726,7 +725,7 @@ const Todolist = () => {
                                         setSelectedTab('medium');
                                     }}
                                 >
-                                    <IconSquareRotated className="fill-primary shrink-0" />
+                                    <IconSquareRotated className="shrink-0 fill-primary" />
                                     <div className="ltr:ml-3 rtl:mr-3">Medium</div>
                                 </button>
                                 <button
@@ -739,7 +738,7 @@ const Todolist = () => {
                                         setSelectedTab('high');
                                     }}
                                 >
-                                    <IconSquareRotated className="fill-danger shrink-0" />
+                                    <IconSquareRotated className="shrink-0 fill-danger" />
                                     <div className="ltr:ml-3 rtl:mr-3">High</div>
                                 </button>
                                 <button
@@ -752,14 +751,14 @@ const Todolist = () => {
                                         setSelectedTab('update');
                                     }}
                                 >
-                                    <IconSquareRotated className="fill-info shrink-0" />
+                                    <IconSquareRotated className="shrink-0 fill-info" />
                                     <div className="ltr:ml-3 rtl:mr-3">Update</div>
                                 </button>
                             </div>
                         </PerfectScrollbar>
                         <div className="absolute bottom-0 w-full p-4 ltr:left-0 rtl:right-0">
                             <button className="btn btn-primary w-full" type="button" onClick={() => addEditTask()}>
-                                <IconPlus className="ltr:mr-2 rtl:ml-2 shrink-0" />
+                                <IconPlus className="shrink-0 ltr:mr-2 rtl:ml-2" />
                                 Add New Task
                             </button>
                         </div>
@@ -798,7 +797,7 @@ const Todolist = () => {
                                         searchTasks(false);
                                     }}
                                 >
-                                    <IconCaretDown className="w-5 h-5 rtl:-rotate-90 rotate-90" />
+                                    <IconCaretDown className="h-5 w-5 rotate-90 rtl:-rotate-90" />
                                 </button>
                                 <button
                                     type="button"
@@ -809,7 +808,7 @@ const Todolist = () => {
                                         searchTasks(false);
                                     }}
                                 >
-                                    <IconCaretDown className="w-5 h-5 rtl:rotate-90 -rotate-90" />
+                                    <IconCaretDown className="h-5 w-5 -rotate-90 rtl:rotate-90" />
                                 </button>
                             </div>
                         </div>
@@ -837,7 +836,7 @@ const Todolist = () => {
                                                             <div className={`whitespace-nowrap text-base font-semibold group-hover:text-primary ${task.status === 'complete' ? 'line-through' : ''}`}>
                                                                 {task.title}
                                                             </div>
-                                                            <div className={`min-w-[300px] overflow-hidden text-white-dark line-clamp-1 ${task.status === 'complete' ? 'line-through' : ''}`}>
+                                                            <div className={`line-clamp-1 min-w-[300px] overflow-hidden text-white-dark ${task.status === 'complete' ? 'line-through' : ''}`}>
                                                                 {task.descriptionText}
                                                             </div>
                                                         </div>
@@ -959,7 +958,7 @@ const Todolist = () => {
                                                                 )}
                                                                 {!task.path && !task.assignee ? (
                                                                     <div className="grid h-8 w-8 place-content-center rounded-full border border-gray-300 dark:border-gray-800">
-                                                                        <IconUser className="w-4.5 h-4.5" />
+                                                                        <IconUser className="h-4.5 w-4.5" />
                                                                     </div>
                                                                 ) : (
                                                                     ''
@@ -977,19 +976,19 @@ const Todolist = () => {
                                                                             <>
                                                                                 <li>
                                                                                     <button type="button" onClick={() => addEditTask(task)}>
-                                                                                        <IconPencilPaper className="w-4.5 h-4.5 ltr:mr-2 rtl:ml-2 shrink-0" />
+                                                                                        <IconPencilPaper className="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
                                                                                         Edit
                                                                                     </button>
                                                                                 </li>
                                                                                 <li>
                                                                                     <button type="button" onClick={() => deleteTask(task, 'delete')}>
-                                                                                        <IconTrashLines className="ltr:mr-2 rtl:ml-2 shrink-0" />
+                                                                                        <IconTrashLines className="shrink-0 ltr:mr-2 rtl:ml-2" />
                                                                                         Delete
                                                                                     </button>
                                                                                 </li>
                                                                                 <li>
                                                                                     <button type="button" onClick={() => setImportant(task)}>
-                                                                                        <IconStar className="w-4.5 h-4.5 ltr:mr-2 rtl:ml-2 shrink-0" />
+                                                                                        <IconStar className="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
                                                                                         <span>{task.status === 'important' ? 'Not Important' : 'Important'}</span>
                                                                                     </button>
                                                                                 </li>
@@ -999,13 +998,13 @@ const Todolist = () => {
                                                                             <>
                                                                                 <li>
                                                                                     <button type="button" onClick={() => deleteTask(task, 'deletePermanent')}>
-                                                                                        <IconTrashLines className="ltr:mr-2 rtl:ml-2 shrink-0" />
+                                                                                        <IconTrashLines className="shrink-0 ltr:mr-2 rtl:ml-2" />
                                                                                         Permanent Delete
                                                                                     </button>
                                                                                 </li>
                                                                                 <li>
                                                                                     <button type="button" onClick={() => deleteTask(task, 'restore')}>
-                                                                                        <IconRestore className="ltr:mr-2 rtl:ml-2 shrink-0" />
+                                                                                        <IconRestore className="shrink-0 ltr:mr-2 rtl:ml-2" />
                                                                                         Restore Task
                                                                                     </button>
                                                                                 </li>
@@ -1061,7 +1060,7 @@ const Todolist = () => {
                                         >
                                             <IconX />
                                         </button>
-                                        <div className="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pr-5 rtl:pl-[50px] dark:bg-[#121c2c]">
+                                        <div className="bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]">
                                             {params.id ? 'Edit Task' : 'Add Task'}
                                         </div>
                                         <div className="p-5">
@@ -1166,7 +1165,7 @@ const Todolist = () => {
                                         >
                                             <IconX />
                                         </button>
-                                        <div className="flex flex-wrap items-center gap-2 bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pr-5 rtl:pl-[50px] dark:bg-[#121c2c]">
+                                        <div className="flex flex-wrap items-center gap-2 bg-[#fbfbfb] py-3 text-lg font-medium ltr:pl-5 ltr:pr-[50px] rtl:pl-[50px] rtl:pr-5 dark:bg-[#121c2c]">
                                             <div>{selectedTask.title}</div>
                                             {selectedTask.priority && (
                                                 <div
@@ -1195,7 +1194,7 @@ const Todolist = () => {
                                         </div>
                                         <div className="p-5">
                                             <div
-                                                className="text-base prose"
+                                                className="prose text-base"
                                                 dangerouslySetInnerHTML={{
                                                     __html: selectedTask.description,
                                                 }}

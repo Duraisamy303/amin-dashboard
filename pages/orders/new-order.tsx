@@ -14,6 +14,7 @@ import {
     FINALIZE_ORDER,
     GET_ORDER_DETAILS,
     PRODUCT_SEARCH,
+    REMOVE_DISCOUNT,
     STATES_LIST,
     UPDATE_COUPEN,
     UPDATE_DRAFT_ORDER,
@@ -109,6 +110,8 @@ export default function Neworder() {
     const [finalizeOrder] = useMutation(FINALIZE_ORDER);
     const [updateDraftOrder] = useMutation(UPDATE_DRAFT_ORDER);
     const [addCoupenAmt] = useMutation(ADD_COUPEN);
+    const [removeDiscount] = useMutation(REMOVE_DISCOUNT);
+
     const [updateCoupenAmt] = useMutation(UPDATE_COUPEN);
 
     const [addNotes] = useMutation(CREATE_NOTES);
@@ -511,6 +514,13 @@ export default function Neworder() {
             setFixedErrMsg('Please Enter Fixed Value');
         }
         try {
+            if (productDetails?.order?.discounts?.length > 0) {
+                const removeRes = await removeDiscount({
+                    variables: {
+                        discountId: productDetails?.order?.discounts[0]?.id,
+                    },
+                });
+            }
             const res = await addCoupenAmt({
                 variables: {
                     orderId: orderId,
@@ -1443,7 +1453,7 @@ export default function Neworder() {
                                 <div className="flex items-center justify-between">
                                     <div>Subtotal</div>
                                     <div>
-                                        {`${formatCurrency(productDetails?.order?.subtotal?.gross?.currency)}${addCommasToNumber(productDetails?.order?.total?.gross?.amount)}`}
+                                        {`${formatCurrency(productDetails?.order?.subtotal?.gross?.currency)}${addCommasToNumber(productDetails?.order?.subtotal?.gross?.amount)}`}
 
                                         {/* {productDetails?.order?.subtotal?.gross?.currency} {productDetails?.order?.subtotal?.gross?.amount} */}
                                     </div>
@@ -1802,11 +1812,11 @@ export default function Neworder() {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        if (productDetails?.order?.discounts?.length > 0) {
-                                            updateDiscount();
-                                        } else {
-                                            addDiscount();
-                                        }
+                                        // if (productDetails?.order?.discounts?.length > 0) {
+                                        //     updateDiscount();
+                                        // } else {
+                                        addDiscount();
+                                        // }
                                     }}
                                     className="rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-500 hover:border-transparent hover:bg-blue-500 hover:text-white"
                                 >

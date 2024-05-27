@@ -11,7 +11,7 @@ import IconPencil from '@/components/Icon/IconPencil';
 import { Button } from '@mantine/core';
 import Dropdown from '../../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
-import { IRootState } from '../../../store';
+
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -56,7 +56,7 @@ import IconRestore from '@/components/Icon/IconRestore';
 import { cA } from '@fullcalendar/core/internal-common';
 const AddCoupon = () => {
     const router = useRouter();
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);

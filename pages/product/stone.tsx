@@ -11,7 +11,7 @@ import IconPencil from '@/components/Icon/IconPencil';
 import { Button } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
-import { IRootState } from '../../store';
+
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -26,7 +26,7 @@ import { CREATE_STONE, DELETE_STONE, STONE_LIST, UPDATE_STONE } from '@/query/pr
 import { useMutation, useQuery } from '@apollo/client';
 
 const Stone = () => {
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {

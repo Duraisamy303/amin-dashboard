@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../../store';
+
 import { useEffect, useState } from 'react';
 import { setPageTitle, toggleLocale, toggleRTL } from '../../store/themeConfigSlice';
 import { useRouter } from 'next/router';
@@ -76,9 +76,9 @@ const LoginBoxed = () => {
         // e.preventDefault();
         // router.push('/');
     };
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
-    const themeConfig = useSelector((state: IRootState) => state.themeConfig);
+    const themeConfig = useSelector((state:any) => state.themeConfig);
     const setLocale = (flag: string) => {
         setFlag(flag);
         if (flag.toLowerCase() === 'ae') {

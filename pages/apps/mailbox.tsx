@@ -7,7 +7,6 @@ import Dropdown from '../../components/Dropdown';
 import Swal from 'sweetalert2';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../../store';
 import { setPageTitle } from '../../store/themeConfigSlice';
 import dynamic from 'next/dynamic';
 import IconMail from '@/components/Icon/IconMail';
@@ -853,7 +852,7 @@ const Mailbox = () => {
     const [params, setParams] = useState<any>(JSON.parse(JSON.stringify(defaultParams)));
     const [pagedMails, setPagedMails] = useState<any>([]);
 
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [pager] = useState<any>({
         currentPage: 1,

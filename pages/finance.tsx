@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import Dropdown from '../components/Dropdown';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../store';
 import { setPageTitle } from '../store/themeConfigSlice';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -394,7 +393,7 @@ const Finance = () => {
         },
     };
 
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     return (
         <div>

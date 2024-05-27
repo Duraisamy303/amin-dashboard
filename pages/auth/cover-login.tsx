@@ -5,7 +5,7 @@ import { setPageTitle, toggleLocale, toggleRTL } from '../../store/themeConfigSl
 import BlankLayout from '@/components/Layouts/BlankLayout';
 import Link from 'next/link';
 import Dropdown from '@/components/Dropdown';
-import { IRootState } from '@/store';
+
 import { useTranslation } from 'react-i18next';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
 import IconMail from '@/components/Icon/IconMail';
@@ -41,9 +41,9 @@ const LoginCover = () => {
         // router.push('/');
     };
 
-    // const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    // const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
-    const themeConfig = useSelector((state: IRootState) => state.themeConfig);
+    const themeConfig = useSelector((state:any) => state.themeConfig);
     // const setLocale = (flag: string) => {
     //     setFlag(flag);
     //     if (flag.toLowerCase() === 'ae') {

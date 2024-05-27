@@ -1,4 +1,3 @@
-import { IRootState } from '@/store';
 import { toggleSidebar } from '@/store/themeConfigSlice';
 import { PropsWithChildren, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -14,7 +13,7 @@ const DefaultLayout = ({ children }: PropsWithChildren) => {
     const router = useRouter();
     const [showLoader, setShowLoader] = useState(true);
     const [showTopButton, setShowTopButton] = useState(false);
-    const themeConfig = useSelector((state: IRootState) => state.themeConfig);
+    const themeConfig = useSelector((state: any) => state.themeConfig);
     const [animation, setAnimation] = useState(themeConfig.animation);
     const dispatch = useDispatch();
 

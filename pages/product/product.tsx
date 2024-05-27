@@ -11,7 +11,7 @@ import IconPencil from '@/components/Icon/IconPencil';
 import { Button } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
-import { IRootState } from '../../store';
+
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -32,7 +32,7 @@ import { formatCurrency, roundOff } from '@/utils/functions';
 
 const ProductList = () => {
     const router = useRouter();
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const { error, data: productData } = useQuery(PRODUCT_LIST, {
         variables: { channel: 'india-channel', first: 100, direction: 'DESC', field: 'CREATED_AT' }, // Pass variables here
@@ -53,16 +53,14 @@ const ProductList = () => {
                     ...item.node,
                     product: item?.node?.products?.totalCount,
                     image: item?.node?.thumbnail?.url,
-                    categories: item?.node?.category?.name?item?.node?.category?.name:"-",
+                    categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
                     date: item?.node?.updatedAt
                         ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
                         : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
                     price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length>0 ?item?.node?.tags?.map((item)=>item.name)?.join(","):"-",
-
-
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item) => item.name)?.join(',') : '-',
                 }));
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
@@ -109,7 +107,7 @@ const ProductList = () => {
 
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(productList, 'id'));
+        setInitialRecords(productList);
     }, [productList]);
 
     // Log initialRecords when it changes
@@ -133,14 +131,13 @@ const ProductList = () => {
                 return (
                     // item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
-                    item.name.toLowerCase().includes(search.toLowerCase()) ||
-                    item.sku.toLowerCase().includes(search.toLowerCase()) ||
-
-                    item.status.toLowerCase().includes(search.toLowerCase()) ||
+                    item?.name?.toLowerCase().includes(search.toLowerCase()) ||
+                    item?.sku?.toLowerCase().includes(search.toLowerCase()) ||
+                    item?.status.toLowerCase().includes(search.toLowerCase()) ||
                     // item.stock.toLowerCase().includes(search.toLowerCase()) ||
                     // item.price.toString().includes(search.toLowerCase()) ||
-                    // item.categories.toLowerCase().includes(search.toLowerCase()) ||
-                    item.date.toString().includes(search.toLowerCase())
+                    item?.categories?.toLowerCase().includes(search.toLowerCase()) ||
+                    item?.date?.toString().includes(search.toLowerCase())
                 );
             });
         });
@@ -190,7 +187,7 @@ const ProductList = () => {
                     ...item.node,
                     product: item?.node?.products?.totalCount,
                     image: item?.node?.thumbnail?.url,
-                    categories: item?.node?.category?.name?item?.node?.category?.name:"-",
+                    categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
                     date: item?.node?.updatedAt
                         ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
                         : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
@@ -198,7 +195,7 @@ const ProductList = () => {
                     price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length>0 ?item?.node?.tags?.map((item)=>item.name)?.join(","):"-",
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item) => item.name)?.join(',') : '-',
                     // shipmentTracking: item?.node?.shipments?.length>0?item
                 }));
                 console.log('newData: ', newData);
