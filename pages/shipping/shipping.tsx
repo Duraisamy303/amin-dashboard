@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../store/themeConfigSlice';
 import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
-import { IRootState } from '../../store';
+
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
 import Link from 'next/link';
@@ -36,7 +36,7 @@ const rowData = [
 ];
 const Shipping = () => {
     const router = useRouter();
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {

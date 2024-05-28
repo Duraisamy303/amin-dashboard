@@ -3,14 +3,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import Link from 'next/link';
 import { setPageTitle } from '../../store/themeConfigSlice';
 import BlankLayout from '@/components/Layouts/BlankLayout';
-import { IRootState } from '@/store';
+
 
 const Maintenence = () => {
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(setPageTitle('Maintenance'));
     });
-    const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
+    const isDark = useSelector((state:any) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
 
     return (
         <div className="relative flex min-h-screen items-center justify-center overflow-hidden">

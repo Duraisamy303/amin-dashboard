@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import CodeHighlight from '../../components/Highlight';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../store/themeConfigSlice';
-import { IRootState } from '@/store';
+
 import IconCode from '@/components/Icon/IconCode';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
 import IconBell from '@/components/Icon/IconBell';
@@ -20,7 +20,7 @@ const Carousel = () => {
     });
     const items = ['carousel1.jpeg', 'carousel2.jpeg', 'carousel3.jpeg'];
 
-    const themeConfig = useSelector((state: IRootState) => state.themeConfig);
+    const themeConfig = useSelector((state:any) => state.themeConfig);
 
     const [codeArr, setCodeArr] = useState<string[]>([]);
     const toggleCode = (name: string) => {

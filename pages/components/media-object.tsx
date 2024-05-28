@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import CodeHighlight from '../../components/Highlight';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../../store';
+
 import Dropdown from '../../components/Dropdown';
 import { setPageTitle } from '../../store/themeConfigSlice';
 import IconCode from '@/components/Icon/IconCode';
@@ -21,7 +21,7 @@ const MediaObject = () => {
     useEffect(() => {
         dispatch(setPageTitle('Media Object'));
     });
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [codeArr, setCodeArr] = useState<string[]>([]);
 

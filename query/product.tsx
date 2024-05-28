@@ -10,7 +10,7 @@ export const PRODUCT_LIST = gql`
                     tags {
                         name
                         id
-                      }
+                    }
                     __typename
                 }
                 cursor
@@ -122,6 +122,29 @@ export const CATEGORY_LIST = gql`
                 __typename
             }
             __typename
+        }
+    }
+`;
+
+export const UPDATE_INVOICE_PDF = gql`
+    mutation InvoiceRequest($invoiceId: ID!) {
+        invoicePdfRegenerate(id: $invoiceId) {
+            errors {
+                message
+            }
+            invoice {
+                url
+            }
+        }
+    }
+`;
+
+export const SEND_PAYLSIP = gql`
+    mutation PaySlipSendNotification($orderid: ID!) {
+        payslipSendNotification(id: $orderid) {
+            errors {
+                message
+            }
         }
     }
 `;
@@ -438,8 +461,24 @@ export const ORDER_LIST = gql`
                         number
                         createdAt
                         url
-                      }
+                        __typename
+                    }
                     __typename
+                    courierPartner {
+                        id
+                        name
+                        trackingUrl
+                        __typename
+                    }
+                    chargeStatus
+                    fulfillments {
+                        trackingNumber
+                        __typename
+                    }
+                    billingAddress {
+                        firstName
+                        lastName
+                    }
                 }
                 __typename
             }
@@ -2240,6 +2279,707 @@ export const DELETE_SHIPPING = gql`
                 message
             }
         }
+    }
+`;
+
+export const REMOVE_DISCOUNT = gql`
+    mutation OrderDiscountDelete($discountId: ID!) {
+        orderDiscountDelete(discountId: $discountId) {
+            errors {
+                ...OrderError
+                __typename
+            }
+            order {
+                ...OrderDetails
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment OrderError on OrderError {
+        code
+        field
+        addressType
+        message
+        orderLines
+        __typename
+    }
+
+    fragment OrderDetails on Order {
+        id
+        token
+        ...Metadata
+        billingAddress {
+            ...Address
+            __typename
+        }
+        transactions {
+            ...TransactionItem
+            __typename
+        }
+        payments {
+            ...OrderPayment
+            __typename
+        }
+        giftCards {
+            ...OrderGiftCard
+            __typename
+        }
+        grantedRefunds {
+            ...OrderGrantedRefund
+            __typename
+        }
+        isShippingRequired
+        canFinalize
+        created
+        customerNote
+        discounts {
+            id
+            type
+            calculationMode: valueType
+            value
+            reason
+            amount {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        events {
+            ...OrderEvent
+            __typename
+        }
+        fulfillments {
+            ...Fulfillment
+            __typename
+        }
+        lines {
+            ...OrderLine
+            __typename
+        }
+        number
+        isPaid
+        paymentStatus
+        shippingAddress {
+            ...Address
+            __typename
+        }
+        deliveryMethod {
+            __typename
+            ... on ShippingMethod {
+                id
+                __typename
+            }
+            ... on Warehouse {
+                id
+                clickAndCollectOption
+                __typename
+            }
+        }
+        shippingMethod {
+            id
+            __typename
+        }
+        shippingMethodName
+        collectionPointName
+        shippingPrice {
+            gross {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        status
+        subtotal {
+            gross {
+                ...Money
+                __typename
+            }
+            net {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        total {
+            gross {
+                ...Money
+                __typename
+            }
+            net {
+                ...Money
+                __typename
+            }
+            tax {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        totalRemainingGrant {
+            ...Money
+            __typename
+        }
+        totalGrantedRefund {
+            ...Money
+            __typename
+        }
+        totalRefundPending {
+            ...Money
+            __typename
+        }
+        totalRefunded {
+            ...Money
+            __typename
+        }
+        actions
+        totalAuthorizePending {
+            ...Money
+            __typename
+        }
+        totalAuthorized {
+            ...Money
+            __typename
+        }
+        totalCaptured {
+            ...Money
+            __typename
+        }
+        totalCharged {
+            ...Money
+            __typename
+        }
+        totalChargePending {
+            ...Money
+            __typename
+        }
+        totalCanceled {
+            ...Money
+            __typename
+        }
+        totalCancelPending {
+            ...Money
+            __typename
+        }
+        totalBalance {
+            ...Money
+            __typename
+        }
+        undiscountedTotal {
+            net {
+                ...Money
+                __typename
+            }
+            gross {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        user {
+            id
+            email
+            __typename
+        }
+        userEmail
+        shippingMethods {
+            id
+            name
+            price {
+                ...Money
+                __typename
+            }
+            active
+            message
+            __typename
+        }
+        invoices {
+            ...Invoice
+            __typename
+        }
+        channel {
+            isActive
+            id
+            name
+            currencyCode
+            slug
+            defaultCountry {
+                code
+                __typename
+            }
+            orderSettings {
+                markAsPaidStrategy
+                __typename
+            }
+            __typename
+        }
+        isPaid
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
+    }
+
+    fragment TransactionItem on TransactionItem {
+        id
+        pspReference
+        actions
+        name
+        externalUrl
+        events {
+            ...TransactionEvent
+            __typename
+        }
+        authorizedAmount {
+            ...Money
+            __typename
+        }
+        chargedAmount {
+            ...Money
+            __typename
+        }
+        refundedAmount {
+            ...Money
+            __typename
+        }
+        canceledAmount {
+            ...Money
+            __typename
+        }
+        authorizePendingAmount {
+            ...Money
+            __typename
+        }
+        chargePendingAmount {
+            ...Money
+            __typename
+        }
+        refundPendingAmount {
+            ...Money
+            __typename
+        }
+        cancelPendingAmount {
+            ...Money
+            __typename
+        }
+        __typename
+    }
+
+    fragment TransactionEvent on TransactionEvent {
+        id
+        pspReference
+        amount {
+            ...Money
+            __typename
+        }
+        type
+        message
+        createdAt
+        createdBy {
+            ... on User {
+                ...StaffMemberAvatar
+                __typename
+            }
+            ... on App {
+                ...AppAvatar
+                __typename
+            }
+            __typename
+        }
+        externalUrl
+        __typename
+    }
+
+    fragment Money on Money {
+        amount
+        currency
+        __typename
+    }
+
+    fragment StaffMemberAvatar on User {
+        ...StaffMember
+        avatar(size: 512) {
+            url
+            __typename
+        }
+        __typename
+    }
+
+    fragment StaffMember on User {
+        id
+        email
+        firstName
+        isActive
+        lastName
+        __typename
+    }
+
+    fragment AppAvatar on App {
+        id
+        name
+        __typename
+    }
+
+    fragment OrderPayment on Payment {
+        id
+        isActive
+        actions
+        gateway
+        paymentMethodType
+        availableCaptureAmount {
+            ...Money
+            __typename
+        }
+        capturedAmount {
+            ...Money
+            __typename
+        }
+        total {
+            ...Money
+            __typename
+        }
+        availableRefundAmount {
+            ...Money
+            __typename
+        }
+        modified
+        transactions {
+            id
+            token
+            created
+            kind
+            isSuccess
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderGiftCard on GiftCard {
+        id
+        last4CodeChars
+        events {
+            id
+            type
+            orderId
+            date
+            balance {
+                initialBalance {
+                    ...Money
+                    __typename
+                }
+                currentBalance {
+                    ...Money
+                    __typename
+                }
+                oldInitialBalance {
+                    ...Money
+                    __typename
+                }
+                oldCurrentBalance {
+                    ...Money
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderGrantedRefund on OrderGrantedRefund {
+        id
+        createdAt
+        shippingCostsIncluded
+        amount {
+            currency
+            amount
+            __typename
+        }
+        reason
+        user {
+            ...UserBaseAvatar
+            __typename
+        }
+        app {
+            id
+            name
+            __typename
+        }
+        __typename
+    }
+
+    fragment UserBaseAvatar on User {
+        id
+        firstName
+        lastName
+        email
+        avatar {
+            url
+            alt
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderEvent on OrderEvent {
+        id
+        amount
+        shippingCostsIncluded
+        date
+        email
+        emailType
+        invoiceNumber
+        discount {
+            valueType
+            value
+            reason
+            amount {
+                amount
+                currency
+                __typename
+            }
+            oldValueType
+            oldValue
+            oldAmount {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        relatedOrder {
+            id
+            number
+            __typename
+        }
+        message
+        quantity
+        transactionReference
+        type
+        user {
+            id
+            email
+            firstName
+            lastName
+            __typename
+        }
+        app {
+            id
+            name
+            appUrl
+            __typename
+        }
+        lines {
+            quantity
+            itemName
+            discount {
+                valueType
+                value
+                reason
+                amount {
+                    amount
+                    currency
+                    __typename
+                }
+                oldValueType
+                oldValue
+                oldAmount {
+                    amount
+                    currency
+                    __typename
+                }
+                __typename
+            }
+            orderLine {
+                id
+                productName
+                variantName
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+
+    fragment Fulfillment on Fulfillment {
+        ...Metadata
+        id
+        lines {
+            id
+            quantity
+            orderLine {
+                ...OrderLine
+                __typename
+            }
+            __typename
+        }
+        fulfillmentOrder
+        status
+        trackingNumber
+        warehouse {
+            id
+            name
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderLine on OrderLine {
+        id
+        isShippingRequired
+        allocations {
+            id
+            quantity
+            warehouse {
+                id
+                name
+                __typename
+            }
+            __typename
+        }
+        variant {
+            id
+            name
+            quantityAvailable
+            preorder {
+                endDate
+                __typename
+            }
+            stocks {
+                ...Stock
+                __typename
+            }
+            product {
+                id
+                isAvailableForPurchase
+                __typename
+            }
+            __typename
+        }
+        productName
+        productSku
+        quantity
+        quantityFulfilled
+        quantityToFulfill
+        totalPrice {
+            ...TaxedMoney
+            __typename
+        }
+        unitDiscount {
+            amount
+            currency
+            __typename
+        }
+        unitDiscountValue
+        unitDiscountReason
+        unitDiscountType
+        undiscountedUnitPrice {
+            currency
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        unitPrice {
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        thumbnail {
+            url
+            __typename
+        }
+        __typename
+    }
+
+    fragment Stock on Stock {
+        id
+        quantity
+        quantityAllocated
+        warehouse {
+            ...Warehouse
+            __typename
+        }
+        __typename
+    }
+
+    fragment Warehouse on Warehouse {
+        id
+        name
+        __typename
+    }
+
+    fragment TaxedMoney on TaxedMoney {
+        net {
+            ...Money
+            __typename
+        }
+        gross {
+            ...Money
+            __typename
+        }
+        __typename
+    }
+
+    fragment Invoice on Invoice {
+        id
+        number
+        createdAt
+        url
+        status
+        __typename
     }
 `;
 

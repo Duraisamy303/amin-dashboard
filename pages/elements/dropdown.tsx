@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import CodeHighlight from '../../components/Highlight';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../../store';
+
 import Dropdown from '../../components/Dropdown';
 import { setPageTitle } from '../../store/themeConfigSlice';
 import IconBell from '@/components/Icon/IconBell';
@@ -15,7 +15,7 @@ const DropdownPage = () => {
     useEffect(() => {
         dispatch(setPageTitle('Dropdowns'));
     });
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [codeArr, setCodeArr] = useState<string[]>([]);
 
@@ -76,7 +76,7 @@ const DropdownPage = () => {
                                                 <>
                                                     Action
                                                     <span>
-                                                        <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block" />
+                                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
                                                     </span>
                                                 </>
                                             }
@@ -107,7 +107,7 @@ const DropdownPage = () => {
                                                 <>
                                                     Action
                                                     <span>
-                                                        <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block" />
+                                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
                                                     </span>
                                                 </>
                                             }
@@ -136,7 +136,7 @@ const DropdownPage = () => {
                                 <pre className="language-typescript">
                                     {`import Dropdown from '../../components/Dropdown';
 
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
 <div className="dropdown">
     <Dropdown
@@ -244,7 +244,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                                 button={
                                                     <>
                                                         Up
-                                                        <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block rotate-180" />
+                                                        <IconCaretDown className="inline-block rotate-180 ltr:ml-1 rtl:mr-1" />
                                                     </>
                                                 }
                                             >
@@ -273,7 +273,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                                 button={
                                                     <>
                                                         Up
-                                                        <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block rotate-180" />
+                                                        <IconCaretDown className="inline-block rotate-180 ltr:ml-1 rtl:mr-1" />
                                                     </>
                                                 }
                                             >
@@ -301,7 +301,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                     <pre className="language-typescript">
                                         {`import Dropdown from '../../components/Dropdown';
 
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
 <div className="dropdown">
     <Dropdown
@@ -405,7 +405,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                             button={
                                                 <>
                                                     Right
-                                                    <IconCaretDown className="ltr:ml-1 rtl:mr-1 rtl:rotate-90 -rotate-90 inline-block" />
+                                                    <IconCaretDown className="inline-block -rotate-90 ltr:ml-1 rtl:mr-1 rtl:rotate-90" />
                                                 </>
                                             }
                                         >
@@ -434,7 +434,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                             button={
                                                 <>
                                                     Right
-                                                    <IconCaretDown className="ltr:ml-1 rtl:mr-1 rtl:rotate-90 -rotate-90 inline-block" />
+                                                    <IconCaretDown className="inline-block -rotate-90 ltr:ml-1 rtl:mr-1 rtl:rotate-90" />
                                                 </>
                                             }
                                         >
@@ -462,7 +462,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                 <pre className="language-typescript">
                                     {`import Dropdown from '../../components/Dropdown';
 
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
 <div className="dropdown">
     <Dropdown
@@ -564,7 +564,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                             btnClassName="btn btn-danger dropdown-toggle !flex"
                                             button={
                                                 <>
-                                                    <IconCaretDown className="ltr:mr-1 rtl:ml-1 rtl:-rotate-90 rotate-90 inline-block" />
+                                                    <IconCaretDown className="inline-block rotate-90 ltr:mr-1 rtl:ml-1 rtl:-rotate-90" />
                                                     Left
                                                 </>
                                             }
@@ -593,7 +593,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                             btnClassName="btn btn-outline-danger dropdown-toggle !flex"
                                             button={
                                                 <>
-                                                    <IconCaretDown className="ltr:mr-1 rtl:ml-1 rtl:-rotate-90 rotate-90 inline-block" />
+                                                    <IconCaretDown className="inline-block rotate-90 ltr:mr-1 rtl:ml-1 rtl:-rotate-90" />
                                                     Left
                                                 </>
                                             }
@@ -622,7 +622,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                 <pre className="language-typescript">
                                     {`import Dropdown from '../../components/Dropdown';
 
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
 <div className="dropdown">
     <Dropdown
@@ -727,7 +727,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                                 <>
                                                     Small Button
                                                     <span>
-                                                        <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block" />
+                                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
                                                     </span>
                                                 </>
                                             }
@@ -758,7 +758,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                                 <>
                                                     Small Button
                                                     <span>
-                                                        <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block" />
+                                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
                                                     </span>
                                                 </>
                                             }
@@ -788,7 +788,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                 <pre className="language-typescript">
                                     {`import Dropdown from '../../components/Dropdown';
 
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
 <div className="dropdown">
     <Dropdown
@@ -896,7 +896,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                                 <>
                                                     Large Button
                                                     <span>
-                                                        <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block" />
+                                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
                                                     </span>
                                                 </>
                                             }
@@ -927,7 +927,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                                 <>
                                                     Large Button
                                                     <span>
-                                                        <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block" />
+                                                        <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
                                                     </span>
                                                 </>
                                             }
@@ -957,7 +957,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                 <pre className="language-typescript">
                                     {`import Dropdown from '../../components/Dropdown';
 
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
 <div className="dropdown">
     <Dropdown
@@ -1073,7 +1073,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                                         <>
                                                             Dropdown
                                                             <span>
-                                                                <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block" />
+                                                                <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
                                                             </span>
                                                         </>
                                                     }
@@ -1113,7 +1113,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                                     <>
                                                         Dropdown
                                                         <span>
-                                                            <IconCaretDown className="ltr:ml-1 rtl:mr-1 inline-block" />
+                                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
                                                         </span>
                                                     </>
                                                 }
@@ -1143,7 +1143,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                 <pre className="language-typescript">
                                     {`import Dropdown from '../../components/Dropdown';
 
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
 <div className="relative inline-flex align-middle">
     <button type="button" className="btn btn-secondary ltr:rounded-r-none rtl:rounded-l-none">
@@ -1321,7 +1321,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                 <pre className="language-typescript">
                                     {`import Dropdown from '../../components/Dropdown';
 
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
 <div className="inline-flex">
     <button className="btn btn-primary ltr:rounded-r-none rtl:rounded-l-none">Action</button>
@@ -1416,9 +1416,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                         <Dropdown
                                             placement={`${isRtl ? 'top-end' : 'top-start'}`}
                                             btnClassName="btn p-0 rounded-none border-0 shadow-none dropdown-toggle text-black dark:text-white-dark hover:text-primary dark:hover:text-primary"
-                                            button={
-                                                <IconHorizontalDots className="w-6 h-6 opacity-70" />
-                                            }
+                                            button={<IconHorizontalDots className="h-6 w-6 opacity-70" />}
                                         >
                                             <ul className="!min-w-[170px]">
                                                 <li>
@@ -1442,9 +1440,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                         <Dropdown
                                             placement={`${isRtl ? 'top-end' : 'top-start'}`}
                                             btnClassName="btn p-0 rounded-none border-0 shadow-none dropdown-toggle text-black dark:text-white-dark hover:text-primary dark:hover:text-primary"
-                                            button={
-                                                <IconHorizontalDots className="w-6 h-6 opacity-70" />
-                                            }
+                                            button={<IconHorizontalDots className="h-6 w-6 opacity-70" />}
                                         >
                                             <ul className="!min-w-[170px]">
                                                 <li>
@@ -1468,9 +1464,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                         <Dropdown
                                             placement={`${isRtl ? 'top-end' : 'top-start'}`}
                                             btnClassName="btn p-0 rounded-none border-0 shadow-none dropdown-toggle text-black dark:text-white-dark hover:text-primary dark:hover:text-primary"
-                                            button={
-                                                <IconHorizontalDots className="w-6 h-6 opacity-70" />
-                                            }
+                                            button={<IconHorizontalDots className="h-6 w-6 opacity-70" />}
                                         >
                                             <ul className="!min-w-[170px]">
                                                 <li>
@@ -1494,9 +1488,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                         <Dropdown
                                             placement={`${isRtl ? 'top-start' : 'top-end'}`}
                                             btnClassName="btn p-0 rounded-none border-0 shadow-none dropdown-toggle text-black dark:text-white-dark hover:text-primary dark:hover:text-primary"
-                                            button={
-                                                <IconHorizontalDots className="w-6 h-6 opacity-70" />
-                                            }
+                                            button={<IconHorizontalDots className="h-6 w-6 opacity-70" />}
                                         >
                                             <ul className="!min-w-[170px]">
                                                 <li>
@@ -1522,7 +1514,7 @@ const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) ===
                                 <pre className="language-typescript">
                                     {`import Dropdown from '../../components/Dropdown';
 
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
 <div className="dropdown">
     <Dropdown

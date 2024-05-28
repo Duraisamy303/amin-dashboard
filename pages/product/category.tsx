@@ -11,7 +11,7 @@ import IconPencil from '@/components/Icon/IconPencil';
 import { Button, Loader } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
-import { IRootState } from '../../store';
+
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -27,7 +27,7 @@ import ReactQuill from 'react-quill';
 import { PARENT_CATEGORY_LIST } from '@/query/product';
 
 const Category = () => {
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
@@ -50,8 +50,8 @@ const Category = () => {
         setLoading(true);
         if (categoryData) {
             if (categoryData.categories && categoryData.categories.edges) {
-                const newData = categoryData.categories.edges.map((item: any) => {
-                    const jsonObject = JSON.parse(item.node.description || item.node.description);
+                const newData = categoryData?.categories?.edges?.map((item: any) => {
+                    const jsonObject = JSON.parse(item?.node?.description || item?.node?.description);
                     // Extract the text value
                     const textValue = jsonObject?.blocks[0]?.data?.text;
 
@@ -550,13 +550,13 @@ const Category = () => {
                                                         <label htmlFor="parentCategory">Parent Category</label>
                                                         <Field as="select" name="parentCategory" className="form-select">
                                                             <option value="">Open this select</option>
-                                                            {parentLists.map((item: any) => {
+                                                            {parentLists?.map((item: any) => {
                                                                 return (
                                                                     <>
                                                                         <option value={item?.node?.id}>{item.node?.name}</option>
-                                                                        {item?.node?.children?.edges.map((child: any) => (
-                                                                            <option key={child.id} value={child.node?.id} style={{ paddingLeft: '20px' }}>
-                                                                                -- {child.node?.name}
+                                                                        {item?.node?.children?.edges?.map((child: any) => (
+                                                                            <option key={child?.id} value={child?.node?.id} style={{ paddingLeft: '20px' }}>
+                                                                                -- {child?.node?.name}
                                                                             </option>
                                                                         ))}
                                                                     </>

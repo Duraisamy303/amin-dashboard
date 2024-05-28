@@ -18,10 +18,12 @@ import {
     ORDER_DISCOUNT_UPDATE,
     ORDER_FULFILL_DATA,
     SEND_INVOICE,
+    SEND_PAYLSIP,
     SHIPPING_COST_UPDATE,
     SHIPPING_LIST,
     STATES_LIST,
     UPDATE_INVOICE,
+    UPDATE_INVOICE_PDF,
     UPDATE_LINE,
     UPDATE_PAYSLIP,
     UPDATE_SHIPPING_PROVIDER,
@@ -100,9 +102,12 @@ const Editorder = () => {
 
     const [createInvoice] = useMutation(CREATE_INVOICE);
     const [updatesInvoice] = useMutation(UPDATE_INVOICE);
+    const [updateInvoicePdf] = useMutation(UPDATE_INVOICE_PDF);
+
     const [createPayslip] = useMutation(CREATE_PAYSLIP);
     const [updatePayslip] = useMutation(UPDATE_PAYSLIP);
     const [sendInvoice] = useMutation(SEND_INVOICE);
+    const [sendPayslip] = useMutation(SEND_PAYLSIP);
 
     // updateFullfillStatus
 
@@ -134,6 +139,9 @@ const Editorder = () => {
     const [orderData, setOrderData] = useState({});
     const [discountOpen, setDiscountOpen] = useState(false);
     const [openInvoice, setOpenInvoice] = useState(false);
+    const [updateInvoideLoading, setUpdateInvoideLoading] = useState(false);
+
+    const [transactionLoading, setTransactionLoading] = useState(false);
 
     const [isUpdateQty, setIsUpdateQty] = useState(false);
     const [productQuantity, setProductQuantity] = useState('');
@@ -146,6 +154,8 @@ const Editorder = () => {
 
     const [paymentStatus, setPaymentStatus] = useState('');
     const [selectedCurrency, setSelectedCurrency] = useState('');
+    const [currencyPopup, setCurrencyPopup] = useState('');
+    const [currencyLoading, setCurrencyLoading] = useState(false);
 
     const [isPaymentOpen, setIsPaymentOpen] = useState(false);
     const [reference, setReference] = useState('');
@@ -154,12 +164,17 @@ const Editorder = () => {
 
     const [discount, setDiscount] = useState(0);
     const [isOrderOpen, setIsOrderOpen] = useState(false);
+    const [orderStatusLoading, setOrderStatusLoading] = useState(false);
+    const [invoiceLoading, setInvoiceLoading] = useState(false);
 
     const [customerData, setCustomerData] = useState([]);
     const [trackingNumber, setTrackingNumber] = useState('');
     const [shippingPatner, setShippingPatner] = useState('');
 
     const [isOpenChannel, setIsOpenChannel] = useState(false);
+    const [addNoteLoading, setAddNoteLoading] = useState(false);
+    const [invoiceSendLoading, setInvoiceSendLoading] = useState(false);
+    const [sendPayslipLoading, setSendPayslipLoading] = useState(false);
 
     //CountryList
     const [countryList, setCountryList] = useState([]);
@@ -174,6 +189,8 @@ const Editorder = () => {
     const [confirmLoading, setConfirmLoading] = useState(false);
 
     const [isOpenPayslip, setIsOpenPayslip] = useState(false);
+    const [slipLoading, setSlipLoading] = useState(false);
+
     const [slipNumber, setSlipNumber] = useState('');
     const [slipDate, setSlipDate] = useState('');
     //For shipping
@@ -183,6 +200,9 @@ const Editorder = () => {
     const [showShippingInputs, setShowShippingInputs] = useState(false);
     const [waitingStatus, setWaitingStatus] = useState('');
     const [notesList, setNotesList] = useState([]);
+    const [updateLoading, setUpdateLoading] = useState(false);
+    const [trackingError, setTrackingError] = useState(false);
+    const [shippingError, setShippingError] = useState(false);
 
     useEffect(() => {
         getOrderData();
@@ -209,7 +229,7 @@ const Editorder = () => {
                 //Invoice
 
                 if (orderDetails?.order?.invoices?.length > 0) {
-                    setInvoiceNumber(orderDetails?.order?.invoices[0]?.number);
+                    setInvoiceNumber(orderDetails?.order?.invoices[0]?.number?.slice(-4));
                     setInvoiceDate(mintDateTime(orderDetails?.order?.invoices[0]?.createdAt));
                 }
 
@@ -340,6 +360,7 @@ const Editorder = () => {
 
     const onSubmit = async (record: any, { resetForm }: any) => {
         try {
+            setAddNoteLoading(true);
             const data = await addNotes({
                 variables: { input: { message: record.message }, orderId: id, private_note: record.mail },
             });
@@ -348,7 +369,10 @@ const Editorder = () => {
             setOrderData(newData);
             getOrderDetails();
             resetForm();
+            setAddNoteLoading(false);
         } catch (error) {
+            setAddNoteLoading(false);
+
             console.log('error: ', error);
         }
     };
@@ -460,6 +484,7 @@ const Editorder = () => {
 
     const orderStateUpdate = async () => {
         try {
+            setOrderStatusLoading(true);
             const isQuantity = fullfillData?.every((data) => data?.variant?.stocks.every((stock) => data?.quantity <= stock.quantity));
 
             if (isQuantity) {
@@ -489,11 +514,16 @@ const Editorder = () => {
                     setIsOrderOpen(false);
                     Success('Order status updated');
                 }
+                setOrderStatusLoading(false);
             } else {
+                setOrderStatusLoading(false);
+
                 Failure('Out of Stock');
             }
         } catch (error) {
-            Failure(error);
+            setOrderStatusLoading(false);
+
+            // Failure(error);
 
             console.log('error: ', error);
         }
@@ -501,6 +531,7 @@ const Editorder = () => {
 
     const updatePaymentStatus = async () => {
         try {
+            setTransactionLoading(true);
             const res = await markAsPaid({
                 variables: {
                     id: id,
@@ -509,8 +540,11 @@ const Editorder = () => {
             });
             getOrderDetails();
             setIsPaymentOpen(false);
+            setTransactionLoading(false);
+
             Success('Payment status updated');
         } catch (error) {
+            setTransactionLoading(false);
             console.log('error: ', error);
         }
     };
@@ -534,8 +568,18 @@ const Editorder = () => {
         }
     };
 
+    const handleSetChannel = () => {
+        setCurrencyPopup('');
+        if (selectedCurrency == '') {
+            setCurrencyPopup('Required this field');
+        } else {
+            createDraftOrder();
+        }
+    };
+
     const createDraftOrder = async () => {
         try {
+            setCurrencyLoading(true);
             const { data } = await draftOrder({
                 variables: {
                     input: {
@@ -544,26 +588,46 @@ const Editorder = () => {
                 },
             });
             localStorage.setItem('channel', selectedCurrency);
+            setCurrencyLoading(false);
+
             setIsOpenChannel(false);
+
             router.push({
                 pathname: '/orders/new-order',
                 query: { orderId: data?.draftOrderCreate?.order?.id },
             });
         } catch (error) {
+            setCurrencyLoading(false);
+
             console.log('error: ', error);
         }
     };
 
     const handleSubmit = async () => {
         try {
-            updateShippingProvider();
-            updateTrackingNumber();
+            setUpdateLoading(true);
+            if (shippingPatner == '') {
+                setShippingError(true);
+            } else if (trackingNumber == '') {
+                setTrackingError(true);
+            } else {
+                updateShippingProvider();
+                updateTrackingNumber();
+                setUpdateLoading(false);
+                setTrackingError(false);
+                setShippingError(false);
+            }
+            setUpdateLoading(false);
         } catch (error) {
+            setUpdateLoading(false);
+
             console.log('error: ', error);
         }
     };
     const updateShippingProvider = async () => {
         try {
+            setUpdateLoading(true);
+
             const res = await shippingProviderUpdate({
                 variables: {
                     input: {
@@ -573,14 +637,20 @@ const Editorder = () => {
                 },
             });
             getOrderDetails();
+            setUpdateLoading(false);
+
             Success('Shipping provider updated');
         } catch (error) {
+            setUpdateLoading(false);
+
             console.log('error: ', error);
         }
     };
 
     const updateTrackingNumber = async () => {
         try {
+            setUpdateLoading(true);
+
             const res = await editTrackingNumber({
                 variables: {
                     id: orderDetails?.order?.fulfillments[0]?.id,
@@ -591,7 +661,10 @@ const Editorder = () => {
                 },
             });
             getOrderDetails();
+            setUpdateLoading(false);
         } catch (error) {
+            setUpdateLoading(false);
+
             console.log('error: ', error);
         }
     };
@@ -630,39 +703,64 @@ const Editorder = () => {
 
     const generateInvoice = async (country?: any) => {
         try {
+            setInvoiceLoading(true);
             const res = await createInvoice({
                 variables: {
                     orderId: id,
                 },
             });
             getOrderDetails();
+            setInvoiceLoading(false);
+
             Success('Invoice generated Successfully');
         } catch (error) {
+            setInvoiceLoading(false);
+
             console.log('error: ', error);
         }
     };
 
     const updateInvoice = async (country?: any) => {
         try {
+            setUpdateInvoideLoading(true);
             const res = await updatesInvoice({
                 variables: {
                     invoiceid: orderData?.invoices[0]?.id,
                     input: {
-                        number: invoiceNumber,
+                        number: 'PR2425' + invoiceNumber,
                         createdAt: invoiceDate,
                     },
                 },
             });
-            getOrderDetails();
-            setOpenInvoice(false);
-            Success('Invoice Updated Successfully');
+
+            if (res.data?.invoiceUpdate?.errors?.length > 0) {
+                setOpenInvoice(false);
+                setUpdateInvoideLoading(false);
+                getOrderDetails();
+                Failure('Invoice not updated');
+            } else {
+                const res = await updateInvoicePdf({
+                    variables: {
+                        invoiceId: orderData?.invoices[0]?.id,
+                    },
+                });
+                setUpdateInvoideLoading(false);
+
+                setOpenInvoice(false);
+                getOrderDetails();
+
+                Success('Invoice Updated Successfully');
+            }
         } catch (error) {
+            setUpdateInvoideLoading(false);
+
             console.log('error: ', error);
         }
     };
 
     const generatePayslip = async (country?: any) => {
         try {
+            setSlipLoading(true);
             const res = await updatePayslip({
                 variables: {
                     id,
@@ -685,22 +783,50 @@ const Editorder = () => {
             });
             console.log('after: ', res);
             getOrderDetails();
+            setSlipLoading(false);
+
             Success('Payslip updated Successfully');
             setIsOpenPayslip(false);
         } catch (error) {
+            setSlipLoading(false);
             console.log('error: ', error);
         }
     };
 
     const invoiceSend = async () => {
         try {
+            setInvoiceSendLoading(true);
             const res = await sendInvoice({
                 variables: {
                     id: orderData?.invoices[0]?.id,
                 },
             });
+
+            setInvoiceSendLoading(false);
+
             Success('Invoice sent Successfully');
         } catch (error) {
+            setInvoiceSendLoading(false);
+
+            console.log('error: ', error);
+        }
+    };
+
+    const payslipSend = async () => {
+        try {
+            setSendPayslipLoading(true);
+            const res = await sendPayslip({
+                variables: {
+                    orderid: id,
+                },
+            });
+
+            setSendPayslipLoading(false);
+
+            Success('Payslip sent Successfully');
+        } catch (error) {
+            setSendPayslipLoading(false);
+
             console.log('error: ', error);
         }
     };
@@ -1472,7 +1598,9 @@ const Editorder = () => {
                                                     <option value={item?.node?.id}>{item?.node?.name}</option>
                                                 ))}
                                             </select>
+                                            {shippingPatner == '' && shippingError && <div className=" text-danger">Required this field</div>}
                                             <input type="text" className={`form-input mt-4`} placeholder="Tracking number" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} />
+                                            {trackingNumber == '' && trackingError && <div className=" text-danger">Required this field</div>}
                                         </div>
                                     )}
                                     <div>
@@ -1487,7 +1615,7 @@ const Editorder = () => {
                                             Move To Trash
                                         </a> */}
                                             <button onClick={() => handleSubmit()} className="btn btn-outline-primary">
-                                                Update
+                                                {updateLoading ? <IconLoader /> : 'Update'}
                                             </button>
                                         </div>
                                     </div>
@@ -1544,7 +1672,7 @@ const Editorder = () => {
                                                     <option value="note-customer">Note to customer</option>
                                                 </select>
                                                 <button type="submit" className="btn btn-outline-primary">
-                                                    Add
+                                                    {addNoteLoading ? <IconLoader /> : 'Add'}
                                                 </button>
                                             </div>
                                         </Form>
@@ -1581,8 +1709,8 @@ const Editorder = () => {
                                             <p>{moment(orderData?.metadata[0]?.value).format('YYYY/MM/DD')}</p>
                                         </div>
                                         <div className="flex justify-between pt-3">
-                                            <button type="submit" className="btn btn-primary" onClick={() => setOpenInvoice(true)}>
-                                                Send
+                                            <button type="submit" className="btn btn-primary" onClick={() => payslipSend()}>
+                                                {sendPayslipLoading ? <IconLoader /> : 'Send'}
                                             </button>
                                             <button type="submit" className="btn btn-outline-primary" onClick={() => router.push('http://file.prade.in/' + orderData?.metadata[2]?.value)}>
                                                 <IconDownload />
@@ -1591,7 +1719,7 @@ const Editorder = () => {
                                     </div>
                                 ) : (
                                     orderStatus == 'FULFILLED' && (
-                                        <div className="flex justify-end">
+                                        <div className="flex justify-end pt-5">
                                             <button type="submit" className="btn btn-primary" onClick={() => setIsOpenPayslip(true)}>
                                                 Generate
                                             </button>
@@ -1621,7 +1749,7 @@ const Editorder = () => {
                                         </div>
                                         <div className="flex justify-between pt-3">
                                             <button type="submit" className="btn btn-primary" onClick={() => invoiceSend()}>
-                                                Send
+                                                {invoiceSendLoading ? <IconLoader /> : 'Send'}
                                             </button>
                                             <button type="submit" className="btn btn-outline-primary" onClick={() => router.push(orderData?.invoices[0]?.url)}>
                                                 <IconDownload />
@@ -1630,9 +1758,9 @@ const Editorder = () => {
                                     </div>
                                 ) : (
                                     orderStatus == 'FULFILLED' && (
-                                        <div className="flex justify-end">
+                                        <div className="flex justify-end pt-5">
                                             <button type="submit" className="btn btn-primary" onClick={() => generateInvoice()}>
-                                                Generate
+                                                {invoiceLoading ? <IconLoader /> : 'Generate'}
                                             </button>
                                         </div>
                                     )
@@ -1730,7 +1858,7 @@ const Editorder = () => {
                                     Cancel
                                 </button>
                                 <button type="button" onClick={() => updatePaymentStatus()} className="btn btn-primary ltr:ml-4 rtl:mr-4">
-                                    Confirm
+                                    {transactionLoading ? <IconLoader /> : 'Confirm'}
                                 </button>
                             </div>
                         </form>
@@ -1766,7 +1894,7 @@ const Editorder = () => {
                                     Cancel
                                 </button>
                                 <button type="button" onClick={() => generatePayslip()} className="btn btn-primary ltr:ml-4 rtl:mr-4">
-                                    Confirm
+                                    {slipLoading ? <IconLoader /> : 'Confirm'}
                                 </button>
                             </div>
                         </form>
@@ -1781,18 +1909,37 @@ const Editorder = () => {
                 renderComponent={() => (
                     <div className="p-5 pb-7">
                         <form onSubmit={updateDiscount}>
-                            <div className="w-full flex-col">
-                                <input type="text" className="form-input" placeholder="Reference" value={invoiceNumber} onChange={(e: any) => setInvoiceNumber(e.target.value)} />
-                                <input
-                                    type="datetime-local"
-                                    min={mintDateTime(slipDate) || getCurrentDateTime()}
-                                    max={getCurrentDateTime()}
-                                    value={moment(invoiceDate).format('YYYY-MM-DDTHH:mm')}
-                                    onChange={(e) => setInvoiceDate(e.target.value)}
-                                    id="dateTimeCreated"
-                                    name="dateTimeCreated"
-                                    className="form-input"
-                                />
+                            <div className="w-full flex-col ">
+                                <div className="flex gap-3">
+                                    <div className="w-[30%]">
+                                        <input type="text" disabled className="form-input" placeholder="Reference" value={'PR2425'} />
+                                    </div>
+                                    <div className="w-[70%]">
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Invoice number"
+                                            value={invoiceNumber}
+                                            maxLength={4}
+                                            onChange={(e: any) => {
+                                                const inputValue = e.target.value;
+                                                setInvoiceNumber(inputValue);
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="pt-5">
+                                    <input
+                                        type="datetime-local"
+                                        min={mintDateTime(slipDate) || getCurrentDateTime()}
+                                        max={getCurrentDateTime()}
+                                        value={moment(invoiceDate).format('YYYY-MM-DDTHH:mm')}
+                                        onChange={(e) => setInvoiceDate(e.target.value)}
+                                        id="dateTimeCreated"
+                                        name="dateTimeCreated"
+                                        className="form-input"
+                                    />
+                                </div>
                             </div>
 
                             <div className="mt-8 flex items-center justify-end">
@@ -1800,7 +1947,7 @@ const Editorder = () => {
                                     Cancel
                                 </button>
                                 <button type="button" onClick={() => updateInvoice()} className="btn btn-primary ltr:ml-4 rtl:mr-4">
-                                    Update
+                                    {updateInvoideLoading ? <IconLoader /> : 'Update'}
                                 </button>
                             </div>
                         </form>
@@ -1892,7 +2039,7 @@ const Editorder = () => {
                                 </table>
                             </div>
 
-                            <div className="flex justify-end gap-5">
+                            <div className="flex justify-end gap-5 pt-4">
                                 <button
                                     onClick={() => {
                                         setIsOrderOpen(false);
@@ -1906,7 +2053,7 @@ const Editorder = () => {
                                     onClick={() => orderStateUpdate()}
                                     className="rounded border border-blue-500 bg-transparent px-4 py-2 font-semibold text-blue-500 hover:border-transparent hover:bg-blue-500 hover:text-white"
                                 >
-                                    Confirm
+                                    {orderStatusLoading ? <IconLoader /> : 'Confirm'}
                                 </button>
                             </div>
                         </div>
@@ -1937,13 +2084,14 @@ const Editorder = () => {
                                 </option>
                             ))}
                         </select>
+                        {currencyPopup && <div className="mt-1 text-sm text-red-400">{currencyPopup}</div>}
 
                         <div className="mt-8 flex items-center justify-end">
                             <button type="button" className="btn btn-outline-danger gap-2" onClick={() => setIsOpenChannel(false)}>
                                 Cancel
                             </button>
-                            <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4" onClick={() => createDraftOrder()}>
-                                Confirm
+                            <button type="submit" className="btn btn-primary ltr:ml-4 rtl:mr-4" onClick={() => handleSetChannel()}>
+                                {currencyLoading ? <IconLoader /> : 'Confirm'}
                             </button>
                         </div>
                     </div>

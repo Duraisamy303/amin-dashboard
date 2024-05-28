@@ -4,7 +4,7 @@ import CodeHighlight from '../../components/Highlight';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../../store';
+
 import { setPageTitle } from '../../store/themeConfigSlice';
 import IconBell from '@/components/Icon/IconBell';
 import IconCode from '@/components/Icon/IconCode';
@@ -24,7 +24,7 @@ const Notification = () => {
         }
     };
 
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const MySwal = withReactContent(Swal);
 

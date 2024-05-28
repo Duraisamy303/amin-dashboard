@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CodeHighlight from '../components/Highlight';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../store';
 import { setPageTitle } from '../store/themeConfigSlice';
 import dynamic from 'next/dynamic';
 import IconBell from '@/components/Icon/IconBell';
@@ -26,8 +25,8 @@ const Charts = () => {
         }
     };
 
-    const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isDark = useSelector((state:any) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {

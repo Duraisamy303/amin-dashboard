@@ -6,7 +6,7 @@ import 'flatpickr/dist/flatpickr.css';
 import Nouislider from '@x1mrdonut1x/nouislider-react';
 import 'nouislider/distribute/nouislider.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { IRootState } from '../../store';
+
 import { setPageTitle } from '../../store/themeConfigSlice';
 import IconBell from '@/components/Icon/IconBell';
 import IconCode from '@/components/Icon/IconCode';
@@ -26,7 +26,7 @@ const DateRangePicker = () => {
         }
     };
 
-    const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [inputStart, setInputStart] = useState<any>(20);
     const [inputEnd, setInputEnd] = useState<any>(40);
@@ -115,7 +115,7 @@ import 'flatpickr/dist/flatpickr.css';
 import { useDispatch, useSelector } from 'react-redux';
 
 const dispatch = useDispatch();
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 const [date1, setDate1] = useState<any>('2022-07-05');
 
 <Flatpickr value={date1} options={{ dateFormat: 'Y-m-d', position: isRtl ? 'auto right' : 'auto left' }} className="form-input" onChange={(date) => setDate1(date)} />`}</pre>
@@ -160,7 +160,7 @@ import 'flatpickr/dist/flatpickr.css';
 import { useDispatch, useSelector } from 'react-redux';
 
 const dispatch = useDispatch();
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 const [date2, setDate2] = useState<any>('2022-07-05 12:00');
 
 <Flatpickr
@@ -212,7 +212,7 @@ import 'flatpickr/dist/flatpickr.css';
 import { useDispatch, useSelector } from 'react-redux';
 
 const dispatch = useDispatch();
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 const [date3, setDate3] = useState<any>('2022-07-05 to 2022-07-10');
 
 <Flatpickr
@@ -266,7 +266,7 @@ import 'flatpickr/dist/flatpickr.css';
 import { useDispatch, useSelector } from 'react-redux';
 
 const dispatch = useDispatch();
-const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 const [date4, setDate4] = useState<any>('13:45');
 
 <Flatpickr
