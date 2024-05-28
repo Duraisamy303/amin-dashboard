@@ -23,13 +23,14 @@ import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
 import { CREATE_DESIGN, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
+import IconLoader from '@/components/Icon/IconLoader';
 
 const Finish = () => {
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Checkbox Table'));
+        dispatch(setPageTitle('Finish'));
     });
 
     const { error, data: finishData } = useQuery(FINISH_LIST, {
@@ -38,6 +39,9 @@ const Finish = () => {
 
     const [finishList, setFinishList] = useState([]);
     const [loading, setLoading] = useState(false);
+    
+    const [createFinishLoader, setCreateFinishLoader] = useState(false);
+    const [updateFinishLoader, setUpdateFinishLoader] = useState(false);
 
     useEffect(() => {
         getFinishList();
@@ -46,8 +50,9 @@ const Finish = () => {
     const getFinishList = () => {
         setLoading(true);
         if (finishData) {
+            setLoading(true);
             if (finishData && finishData.productFinishes && finishData.productFinishes.edges?.length > 0) {
-                const newData = finishData.productFinishes.edges.map((item) => ({
+                const newData = finishData.productFinishes.edges.map((item: any) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
@@ -143,6 +148,8 @@ const Finish = () => {
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
+        setCreateFinishLoader(true);
+        setUpdateFinishLoader(true);
         try {
             const variables = {
                 input: {
@@ -150,6 +157,8 @@ const Finish = () => {
                 },
             };
 
+            setCreateFinishLoader(true);
+            setUpdateFinishLoader(true);
             const { data } = await (modalTitle ? updateFinish({ variables: { ...variables, id: modalContant.id } }) : addFinish({ variables }));
             console.log('data: ', data);
 
@@ -186,7 +195,11 @@ const Finish = () => {
 
             setModal1(false);
             resetForm();
+            setCreateFinishLoader(false);
+            setUpdateFinishLoader(false);
         } catch (error) {
+            setCreateFinishLoader(false);
+            setUpdateFinishLoader(false);
             console.log('error: ', error);
         }
     };
@@ -285,12 +298,12 @@ const Finish = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 md:flex flex-col gap-5 md:flex-row md:items-center ">
+                <div className="mb-5 flex-col gap-5 md:flex md:flex-row md:items-center ">
                     <h5 className="text-lg font-semibold dark:text-white-light">Finish</h5>
 
-                    <div className="md:flex md:ltr:ml-auto md:rtl:mr-auto  md:mt-0 mt-5">
-                        <input type="text" className="form-input mr-2 md:w-auto w-full mb-3 md:mb-0" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  md:mr-2 mr-0  mb-3 md:mb-0 ">
+                    <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
+                        <input type="text" className="form-input mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown  mb-3 mr-0  md:mb-0 md:mr-2 ">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="btn btn-outline-primary dropdown-toggle md:w-auto w-full"
@@ -312,7 +325,7 @@ const Finish = () => {
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary md:w-auto w-full md:mb-0" onClick={() => CreateFinish()}>
+                        <button type="button" className="btn btn-primary w-full md:mb-0 md:w-auto" onClick={() => CreateFinish()}>
                             + Create
                         </button>
                     </div>
@@ -493,7 +506,7 @@ const Finish = () => {
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {modalTitle === null ? 'Submit' : 'Update'}
+                                                    {createFinishLoader || updateFinishLoader  ? <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" /> : (modalTitle === null ? 'Submit' : 'Update')}
                                                     </button>
                                                 </Form>
                                             )}

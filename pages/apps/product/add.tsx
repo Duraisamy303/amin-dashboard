@@ -58,6 +58,14 @@ const ProductAdd = () => {
     const router = useRouter();
     const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
+
+    const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(setPageTitle('Add New Product'));
+    });
+
+
+
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
 
@@ -652,7 +660,7 @@ const ProductAdd = () => {
     // };
 
     const handleAddAccordion = () => {
-        const selectedType = arr.find((item) => item.type === chooseType);
+        const selectedType = arr.find((item) => item?.type === chooseType);
         setSelectedArr([chooseType, ...selectedArr]);
         setAccordions([selectedType, ...accordions]);
         setOpenAccordion(chooseType);
@@ -934,7 +942,7 @@ const ProductAdd = () => {
                                                                             <div className="col-span-4">
                                                                                 <p>
                                                                                     Name:
-                                                                                    <br /> <span className="font-semibold">{item.type}</span>
+                                                                                    <br /> <span className="font-semibold">{item?.type}</span>
                                                                                 </p>
                                                                             </div>
                                                                             <div className="col-span-8">
@@ -946,8 +954,8 @@ const ProductAdd = () => {
                                                                                     </div>
                                                                                     <div className="mb-5" style={{ width: '100%' }}>
                                                                                         <Select
-                                                                                            placeholder={`Select ${item.type} Name`}
-                                                                                            options={item[`${item.type}Name`]}
+                                                                                            placeholder={`Select ${item?.type} Name`}
+                                                                                            options={item?.[`${item?.type}Name`]}
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}

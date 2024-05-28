@@ -22,13 +22,14 @@ import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
 import { CREATE_DESIGN, CREATE_FINISH, CREATE_STYLE, DELETE_FINISH, DELETE_STYLE, FINISH_LIST, STYLE_LIST, UPDATE_DESIGN, UPDATE_FINISH, UPDATE_STYLE } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
+import IconLoader from '@/components/Icon/IconLoader';
 
 const Style = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Checkbox Table'));
+        dispatch(setPageTitle('Style'));
     });
 
     const { error, data: finishData } = useQuery(STYLE_LIST, {
@@ -37,6 +38,9 @@ const Style = () => {
 
     const [finishList, setFinishList] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    const [createStyleLoader, setCreateStyleLoader] = useState(false);
+    const [updateStyleLoader, setUpdateStyleLoader] = useState(false);
 
     useEffect(() => {
         getFinishList();
@@ -140,7 +144,11 @@ const Style = () => {
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
+        setCreateStyleLoader(true);
+        setUpdateStyleLoader(true);
         try {
+            setCreateStyleLoader(true);
+            setUpdateStyleLoader(true);
             const variables = {
                 input: {
                     name: record.name,
@@ -183,7 +191,11 @@ const Style = () => {
 
             setModal1(false);
             resetForm();
+            setCreateStyleLoader(false);
+            setUpdateStyleLoader(false);
         } catch (error) {
+            setCreateStyleLoader(false);
+            setUpdateStyleLoader(false);
             console.log('error: ', error);
         }
     };
@@ -282,12 +294,12 @@ const Style = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 md:flex flex-col gap-5 md:flex-row md:items-center ">
+                <div className="mb-5 flex-col gap-5 md:flex md:flex-row md:items-center ">
                     <h5 className="text-lg font-semibold dark:text-white-light">Style</h5>
 
-                    <div className="md:flex md:ltr:ml-auto md:rtl:mr-auto  md:mt-0 mt-5">
-                        <input type="text" className="form-input mr-2 md:w-auto w-full mb-3 md:mb-0" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  md:mr-2 mr-0  mb-3 md:mb-0  ">
+                    <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
+                        <input type="text" className="form-input mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown  mb-3 mr-0  md:mb-0 md:mr-2  ">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="btn btn-outline-primary dropdown-toggle md:w-auto w-full"
@@ -309,7 +321,7 @@ const Style = () => {
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary  md:w-auto w-full md:mb-0" onClick={() => CreateFinish()}>
+                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateFinish()}>
                             + Create
                         </button>
                     </div>
@@ -490,7 +502,11 @@ const Style = () => {
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {modalTitle === null ? 'Submit' : 'Update'}
+                                                        {createStyleLoader || updateStyleLoader ? (
+                                                            <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" />
+                                                        ) : (
+                                                            modalTitle === null ? 'Submit' : 'Update'
+                                                        )}
                                                     </button>
                                                 </Form>
                                             )}

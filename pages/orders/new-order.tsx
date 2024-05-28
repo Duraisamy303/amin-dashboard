@@ -23,6 +23,7 @@ import {
     UPDATE_SHIPPING_COST,
     UPDATE_SHIPPING_COUNTRY,
 } from '@/query/product';
+import { setPageTitle } from '@/store/themeConfigSlice';
 import { productsDropdown, setBilling, setShipping } from '@/utils/commonFunction';
 import {
     CountryDropdownData,
@@ -47,6 +48,7 @@ import { Field, Form, Formik } from 'formik';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import Swal from 'sweetalert2';
 import * as Yup from 'yup';
 
@@ -54,6 +56,13 @@ export default function Neworder() {
     const router = useRouter();
 
     const orderId = router?.query?.orderId;
+
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(setPageTitle('Add New Orders'));
+    });
+
 
     const [state, setState] = useSetState({
         loading: false,

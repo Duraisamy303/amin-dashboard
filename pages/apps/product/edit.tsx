@@ -72,6 +72,12 @@ const ProductEdit = (props: any) => {
 
     const [value, setValue] = useState({});
 
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(setPageTitle('Update Product'));
+    });
+
     const [isMounted, setIsMounted] = useState(false); //tabs
     useEffect(() => {
         setIsMounted(true);

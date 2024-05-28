@@ -30,7 +30,7 @@ const Tags = () => {
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Checkbox Table'));
+        dispatch(setPageTitle('Tags'));
     });
 
     const { error, data: categoryData } = useQuery(CATEGORY_LIST, {

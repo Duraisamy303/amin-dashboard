@@ -25,7 +25,7 @@ const Finish = () => {
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Checkbox Table'));
+        dispatch(setPageTitle('Shipping Provider'));
     });
 
     const { error, data: shippingData } = useQuery(SHIPPING_LIST, {
@@ -35,6 +35,9 @@ const Finish = () => {
     const [shippingList, setShippingList] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const [createShippingLoader, setCreateShippingLoader] = useState(false);
+    const [updateShippingLoader, setUpdateShippingLoader] = useState(false);
+
     useEffect(() => {
         getShippingList();
     }, [shippingData]);
@@ -43,7 +46,7 @@ const Finish = () => {
         setLoading(true);
         if (shippingData) {
             if (shippingData && shippingData.shippingCarriers && shippingData.shippingCarriers.edges?.length > 0) {
-                const newData = shippingData.shippingCarriers.edges.map((item) => ({
+                const newData = shippingData.shippingCarriers.edges.map((item:any) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
@@ -133,7 +136,11 @@ const Finish = () => {
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
+        setCreateShippingLoader(true);
+        setUpdateShippingLoader(true);
         try {
+            setCreateShippingLoader(true);
+        setUpdateShippingLoader(true);
             const variables = {
                 input: {
                     name: record.name,
@@ -175,8 +182,12 @@ const Finish = () => {
 
             setModal1(false);
             resetForm();
+            setCreateShippingLoader(false);
+            setUpdateShippingLoader(false);
         } catch (error) {
             console.log('error: ', error);
+            setCreateShippingLoader(false);
+            setUpdateShippingLoader(false);
         }
     };
 
@@ -469,7 +480,10 @@ const Finish = () => {
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {modalTitle === null ? 'Submit' : 'Update'}
+                                                        {
+                                                        createShippingLoader || updateShippingLoader ? <Loader  className="me-3 h-4 w-4 shrink-0 animate-spin" /> :
+                                                        
+                                                        modalTitle === null ? 'Submit' : 'Update'}
                                                     </button>
                                                 </Form>
                                             )}

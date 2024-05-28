@@ -64,11 +64,7 @@ const Orders = () => {
 
     const [draftOrder] = useMutation(CREATE_DRAFT_ORDER);
 
-    const dispatch = useDispatch();
-
-    useEffect(() => {
-        dispatch(setPageTitle('Checkbox Table'));
-    });
+  
     const router = useRouter();
     const variables = {
         first: 100,
@@ -76,6 +72,11 @@ const Orders = () => {
         field: 'CREATED_AT',
     };
 
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(setPageTitle('Orders'));
+    });
     const { data: finishData } = useQuery(ORDER_LIST, { variables });
 
     const [finishList, setFinishList] = useState([]);

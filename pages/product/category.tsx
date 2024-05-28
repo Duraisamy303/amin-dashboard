@@ -25,22 +25,30 @@ import { useMutation, useQuery } from '@apollo/client';
 import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY } from '@/query/product';
 import ReactQuill from 'react-quill';
 import { PARENT_CATEGORY_LIST } from '@/query/product';
+import IconLoader from '@/components/Icon/IconLoader';
 
 const Category = () => {
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Checkbox Table'));
+        dispatch(setPageTitle('Category'));
     });
 
-    const { error, data: categoryData, refetch: categoryListRefetch } = useQuery(CATEGORY_LIST, {
+    const {
+        error,
+        data: categoryData,
+        refetch: categoryListRefetch,
+    } = useQuery(CATEGORY_LIST, {
         variables: { channel: 'india-channel', first: 100 },
     });
 
     const [categoryList, setCategoryList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [parentLists, setParentLists] = useState([]);
+
+    const [createCategoryLoader, setCreateCategoryLoader] = useState(false);
+    const [updateCategoryLoader, setUpdateCategoryLoader] = useState(false);
 
     useEffect(() => {
         getCategoryList();
@@ -164,7 +172,12 @@ const Category = () => {
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
+        setCreateCategoryLoader(true);
+        setUpdateCategoryLoader(true);
         try {
+            setCreateCategoryLoader(true);
+            setUpdateCategoryLoader(true);
+
             const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
             console.log('✌️Description --->', Description);
 
@@ -179,7 +192,7 @@ const Category = () => {
 
             const { data } = await (modalTitle ? updateCategory({ variables: { ...variables, id: modalContant.id } }) : addCategory({ variables }));
             console.log('data: ', data);
-            categoryListRefetch()
+            categoryListRefetch();
             // const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
             // console.log('newData: ', newData);
             // if (!newData) {
@@ -227,8 +240,12 @@ const Category = () => {
 
             setModal1(false);
             resetForm();
+            setCreateCategoryLoader(false);
+            setUpdateCategoryLoader(false);
         } catch (error) {
             console.log('error: ', error);
+            setCreateCategoryLoader(false);
+            setUpdateCategoryLoader(false);
         }
     };
 
@@ -580,7 +597,13 @@ const Category = () => {
                                                     </div>
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {modalTitle === null ? 'Submit' : 'Update'}
+                                                        {createCategoryLoader || updateCategoryLoader ? (
+                                                            <IconLoader className="mr-2 h-4 w-4 animate-spin" />
+                                                        ) : modalTitle === null ? (
+                                                            'Submit'
+                                                        ) : (
+                                                            'Update'
+                                                        )}
                                                     </button>
                                                 </Form>
                                             )}

@@ -11,6 +11,7 @@ import IconPencil from '@/components/Icon/IconPencil';
 import { Button } from '@mantine/core';
 import Dropdown from '../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
+
 import { Dialog, Transition } from '@headlessui/react';
 import IconX from '@/components/Icon/IconX';
 import Image1 from '@/public/assets/images/profile-1.jpeg';
@@ -27,13 +28,14 @@ import IconEdit from '@/components/Icon/IconEdit';
 import { useMutation, useQuery } from '@apollo/client';
 import { DELETE_PRODUCTS, PRODUCT_LIST, PARENT_CATEGORY_LIST, CATEGORY_FILTER_LIST } from '@/query/product';
 import moment from 'moment';
+import { Failure, formatCurrency, roundOff } from '@/utils/functions';
 
 const ProductList = () => {
     const router = useRouter();
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const { error, data: productData } = useQuery(PRODUCT_LIST, {
-        variables: { channel: 'india-channel', first: 100 }, // Pass variables here
+        variables: { channel: 'india-channel', first: 100, direction: 'DESC', field: 'CREATED_AT' }, // Pass variables here
     });
 
     const [productList, setProductList] = useState([]);
@@ -51,11 +53,14 @@ const ProductList = () => {
                     ...item.node,
                     product: item?.node?.products?.totalCount,
                     image: item?.node?.thumbnail?.url,
-                    categories: item?.node?.category?.name,
+                    categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
                     date: item?.node?.updatedAt
                         ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
                         : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
-                    price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                    price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
+                    status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
+                    sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item:any) => item.name)?.join(',') : '-',
                 }));
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
@@ -73,7 +78,7 @@ const ProductList = () => {
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Checkbox Table'));
+        dispatch(setPageTitle('Products'));
     });
     const [page, setPage] = useState(1);
     const PAGE_SIZES = [10, 20, 30, 50, 100];
@@ -102,7 +107,7 @@ const ProductList = () => {
 
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(productList, 'id'));
+        setInitialRecords(productList);
     }, [productList]);
 
     // Log initialRecords when it changes
@@ -126,12 +131,13 @@ const ProductList = () => {
                 return (
                     // item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
-                    item.name.toLowerCase().includes(search.toLowerCase()) ||
-                    // item.sku.toLowerCase().includes(search.toLowerCase()) ||
+                    item?.name?.toLowerCase().includes(search.toLowerCase()) ||
+                    item?.sku?.toLowerCase().includes(search.toLowerCase()) ||
+                    item?.status.toLowerCase().includes(search.toLowerCase()) ||
                     // item.stock.toLowerCase().includes(search.toLowerCase()) ||
                     // item.price.toString().includes(search.toLowerCase()) ||
-                    // item.categories.toLowerCase().includes(search.toLowerCase()) ||
-                    item.date.toString().includes(search.toLowerCase())
+                    item?.categories?.toLowerCase().includes(search.toLowerCase()) ||
+                    item?.date?.toString().includes(search.toLowerCase())
                 );
             });
         });
@@ -181,12 +187,19 @@ const ProductList = () => {
                     ...item.node,
                     product: item?.node?.products?.totalCount,
                     image: item?.node?.thumbnail?.url,
-                    categories: item?.node?.category?.name,
+                    categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
                     date: item?.node?.updatedAt
                         ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
                         : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
-                    price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                    // price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                    price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
+                    status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
+                    sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item) => item.name)?.join(',') : '-',
+                    // shipmentTracking: item?.node?.shipments?.length>0?item
                 }));
+                console.log('newData: ', newData);
+
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
                 setLoading(false);
@@ -347,7 +360,7 @@ const ProductList = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="lg:mb-5 mb-10 flex flex-col gap-5 lg:flex-row lg:items-center">
+                <div className="mb-10 flex flex-col gap-5 lg:mb-5 lg:flex-row lg:items-center">
                     <div className="flex items-center gap-2">
                         <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
                         {/* <button type="button" className="btn btn-outline-primary">
@@ -389,7 +402,7 @@ const ProductList = () => {
 
                 <div className="mb-5 ">
                     <form onSubmit={onFilterSubmit}>
-                        <div className="mx-auto flex  col-4 items-center gap-4 md:flex-row">
+                        <div className="col-4 mx-auto  flex items-center gap-4 md:flex-row">
                             <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
                                 <option value="">Select a Categories </option>
                                 {parentLists?.map((item: any) => {
@@ -417,7 +430,7 @@ const ProductList = () => {
                                 <option value="sample-product">Simple Product</option>
                                 <option value="variable-product">Variable Product</option>
                             </select> */}
-                            <button type="submit" className="btn btn-primary py-2.5 md:w-auto w-full">
+                            <button type="submit" className="btn btn-primary w-full py-2.5 md:w-auto">
                                 Filter
                             </button>
                         </div>
@@ -433,11 +446,11 @@ const ProductList = () => {
                             { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                             { accessor: 'name', sortable: true },
 
-                            // { accessor: 'sku', sortable: true },
-                            // { accessor: 'stock', sortable: true },
+                            { accessor: 'sku', sortable: true },
+                            { accessor: 'status', sortable: true },
                             { accessor: 'price', sortable: true },
-                            // { accessor: 'categories', sortable: true },
-                            // { accessor: 'tags', sortable: true },
+                            { accessor: 'categories', sortable: true },
+                            // { accessor: 'tags', sortable: true ,cellsStyle:{width:"100%",flexWrap:"wrap"}},
                             { accessor: 'date', sortable: true },
                             {
                                 // Custom column for actions
@@ -450,10 +463,21 @@ const ProductList = () => {
                                             <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/edit?id=${row.id}`)}>
                                                 <IconEdit className="h-4.5 w-4.5" />
                                             </button>
-                                            <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/view?id=${row.id}`)}>
+                                            {/* {row?.status == 'Published' && ( */}
+                                            <button
+                                                className="flex hover:text-info"
+                                                onClick={() => {
+                                                    if (row.status == 'Draft') {
+                                                        Failure('Product is Draft !');
+                                                    } else {
+                                                        window.open(`http://www1.prade.in/product-details/${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
+                                                    }
+                                                }}
+                                            >
                                                 {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
                                                 <IconEye />
                                             </button>
+                                            {/* )} */}
 
                                             <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
                                                 <IconTrashLines />

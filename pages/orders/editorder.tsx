@@ -44,10 +44,19 @@ import Modal from '@/components/Modal';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import IconDownload from '@/components/Icon/IconDownload';
 import IconLoader from '@/components/Icon/IconLoader';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const Editorder = () => {
     const router = useRouter();
     const { id } = router.query;
+
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(setPageTitle('Edit Orders'));
+    });
+
 
     const initialValues = {
         billing: {
@@ -136,7 +145,7 @@ const Editorder = () => {
         },
     });
 
-    const [orderData, setOrderData] = useState({});
+    const [orderData, setOrderData] = useState<any>({});
     const [discountOpen, setDiscountOpen] = useState(false);
     const [openInvoice, setOpenInvoice] = useState(false);
     const [updateInvoideLoading, setUpdateInvoideLoading] = useState(false);
@@ -243,12 +252,12 @@ const Editorder = () => {
 
                 //Status
                 const filteredArray = orderDetails?.order?.events?.filter(
-                    (item) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
+                    (item:any) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
                 );
                 console.log('filteredArray: ', filteredArray);
 
-                const result = filteredArray?.map((item) => {
-                    const secondItem = NotesMsg.find((i) => i.type === item.type);
+                const result = filteredArray?.map((item:any) => {
+                    const secondItem:any = NotesMsg.find((i) => i.type === item.type);
                     return {
                         type: item.type,
                         message: item.type === 'NOTE_ADDED' ? item.message : secondItem.message,
@@ -485,12 +494,12 @@ const Editorder = () => {
     const orderStateUpdate = async () => {
         try {
             setOrderStatusLoading(true);
-            const isQuantity = fullfillData?.every((data) => data?.variant?.stocks.every((stock) => data?.quantity <= stock.quantity));
+            const isQuantity = fullfillData?.every((data:any) => data?.variant?.stocks.every((stock:any) => data?.quantity <= stock.quantity));
 
             if (isQuantity) {
-                const modify = fullfillData?.map((item) => ({
+                const modify = fullfillData?.map((item:any) => ({
                     orderLineId: item.id,
-                    stocks: item?.variant?.stocks?.map((data) => ({
+                    stocks: item?.variant?.stocks?.map((data:any) => ({
                         quantity: item?.quantity,
                         warehouse: data?.warehouse?.id,
                     })),

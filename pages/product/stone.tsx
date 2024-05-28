@@ -24,13 +24,14 @@ import IconEye from '@/components/Icon/IconEye';
 import { CREATE_STONE, DELETE_STONE, STONE_LIST, UPDATE_STONE } from '@/query/product';
 
 import { useMutation, useQuery } from '@apollo/client';
+import IconLoader from '@/components/Icon/IconLoader';
 
 const Stone = () => {
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Checkbox Table'));
+        dispatch(setPageTitle('Stone Type'));
     });
 
     const { error, data: stoneData } = useQuery(STONE_LIST, {
@@ -40,6 +41,9 @@ const Stone = () => {
     // const [designList, setStonList] = useState([]);
     const [stonList, setStonList] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    const [createStoneLoader, setCreateStoneLoader] = useState(false);
+    const [updateStoneLoader, setUpdateStoneLoader] = useState(false);
 
     useEffect(() => {
         getDesignList();
@@ -149,7 +153,12 @@ const Stone = () => {
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
+        setCreateStoneLoader(true);
+        setUpdateStoneLoader(true);
         try {
+            setCreateStoneLoader(true);
+            setUpdateStoneLoader(true);
+
             const variables = {
                 input: {
                     name: record.name,
@@ -191,8 +200,13 @@ const Stone = () => {
 
             setModal1(false);
             resetForm();
+
+            setCreateStoneLoader(false);
+            setUpdateStoneLoader(false);
         } catch (error) {
             console.log('error: ', error);
+            setCreateStoneLoader(false);
+            setUpdateStoneLoader(false);
         }
     };
 
@@ -290,12 +304,12 @@ const Stone = () => {
     return (
         <div>
             <div className="panel mt-6">
-                <div className="mb-5 md:flex flex-col gap-5 md:flex-row md:items-center">
+                <div className="mb-5 flex-col gap-5 md:flex md:flex-row md:items-center">
                     <h5 className="text-lg font-semibold dark:text-white-light">Stone Type</h5>
 
-                    <div className="md:flex md:ltr:ml-auto md:rtl:mr-auto  md:mt-0 mt-5">
-                        <input type="text" className="form-input mr-2 md:w-auto w-full mb-3 md:mb-0" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown md:mr-2 mr-0  mb-3 md:mb-0">
+                    <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
+                        <input type="text" className="form-input mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <div className="dropdown mb-3 mr-0  md:mb-0 md:mr-2">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="btn btn-outline-primary dropdown-toggle  lg:w-auto w-full"
@@ -317,7 +331,7 @@ const Stone = () => {
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary  md:w-auto w-full md:mb-0" onClick={() => CreateStone()}>
+                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateStone()}>
                             + Create
                         </button>
                     </div>
@@ -494,7 +508,13 @@ const Stone = () => {
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {modalTitle === null ? 'Submit' : 'Update'}
+                                                        {createStoneLoader || updateStoneLoader ? (
+                                                            <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" />
+                                                        ) : modalTitle === null ? (
+                                                            'Submit'
+                                                        ) : (
+                                                            'Update'
+                                                        )}
                                                     </button>
                                                 </Form>
                                             )}
