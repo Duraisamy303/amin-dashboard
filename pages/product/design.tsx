@@ -26,6 +26,7 @@ import { CREATE_DESIGN, DELETE_DESIGN, DESIGN_LIST, UPDATE_DESIGN } from '@/quer
 import { useMutation, useQuery } from '@apollo/client';
 import Loader from '../elements/loader';
 import IconLoader from '@/components/Icon/IconLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const Design = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -569,4 +570,4 @@ const Design = () => {
     );
 };
 
-export default Design;
+export default PrivateRouter(Design) ;

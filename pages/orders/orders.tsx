@@ -41,6 +41,7 @@ import {
 import dayjs from 'dayjs';
 import IconLoader from '@/components/Icon/IconLoader';
 import Link from 'next/link';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const Orders = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -315,7 +316,7 @@ const Orders = () => {
         }
     };
 
-    const handleChangeDuration = async (e) => {
+    const handleChangeDuration = async (e:any) => {
         try {
             if (e) {
                 if (e == 'custom') {
@@ -330,7 +331,7 @@ const Orders = () => {
         }
     };
 
-    const filterByDateAndYear = async (e) => {
+    const filterByDateAndYear = async (e:any) => {
         const response = handleExportByChange(e);
         console.log('response: ', response);
 
@@ -354,7 +355,7 @@ const Orders = () => {
         SetFinalDate(res?.data?.orders?.edges);
     };
 
-    const orderNumber = (item) => {
+    const orderNumber = (item:any) => {
         let label = '';
         if (item?.node?.user?.firstName == "") {
             label = `#${item?.node?.number} ${item.node?.billingAddress?.firstName} ${item.node?.billingAddress?.lastName}`;
@@ -364,7 +365,7 @@ const Orders = () => {
         return label;
     };
 
-    const SetFinalDate = (res) => {
+    const SetFinalDate = (res:any) => {
         const newData = res?.map((item: any) => ({
             ...item.node,
             order: orderNumber(item),
@@ -380,7 +381,7 @@ const Orders = () => {
 
         console.log(
             'item?.node?.fulfillments',
-            res?.map((item) => item?.node?.fulfillments)
+            res?.map((item:any) => item?.node?.fulfillments)
         );
 
         console.log('newData: ');
@@ -390,7 +391,7 @@ const Orders = () => {
     };
 
     const excelDownload = () => {
-        const excelData = allData?.map((item) => {
+        const excelData = allData?.map((item:any) => {
             const data = item?.node;
             const res = {
                 OrderNumber: data?.number,
@@ -401,9 +402,9 @@ const Orders = () => {
                 Address2: data?.shippingAddress?.streetAddress2,
                 Country: data?.shippingAddress?.country?.country,
                 City: data?.shippingAddress?.city,
-                ProductsName: data?.lines?.map((data) => data?.productName).join(','),
-                ProductPrice: data?.lines?.map((data) => data?.totalPrice?.gross?.amount).join(','),
-                ProductSKU: data?.lines?.map((data) => data?.productSku).join(','),
+                ProductsName: data?.lines?.map((data:any) => data?.productName).join(','),
+                ProductPrice: data?.lines?.map((data:any) => data?.totalPrice?.gross?.amount).join(','),
+                ProductSKU: data?.lines?.map((data:any) => data?.productSku).join(','),
                 DateOfPurchase: moment(data?.updatedAt).format('YYYY-MM-DD'),
                 PaymentStatus: data?.paymentStatus,
                 Currency: data?.total?.gross?.currency,
@@ -419,7 +420,7 @@ const Orders = () => {
         console.log('excelData: ', excelData);
     };
 
-    const filterByDates = async (e) => {
+    const filterByDates = async (e:any) => {
         try {
             const res = await exportListeRefetch({
                 first: 100,
@@ -821,4 +822,4 @@ const Orders = () => {
     );
 };
 
-export default Orders;
+export default PrivateRouter(Orders);

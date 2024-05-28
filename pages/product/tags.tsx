@@ -24,6 +24,7 @@ import IconEye from '@/components/Icon/IconEye';
 import { useMutation, useQuery } from '@apollo/client';
 import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY } from '@/query/product';
 import ReactQuill from 'react-quill';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const Tags = () => {
     const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -592,4 +593,4 @@ console.log("updatedDesignList", updatedDesignList)
     );
 };
 
-export default Tags;
+export default PrivateRouter(Tags);

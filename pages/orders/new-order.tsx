@@ -1,6 +1,7 @@
 import IconLoader from '@/components/Icon/IconLoader';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 import Modal from '@/components/Modal';
 import {
     ADD_COUPEN,
@@ -52,7 +53,7 @@ import { useDispatch } from 'react-redux';
 import Swal from 'sweetalert2';
 import * as Yup from 'yup';
 
-export default function Neworder() {
+const NewOrder =() => {
     const router = useRouter();
 
     const orderId = router?.query?.orderId;
@@ -794,7 +795,7 @@ export default function Neworder() {
         }
     };
 
-    const handleSearch = async (e) => {
+    const handleSearch = async (e:any) => {
         try {
             setState({ search: e });
             let channel = '';
@@ -808,7 +809,7 @@ export default function Neworder() {
                 query: e,
             });
             if (e?.length > 0) {
-                setState({ productList: res?.data?.products?.edges?.map((item) => item.node) });
+                setState({ productList: res?.data?.products?.edges?.map((item:any) => item.node) });
             } else {
                 const { data } = await productRefetch({
                     after: null,
@@ -1888,3 +1889,5 @@ export default function Neworder() {
         </>
     );
 }
+
+export default PrivateRouter(NewOrder) ;

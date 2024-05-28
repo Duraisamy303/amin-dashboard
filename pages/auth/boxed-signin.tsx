@@ -62,6 +62,8 @@ const LoginBoxed = () => {
 
             localStorage.setItem('token', data?.tokenCreate?.token);
             localStorage.setItem('user', data?.tokenCreate?.user);
+            localStorage.setItem('userEmail', data?.tokenCreate?.user?.email);
+            localStorage.setItem('userName', data?.tokenCreate?.user?.firstName);
             localStorage.setItem('refreshToken', data?.tokenCreate?.refreshToken);
 
             // notifySuccess("Login successfully");

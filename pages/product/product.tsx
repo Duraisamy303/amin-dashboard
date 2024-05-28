@@ -29,6 +29,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import { DELETE_PRODUCTS, PRODUCT_LIST, PARENT_CATEGORY_LIST, CATEGORY_FILTER_LIST } from '@/query/product';
 import moment from 'moment';
 import { Failure, formatCurrency, roundOff } from '@/utils/functions';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const ProductList = () => {
     const router = useRouter();
@@ -509,4 +510,4 @@ const ProductList = () => {
     );
 };
 
-export default ProductList;
+export default PrivateRouter(ProductList);

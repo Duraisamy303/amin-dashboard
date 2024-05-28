@@ -54,6 +54,7 @@ import {
 import { Success, sampleParams, uploadImage } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
 import { cA } from '@fullcalendar/core/internal-common';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 const ProductAdd = () => {
     const router = useRouter();
     const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -1908,4 +1909,4 @@ const ProductAdd = () => {
     );
 };
 
-export default ProductAdd;
+export default PrivateRouter(ProductAdd);

@@ -24,6 +24,7 @@ import IconEye from '@/components/Icon/IconEye';
 import { CREATE_DESIGN, CREATE_FINISH, DELETE_FINISH, FINISH_LIST, UPDATE_DESIGN, UPDATE_FINISH } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
 import IconLoader from '@/components/Icon/IconLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const Finish = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -554,4 +555,4 @@ const Finish = () => {
     );
 };
 
-export default Finish;
+export default PrivateRouter(Finish) ; 

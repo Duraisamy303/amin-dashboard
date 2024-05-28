@@ -23,6 +23,7 @@ import IconEye from '@/components/Icon/IconEye';
 import { CREATE_DESIGN, CREATE_FINISH, CREATE_STYLE, DELETE_FINISH, DELETE_STYLE, FINISH_LIST, STYLE_LIST, UPDATE_DESIGN, UPDATE_FINISH, UPDATE_STYLE } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
 import IconLoader from '@/components/Icon/IconLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const Style = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -554,4 +555,4 @@ const Style = () => {
     );
 };
 
-export default Style;
+export default PrivateRouter(Style);

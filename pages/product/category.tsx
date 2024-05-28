@@ -26,6 +26,7 @@ import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_C
 import ReactQuill from 'react-quill';
 import { PARENT_CATEGORY_LIST } from '@/query/product';
 import IconLoader from '@/components/Icon/IconLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const Category = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -651,4 +652,4 @@ const Category = () => {
     );
 };
 
-export default Category;
+export default PrivateRouter(Category) ;

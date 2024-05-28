@@ -60,6 +60,7 @@ import {
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
 import { Success, getValueByKey, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 const ProductEdit = (props: any) => {
     const router = useRouter();
 
@@ -2483,4 +2484,4 @@ const ProductEdit = (props: any) => {
     );
 };
 
-export default ProductEdit;
+export default PrivateRouter(ProductEdit) ;

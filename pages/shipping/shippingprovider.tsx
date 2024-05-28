@@ -19,8 +19,9 @@ import Swal from 'sweetalert2';
 import { CREATE_SHIPPING, DELETE_SHIPPING, SHIPPING_LIST, UPDATE_SHIPPING } from '@/query/product';
 import { useMutation, useQuery } from '@apollo/client';
 import { showDeleteAlert } from '@/utils/functions';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
-const Finish = () => {
+const ShippingProvider = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
@@ -531,4 +532,4 @@ const Finish = () => {
     );
 };
 
-export default Finish;
+export default PrivateRouter(ShippingProvider) ;

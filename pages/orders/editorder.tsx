@@ -46,6 +46,7 @@ import IconDownload from '@/components/Icon/IconDownload';
 import IconLoader from '@/components/Icon/IconLoader';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const Editorder = () => {
     const router = useRouter();
@@ -689,7 +690,7 @@ const Editorder = () => {
         }
     };
 
-    const stocks = (item) => {
+    const stocks = (item:any) => {
         const stock = item?.quantity + item?.variant?.stocks[0]?.quantity - item?.variant?.stocks[0]?.quantityAllocated;
         return stock;
     };
@@ -2110,4 +2111,4 @@ const Editorder = () => {
     );
 };
 
-export default Editorder;
+export default PrivateRouter(Editorder) ;

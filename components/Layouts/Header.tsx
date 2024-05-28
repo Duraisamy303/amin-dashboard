@@ -31,9 +31,29 @@ import IconMenuDatatables from '@/components/Icon/Menu/IconMenuDatatables';
 import IconMenuForms from '@/components/Icon/Menu/IconMenuForms';
 import IconMenuPages from '@/components/Icon/Menu/IconMenuPages';
 import IconMenuMore from '@/components/Icon/Menu/IconMenuMore';
+import IconUsers from '../Icon/IconUsers';
+import IconUserPlus from '../Icon/IconUserPlus';
 
 const Header = () => {
     const router = useRouter();
+
+    const [token, setToken] = useState('');
+    const [user, setUser] = useState({ email: '', name: '' });
+
+    useEffect(() => {
+        const Token: any = localStorage.getItem('token');
+        setToken(Token);
+        const UserEmail = localStorage.getItem('userEmail');
+        const UserName = localStorage.getItem('userName');
+
+        const UserDetails = {
+            email: UserEmail || '',
+            name: UserName || '',
+        };
+
+        setUser(UserDetails);
+    }, [token]);
+    console.log('user', user);
 
     useEffect(() => {
         const selector = document.querySelector('ul.horizontal-menu a[href="' + window.location.pathname + '"]');
@@ -63,9 +83,9 @@ const Header = () => {
         }
     }, [router.pathname]);
 
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
-    const themeConfig = useSelector((state:any) => state.themeConfig);
+    const themeConfig = useSelector((state: any) => state.themeConfig);
     const setLocale = (flag: string) => {
         setFlag(flag);
         if (flag.toLowerCase() === 'ae') {
@@ -147,6 +167,11 @@ const Header = () => {
 
     const { t, i18n } = useTranslation();
 
+    const signOutClick = () => {
+        localStorage.removeItem('token');
+
+        router.replace('/auth/boxed-signin');
+    };
     return (
         <header className={`z-40 ${themeConfig.semidark && themeConfig.menu === 'horizontal' ? 'dark' : ''}`}>
             <div className="shadow-sm">
@@ -183,7 +208,7 @@ const Header = () => {
                             </li>
                         </ul>
                     </div> */}
-                    <div className="flex items-center space-x-1.5 ltr:ml-auto rtl:mr-auto rtl:space-x-reverse dark:text-[#d0d2d6] sm:flex-1 ltr:sm:ml-0 sm:rtl:mr-0 lg:space-x-2  justify-end">
+                    <div className="flex items-center justify-end space-x-1.5 ltr:ml-auto rtl:mr-auto rtl:space-x-reverse dark:text-[#d0d2d6] sm:flex-1 ltr:sm:ml-0 sm:rtl:mr-0  lg:space-x-2">
                         {/* <div className="sm:ltr:mr-auto sm:rtl:ml-auto">
                             <form
                                 className={`${search && '!block'} absolute inset-x-0 top-1/2 z-10 mx-4 hidden -translate-y-1/2 sm:relative sm:top-0 sm:mx-0 sm:block sm:translate-y-0`}
@@ -411,30 +436,44 @@ const Header = () => {
                                 offset={[0, 8]}
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="relative group block"
-                                button={<img className="h-9 w-9 rounded-full object-cover saturate-50 group-hover:saturate-100" src="/assets/images/user-profile.jpeg" alt="userProfile" />}
+                                button={<img className="h-9 w-9 rounded-full object-cover saturate-50 group-hover:saturate-100" src="/assets/images/logo.png" alt="userProfile" />}
                             >
                                 <ul className="w-[230px] !py-0 font-semibold text-dark dark:text-white-dark dark:text-white-light/90">
                                     <li>
                                         <div className="flex items-center px-4 py-4">
-                                            <img className="h-10 w-10 rounded-md object-cover" src="/assets/images/user-profile.jpeg" alt="userProfile" />
-                                            <div className="truncate ltr:pl-4 rtl:pr-4">
-                                                <h4 className="text-base">
-                                                    John Doe
-                                                    <span className="rounded bg-success-light px-1 text-xs text-success ltr:ml-2 rtl:ml-2">Pro</span>
-                                                </h4>
-                                                <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white">
-                                                    johndoe@gmail.com
-                                                </button>
-                                            </div>
+                                            <img className="h-10 w-10 rounded-md object-cover" src="/assets/images/logo.png" alt="userProfile" />
+
+                                            {token ? (
+                                                <div className="truncate ltr:pl-4 rtl:pr-4">
+                                                    <h4 className="text-base">
+                                                        {user?.name}
+                                                        {/* <span className="rounded bg-success-light px-1 text-xs text-success ltr:ml-2 rtl:ml-2">Pro</span> */}
+                                                    </h4>
+                                                    <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white">
+                                                        {user?.email}
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <></>
+                                                // <div className="truncate ltr:pl-4 rtl:pr-4">
+                                                //     <h4 className="text-base">
+                                                //         John Doe
+                                                //         {/* <span className="rounded bg-success-light px-1 text-xs text-success ltr:ml-2 rtl:ml-2">Pro</span> */}
+                                                //     </h4>
+                                                //     <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white">
+                                                //         johndoe@gmail.com
+                                                //     </button>
+                                                // </div>
+                                            )}
                                         </div>
                                     </li>
-                                    <li>
+                                    {/* <li>
                                         <Link href="/users/profile" className="dark:hover:text-white">
                                             <IconUser className="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
                                             Profile
                                         </Link>
-                                    </li>
-                                    <li>
+                                    </li> */}
+                                    {/* <li>
                                         <Link href="/apps/mailbox" className="dark:hover:text-white">
                                             <IconMail className="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
                                             Inbox
@@ -445,13 +484,22 @@ const Header = () => {
                                             <IconLockDots className="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
                                             Lock Screen
                                         </Link>
-                                    </li>
-                                    <li className="border-t border-white-light dark:border-white-light/10">
-                                        <Link href="/auth/boxed-signin" className="!py-3 text-danger">
-                                            <IconLogout className="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
-                                            Sign Out
-                                        </Link>
-                                    </li>
+                                    </li> */}
+                                    {token ? (
+                                        <li className="border-t border-white-light dark:border-white-light/10">
+                                            <button onClick={() => signOutClick()} className="!py-3 text-danger">
+                                                <IconLogout className="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
+                                                Sign Out
+                                            </button>
+                                        </li>
+                                    ) : (
+                                        <li className="border-t border-white-light dark:border-white-light/10">
+                                            <Link href="/auth/boxed-signin" className="!py-3 text-danger">
+                                                <IconUserPlus className="h-4.5 w-4.5 shrink-0  ltr:mr-2 rtl:ml-2" />
+                                                Login / Register
+                                            </Link>
+                                        </li>
+                                    )}
                                 </ul>
                             </Dropdown>
                         </div>

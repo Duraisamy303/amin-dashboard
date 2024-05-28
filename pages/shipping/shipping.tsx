@@ -15,6 +15,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Field, Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import IconX from '@/components/Icon/IconX';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const rowData = [
     {
@@ -335,4 +336,4 @@ const Shipping = () => {
     );
 };
 
-export default Shipping;
+export default PrivateRouter(Shipping) ; 

@@ -25,6 +25,7 @@ import { CREATE_STONE, DELETE_STONE, STONE_LIST, UPDATE_STONE } from '@/query/pr
 
 import { useMutation, useQuery } from '@apollo/client';
 import IconLoader from '@/components/Icon/IconLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const Stone = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -562,4 +563,4 @@ const Stone = () => {
     );
 };
 
-export default Stone;
+export default PrivateRouter(Stone) ;
