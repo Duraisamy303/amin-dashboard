@@ -57,15 +57,12 @@ import { cA } from '@fullcalendar/core/internal-common';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
 const ProductAdd = () => {
     const router = useRouter();
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
-
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(setPageTitle('Add New Product'));
     });
-
-
 
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
@@ -624,7 +621,7 @@ const ProductAdd = () => {
                 //     assignsTagToProduct(productId);
                 //     console.log('success: ', data);
                 // }
-                Success("Product created successfully")
+                Success('Product created successfully');
                 router.push(`/apps/product/edit?id=${productId}`);
             }
         } catch (error) {
@@ -733,6 +730,10 @@ const ProductAdd = () => {
     // -------------------------------------New Added-------------------------------------------------------
 
     console.log('variants: ', variants);
+
+    const handleRemoveImage = (indexToRemove:any) => {
+        setImageUrl((prevImageUrl:any) => prevImageUrl.filter((_:any, index:any) => index !== indexToRemove));
+    };
     return (
         <div>
             <div className="  mt-6">
@@ -810,7 +811,7 @@ const ProductAdd = () => {
                             ></textarea>
                             {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
                         </div>
-                      
+
                         <div className="panel mb-5 ">
                             {/* <div className="mb-5 flex flex-col border-b border-gray-200 pb-5 pl-10 sm:flex-row">
                                 <label htmlFor="name" className="mt-2 block  pr-5 text-sm font-semibold text-gray-700">
@@ -1427,7 +1428,7 @@ const ProductAdd = () => {
                                     imageUrl?.map((item: any, index: any) => (
                                         <div className="relative col-span-4">
                                             <img src={item} alt="Product image" className=" object-cover" />
-                                            <button className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
+                                            <button  onClick={() => handleRemoveImage(index)} className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
                                                 <IconTrashLines className="h-4 w-4" />
                                             </button>
                                         </div>
