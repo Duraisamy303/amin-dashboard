@@ -51,7 +51,7 @@ const Router = useRouter()
         setLoading(true);
         if (categoryData) {
             if (categoryData.categories && categoryData.categories.edges) {
-                const newData = categoryData.categories.edges.map((item) => {
+                const newData = categoryData.categories.edges.map((item:any) => {
                     const jsonObject = JSON.parse(item.node.description || item.node.description);
                     // Extract the text value
                     const textValue = jsonObject?.blocks[0]?.data?.text;

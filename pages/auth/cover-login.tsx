@@ -41,7 +41,7 @@ const LoginCover = () => {
         // router.push('/');
     };
 
-    // const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const themeConfig = useSelector((state:any) => state.themeConfig);
     // const setLocale = (flag: string) => {

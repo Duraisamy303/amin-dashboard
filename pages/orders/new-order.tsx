@@ -34,7 +34,7 @@ import {
     UserDropdownData,
     addCommasToNumber,
     billingAddress,
-    checkChannel,
+    // checkChannel,
     formatCurrency,
     isEmptyObject,
     objIsEmpty,

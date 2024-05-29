@@ -31,6 +31,7 @@ import Modal from '@/components/Modal';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import Select from 'react-select';
 import { Field, Form, Formik } from 'formik';
+import moment from 'moment';
 
 const AddOrder = () => {
     const initialValues = {
@@ -91,7 +92,7 @@ const AddOrder = () => {
     //For fee
     const [feeOpen, setFeeOpen] = useState(false);
     const [selectedFee, setSelectedFee] = useState(0);
-    const [orderData, setOrderData] = useState(0);
+    const [orderData, setOrderData] = useState<any>(0);
     const [feeIsEdit, setFeeIsEdit] = useState(false);
 
     // For product
@@ -102,7 +103,7 @@ const AddOrder = () => {
     const [percentcoupenValue, setPercentCoupenValue] = useState('');
     const [fixedcoupenValue, setFixedCoupenValue] = useState('');
 
-    const [productList, setProductList] = useState([]);
+    const [productList, setProductList] = useState<any>([]);
     const [productListData, setProductListData] = useState([]);
 
     //For shipping
@@ -112,9 +113,9 @@ const AddOrder = () => {
 
     const [showBillingInputs, setShowBillingInputs] = useState(false);
     const [showShippingInputs, setShowShippingInputs] = useState(false);
-    const [selectedItems, setSelectedItems] = useState({});
+    const [selectedItems, setSelectedItems] = useState<any>({});
 
-    const [formData, setFormData] = useState(initialValues);
+    const [formData, setFormData] = useState<any>(initialValues);
     const [errors, setErrors] = useState<any>({});
 
     const [addNotes] = useMutation(CREATE_NOTES);
@@ -340,7 +341,7 @@ const AddOrder = () => {
         setLoading(true);
         if (productData) {
             if (productData && productData?.search && productData?.search?.edges?.length > 0) {
-                const list = productData?.search?.edges?.map((item) => item.node);
+                const list = productData?.search?.edges?.map((item: any) => item.node);
 
                 const dropdown: any = list.map((item: any) => ({ value: item.id, label: item.name }));
                 setProductList(list);
@@ -370,7 +371,7 @@ const AddOrder = () => {
         setLoading(true);
         if (shippingProvider) {
             if (shippingProvider && shippingProvider?.search?.edges?.length > 0) {
-                const dropdownData = shippingProvider?.search?.edges?.map((item) => ({
+                const dropdownData = shippingProvider?.search?.edges?.map((item: any) => ({
                     value: item.node?.id,
                     label: `${item.node?.firstName} -${item.node?.lastName}`,
                 }));
@@ -522,7 +523,7 @@ const AddOrder = () => {
                     if (customerAddress?.user?.defaultBillingAddress) {
                         const billingId = customerAddress?.user?.defaultBillingAddress?.id;
                         if (customerAddress?.user?.addresses?.length > 0) {
-                            const filter = customerAddress?.user?.addresses?.find((item) => item.id == billingId);
+                            const filter = customerAddress?.user?.addresses?.find((item: any) => item.id == billingId);
                             billing = {
                                 firstName: filter.firstName,
                                 lastName: filter.lastName,
@@ -562,7 +563,7 @@ const AddOrder = () => {
                 if (customerAddress?.user?.defaultShippingAddress) {
                     const billingId = customerAddress?.user?.defaultShippingAddress?.id;
                     if (customerAddress?.user?.addresses?.length > 0) {
-                        const filter = customerAddress?.user?.addresses?.find((item) => item.id == billingId);
+                        const filter = customerAddress?.user?.addresses?.find((item: any) => item.id == billingId);
 
                         shipping = {
                             firstName: filter.firstName,
@@ -622,9 +623,9 @@ const AddOrder = () => {
         }
     };
 
-    const handleSelect = (heading: any, subHeading: any) => {
+    const handleSelect: any = (heading: any, subHeading: any) => {
         if (subHeading) {
-            setSelectedItems((prevState) => ({
+            setSelectedItems((prevState: any) => ({
                 ...prevState,
                 [heading]: {
                     ...prevState[heading],
@@ -632,18 +633,18 @@ const AddOrder = () => {
                 },
             }));
         } else {
-            setSelectedItems((prevState) => {
+            setSelectedItems((prevState: any) => {
                 const newState: any = { ...prevState };
-                newState[heading] = Object.fromEntries(productList.find((item) => item.name === heading).variants.map(({ name }) => [name, !prevState[heading]?.[name]]));
+                newState[heading] = Object.fromEntries(productList.find((item: any) => item.name === heading).variants.map(({ name }: any) => [name, !prevState[heading]?.[name]]));
                 return newState;
             });
         }
     };
 
-    const handleHeadingSelect = (heading) => {
+    const handleHeadingSelect = (heading: any) => {
         const isHeadingChecked = selectedItems[heading] && Object.values(selectedItems[heading]).every((value) => value);
         if (isHeadingChecked) {
-            setSelectedItems((prevState) => {
+            setSelectedItems((prevState: any) => {
                 const newState = { ...prevState };
                 newState[heading] = Object.fromEntries(Object.entries(prevState[heading]).map(([name]) => [name, false]));
                 return newState;
@@ -653,16 +654,16 @@ const AddOrder = () => {
         }
     };
 
-    const handleSubHeadingSelect = (heading, subHeading) => {
+    const handleSubHeadingSelect = (heading: any, subHeading: any) => {
         handleSelect(heading, subHeading);
     };
 
     const addProducts = async () => {
         try {
             const selectedSubheadingIds: any[] = [];
-            productList.forEach(({ name, variants }) => {
+            productList.forEach(({ name, variants }: any) => {
                 if (selectedItems[name]) {
-                    variants?.forEach(({ name: variantName, id }) => {
+                    variants?.forEach(({ name: variantName, id }: any) => {
                         if (selectedItems[name][variantName]) {
                             selectedSubheadingIds.push(id);
                         }
@@ -786,6 +787,22 @@ const AddOrder = () => {
         }
     };
 
+    const removeNotes = (item: any) => {
+        // showDeleteAlert(
+        //     async () => {
+        //         await deleteNotes({
+        //             variables: { noteId: item.id },
+        //         });
+        //         const filter = state.notesList?.filter((data: any) => data.id !== item.id);
+        //         setState({ notesList: filter });
+        //         Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
+        //     },
+        //     () => {
+        //         Swal.fire('Cancelled', 'Your Notes List is safe :)', 'error');
+        //     }
+        // );
+    };
+
     return (
         <>
             {loading ? (
@@ -863,7 +880,7 @@ const AddOrder = () => {
                                                 <option value="" disabled selected>
                                                     Select a customer
                                                 </option>
-                                                {customerData?.map((item) => (
+                                                {customerData?.map((item: any) => (
                                                     <option key={item?.value} value={item?.value}>
                                                         {item?.label}
                                                     </option>
@@ -1056,7 +1073,7 @@ const AddOrder = () => {
                                                             onChange={(e) => {
                                                                 handleChange(e);
                                                                 const selectedCountryCode = e.target.value;
-                                                                const selectedCountry = countryList.find((country) => country.code === selectedCountryCode);
+                                                                const selectedCountry: any = countryList.find((country: any) => country.code === selectedCountryCode);
                                                                 if (selectedCountry) {
                                                                     setSelectedCountry(selectedCountry.country);
                                                                 }
@@ -1440,7 +1457,7 @@ const AddOrder = () => {
                                                         <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
                                                             Customer Provided note:
                                                         </label>
-                                                        <textarea className="form-input" name="note" id="note" cols="30" rows="2"></textarea>
+                                                        <textarea className="form-input" name="note" id="note" cols={30 as number} rows={2 as number}></textarea>
                                                     </div>
                                                 </div>
                                             </>
@@ -1628,7 +1645,7 @@ const AddOrder = () => {
                                     <div className="mb-5">
                                         <div className="text-gray-500">
                                             <div className="mb-2 bg-pink-200 p-3">Payment to be made upon delivery. Order status changed from Pending payment to Processing.</div>
-                                            <span Name="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
+                                            <span className="mr-1 border-b border-dotted border-gray-500">April 20, 2024 at 11:26 am</span>- by prderepteamuser -{' '}
                                             <span className="ml-2 cursor-pointer text-danger ">Delete note</span>
                                         </div>
                                     </div>
@@ -1680,7 +1697,7 @@ const AddOrder = () => {
                                 {productIsEdit ? (
                                     <div className="p-5">
                                         <div className="p-5">
-                                            <input type="number" className="form-input" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+                                            <input type="number" className="form-input" value={quantity} onChange={(e:any) => setQuantity(e.target.value)} />
                                         </div>
                                         <div className="flex justify-end gap-5">
                                             <button
@@ -1702,7 +1719,7 @@ const AddOrder = () => {
                                     </div>
                                 ) : (
                                     <div className="overflow-scroll p-5">
-                                        {productList.map(({ name, variants }) => (
+                                        {productList.map(({ name, variants }: any) => (
                                             <div key={name}>
                                                 <label>
                                                     <input
@@ -1714,7 +1731,7 @@ const AddOrder = () => {
                                                     {name}
                                                 </label>
                                                 <ul>
-                                                    {variants?.map(({ name: variantName }) => (
+                                                    {variants?.map(({ name: variantName }: any) => (
                                                         <li key={variantName} style={{ paddingLeft: '10px' }}>
                                                             <label>
                                                                 <input

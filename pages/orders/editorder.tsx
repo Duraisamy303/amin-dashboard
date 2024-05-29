@@ -159,7 +159,7 @@ const Editorder = () => {
 
     const [invoiceDate, setInvoiceDate] = useState('');
 
-    const [isEdited, setIsEdited] = useState({});
+    const [isEdited, setIsEdited] = useState<any>({});
     const [fullfillData, setFullfillData] = useState([]);
 
     const [paymentStatus, setPaymentStatus] = useState('');

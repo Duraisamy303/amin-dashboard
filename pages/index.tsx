@@ -196,7 +196,7 @@ const ProductList = () => {
                     price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item) => item.name)?.join(',') : '-',
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item:any) => item.name)?.join(',') : '-',
                     // shipmentTracking: item?.node?.shipments?.length>0?item
                 }));
                 console.log('newData: ', newData);

@@ -2,14 +2,14 @@ import { DataTable, DataTableSortStatus } from 'mantine-datatable';
 import { useEffect, useState, Fragment } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
-import { setPageTitle } from '../../../store/themeConfigSlice';
+import { setPageTitle } from '@/store/themeConfigSlice';
 import IconBell from '@/components/Icon/IconBell';
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import IconPencil from '@/components/Icon/IconPencil';
 import { Button } from '@mantine/core';
-import Dropdown from '../../../components/Dropdown';
+import Dropdown from '@/components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
 
 import { Dialog, Transition } from '@headlessui/react';
@@ -88,13 +88,13 @@ const AddCoupon = () => {
     const [publish, setPublish] = useState('published');
 
     //for accordiant
-    const [selectedArr, setSelectedArr] = useState([]);
-    const [accordions, setAccordions] = useState([]);
+    const [selectedArr, setSelectedArr] = useState<any>([]);
+    const [accordions, setAccordions] = useState<any>([]);
     const [openAccordion, setOpenAccordion] = useState('');
-    const [chooseType, setChooseType] = useState('');
-    const [selectedValues, setSelectedValues] = useState({});
+    const [chooseType, setChooseType] = useState<any>('');
+    const [selectedValues, setSelectedValues] = useState<any>({});
     console.log('selectedValues: ', selectedValues);
-    const [dropdowndata, setDropdownData] = useState([]);
+    const [dropdowndata, setDropdownData] = useState<any>([]);
 
     // error message
     const [productNameErrMsg, setProductNameErrMsg] = useState('');
@@ -209,8 +209,8 @@ const AddCoupon = () => {
             stoneType: stoneData?.productStoneTypes,
         };
 
-        const singleObj = Object.entries(arr1).reduce((acc, [key, value]) => {
-            acc[key] = value?.edges.map(({ node }) => ({ value: node?.id, label: node?.name }));
+        const singleObj = Object.entries(arr1).reduce((acc:any, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }:any) => ({ value: node?.id, label: node?.name }));
             return acc;
         }, {});
 
@@ -242,10 +242,10 @@ const AddCoupon = () => {
 
     const [categoryList, setCategoryList] = useState([]);
     const [collectionList, setCollectionList] = useState([]);
-    const [label, setLabel] = useState('');
+    const [label, setLabel] = useState<any>('');
 
     const [productType, setProductType] = useState([]);
-    const [selectedCat, setselectedCat] = useState('');
+    const [selectedCat, setselectedCat] = useState<any>('');
 
     useEffect(() => {
         category_list();
@@ -385,7 +385,7 @@ const AddCoupon = () => {
             const catId = selectedCat?.value;
             let collectionId: any[] = [];
             if (selectedCollection?.length > 0) {
-                collectionId = selectedCollection?.map((item) => item.value);
+                collectionId = selectedCollection?.map((item:any) => item.value);
             }
             const { data } = await addFormData({
                 variables: {
@@ -546,7 +546,7 @@ const AddCoupon = () => {
         try {
             let tagId: any[] = [];
             if (selectedCollection?.length > 0) {
-                tagId = selectedTag?.map((item) => item.value);
+                tagId = selectedTag?.map((item:any) => item.value);
             }
             console.log('tagId: ', tagId);
 
@@ -571,32 +571,32 @@ const AddCoupon = () => {
     };
 
     const handleAddAccordion = () => {
-        const selectedType = arr.find((item) => item.type === chooseType);
+        const selectedType = arr.find((item:any) => item.type === chooseType);
         setSelectedArr([chooseType, ...selectedArr]);
         setAccordions([selectedType, ...accordions]);
         setOpenAccordion(chooseType);
         setSelectedValues({ ...selectedValues, [chooseType]: [] }); // Clear selected values for the chosen type
     };
 
-    const handleRemoveAccordion = (type) => {
-        setSelectedArr(selectedArr.filter((item) => item !== type));
-        setAccordions(accordions.filter((item) => item.type !== type));
+    const handleRemoveAccordion = (type:any) => {
+        setSelectedArr(selectedArr.filter((item:any) => item !== type));
+        setAccordions(accordions.filter((item:any) => item.type !== type));
         setOpenAccordion('');
         const updatedSelectedValues = { ...selectedValues };
         delete updatedSelectedValues[type];
         setSelectedValues(updatedSelectedValues);
     };
 
-    const handleDropdownChange = (event, type) => {
+    const handleDropdownChange = (event:any, type:any) => {
         setChooseType(type);
     };
 
-    const handleToggleAccordion = (type) => {
+    const handleToggleAccordion = (type:any) => {
         setOpenAccordion(openAccordion === type ? '' : type);
     };
 
-    const handleMultiSelectChange = (selectedOptions, type) => {
-        const selectedValuesForType = selectedOptions.map((option) => option.value);
+    const handleMultiSelectChange = (selectedOptions:any, type:any) => {
+        const selectedValuesForType = selectedOptions.map((option:any) => option.value);
         setSelectedValues({ ...selectedValues, [type]: selectedValuesForType });
     };
 
@@ -741,7 +741,7 @@ const AddCoupon = () => {
                                                         <Select
                                                             placeholder="Select Type"
                                                             options={optionsVal.filter((option) => !selectedArr.includes(option.value))}
-                                                            onChange={(selectedOption) => handleDropdownChange(selectedOption, selectedOption.value)}
+                                                            onChange={(selectedOption:any) => handleDropdownChange(selectedOption, selectedOption.value)}
                                                             value={options.find((option) => option.value === chooseType)} // Set the value of the selected type
                                                         />
                                                     </div>
@@ -754,7 +754,7 @@ const AddCoupon = () => {
 
                                                 <div className="mb-5">
                                                     <div className="space-y-2 font-semibold">
-                                                        {accordions.map((item) => (
+                                                        {accordions.map((item:any) => (
                                                             <div key={item.type} className="rounded border border-[#d3d3d3] dark:border-[#1b2e4b]">
                                                                 <button
                                                                     type="button"
@@ -791,7 +791,7 @@ const AddCoupon = () => {
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
                                                                                             isSearchable={false}
-                                                                                            value={(selectedValues[item.type] || []).map((value) => ({ value, label: value }))}
+                                                                                            value={(selectedValues[item.type] || []).map((value:any) => ({ value, label: value }))}
                                                                                         />
                                                                                         {/* <Select placeholder="Select an option" options={options} isMulti isSearchable={false} /> */}
                                                                                         {/* <div className="flex justify-between">
@@ -991,7 +991,7 @@ const AddCoupon = () => {
                                                                 type="number"
                                                                 style={{ width: '350px' }}
                                                                 value={menuOrder}
-                                                                onChange={(e) => setMenuOrder(e.target.value)}
+                                                                onChange={(e:any) => setMenuOrder(e.target.value)}
                                                                 placeholder="Enter Menu Order"
                                                                 name="regularPrice"
                                                                 className="form-input"

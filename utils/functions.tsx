@@ -46,12 +46,12 @@ export const shortData = (selectValue: any, products: any) => {
         });
     } else if (selectValue === 'New Added') {
         product_items.sort((a, b) => {
-            const dateA = new Date(a?.node?.created) || new Date();
-            const dateB = new Date(b?.node?.created) || new Date();
+            const dateA:any = new Date(a?.node?.created) || new Date();
+            const dateB:any = new Date(b?.node?.created) || new Date();
             return dateB - dateA;
         });
     } else if (selectValue === 'On Sale') {
-        product_items = products.filter((p) => p.node.pricing.discount > 0);
+        product_items = products.filter((p:any) => p.node.pricing.discount > 0);
     }
 
     return product_items;
@@ -204,14 +204,14 @@ export const getValueByKey = (metadata: any[], key: string) => {
     return item ? item.value : null;
 };
 
-export const isEmptyObject = (obj) => {
+export const isEmptyObject = (obj:any) => {
     return Object.values(obj).every((value) => value === '');
 };
 
 export const UserDropdownData = (shippingProvider: any) => {
     if (shippingProvider) {
         if (shippingProvider && shippingProvider?.search?.edges?.length > 0) {
-            const dropdownData = shippingProvider?.search?.edges?.map((item) => ({
+            const dropdownData = shippingProvider?.search?.edges?.map((item:any) => ({
                 value: item.node?.id,
                 label: `${item?.node?.firstName} -${item?.node?.lastName}`,
             }));
@@ -301,7 +301,7 @@ export const objIsEmpty = (obj: object) => {
     return true;
 };
 
-export const handleExportByChange = (e) => {
+export const handleExportByChange = (e:any) => {
     const selectedValue = e;
 
     // Get current date
@@ -346,7 +346,7 @@ export const handleExportByChange = (e) => {
     };
     return body;
 };
-export const downloadExlcel = (excelData, fileName) => {
+export const downloadExlcel = (excelData:any, fileName:any) => {
     const filetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8';
     const fileExtension = '.xlsx';
     const ws = XLSX.utils.json_to_sheet(excelData);
@@ -366,7 +366,7 @@ export const getCurrentDateTime = () => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-export const mintDateTime = (date) => {
+export const mintDateTime = (date:any) => {
     const now = new Date(date);
     const year = now.getFullYear();
     let month = (now.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-indexed
@@ -375,7 +375,7 @@ export const mintDateTime = (date) => {
     let minutes = now.getMinutes().toString().padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
-export const roundOff = (price) => {
+export const roundOff = (price:any) => {
     let roundedPrice = '';
     if (price) {
         const roundedValue = Math.ceil(price);
@@ -389,7 +389,7 @@ export const roundOff = (price) => {
     return roundedPrice;
 };
 
-export const formatCurrency = (currency) => {
+export const formatCurrency = (currency:any) => {
     if (currency === 'INR') {
         return '₹';
     } else {
@@ -397,7 +397,7 @@ export const formatCurrency = (currency) => {
     }
 };
 
-export const addCommasToNumber = (value) => {
+export const addCommasToNumber = (value:any) => {
     if (typeof value === 'number') {
         return value.toLocaleString(undefined, {
             minimumFractionDigits: 2,
@@ -409,7 +409,7 @@ export const addCommasToNumber = (value) => {
 };
 
 
-export const OrderStatus = (status) => {
+export const OrderStatus = (status:any) => {
     if (status === 'FULFILLED') {
         return 'Completed';
     } else if(status == "UNCONFIRMED") {
@@ -420,7 +420,7 @@ export const OrderStatus = (status) => {
 };
 
 
-export const PaymentStatus = (status) => {
+export const PaymentStatus = (status:any) => {
     if (status === 'NOT_CHARGED') {
         return 'Pending';
     } else {

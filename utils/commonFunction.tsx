@@ -5,7 +5,7 @@ export const setBilling = async (customerAddress: any) => {
             if (customerAddress?.user?.defaultBillingAddress) {
                 const billingId = customerAddress?.user?.defaultBillingAddress?.id;
                 if (customerAddress?.user?.addresses?.length > 0) {
-                    const filter = customerAddress?.user?.addresses?.find((item) => item.id == billingId);
+                    const filter = customerAddress?.user?.addresses?.find((item:any) => item.id == billingId);
                     billing = {
                         firstName: filter.firstName,
                         lastName: filter.lastName,
@@ -37,7 +37,7 @@ export const setShipping = async (customerAddress: any) => {
         if (customerAddress?.user?.defaultShippingAddress) {
             const billingId = customerAddress?.user?.defaultShippingAddress?.id;
             if (customerAddress?.user?.addresses?.length > 0) {
-                const filter = customerAddress?.user?.addresses?.find((item) => item.id == billingId);
+                const filter = customerAddress?.user?.addresses?.find((item:any) => item.id == billingId);
                 shipping = {
                     firstName: filter.firstName,
                     lastName: filter.lastName,
@@ -65,7 +65,7 @@ export const setShipping = async (customerAddress: any) => {
 export const productsDropdown = (productData: any) => {
     if (productData) {
         if (productData && productData?.search && productData?.search?.edges?.length > 0) {
-            const list = productData?.search?.edges?.map((item) => item?.node);
+            const list = productData?.search?.edges?.map((item:any) => item?.node);
             // const dropdown: any = list.map((item: any) => ({ value: item?.id, label: item?.name }));
             return list;
         }

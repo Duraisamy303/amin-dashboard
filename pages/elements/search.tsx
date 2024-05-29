@@ -335,7 +335,7 @@ const overlayClickAway = () => {
                     <div className="mb-5 space-y-5">
                         <form>
                             <div className="relative flex w-full  border border-white-dark/20">
-                                <button type="submit" placeholder="Let's find your question in fast way" className="m-auto flex items-center justify-center p-3 text-primary">
+                                <button type="submit"  className="m-auto flex items-center justify-center p-3 text-primary">
                                     <IconSearch className="mx-auto w-5 h-5" />
                                 </button>
                                 <input
