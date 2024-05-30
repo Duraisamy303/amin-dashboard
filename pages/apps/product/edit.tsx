@@ -789,16 +789,16 @@ const ProductEdit = (props: any) => {
                     hasError = true;
                 }
 
-                if (variant.salePrice < 0) {
-                    errors.salePrice = 'Sale Price cannot be negative';
-                    hasError = true;
-                } else if (isNaN(variant.salePrice)) {
-                    errors.salePrice = 'Sale Price must be a number';
-                    hasError = true;
-                } else if (variant.regularPrice < variant.salePrice) {
-                    errors.salePrice = 'Sale price is greater than Regular price';
-                    hasError = true;
-                }
+                // if (variant.salePrice < 0) {
+                //     errors.salePrice = 'Sale Price cannot be negative';
+                //     hasError = true;
+                // } else if (isNaN(variant.salePrice)) {
+                //     errors.salePrice = 'Sale Price must be a number';
+                //     hasError = true;
+                // } else if (variant.regularPrice < variant.salePrice) {
+                //     errors.salePrice = 'Sale price is greater than Regular price';
+                //     hasError = true;
+                // }
 
                 if (!variant.stackMgmt) {
                     errors.stackMgmt = 'Check Stack Management';
@@ -914,7 +914,7 @@ const ProductEdit = (props: any) => {
                     update: [
                         {
                             channelListing: item.channelId,
-                            price: item.salePrice,
+                            price: item.regularPrice,
                             costPrice: item.regularPrice,
                         },
                     ],
@@ -1451,7 +1451,7 @@ const ProductEdit = (props: any) => {
                                                                                             options={item[`${item.type}Name`]}
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
-                                                                                            isSearchable={false}
+                                                                                            isSearchable={true}
                                                                                             value={(selectedValues[item.type] || []).map((value: any) => {
                                                                                                 const options = item[`${item.type}Name`];
                                                                                                 const option = options ? options.find((option: any) => option.value === value) : null;
@@ -1606,7 +1606,7 @@ const ProductEdit = (props: any) => {
                                                                     {variantErrors[index]?.regularPrice && <p className="error-message mt-1 text-red-500">{variantErrors[index].regularPrice}</p>}
                                                                 </div>
                                                             </div>
-                                                            <div className="flex items-center">
+                                                            {/* <div className="flex items-center">
                                                                 <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                     <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
                                                                         Sale Price
@@ -1625,9 +1625,9 @@ const ProductEdit = (props: any) => {
                                                                     />
                                                                     {variantErrors[index]?.salePrice && <p className="error-message mt-1 text-red-500">{variantErrors[index].salePrice}</p>}
 
-                                                                    {/* {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>} */}
+                                                                    {salePriceErrMsg && <p className="error-message mt-1 text-red-500 ">{salePriceErrMsg}</p>}
                                                                 </div>
-                                                            </div>
+                                                            </div> */}
                                                         </div>
                                                     );
                                                 })}

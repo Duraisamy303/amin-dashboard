@@ -436,13 +436,13 @@ const ProductAdd = () => {
                     errors.regularPrice = 'Regular Price must be a number';
                 }
 
-                if (variant.salePrice < 0) {
-                    errors.salePrice = 'Sale price cannot be negative';
-                } else if (isNaN(variant.salePrice)) {
-                    errors.salePrice = 'Sale Price must be a number';
-                } else if (variant.regularPrice < variant.salePrice) {
-                    errors.salePrice = 'Sale price is greater than Regular price';
-                }
+                // if (variant.salePrice < 0) {
+                //     errors.salePrice = 'Sale price cannot be negative';
+                // } else if (isNaN(variant.salePrice)) {
+                //     errors.salePrice = 'Sale Price must be a number';
+                // } else if (variant.regularPrice < variant.salePrice) {
+                //     errors.salePrice = 'Sale price is greater than Regular price';
+                // }
 
                 if (!variant.stackMgmt) {
                     errors.stackMgmt = 'Check Stack Management';
@@ -558,7 +558,7 @@ const ProductAdd = () => {
                 channelListings: [
                     {
                         channelId: 'Q2hhbm5lbDoy',
-                        price: item.salePrice,
+                        price: item.regularPrice,
                         costPrice: item.regularPrice,
                     },
                 ],
@@ -960,7 +960,7 @@ const ProductAdd = () => {
                                                                                             options={item?.[`${item?.type}Name`]}
                                                                                             onChange={(selectedOptions) => handleMultiSelectChange(selectedOptions, item.type)}
                                                                                             isMulti
-                                                                                            isSearchable={false}
+                                                                                            isSearchable={true}
                                                                                             value={(selectedValues[item.type] || []).map((value: any) => {
                                                                                                 const option = item[`${item.type}Name`].find((option: any) => option.value === value);
                                                                                                 return { value: option.value, label: option.label };
@@ -1110,7 +1110,7 @@ const ProductAdd = () => {
                                                                 {variantErrors[index]?.regularPrice && <p className="error-message mt-1 text-red-500">{variantErrors[index].regularPrice}</p>}
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center">
+                                                        {/* <div className="flex items-center">
                                                             <div className="mb-5 mr-4" style={{ width: '20%' }}>
                                                                 <label htmlFor={`salePrice_${index}`} className="block pr-10 text-sm font-medium text-gray-700">
                                                                     Sale Price
@@ -1129,7 +1129,7 @@ const ProductAdd = () => {
                                                                 />
                                                                 {variantErrors[index]?.salePrice && <p className="error-message mt-1 text-red-500">{variantErrors[index].salePrice}</p>}
                                                             </div>
-                                                        </div>
+                                                        </div> */}
                                                     </div>
                                                 ))}
                                                 <div className="mb-5">
