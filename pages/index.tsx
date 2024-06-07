@@ -366,7 +366,7 @@ const ProductList = () => {
         }
     };
 
-    const duplicate = async (row) => {
+    const duplicate = async (row:any) => {
         console.log('row: ', row);
         try {
             setLoading(true);
@@ -501,7 +501,7 @@ const ProductList = () => {
         try {
             let variants = [];
             if (row.variants.length > 0) {
-                const variantArr = row.variants?.map((item, index) => ({
+                const variantArr = row.variants?.map((item:any, index:any) => ({
                     attributes: [],
                     sku: `${item.sku}-1`,
                     name: item.name,
