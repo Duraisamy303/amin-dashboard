@@ -53,7 +53,6 @@ const Header = () => {
 
         setUser(UserDetails);
     }, [token]);
-    console.log('user', user);
 
     useEffect(() => {
         const selector = document.querySelector('ul.horizontal-menu a[href="' + window.location.pathname + '"]');

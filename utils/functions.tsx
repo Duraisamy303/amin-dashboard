@@ -24,7 +24,6 @@ export const getPrice = () => {
     let price;
 };
 
-
 export const shortData = (selectValue: any, products: any) => {
     if (!selectValue || !products?.length) {
         return null;
@@ -46,12 +45,12 @@ export const shortData = (selectValue: any, products: any) => {
         });
     } else if (selectValue === 'New Added') {
         product_items.sort((a, b) => {
-            const dateA:any = new Date(a?.node?.created) || new Date();
-            const dateB:any = new Date(b?.node?.created) || new Date();
+            const dateA: any = new Date(a?.node?.created) || new Date();
+            const dateB: any = new Date(b?.node?.created) || new Date();
             return dateB - dateA;
         });
     } else if (selectValue === 'On Sale') {
-        product_items = products.filter((p:any) => p.node.pricing.discount > 0);
+        product_items = products.filter((p: any) => p.node.pricing.discount > 0);
     }
 
     return product_items;
@@ -192,7 +191,41 @@ export const uploadImage = async (productId: any, file: any) => {
         });
 
         const data = await response.json();
-        console.log('data', data); // Response from the server
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+};
+
+export const duplicateUploadImage = async (productId, imageUrl) => {
+    try {
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        formData.append(
+            'operations',
+            JSON.stringify({
+                operationName: 'ProductMediaCreate',
+                variables: { product: productId, alt: '', mediaUrl: imageUrl },
+                query: `mutation ProductMediaCreate($product: ID!, $alt: String, $mediaUrl: String) {
+                    productMediaCreate(input: {alt: $alt, product: $product, mediaUrl: $mediaUrl}) {
+                        errors { ...ProductError }
+                        product { id media { ...ProductMedia } }
+                    }
+                }
+                fragment ProductError on ProductError { code field message }
+                fragment ProductMedia on ProductMedia { id alt sortOrder url(size: 1024) type oembedData }`,
+            })
+        );
+
+        const response = await fetch('http://file.prade.in/graphql/', {
+            method: 'POST',
+            headers: {
+                Authorization: `JWT ${token}`,
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
         return data;
     } catch (error) {
         console.error('Error:', error);
@@ -204,14 +237,14 @@ export const getValueByKey = (metadata: any[], key: string) => {
     return item ? item.value : null;
 };
 
-export const isEmptyObject = (obj:any) => {
+export const isEmptyObject = (obj: any) => {
     return Object.values(obj).every((value) => value === '');
 };
 
 export const UserDropdownData = (shippingProvider: any) => {
     if (shippingProvider) {
         if (shippingProvider && shippingProvider?.search?.edges?.length > 0) {
-            const dropdownData = shippingProvider?.search?.edges?.map((item:any) => ({
+            const dropdownData = shippingProvider?.search?.edges?.map((item: any) => ({
                 value: item.node?.id,
                 label: `${item?.node?.firstName} -${item?.node?.lastName}`,
             }));
@@ -301,7 +334,7 @@ export const objIsEmpty = (obj: object) => {
     return true;
 };
 
-export const handleExportByChange = (e:any) => {
+export const handleExportByChange = (e: any) => {
     const selectedValue = e;
 
     // Get current date
@@ -346,7 +379,7 @@ export const handleExportByChange = (e:any) => {
     };
     return body;
 };
-export const downloadExlcel = (excelData:any, fileName:any) => {
+export const downloadExlcel = (excelData: any, fileName: any) => {
     const filetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8';
     const fileExtension = '.xlsx';
     const ws = XLSX.utils.json_to_sheet(excelData);
@@ -366,7 +399,7 @@ export const getCurrentDateTime = () => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-export const mintDateTime = (date:any) => {
+export const mintDateTime = (date: any) => {
     const now = new Date(date);
     const year = now.getFullYear();
     let month = (now.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-indexed
@@ -375,7 +408,7 @@ export const mintDateTime = (date:any) => {
     let minutes = now.getMinutes().toString().padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
-export const roundOff = (price:any) => {
+export const roundOff = (price: any) => {
     let roundedPrice = '';
     if (price) {
         const roundedValue = Math.ceil(price);
@@ -389,7 +422,7 @@ export const roundOff = (price:any) => {
     return roundedPrice;
 };
 
-export const formatCurrency = (currency:any) => {
+export const formatCurrency = (currency: any) => {
     if (currency === 'INR') {
         return '₹';
     } else {
@@ -397,7 +430,7 @@ export const formatCurrency = (currency:any) => {
     }
 };
 
-export const addCommasToNumber = (value:any) => {
+export const addCommasToNumber = (value: any) => {
     if (typeof value === 'number') {
         return value.toLocaleString(undefined, {
             minimumFractionDigits: 2,
@@ -408,23 +441,22 @@ export const addCommasToNumber = (value:any) => {
     }
 };
 
-
-export const OrderStatus = (status:any) => {
+export const OrderStatus = (status: any) => {
     if (status === 'FULFILLED') {
         return 'Completed';
-    } else if(status == "UNCONFIRMED") {
+    } else if (status == 'UNCONFIRMED') {
         return 'UnConfirmed';
-    }else {
+    } else {
         return 'Processing';
     }
 };
 
-
-export const PaymentStatus = (status:any) => {
+export const PaymentStatus = (status: any) => {
     if (status === 'NOT_CHARGED') {
         return 'Pending';
     } else {
         return 'Completed';
     }
 };
+
 

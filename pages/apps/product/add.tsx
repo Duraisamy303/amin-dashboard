@@ -38,10 +38,13 @@ import {
     CATEGORY_LIST,
     CHANNEL_LIST,
     COLLECTION_LIST,
+    CREATE_CATEGORY,
     CREATE_PRODUCT,
+    CREATE_TAG,
     CREATE_VARIANT,
     DESIGN_LIST,
     FINISH_LIST,
+    PARENT_CATEGORY_LIST,
     PRODUCT_CAT_LIST,
     PRODUCT_LIST_TAGS,
     PRODUCT_TYPE_LIST,
@@ -51,10 +54,12 @@ import {
     UPDATE_PRODUCT_CHANNEL,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { Success, sampleParams, uploadImage } from '@/utils/functions';
+import { Failure, Success, sampleParams, uploadImage } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
 import { cA } from '@fullcalendar/core/internal-common';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import Modal from '@/components/Modal';
+import IconLoader from '@/components/Icon/IconLoader';
 const ProductAdd = () => {
     const router = useRouter();
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -97,7 +102,6 @@ const ProductAdd = () => {
     //for accordiant
     const [selectedArr, setSelectedArr] = useState<any>([]);
     const [accordions, setAccordions] = useState<any>([]);
-    console.log('accordions: ', accordions);
     const [openAccordion, setOpenAccordion] = useState('');
     const [chooseType, setChooseType] = useState('');
     const [selectedValues, setSelectedValues] = useState<any>({});
@@ -122,7 +126,6 @@ const ProductAdd = () => {
     const [dropdowndata, setDropdownData] = useState<any>('');
     const [images, setImages] = useState<any>('');
     const [imageUrl, setImageUrl] = useState<any>('');
-    console.log('images: ', imageUrl);
 
     const [variants, setVariants] = useState([
         {
@@ -145,8 +148,10 @@ const ProductAdd = () => {
     const [publicVisible, setPublicVisible] = useState(false);
     const [publishedDate, setPublishedDate] = useState(false);
     const [catalogVisible, setCatalogVisible] = useState(false);
-    const [addCategory, setAddCategory] = useState(false);
+    // const [addCategory, setAddCategory] = useState(false);
     const [quantityTrack, setQuantityTrack] = useState(true);
+    const [parentLists, setParentLists] = useState([]);
+
     const [active, setActive] = useState<string>('1');
     // track stock
     const trackStock = (value: any) => {
@@ -163,6 +168,9 @@ const ProductAdd = () => {
         { type: 'style', styleName: dropdowndata?.style },
         { type: 'stone', stoneName: dropdowndata?.stoneType },
         { type: 'finish', finishName: dropdowndata?.finish },
+        { type: 'stoneColor', stoneColorName: dropdowndata?.stoneColor },
+        { type: 'type', typeName: dropdowndata?.type },
+        { type: 'size', sizeName: dropdowndata?.size },
     ];
 
     const optionsVal = arr.map((item) => ({ value: item.type, label: item.type }));
@@ -183,9 +191,9 @@ const ProductAdd = () => {
         setCatalogVisible(!catalogVisible);
     };
 
-    const addCategoryClick = () => {
-        setAddCategory(!addCategory);
-    };
+    // const addCategoryClick = () => {
+    //     setAddCategory(!addCategory);
+    // };
 
     const productImagePopup = () => {
         setModal2(true);
@@ -215,8 +223,28 @@ const ProductAdd = () => {
     const { data: designData } = useQuery(DESIGN_LIST, {
         variables: sampleParams,
     });
+
     const { data: styleData } = useQuery(STYLE_LIST, {
         variables: sampleParams,
+    });
+    // -----------------New --------------------------------
+    const { data: stoneColorData } = useQuery(DESIGN_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: typeData } = useQuery(DESIGN_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: sizeData } = useQuery(DESIGN_LIST, {
+        variables: sampleParams,
+    });
+
+    const [addCategory] = useMutation(CREATE_CATEGORY);
+    const [addTag] = useMutation(CREATE_TAG);
+
+    const { data: parentList, error: parentListError } = useQuery(PARENT_CATEGORY_LIST, {
+        variables: { channel: 'india-channel' },
     });
 
     useEffect(() => {
@@ -225,6 +253,9 @@ const ProductAdd = () => {
             style: styleData?.productStyles,
             finish: finishData?.productFinishes,
             stoneType: stoneData?.productStoneTypes,
+            stoneColor: stoneColorData?.productDesigns,
+            type: typeData?.productDesigns,
+            size: sizeData?.productDesigns,
         };
 
         const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
@@ -233,13 +264,18 @@ const ProductAdd = () => {
         }, {});
 
         setDropdownData(singleObj);
-    }, [finishData, stoneData, designData, styleData]);
+    }, [finishData, stoneData, designData, styleData, stoneColorData]);
 
-    const { data: tagsList } = useQuery(PRODUCT_LIST_TAGS, {
+    useEffect(() => {
+        const getparentCategoryList = parentList?.categories?.edges;
+        setParentLists(getparentCategoryList);
+    });
+
+    const { data: tagsList, refetch: tagListRefetch } = useQuery(PRODUCT_LIST_TAGS, {
         variables: { channel: 'india-channel' },
     });
 
-    const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
+    const { data: cat_list, refetch: categoryListRefetch } = useQuery(PRODUCT_CAT_LIST, {
         variables: sampleParams,
     });
 
@@ -264,6 +300,11 @@ const ProductAdd = () => {
 
     const [productType, setProductType] = useState([]);
     const [selectedCat, setselectedCat] = useState<any>('');
+    const [isOpenCat, setIsOpenCat] = useState(false);
+    const [isOpenTag, setIsOpenTag] = useState(false);
+    const [tagLoader, setTagLoader] = useState(false);
+
+    const [createCategoryLoader, setCreateCategoryLoader] = useState(false);
 
     useEffect(() => {
         category_list();
@@ -349,6 +390,10 @@ const ProductAdd = () => {
     const selectedCollections = (data: any) => {
         setSelectedCollection(data);
     };
+
+    const SubmittedForm = Yup.object().shape({
+        name: Yup.string().required('Name is required'),
+    });
 
     const CreateProduct = async () => {
         setProductNameErrMsg('');
@@ -494,6 +539,10 @@ const ProductAdd = () => {
                         ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
                         ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
                         ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
+                        // ------------------------New --------------------------------
+                        ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productTypeType: selectedValues.type }),
+                        ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSizeType: selectedValues.size }),
+                        ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStoneColorType: selectedValues.stoneColor }),
                     },
                 },
             });
@@ -501,7 +550,6 @@ const ProductAdd = () => {
             if (data?.productCreate?.errors?.length > 0) {
                 console.log('error: ', data?.productCreate?.errors[0]?.message);
             } else {
-                console.log('CreateProduct: ', data);
                 const productId = data?.productCreate?.product?.id;
                 productChannelListUpdate(productId);
                 if (images?.length > 0) {
@@ -539,8 +587,6 @@ const ProductAdd = () => {
             if (data?.productChannelListingUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
-                console.log('productChannelListUpdate: ', data);
-
                 variantListUpdate(productId);
             }
         } catch (error) {
@@ -569,7 +615,6 @@ const ProductAdd = () => {
                     },
                 ],
             }));
-            console.log('variantArr: ', variantArr);
 
             const { data } = await createVariant({
                 variables: {
@@ -581,9 +626,43 @@ const ProductAdd = () => {
             if (data?.productVariantCreate?.errors?.length > 0) {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
-                console.log('variantCreate: ', data);
-                // const variantId = data?.productVariantCreate?.productVariant?.id;
+                if (data?.productVariantBulkCreate?.errors?.length > 0) {
+                    Failure(data?.productVariantBulkCreate?.errors[0]?.message);
+                } else {
+                    const resVariants = data?.productVariantBulkCreate?.productVariants;
+                    if (resVariants?.length > 0) {
+                        resVariants?.map((item:any) => {
+                            variantChannelListUpdate(productId, item.id);
+                        });
+                    }
+                }
                 updateMetaData(productId);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const variantChannelListUpdate = async (productId: any, variantId: any) => {
+        console.log('variantChannelListUpdate: ');
+        try {
+            const variantArr = variants?.map((item) => ({
+                channelId: 'Q2hhbm5lbDoy',
+                price: item.regularPrice,
+                costPrice: item.regularPrice,
+            }));
+            console.log('variantArr: ', variantArr);
+
+            const { data } = await updateVariantList({
+                variables: {
+                    id: variantId,
+                    input: variantArr,
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productVariantChannelListingUpdate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
             }
         } catch (error) {
             console.log('error: ', error);
@@ -657,8 +736,38 @@ const ProductAdd = () => {
     //     }
     // };
 
+    // form submit
+    const onSubmit = async (record: any, { resetForm }: any) => {
+        console.log('record: ', record);
+        setCreateCategoryLoader(true);
+        try {
+            setCreateCategoryLoader(true);
+
+            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
+
+            const variables = {
+                input: {
+                    name: record.name,
+                    description: Description,
+                },
+                parent: record.parentCategory,
+            };
+
+            const { data } = await addCategory({ variables });
+            categoryListRefetch();
+            setIsOpenCat(false);
+            resetForm();
+            setCreateCategoryLoader(false);
+            Success('Category created successfully');
+        } catch (error) {
+            console.log('error: ', error);
+            setCreateCategoryLoader(false);
+        }
+    };
+
     const handleAddAccordion = () => {
         const selectedType = arr.find((item) => item?.type === chooseType);
+        console.log('selectedType: ', selectedType);
         setSelectedArr([chooseType, ...selectedArr]);
         setAccordions([selectedType, ...accordions]);
         setOpenAccordion(chooseType);
@@ -714,7 +823,7 @@ const ProductAdd = () => {
     };
 
     const multiImgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile:any = event.target.files?.[0];
+        const selectedFile: any = event.target.files?.[0];
         const imageUrl = URL.createObjectURL(selectedFile);
         console.log('imageUrl: ', imageUrl);
 
@@ -729,11 +838,34 @@ const ProductAdd = () => {
 
     // -------------------------------------New Added-------------------------------------------------------
 
-    console.log('variants: ', variants);
-
-    const handleRemoveImage = (indexToRemove:any) => {
-        setImageUrl((prevImageUrl:any) => prevImageUrl.filter((_:any, index:any) => index !== indexToRemove));
+    const handleRemoveImage = (indexToRemove: any) => {
+        setImageUrl((prevImageUrl: any) => prevImageUrl.filter((_: any, index: any) => index !== indexToRemove));
     };
+
+    const createTags = async (record: any, { resetForm }: any) => {
+        try {
+            setTagLoader(true);
+            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
+
+            const variables = {
+                input: {
+                    name: record.name,
+                },
+            };
+
+            const { data } = await addTag({ variables });
+            setIsOpenTag(false);
+            resetForm();
+            tagListRefetch();
+            setTagLoader(false);
+            Success('Tag created successfully');
+        } catch (error) {
+            setTagLoader(false);
+
+            console.log('error: ', error);
+        }
+    };
+
     return (
         <div>
             <div className="  mt-6">
@@ -1428,7 +1560,7 @@ const ProductAdd = () => {
                                     imageUrl?.map((item: any, index: any) => (
                                         <div className="relative col-span-4">
                                             <img src={item} alt="Product image" className=" object-cover" />
-                                            <button  onClick={() => handleRemoveImage(index)} className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
+                                            <button onClick={() => handleRemoveImage(index)} className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
                                                 <IconTrashLines className="h-4 w-4" />
                                             </button>
                                         </div>
@@ -1455,97 +1587,9 @@ const ProductAdd = () => {
                                 <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
                                 {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
                             </div>
-                            {/* <div className="mb-5">
-                                {isMounted && (
-                                    <Tab.Group>
-                                        <Tab.List className="mt-3 flex flex-wrap border-b border-white-light dark:border-[#191e3a]">
-                                            <Tab as={Fragment}>
-                                                {({ selected }) => (
-                                                    <button
-                                                        className={`${selected ? '!border-white-light !border-b-white text-danger dark:!border-[#191e3a] dark:!border-b-black' : ''}
-                                                -mb-[1px] flex items-center border border-transparent p-3.5 py-2 !outline-none transition duration-300 hover:text-danger`}
-                                                    >
-                                                        All Categories
-                                                    </button>
-                                                )}
-                                            </Tab>
-                                            <Tab as={Fragment}>
-                                                {({ selected }) => (
-                                                    <button
-                                                        className={`${selected ? '!border-white-light !border-b-white text-danger dark:!border-[#191e3a] dark:!border-b-black' : ''}
-                                                -mb-[1px] flex items-center border border-transparent p-3.5 py-2 !outline-none transition duration-300 hover:text-danger`}
-                                                    >
-                                                        Most Used
-                                                    </button>
-                                                )}
-                                            </Tab>
-                                        </Tab.List>
-                                        <Tab.Panels className="flex-1 border border-t-0 border-white-light p-4 text-sm  dark:border-[#191e3a]">
-                                            <Tab.Panel>
-                                                <div className="active">
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Anklets</span>
-                                                    </div>
-
-                                                    <div className="pb-3 pl-5">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Kada</span>
-                                                    </div>
-
-                                                    <div className="pb-3 pl-5">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Rope Anklet</span>
-                                                    </div>
-
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Bangles & Bracelets</span>
-                                                    </div>
-                                                </div>
-                                            </Tab.Panel>
-                                            <Tab.Panel>
-                                                <div className="active">
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Anklets</span>
-                                                    </div>
-
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Kada</span>
-                                                    </div>
-
-                                                    <div className="pb-3">
-                                                        <input type="checkbox" className="form-checkbox" />
-                                                        <span>Rope Anklet</span>
-                                                    </div>
-                                                </div>
-                                            </Tab.Panel>
-
-                                            <Tab.Panel>Disabled</Tab.Panel>
-                                        </Tab.Panels>
-                                    </Tab.Group>
-                                )}
-                            </div> */}
-                            {/* <p className="cursor-pointer text-primary underline" onClick={() => addCategoryClick()}>
-                                {addCategory ? 'Cancel' : '+ Add New Category'}
+                            <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setIsOpenCat(true)}>
+                                Add a new category
                             </p>
-                            {addCategory && (
-                                <>
-                                    <div>
-                                        <input type="text" className="form-input mt-3" placeholder="Category Name" />
-                                        <select name="parent-category" id="parent-category" className="form-select mt-3">
-                                            <option>Anklets</option>
-                                            <option>__Black Thread</option>
-                                            <option>__Kada</option>
-                                        </select>
-                                        <button type="button" className="btn btn-primary mt-3">
-                                            Add New Category
-                                        </button>
-                                    </div>
-                                </>
-                            )} */}
                         </div>
 
                         <div className="panel order-1  mt-5 md:order-4">
@@ -1555,41 +1599,9 @@ const ProductAdd = () => {
                             <div className="mb-5">
                                 <Select placeholder="Select an tags" options={tagList} value={selectedTag} onChange={(data: any) => setSelectedTag(data)} isSearchable={true} isMulti />
                             </div>
-                            {/* <div className="mb-5 flex">
-                                <input type="text" className="form-input mr-3 mt-3" placeholder="Product Tags" />
-                                <button type="button" className="btn btn-primary mt-3">
-                                    Add
-                                </button>
-                            </div>
-                            <div>
-                                <p className="mb-5 text-sm text-gray-500">Separate tags with commas</p>
-                                <div className="flex flex-wrap gap-3">
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p> 925 silver jewellery</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>Chennai</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>jewels prade</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>Kundan Earrings</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1">
-                                        <IconX className="h-4 w-4 rounded-full border border-danger" />
-                                        <p>prade love</p>
-                                    </div>
-                                </div>
-                            </div> */}
+                            <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setIsOpenTag(true)}>
+                                Add a new tag
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1906,6 +1918,182 @@ const ProductAdd = () => {
                     </div>
                 </Dialog>
             </Transition>
+
+            <Modal
+                addHeader={'Create Category'}
+                open={isOpenCat}
+                close={() => setIsOpenCat(false)}
+                renderComponent={() => (
+                    <div>
+                        <div className="mb-5 p-5">
+                            <Formik
+                                initialValues={{ name: '', textdescription: '', parentCategory: '' }}
+                                validationSchema={SubmittedForm}
+                                onSubmit={(values, { resetForm }) => {
+                                    onSubmit(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
+                                }}
+                            >
+                                {({ errors, submitCount, touched, setFieldValue, values }: any) => (
+                                    <>
+                                        <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
+                                            <label htmlFor="fullName">Name </label>
+                                            <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
+
+                                            {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
+                                        </div>
+
+                                        <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
+                                            <label htmlFor="description">description </label>
+                                            <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
+
+                                            {submitCount ? errors.description ? <div className="mt-1 text-danger">{errors.description}</div> : <div className="mt-1 text-success"></div> : ''}
+                                        </div>
+
+                                        <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
+                                            <label htmlFor="parentCategory">Parent Category</label>
+                                            <Field as="select" name="parentCategory" className="form-select">
+                                                <option value="">Open this select</option>
+                                                {parentLists?.map((item: any) => {
+                                                    return (
+                                                        <>
+                                                            <option value={item?.node?.id}>{item.node?.name}</option>
+                                                            {item?.node?.children?.edges?.map((child: any) => (
+                                                                <option key={child?.id} value={child?.node?.id} style={{ paddingLeft: '20px' }}>
+                                                                    -- {child?.node?.name}
+                                                                </option>
+                                                            ))}
+                                                        </>
+                                                    );
+                                                })}
+
+                                                {/* <option value="">Open this select menu</option>
+                                                            <option value="Anklets">Anklets</option>
+                                                            <option value="BlackThread">__Black Thread</option>
+                                                            <option value="Kada">__Kada</option> */}
+                                            </Field>
+                                            {/* {submitCount ? (
+                                                            errors.parentCategory ? (
+                                                                <div className=" mt-1 text-danger">{errors.parentCategory}</div>
+                                                            ) : (
+                                                                <div className=" mt-1 text-[#1abc9c]"></div>
+                                                            )
+                                                        ) : (
+                                                            ''
+                                                        )} */}
+                                        </div>
+
+                                        <button type="submit" className="btn btn-primary !mt-6">
+                                            {createCategoryLoader ? <IconLoader className="mr-2 h-4 w-4 animate-spin" /> : 'Submit'}
+                                        </button>
+                                    </>
+                                )}
+                            </Formik>
+                        </div>
+                    </div>
+                )}
+            />
+
+            <Modal
+                addHeader={'Create Tags'}
+                open={isOpenTag}
+                close={() => setIsOpenTag(false)}
+                renderComponent={() => (
+                    <>
+                        <div className="mb-5 p-5">
+                            <Formik
+                                initialValues={{ name: '' }}
+                                validationSchema={SubmittedForm}
+                                onSubmit={(values, { resetForm }) => {
+                                    createTags(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
+                                }}
+                            >
+                                {({ errors, submitCount, touched, setFieldValue, values }: any) => (
+                                    <div className="space-y-5">
+                                        {/* <div className={submitCount ? (errors.image ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="image">Image</label>
+                                                        <input
+                                                            id="image"
+                                                            name="image"
+                                                            type="file"
+                                                            onChange={(event: any) => {
+                                                                setFieldValue('image', event.currentTarget.files[0]);
+                                                            }}
+                                                            className="form-input"
+                                                        />
+                                                        {values.image && typeof values.image === 'string' && (
+                                                            <img src={values.image} alt="Product Image" style={{ width: '30px', height: 'auto', paddingTop: '5px' }} />
+                                                        )}
+                                                        {submitCount ? errors.image ? <div className="mt-1 text-danger">{errors.image}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div> */}
+
+                                        <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
+                                            <label htmlFor="fullName">Name </label>
+                                            <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
+
+                                            {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
+                                        </div>
+                                        {/* <div className="mb-5">
+                                                        <label htmlFor="description">Description</label>
+
+                                                        <textarea
+                                                            id="description"
+                                                            rows={3}
+                                                            placeholder="Enter description"
+                                                            name="description"
+                                                            className="form-textarea min-h-[130px] resize-none"
+                                                        ></textarea>
+                                                    </div> */}
+
+                                        {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
+                                            <label htmlFor="description">description </label>
+                                            <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
+
+                                            {submitCount ? errors.description ? <div className="mt-1 text-danger">{errors.description}</div> : <div className="mt-1 text-success"></div> : ''}
+                                        </div> */}
+
+                                        {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="slug">Slug </label>
+                                                        <Field name="slug" type="text" id="slug" placeholder="Enter Description" className="form-input" />
+
+                                                        {submitCount ? errors.slug ? <div className="mt-1 text-danger">{errors.slug}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div> */}
+
+                                        {/* <div className={submitCount ? (errors.count ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="count">Count</label>
+                                                        <Field name="count" type="number" id="count" placeholder="Enter Count" className="form-input" />
+
+                                                        {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div> */}
+
+                                        {/* <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="parentCategory">Parent Category</label>
+                                                        <Field as="select" name="parentCategory" className="form-select">
+                                                            <option value="">Open this select menu</option>
+                                                            <option value="Anklets">Anklets</option>
+                                                            <option value="BlackThread">__Black Thread</option>
+                                                            <option value="Kada">__Kada</option>
+                                                        </Field>
+                                                        {submitCount ? (
+                                                            errors.parentCategory ? (
+                                                                <div className=" mt-1 text-danger">{errors.parentCategory}</div>
+                                                            ) : (
+                                                                <div className=" mt-1 text-[#1abc9c]"></div>
+                                                            )
+                                                        ) : (
+                                                            ''
+                                                        )}
+                                                    </div> */}
+
+                                        <button type="submit" className="btn btn-primary !mt-6">
+                                            {tagLoader ? <IconLoader className="mr-2 h-4 w-4 animate-spin" /> : 'Submit'}
+                                        </button>
+                                    </div>
+                                )}
+                            </Formik>
+                        </div>
+                    </>
+                )}
+            />
         </div>
     );
 };

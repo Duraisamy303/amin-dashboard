@@ -61,7 +61,7 @@ const ProductList = () => {
                     price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item:any) => item.name)?.join(',') : '-',
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
                 }));
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
@@ -196,7 +196,7 @@ const ProductList = () => {
                     price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item:any) => item.name)?.join(',') : '-',
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
                     // shipmentTracking: item?.node?.shipments?.length>0?item
                 }));
                 console.log('newData: ', newData);
@@ -445,7 +445,16 @@ const ProductList = () => {
                         columns={[
                             // { accessor: 'id', sortable: true },
                             { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                            { accessor: 'name', sortable: true },
+                            {
+                                accessor: 'name',
+                                sortable: true,
+                                render: (row) => (
+                                    <>
+                                        <div className="">{row.name}</div>
+                                        <div className="">{row.name}</div>
+                                    </>
+                                ),
+                            },
 
                             { accessor: 'sku', sortable: true },
                             { accessor: 'status', sortable: true },

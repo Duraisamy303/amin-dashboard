@@ -8,7 +8,7 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
 import IconPencil from '@/components/Icon/IconPencil';
-import { Button, Loader } from '@mantine/core';
+import { Button } from '@mantine/core';
 import Dropdown from '../../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
 
@@ -21,57 +21,50 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
+import { CREATE_STONE, DELETE_STONE, STONE_LIST, UPDATE_STONE } from '@/query/product';
+
 import { useMutation, useQuery } from '@apollo/client';
-import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY } from '@/query/product';
-import ReactQuill from 'react-quill';
-import { PARENT_CATEGORY_LIST } from '@/query/product';
 import IconLoader from '@/components/Icon/IconLoader';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
-const Category = () => {
+const StoneColor = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Category'));
+        dispatch(setPageTitle('Stone Type'));
     });
 
-    const {
-        error,
-        data: categoryData,
-        refetch: categoryListRefetch,
-    } = useQuery(CATEGORY_LIST, {
-        variables: { channel: 'india-channel', first: 100 },
+    const { error, data: stoneData } = useQuery(STONE_LIST, {
+        variables: { channel: 'india-channel' }, // Pass variables here
     });
-
-    const [categoryList, setCategoryList] = useState([]);
+    console.log('stoneData: ', stoneData);
+    // const [designList, setStonList] = useState([]);
+    const [stonList, setStonList] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [parentLists, setParentLists] = useState([]);
 
-    const [createCategoryLoader, setCreateCategoryLoader] = useState(false);
-    const [updateCategoryLoader, setUpdateCategoryLoader] = useState(false);
+    const [createStoneLoader, setCreateStoneLoader] = useState(false);
+    const [updateStoneLoader, setUpdateStoneLoader] = useState(false);
 
     useEffect(() => {
-        getCategoryList();
-    }, [categoryData]);
+        getDesignList();
+    }, [stoneData]);
+    console.log('designList: ', stonList);
 
-    const getCategoryList = () => {
+    const getDesignList = () => {
         setLoading(true);
-        if (categoryData) {
-            if (categoryData.categories && categoryData.categories.edges) {
-                const newData = categoryData?.categories?.edges?.map((item: any) => {
-                    const jsonObject = JSON.parse(item?.node?.description || item?.node?.description);
-                    // Extract the text value
-                    const textValue = jsonObject?.blocks[0]?.data?.text;
+        if (stoneData) {
+            if (stoneData && stoneData.productStoneTypes && stoneData.productStoneTypes.edges?.length > 0) {
+                const newData = stoneData.productStoneTypes.edges.map((item: any) => ({
+                    ...item.node,
+                    name: item?.node?.name,
+                }));
+                // const sorting: any = sortBy(newData, 'id');
+                setStonList(newData);
+                setLoading(false);
 
-                    return {
-                        ...item.node,
-                        parent: item.node.parent?.name || '',
-                        product: item.node.products?.totalCount,
-                        textdescription: textValue || '', // Set textValue or empty string if it doesn't exist
-                    };
-                });
-                setCategoryList(newData);
+                // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
+            } else {
                 setLoading(false);
             }
         } else {
@@ -88,8 +81,8 @@ const Category = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(categoryList);
-    }, [categoryList]);
+        setInitialRecords(sortBy(stonList, 'id'));
+    }, [stonList]);
 
     // Log initialRecords when it changes
     useEffect(() => {
@@ -110,26 +103,13 @@ const Category = () => {
 
     // const [viewModal, setViewModal] = useState(false);
 
-    //    parent category list query
-    const {
-        data: parentList,
-        error: parentListError,
-        refetch,
-    } = useQuery(PARENT_CATEGORY_LIST, {
-        variables: { channel: 'india-channel' },
-    });
-    useEffect(() => {
-        console.log('parentList: ', parentList?.categories?.edges);
-        const getparentCategoryList = parentList?.categories?.edges;
-        setParentLists(getparentCategoryList);
-    });
-
     //Mutation
-    const [addCategory] = useMutation(CREATE_CATEGORY);
-    const [updateCategory] = useMutation(UPDATE_CATEGORY);
-    const [deleteCategory] = useMutation(DELETE_CATEGORY);
-    const [bulkDelete] = useMutation(DELETE_CATEGORY);
+    const [addStone] = useMutation(CREATE_STONE);
+    const [updateStone] = useMutation(UPDATE_STONE);
+    const [deleteStone] = useMutation(DELETE_STONE);
+    const [bulkDelete] = useMutation(DELETE_STONE);
 
+    console.log('finishList: ', stonList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -142,7 +122,8 @@ const Category = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return categoryList.filter((item: any) => {
+            return stonList.filter((item: any) => {
+                console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
                     // item.image.toLowerCase().includes(search.toLowerCase()) ||
@@ -162,7 +143,7 @@ const Category = () => {
 
     // FORM VALIDATION
     const SubmittedForm = Yup.object().shape({
-        name: Yup.string().required('Please fill the Category Name'),
+        name: Yup.string().required('Please fill the Name'),
         // description: Yup.string().required('Please fill the Description'),
         // slug: Yup.string().required('Please fill the Slug'),
         // count: Yup.string().required('Please fill the count'),
@@ -173,60 +154,39 @@ const Category = () => {
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
-        setCreateCategoryLoader(true);
-        setUpdateCategoryLoader(true);
+        setCreateStoneLoader(true);
+        setUpdateStoneLoader(true);
         try {
-            setCreateCategoryLoader(true);
-            setUpdateCategoryLoader(true);
-
-            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
-            console.log('✌️Description --->', Description);
+            setCreateStoneLoader(true);
+            setUpdateStoneLoader(true);
 
             const variables = {
                 input: {
                     name: record.name,
-                    description: Description,
                 },
-                parent: record.parentCategory,
             };
-            console.log('variables: ', variables);
 
-            const { data } = await (modalTitle ? updateCategory({ variables: { ...variables, id: modalContant.id } }) : addCategory({ variables }));
-            console.log('data: ', data);
-            categoryListRefetch();
-            // const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
-            // console.log('newData: ', newData);
-            // if (!newData) {
-            //     console.error('Error: New data is undefined.');
-            //     return;
-            // }
+            const { data } = await (modalTitle ? updateStone({ variables: { ...variables, id: modalContant.id } }) : addStone({ variables }));
+            console.log('✌️data --->', data);
 
-            // const jsonObject = JSON.parse(newData.description || newData.description);
-            // // Extract the text value
-            // const textValue = jsonObject?.blocks[0]?.data?.text;
-            // console.log('✌️textValue --->', textValue);
+            const newData = modalTitle ? data?.productStoneTypeUpdate?.productStoneType : data?.productStoneTypeCreate?.productStoneType;
+            console.log('✌️newData --->', newData);
 
-            // const finalData = {
-            //     ...newData,
-            //     textdescription: textValue || '',
-            // };
-            // console.log('finalData', finalData);
+            if (!newData) {
+                console.error('Error: New data is undefined.');
+                return;
+            }
+            const updatedId = newData.id;
+            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
-            // const updatedId = finalData.id;
-            // const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
+            const updatedDesignList: any = [...recordsData];
+            if (index !== -1) {
+                updatedDesignList[index] = newData;
+            } else {
+                updatedDesignList.push(newData);
+            }
 
-            // const updatedDesignList: any = [...recordsData];
-            // if (index !== -1) {
-            //     updatedDesignList[index] = finalData;
-            // } else {
-            //     updatedDesignList.push(finalData);
-            // }
-            // console.log('updatedDesignList', updatedDesignList);
-            // // setCategoryList(updatedDesignList);
-            // setRecordsData(updatedDesignList);
-
-            // getCategoryList();
-
+            setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -241,25 +201,25 @@ const Category = () => {
 
             setModal1(false);
             resetForm();
-            setCreateCategoryLoader(false);
-            setUpdateCategoryLoader(false);
+
+            setCreateStoneLoader(false);
+            setUpdateStoneLoader(false);
         } catch (error) {
             console.log('error: ', error);
-            setCreateCategoryLoader(false);
-            setUpdateCategoryLoader(false);
+            setCreateStoneLoader(false);
+            setUpdateStoneLoader(false);
         }
     };
 
     // category table edit
-    const EditCategory = (record: any) => {
-        console.log('✌️record --->', record);
+    const EditStone = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
     // category table create
-    const CreateCategory = () => {
+    const CreateStone = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
@@ -301,7 +261,7 @@ const Category = () => {
             });
     };
 
-    const BulkDeleteCategory = async () => {
+    const BulkDeleteStone = async () => {
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -311,8 +271,8 @@ const Category = () => {
                 selectedRecords?.map(async (item: any) => {
                     await bulkDelete({ variables: { id: item.id } });
                 });
-                const updatedRecordsData = categoryList.filter((record) => !selectedRecords.includes(record));
-                setCategoryList(updatedRecordsData);
+                const updatedRecordsData = stonList.filter((record) => !selectedRecords.includes(record));
+                setStonList(updatedRecordsData);
                 setSelectedRecords([]);
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
@@ -322,45 +282,38 @@ const Category = () => {
         );
     };
 
-    const DeleteCategory = (record: any) => {
+    const DeleteStone = (record: any) => {
         showDeleteAlert(
             async () => {
-                const { data } = await deleteCategory({ variables: { id: record.id } });
-                const updatedRecordsData = categoryList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                const { data } = await deleteStone({ variables: { id: record.id } });
+                const updatedRecordsData = stonList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
-                setCategoryList(updatedRecordsData);
-                // getCategoryList()
+                setStonList(updatedRecordsData);
+                // getFinishList()
                 setSelectedRecords([]);
-                // setCategoryList(finishList)
+                // setFinishList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Finish List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Stone Type List is safe :)', 'error');
             }
         );
     };
 
     // completed category delete option
-    // if (productItem?.description || productItem?.node?.description) {
-    //     const jsonObject = JSON.parse(
-    //       productItem?.description || productItem?.node?.description
-    //     );
-    //     // Extract the text value
-    //     textValue = jsonObject?.blocks[0]?.data?.text;
-    //   }
 
     return (
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex-col gap-5 md:flex md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Category</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Stone Color</h5>
 
                     <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
                         <input type="text" className="form-input mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  mb-3 mr-0  md:mb-0 md:mr-2">
+                        <div className="dropdown mb-3 mr-0  md:mb-0 md:mr-2">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle lg:w-auto w-full"
+                                btnClassName="btn btn-outline-primary dropdown-toggle  lg:w-auto w-full"
                                 button={
                                     <>
                                         Bulk Actions
@@ -372,87 +325,70 @@ const Category = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteCategory()}>
+                                        <button type="button" onClick={() => BulkDeleteStone()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary w-full md:mb-0 md:w-auto" onClick={() => CreateCategory()}>
+                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateStone()}>
                             + Create
                         </button>
                     </div>
                 </div>
-                {loading ? (
-                    <Loader />
-                ) : (
-                    <div className="datatables">
-                        <DataTable
-                            className="table-hover whitespace-nowrap"
-                            records={recordsData}
-                            columns={[
-                                // { accessor: 'id', sortable: true },
-                                // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                                { accessor: 'name', sortable: true },
-                                {
-                                    accessor: 'textdescription',
-                                    sortable: true,
-                                    title: 'Description',
-                                },
-                                {
-                                    accessor: 'parent',
-                                    sortable: true,
-                                },
-                                {
-                                    accessor: 'product',
-                                    sortable: true,
-                                },
+                <div className="datatables">
+                    <DataTable
+                        className="table-hover whitespace-nowrap"
+                        records={recordsData}
+                        columns={[
+                            // { accessor: 'id', sortable: true },
+                            // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                            { accessor: 'name', sortable: true },
 
-                                {
-                                    // Custom column for actions
-                                    accessor: 'actions', // You can use any accessor name you want
-                                    title: 'Actions',
-                                    // Render method for custom column
-                                    render: (row: any) => (
-                                        <>
-                                            {/* <Tippy content="View">
+                            {
+                                // Custom column for actions
+                                accessor: 'actions', // You can use any accessor name you want
+                                title: 'Actions',
+                                // Render method for custom column
+                                render: (row: any) => (
+                                    <>
+                                        {/* <Tippy content="View">
                                             <button type="button" onClick={() => ViewCategory(row)}>
                                                 <IconEye className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy> */}
-                                            <Tippy content="Edit">
-                                                <button type="button" onClick={() => EditCategory(row)}>
-                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                                </button>
-                                            </Tippy>
-                                            <Tippy content="Delete">
-                                                <button type="button" onClick={() => DeleteCategory(row)}>
-                                                    <IconTrashLines />
-                                                </button>
-                                            </Tippy>
-                                        </>
-                                    ),
-                                },
-                            ]}
-                            highlightOnHover
-                            totalRecords={initialRecords.length}
-                            recordsPerPage={pageSize}
-                            page={page}
-                            onPageChange={(p) => setPage(p)}
-                            recordsPerPageOptions={PAGE_SIZES}
-                            onRecordsPerPageChange={setPageSize}
-                            sortStatus={sortStatus}
-                            onSortStatusChange={setSortStatus}
-                            selectedRecords={selectedRecords}
-                            onSelectedRecordsChange={(selectedRecords) => {
-                                setSelectedRecords(selectedRecords);
-                            }}
-                            minHeight={200}
-                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                        />
-                    </div>
-                )}
+                                        <Tippy content="Edit">
+                                            <button type="button" onClick={() => EditStone(row)}>
+                                                <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                            </button>
+                                        </Tippy>
+                                        <Tippy content="Delete">
+                                            <button type="button" onClick={() => DeleteStone(row)}>
+                                                <IconTrashLines />
+                                            </button>
+                                        </Tippy>
+                                    </>
+                                ),
+                            },
+                        ]}
+                        highlightOnHover
+                        totalRecords={initialRecords.length}
+                        recordsPerPage={pageSize}
+                        page={page}
+                        onPageChange={(p) => setPage(p)}
+                        recordsPerPageOptions={PAGE_SIZES}
+                        onRecordsPerPageChange={setPageSize}
+                        sortStatus={sortStatus}
+                        onSortStatusChange={setSortStatus}
+                        selectedRecords={selectedRecords}
+                        onSelectedRecordsChange={(selectedRecords) => {
+                            setSelectedRecords(selectedRecords);
+                        }}
+                        minHeight={200}
+                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                    />
+                </div>
             </div>
 
             {/* CREATE AND EDIT CATEGORY FORM */}
@@ -474,7 +410,7 @@ const Category = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Category' : 'Edit Category'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Stone' : 'Edit Stone'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -483,14 +419,14 @@ const Category = () => {
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', textdescription: '', parentCategory: '' }
+                                                    ? { name: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                          description: modalContant?.textdescription,
+                                                          //   description: modalContant?.description,
 
                                                           //   count: modalContant?.count,
                                                           //   image: modalContant?.image,
-                                                          parentCategory: modalContant?.parent?.id,
+                                                          //   parentCategory: modalContant?.name,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
@@ -523,19 +459,8 @@ const Category = () => {
 
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
-                                                    {/* <div className="mb-5">
-                                                        <label htmlFor="description">Description</label>
 
-                                                        <textarea
-                                                            id="description"
-                                                            rows={3}
-                                                            placeholder="Enter description"
-                                                            name="description"
-                                                            className="form-textarea min-h-[130px] resize-none"
-                                                        ></textarea>
-                                                    </div> */}
-
-                                                    <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
+                                                    {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="description">description </label>
                                                         <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
 
@@ -548,7 +473,7 @@ const Category = () => {
                                                         ) : (
                                                             ''
                                                         )}
-                                                    </div>
+                                                    </div> */}
 
                                                     {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="slug">Slug </label>
@@ -564,29 +489,15 @@ const Category = () => {
                                                         {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div> */}
 
-                                                    <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
+                                                    {/* <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="parentCategory">Parent Category</label>
                                                         <Field as="select" name="parentCategory" className="form-select">
-                                                            <option value="">Open this select</option>
-                                                            {parentLists?.map((item: any) => {
-                                                                return (
-                                                                    <>
-                                                                        <option value={item?.node?.id}>{item.node?.name}</option>
-                                                                        {item?.node?.children?.edges?.map((child: any) => (
-                                                                            <option key={child?.id} value={child?.node?.id} style={{ paddingLeft: '20px' }}>
-                                                                                -- {child?.node?.name}
-                                                                            </option>
-                                                                        ))}
-                                                                    </>
-                                                                );
-                                                            })}
-
-                                                            {/* <option value="">Open this select menu</option>
+                                                            <option value="">Open this select menu</option>
                                                             <option value="Anklets">Anklets</option>
                                                             <option value="BlackThread">__Black Thread</option>
-                                                            <option value="Kada">__Kada</option> */}
+                                                            <option value="Kada">__Kada</option>
                                                         </Field>
-                                                        {/* {submitCount ? (
+                                                        {submitCount ? (
                                                             errors.parentCategory ? (
                                                                 <div className=" mt-1 text-danger">{errors.parentCategory}</div>
                                                             ) : (
@@ -594,12 +505,12 @@ const Category = () => {
                                                             )
                                                         ) : (
                                                             ''
-                                                        )} */}
-                                                    </div>
+                                                        )}
+                                                    </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {createCategoryLoader || updateCategoryLoader ? (
-                                                            <IconLoader className="mr-2 h-4 w-4 animate-spin" />
+                                                        {createStoneLoader || updateStoneLoader ? (
+                                                            <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" />
                                                         ) : modalTitle === null ? (
                                                             'Submit'
                                                         ) : (
@@ -652,4 +563,4 @@ const Category = () => {
     );
 };
 
-export default PrivateRouter(Category);
+export default PrivateRouter(StoneColor);

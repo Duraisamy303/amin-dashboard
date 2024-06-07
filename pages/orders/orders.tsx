@@ -65,7 +65,6 @@ const Orders = () => {
 
     const [draftOrder] = useMutation(CREATE_DRAFT_ORDER);
 
-  
     const router = useRouter();
     const variables = {
         first: 100,
@@ -131,6 +130,8 @@ const Orders = () => {
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
 
     const [search, setSearch] = useState('');
+    const [status, setStatus] = useState('');
+
     // const [sortStatus, setSortStatus] = useState({});
 
     const [modal1, setModal1] = useState(false);
@@ -316,7 +317,7 @@ const Orders = () => {
         }
     };
 
-    const handleChangeDuration = async (e:any) => {
+    const handleChangeDuration = async (e: any) => {
         try {
             if (e) {
                 if (e == 'custom') {
@@ -331,7 +332,7 @@ const Orders = () => {
         }
     };
 
-    const filterByDateAndYear = async (e:any) => {
+    const filterByDateAndYear = async (e: any) => {
         const response = handleExportByChange(e);
         console.log('response: ', response);
 
@@ -355,9 +356,9 @@ const Orders = () => {
         SetFinalDate(res?.data?.orders?.edges);
     };
 
-    const orderNumber = (item:any) => {
+    const orderNumber = (item: any) => {
         let label = '';
-        if (item?.node?.user?.firstName == "") {
+        if (item?.node?.user?.firstName == '') {
             label = `#${item?.node?.number} ${item.node?.billingAddress?.firstName} ${item.node?.billingAddress?.lastName}`;
         } else {
             label = `#${item?.node?.number} ${item?.node?.user?.firstName} ${item?.node?.user?.lastName}`;
@@ -365,7 +366,7 @@ const Orders = () => {
         return label;
     };
 
-    const SetFinalDate = (res:any) => {
+    const SetFinalDate = (res: any) => {
         const newData = res?.map((item: any) => ({
             ...item.node,
             order: orderNumber(item),
@@ -381,7 +382,7 @@ const Orders = () => {
 
         console.log(
             'item?.node?.fulfillments',
-            res?.map((item:any) => item?.node?.fulfillments)
+            res?.map((item: any) => item?.node?.fulfillments)
         );
 
         console.log('newData: ');
@@ -391,7 +392,7 @@ const Orders = () => {
     };
 
     const excelDownload = () => {
-        const excelData = allData?.map((item:any) => {
+        const excelData = allData?.map((item: any) => {
             const data = item?.node;
             const res = {
                 OrderNumber: data?.number,
@@ -402,9 +403,9 @@ const Orders = () => {
                 Address2: data?.shippingAddress?.streetAddress2,
                 Country: data?.shippingAddress?.country?.country,
                 City: data?.shippingAddress?.city,
-                ProductsName: data?.lines?.map((data:any) => data?.productName).join(','),
-                ProductPrice: data?.lines?.map((data:any) => data?.totalPrice?.gross?.amount).join(','),
-                ProductSKU: data?.lines?.map((data:any) => data?.productSku).join(','),
+                ProductsName: data?.lines?.map((data: any) => data?.productName).join(','),
+                ProductPrice: data?.lines?.map((data: any) => data?.totalPrice?.gross?.amount).join(','),
+                ProductSKU: data?.lines?.map((data: any) => data?.productSku).join(','),
                 DateOfPurchase: moment(data?.updatedAt).format('YYYY-MM-DD'),
                 PaymentStatus: data?.paymentStatus,
                 Currency: data?.total?.gross?.currency,
@@ -420,7 +421,7 @@ const Orders = () => {
         console.log('excelData: ', excelData);
     };
 
-    const filterByDates = async (e:any) => {
+    const filterByDates = async (e: any) => {
         try {
             const res = await exportListeRefetch({
                 first: 100,
@@ -444,6 +445,14 @@ const Orders = () => {
         }
     };
 
+    const handleChangeStaus = async (e) => {
+        try {
+            setStatus(e);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
     return (
         <div>
             <div className="panel mt-6">
@@ -460,7 +469,36 @@ const Orders = () => {
                 <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-center">
                     <div className="flex">
                         <input type="text" className="form-input mr-2 w-[300px]" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown  mr-2 ">
+
+                        <div className="dropdown  mr-2  w-[200px]">
+                            <select id="priority" className="form-select " value={status} onChange={(e) => handleChangeStaus(e.target.value)}>
+                                <option value="">Status</option>
+                                <option value="processing">Processing</option>
+                                <option value="monthly"> Pending payment</option>
+                                <option value="3Months">Completed</option>
+                                <option value="6Months">Cancelled</option>
+                                <option value="year">Refunded</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex ">
+                        <div className="dropdown  mr-2  w-[200px]">
+                            <select id="priority" className="form-select " value={exportBy} onChange={(e) => handleChangeDuration(e.target.value)}>
+                                <option value="">Select duration</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="3Months">Last 3 Months</option>
+                                <option value="6Months">Last 6 Months</option>
+                                <option value="year">Last year</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button type="button" className="btn btn-primary w-[95px]" onClick={() => excelDownload()}>
+                                Export
+                            </button>
+                        </div>
+                        <div className="dropdown  ml-2 ">
                             <Dropdown
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="btn btn-outline-primary dropdown-toggle"
@@ -481,24 +519,6 @@ const Orders = () => {
                                     </li>
                                 </ul>
                             </Dropdown>
-                        </div>
-                    </div>
-                    <div className="flex ">
-                        <div className="dropdown  mr-2  w-[200px]">
-                            <select id="priority" className="form-select " value={exportBy} onChange={(e) => handleChangeDuration(e.target.value)}>
-                                <option value="">Select duration</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                                <option value="3Months">Last 3 Months</option>
-                                <option value="6Months">Last 6 Months</option>
-                                <option value="year">Last year</option>
-                                <option value="custom">Custom</option>
-                            </select>
-                        </div>
-                        <div>
-                            <button type="button" className="btn btn-primary w-[95px]" onClick={() => excelDownload()}>
-                                Export
-                            </button>
                         </div>
                     </div>
                 </div>

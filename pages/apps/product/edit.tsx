@@ -59,14 +59,14 @@ import {
     UPDATE_VARIANT,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { Success, getValueByKey, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
+import { Failure, Success, getValueByKey, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
 const ProductEdit = (props: any) => {
     const router = useRouter();
 
     const { id } = router.query;
 
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
@@ -178,13 +178,12 @@ const ProductEdit = (props: any) => {
 
     const [addFormData] = useMutation(CREATE_PRODUCT);
     const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
-    // const [createVariant] = useMutation(CREATE_VARIANT);
     const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
     const [updateVariant] = useMutation(UPDATE_VARIANT);
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
     const [assignTagToProduct] = useMutation(ASSIGN_TAG_PRODUCT);
     const [mediaReorder] = useMutation(PRODUCTS_MEDIA_ORDERS);
-
+    const [createVariant] = useMutation(CREATE_VARIANT);
     const [removeImage] = useMutation(REMOVE_IMAGE);
     const [updateProduct] = useMutation(UPDATE_PRODUCT);
     const [deleteVarient] = useMutation(DELETE_VARIENT);
@@ -630,7 +629,7 @@ const ProductEdit = (props: any) => {
     };
 
     const multiImgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile:any = event.target.files?.[0];
+        const selectedFile: any = event.target.files?.[0];
         const imageUrl = URL.createObjectURL(selectedFile);
 
         // Push the selected file into the 'images' array
@@ -903,6 +902,7 @@ const ProductEdit = (props: any) => {
     };
 
     const variantListUpdate = async () => {
+
         try {
             const arrayOfVariants = variants?.map((item: any) => ({
                 attributes: [],
@@ -928,99 +928,28 @@ const ProductEdit = (props: any) => {
                     ],
                 },
             }));
-            console.log('✌️arrayOfVariants --->', arrayOfVariants);
 
-            // const variantArr = variants?.map((item) => ({
-            //     attributes: [],
-            //     id: item.id,
-            //     sku: item.sku,
-            //     name: item.name,
-            //     trackInventory: item.stackMgmt,
-            //     channelListings: [
-            //         {
-            //             channelId: 'Q2hhbm5lbDoy',
-            //             price: item.salePrice,
-            //             costPrice: item.regularPrice,
-            //         },
-            //     ],
-            //     stocks: [
-            //         {
-            //             warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-            //             quantity: item.stackMgmt ? item.quantity : 0,
-            //         },
-            //     ],
-            // }));
-            // console.log('variantArr: ', variantArr);
-            console.log('variants  1: ', variants);
+            // const NewAddedVariant = arrayOfVariants.filter((item) => item.id == undefined);
+            const NewAddedVariant = variants.filter((item) => item.id == undefined);
+
+            const updateArr = arrayOfVariants.filter((item) => item.id != undefined);
+
+            if (NewAddedVariant?.length > 0) {
+                bulkVariantCreate(NewAddedVariant);
+            }
 
             const { data } = await updateVariant({
                 variables: {
-                    // id: id,
-                    // inputs: variants?.map((item:any) => ({
-                    //     attributes: [],
-                    //     id: item.id,
-                    //     sku: item.sku,
-                    //     name: item.name,
-                    //     trackInventory: item.stackMgmt,
-                    //     channelListings: [
-                    //         {
-                    //             channelId: 'Q2hhbm5lbDoy',
-                    //             price: item.salePrice,
-                    //             costPrice: item.regularPrice,
-                    //         },
-                    //     ],
-                    //     stocks: [
-                    //         {
-                    //             warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
-                    //             quantity: item.stackMgmt ? item.quantity : 0,
-                    //         },
-                    //     ],
-                    // })),
-
                     product: id,
-                    input: arrayOfVariants,
+                    input: updateArr,
                     errorPolicy: 'REJECT_FAILED_ROWS',
-
-                    // sample format
-
-                    // product: 'UHJvZHVjdDo0OA==',
-                    // input: [
-                    //     {
-                    //         id: 'UHJvZHVjdFZhcmlhbnQ6MTM=',
-                    //         attributes: [],
-                    //         name: 'hello',
-                    //         sku: 'hii',
-                    //         trackInventory: true,
-                    //         stocks: {
-                    //             update: [
-                    //                 {
-                    //                     quantity: 300,
-                    //                     stock: 'U3RvY2s6MTI=',
-                    //                 },
-                    //             ],
-                    //         },
-                    //         channelListings: {
-                    //             update: [
-                    //                 {
-                    //                     channelListing: 'UHJvZHVjdFZhcmlhbnRDaGFubmVsTGlzdGluZzoyNA==',
-                    //                     price: 142001,
-                    //                 },
-                    //             ],
-                    //         },
-                    //     },
-                    // ],
-                    // errorPolicy: 'REJECT_FAILED_ROWS',
                 },
-                // variables: { email: formData.email, password: formData.password },
             });
 
-            console.log('variants 2: ', variants);
 
             if (data?.productVariantUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
-                console.log('variantCreate: ', data);
-                // const variantId = data?.productVariantCreate?.productVariant?.id;
 
                 updateMetaData();
             }
@@ -1058,6 +987,80 @@ const ProductEdit = (props: any) => {
                 Success('Product updated successfully');
                 productDataRefetch();
                 // assignsTagToProduct();
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const bulkVariantCreate = async (NewAddedVariant: any) => {
+        try {
+            const variantArr = NewAddedVariant?.map((item:any) => ({
+                attributes: [],
+                sku: item.sku,
+                name: item.name,
+                trackInventory: item.stackMgmt,
+                channelListings: [
+                    {
+                        channelId: 'Q2hhbm5lbDoy',
+                        price: item.regularPrice,
+                        costPrice: item.regularPrice,
+                    },
+                ],
+                stocks: [
+                    {
+                        warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
+                        quantity: item.stackMgmt ? item.quantity : 0,
+                    },
+                ],
+            }));
+
+            const { data } = await createVariant({
+                variables: {
+                    id: id,
+                    inputs: variantArr,
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productVariantCreate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
+                if (data?.productVariantBulkCreate?.errors?.length > 0) {
+                    Failure(data?.productVariantBulkCreate?.errors[0]?.message);
+                } else {
+                    const resVariants = data?.productVariantBulkCreate?.productVariants;
+                    if (resVariants?.length > 0) {
+                        resVariants?.map((item:any) => {
+                            variantChannelListUpdate(item.id, NewAddedVariant);
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const variantChannelListUpdate = async (variantId: any, NewAddedVariant: any) => {
+        console.log('variantChannelListUpdate: ');
+        try {
+            const variantArr = NewAddedVariant?.map((item:any) => ({
+                channelId: 'Q2hhbm5lbDoy',
+                price: item.regularPrice,
+                costPrice: item.regularPrice,
+            }));
+            console.log('variantArr: ', variantArr);
+
+            const { data } = await updateVariantList({
+                variables: {
+                    id: variantId,
+                    input: variantArr,
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productVariantChannelListingUpdate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
             }
         } catch (error) {
             console.log('error: ', error);
@@ -1153,9 +1156,20 @@ const ProductEdit = (props: any) => {
         ]);
     };
 
-    const handleRemoveVariants = (index: any) => {
-        if (index === 0) return; // Prevent removing the first item
-        setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
+    const handleRemoveVariants = async (item: any, index: any) => {
+        try {
+            if (item?.id) {
+                const res = await deleteVarient({
+                    variables: {
+                        id: item?.id,
+                    },
+                });
+            }
+            if (index === 0) return; // Prevent removing the first item
+            setVariants((prevItems) => prevItems.filter((_, i) => i !== index));
+        } catch (error) {
+            console.log('error: ', error);
+        }
     };
 
     const handleDragStart = (e: any, id: any, i: any) => {
@@ -1499,7 +1513,7 @@ const ProductEdit = (props: any) => {
                                                         <div key={index} className="mb-5 border-b border-gray-200">
                                                             {index !== 0 && ( // Render remove button only for items after the first one
                                                                 <div className="active flex items-center justify-end text-danger">
-                                                                    <button onClick={() => handleRemoveVariants(index)}>
+                                                                    <button onClick={() => handleRemoveVariants(item, index)}>
                                                                         <IconTrashLines />
                                                                     </button>
                                                                 </div>
@@ -1631,11 +1645,11 @@ const ProductEdit = (props: any) => {
                                                         </div>
                                                     );
                                                 })}
-                                              <div className="mb-5">
+                                                <div className="mb-5">
                                                     <button type="button" className=" btn btn-primary flex justify-end" onClick={handleAddItem}>
                                                         Add item
                                                     </button>
-                                                </div> 
+                                                </div>
 
                                                 {/* <div>
                                                     <div className="flex items-center">
@@ -1953,7 +1967,7 @@ const ProductEdit = (props: any) => {
 
                                             <div
                                                 key={item.id}
-                                                className="h-15 w-15 overflow-hidden relative col-span-4 bg-black"
+                                                className="h-15 w-15 relative col-span-4 overflow-hidden bg-black"
                                                 draggable
                                                 onDragStart={(e) => handleDragStart(e, item.id, index)}
                                                 onDragOver={handleDragOver}
@@ -2484,4 +2498,4 @@ const ProductEdit = (props: any) => {
     );
 };
 
-export default PrivateRouter(ProductEdit) ;
+export default PrivateRouter(ProductEdit);

@@ -26,10 +26,23 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import IconEdit from '@/components/Icon/IconEdit';
 import { useMutation, useQuery } from '@apollo/client';
-import { DELETE_PRODUCTS, PRODUCT_LIST, PARENT_CATEGORY_LIST, CATEGORY_FILTER_LIST } from '@/query/product';
+import {
+    DELETE_PRODUCTS,
+    PRODUCT_LIST,
+    PARENT_CATEGORY_LIST,
+    CATEGORY_FILTER_LIST,
+    CREATE_PRODUCT,
+    UPDATE_PRODUCT_CHANNEL,
+    CREATE_VARIANT,
+    UPDATE_VARIANT_LIST,
+    UPDATE_META_DATA,
+    ASSIGN_TAG_PRODUCT,
+    PRODUCT_FULL_DETAILS,
+} from '@/query/product';
 import moment from 'moment';
-import { Failure, formatCurrency, roundOff } from '@/utils/functions';
+import { Failure, Success, duplicateUploadImage, formatCurrency, roundOff, uploadImage } from '@/utils/functions';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import IconLoader from '@/components/Icon/IconLoader';
 
 const ProductList = () => {
     const router = useRouter();
@@ -39,8 +52,16 @@ const ProductList = () => {
         variables: { channel: 'india-channel', first: 100, direction: 'DESC', field: 'CREATED_AT' }, // Pass variables here
     });
 
+    const [addFormData] = useMutation(CREATE_PRODUCT);
+    const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
+    const [createVariant] = useMutation(CREATE_VARIANT);
+    const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
+    const [updateMedatData] = useMutation(UPDATE_META_DATA);
+    const [assignTagToProduct] = useMutation(ASSIGN_TAG_PRODUCT);
+
     const [productList, setProductList] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [duplicateLoading, setDuplicateLoading] = useState(false);
 
     useEffect(() => {
         getProductList();
@@ -61,7 +82,7 @@ const ProductList = () => {
                     price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item:any) => item.name)?.join(',') : '-',
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
                 }));
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
@@ -75,7 +96,6 @@ const ProductList = () => {
             setLoading(false);
         }
     };
-    console.log('productList: ', productList);
 
     const dispatch = useDispatch();
     useEffect(() => {
@@ -87,8 +107,11 @@ const ProductList = () => {
     const [initialRecords, setInitialRecords] = useState([]);
     const [recordsData, setRecordsData] = useState(initialRecords);
     const [parentLists, setParentLists] = useState([]);
+    const [rowId, setRowId] = useState('');
 
     const [deleteProducts] = useMutation(DELETE_PRODUCTS);
+
+    const { data: productDetails, refetch: productDetailsRefetch } = useQuery(PRODUCT_FULL_DETAILS);
 
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
 
@@ -99,6 +122,7 @@ const ProductList = () => {
     });
 
     const [selectedCategory, setSelectedCategory] = useState('');
+    const [status, setStatus] = useState('');
 
     const [filterFormData, setFilterFormData] = useState({
         category: '',
@@ -112,9 +136,7 @@ const ProductList = () => {
     }, [productList]);
 
     // Log initialRecords when it changes
-    useEffect(() => {
-        console.log('initialRecords: ', initialRecords);
-    }, [initialRecords]);
+    useEffect(() => {}, [initialRecords]);
 
     useEffect(() => {
         setPage(1);
@@ -175,7 +197,6 @@ const ProductList = () => {
     });
 
     const CategoryFilterList = () => {
-        console.log('FilterCategoryList', FilterCategoryList);
         // const getFilterCategoryList = FilterCategoryList?.products?.edges;
         // console.log('✌️getFilterCategoryList --->', getFilterCategoryList);
         // setRecordsData(getFilterCategoryList);
@@ -196,10 +217,9 @@ const ProductList = () => {
                     price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item:any) => item.name)?.join(',') : '-',
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
                     // shipmentTracking: item?.node?.shipments?.length>0?item
                 }));
-                console.log('newData: ', newData);
 
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
@@ -225,25 +245,8 @@ const ProductList = () => {
             getProductList();
         }
 
-        console.log('productListproductList', productList);
-    };
-
-    // form submit
-    const onSubmit = (record: any, { resetForm }: any) => {
-        console.log('record', record);
-
-        const toast = Swal.mixin({
-            toast: true,
-            position: 'top',
-            showConfirmButton: false,
-            timer: 3000,
-        });
-        toast.fire({
-            icon: 'success',
-            title: 'Form submitted successfully',
-            padding: '10px 20px',
-        });
-        resetForm();
+        if (status != '') {
+        }
     };
 
     // Product table create
@@ -283,8 +286,6 @@ const ProductList = () => {
     };
 
     const BulkDeleteProduct = async () => {
-        console.log('recordsData: ', selectedRecords);
-
         showDeleteAlert(
             () => {
                 if (selectedRecords.length === 0) {
@@ -309,7 +310,6 @@ const ProductList = () => {
     };
 
     const DeleteProduct = (record: any) => {
-        console.log('record: ', record);
         showDeleteAlert(
             () => {
                 const { data }: any = deleteProducts({
@@ -317,8 +317,6 @@ const ProductList = () => {
                         ids: [record.id],
                     },
                 });
-                console.log('DELETE: ', data);
-
                 const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
                 Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
@@ -331,7 +329,6 @@ const ProductList = () => {
 
     // top Filter Category change
     const CategoryChange = (selectedCategory: string) => {
-        console.log('Selected Category:', selectedCategory);
         // Update the state with the selected category
         setSelectedCategory(selectedCategory);
         // setFilterFormData((prevState) => ({
@@ -340,13 +337,8 @@ const ProductList = () => {
         // }));
     };
 
-    const StockStatusChange = (selectedStockStatus: string) => {
-        console.log('Selected Stock Status:', selectedStockStatus);
-        // Update the state with the selected stock status
-        // setFilterFormData((prevState) => ({
-        //     ...prevState,
-        //     stock: selectedStockStatus,
-        // }));
+    const statusChange = (e: string) => {
+        setStatus(e);
     };
 
     const productTypeChange = (selectedProductType: string) => {
@@ -357,8 +349,243 @@ const ProductList = () => {
             productType: selectedProductType,
         }));
     };
+    useEffect(() => {
+        fetchData();
+    }, [rowId]);
 
-    return (
+    const fetchData = async () => {
+        try {
+            const res = await productDetailsRefetch({
+                channel: 'india-channel',
+                id: rowId,
+                choicesFirst: 10,
+            });
+            console.log('Refetch result: ', res);
+        } catch (error) {
+            console.error('Error refetching: ', error);
+        }
+    };
+
+    const duplicate = async (row) => {
+        console.log('row: ', row);
+        try {
+            setLoading(true);
+            setRowId(row.id);
+            // productDetailsRefetch()
+            const res = await productDetailsRefetch({
+                channel: 'india-channel',
+                id: row.id,
+            });
+            const response = res.data?.product;
+            console.log('response: ', response);
+            setLoading(false);
+
+            CreateDuplicateProduct(response);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const CreateDuplicateProduct = async (row: any) => {
+        try {
+            setLoading(true);
+
+            let collectionId: any = [];
+
+            if (row?.collections?.length > 0) {
+                collectionId = row?.collections.map((item: any) => item.id);
+            }
+            let tagId: any[] = [];
+            if (row?.tags?.length > 0) {
+                tagId = row?.tags?.map((item: any) => item.id);
+            }
+
+            let finish = [];
+            if (row?.productFinish?.length > 0) {
+                finish = row?.productFinish?.map((item: any) => item.id);
+            }
+
+            let design = [];
+            if (row?.prouctDesign?.length > 0) {
+                design = row?.prouctDesign?.map((item: any) => item.id);
+            }
+
+            let style = [];
+            if (row?.productstyle?.length > 0) {
+                style = row?.productstyle?.map((item: any) => item.id);
+            }
+
+            let stone = [];
+            if (row?.productStoneType?.length > 0) {
+                stone = row?.productStoneType?.map((item: any) => item.id);
+            }
+
+            const { data } = await addFormData({
+                variables: {
+                    input: {
+                        attributes: [],
+                        category: row?.category?.id,
+                        collections: collectionId,
+                        tags: tagId,
+                        // description: formattedDescription,
+                        name: row.name,
+                        productType: row.productType?.id,
+                        seo: {
+                            description: row.seoDescription,
+                            title: row.seoTitle,
+                        },
+                        slug: row.slug + '-1',
+                        order_no: row.orderNo,
+                        prouctDesign: design,
+                        productstyle: style,
+                        productFinish: finish,
+                        productStoneType: stone,
+                    },
+                },
+            });
+
+            if (data?.productCreate?.errors?.length > 0) {
+                console.log('error: ', data?.productCreate?.errors[0]?.message);
+            } else {
+                const productId = data?.productCreate?.product?.id;
+                productChannelListUpdate(productId, row);
+                if (row?.media?.length > 0) {
+                    row?.media?.map((item: any) => {
+                        const imageUpload = duplicateUploadImage(productId, item.url);
+                        console.log('imageUpload: ', imageUpload);
+                    });
+                }
+            }
+            setLoading(false);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const productChannelListUpdate = async (productId: any, row: any) => {
+        try {
+            setLoading(true);
+
+            const { data } = await updateProductChannelList({
+                variables: {
+                    id: productId,
+                    input: {
+                        updateChannels: [
+                            {
+                                availableForPurchaseDate: null,
+                                channelId: 'Q2hhbm5lbDoy',
+                                isAvailableForPurchase: true,
+                                isPublished: row?.channelListings[0]?.isPublished,
+                                publicationDate: null,
+                                visibleInListings: true,
+                            },
+                        ],
+                    },
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productChannelListingUpdate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
+                console.log('productChannelListUpdate: ', data);
+
+                variantListUpdate(productId, row);
+            }
+            setLoading(false);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const variantListUpdate = async (productId: any, row: any) => {
+        try {
+            let variants = [];
+            if (row.variants.length > 0) {
+                const variantArr = row.variants?.map((item, index) => ({
+                    attributes: [],
+                    sku: `${item.sku}-1`,
+                    name: item.name,
+                    trackInventory: item.trackInventory,
+                    channelListings: [
+                        {
+                            channelId: 'Q2hhbm5lbDoy',
+                            price: item.channelListings[0]?.price?.amount ? item.channelListings[0]?.price?.amount : '',
+                            costPrice: item.channelListings[0]?.costPrice?.amount ? item.channelListings[0]?.costPrice?.amount : '',
+                        },
+                    ],
+                    stocks: [
+                        {
+                            warehouse: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
+                            quantity: item?.stocks?.length > 0 ? item?.stocks[0]?.quantity : 1,
+                        },
+                    ],
+                }));
+                variants = variantArr;
+            }
+
+            const { data } = await createVariant({
+                variables: {
+                    id: productId,
+                    inputs: variants,
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productVariantCreate?.errors?.length > 0) {
+                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            } else {
+                // const variantId = data?.productVariantCreate?.productVariant?.id;
+                updateMetaData(productId, row);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const updateMetaData = async (productId: any, row: any) => {
+        try {
+            let metadata = [];
+            if (row.metadata?.length > 0) {
+                metadata = row.metadata?.map((item) => ({ key: item.key, value: item.value }));
+            }
+            const { data } = await updateMedatData({
+                variables: {
+                    id: productId,
+                    input: metadata,
+                    keysToDelete: [],
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.updateMetadata?.errors?.length > 0) {
+                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+            } else {
+                // if (selectedTag?.length > 0) {
+                //     assignsTagToProduct(productId);
+                //     console.log('success: ', data);
+                // }
+                router.push(`/apps/product/edit?id=${productId}`);
+                Success('Product created successfully');
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const statusFilter = [
+        {
+            name: 'In Stock',
+            value: 'inStock',
+        },
+        {
+            name: 'Out of stock',
+            value: 'outOfStock',
+        },
+    ];
+
+    return loading ? (
+        <>
+            <IconLoader />
+        </>
+    ) : (
         <div>
             <div className="panel mt-6">
                 <div className="mb-10 flex flex-col gap-5 lg:mb-5 lg:flex-row lg:items-center">
@@ -419,6 +646,16 @@ const ProductList = () => {
                                     );
                                 })}
                             </select>
+                            <select className="form-select flex-1" value={status} onChange={(e) => statusChange(e.target.value)}>
+                                <option value={''}>Select a status</option>;
+                                {statusFilter?.map((item: any) => {
+                                    return (
+                                        <>
+                                            <option value={item.value}>{item.name}</option>
+                                        </>
+                                    );
+                                })}
+                            </select>
 
                             {/* New select dropdown for stock status */}
                             {/* <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>
@@ -445,7 +682,19 @@ const ProductList = () => {
                         columns={[
                             // { accessor: 'id', sortable: true },
                             { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                            { accessor: 'name', sortable: true },
+                            // { accessor: 'name', sortable: true },
+                            {
+                                accessor: 'name',
+                                sortable: true,
+                                render: (row) => (
+                                    <>
+                                        <div className="">{row.name}</div>
+                                        <button onClick={() => duplicate(row)} className=" cursor-pointer text-blue-400 underline">
+                                            Duplicate
+                                        </button>
+                                    </>
+                                ),
+                            },
 
                             { accessor: 'sku', sortable: true },
                             { accessor: 'status', sortable: true },
@@ -503,6 +752,19 @@ const ProductList = () => {
                         }}
                         minHeight={200}
                         paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                        mantineRowDragHandleProps={({ table }) => ({
+                            onDragEnd: () => {
+                              const { draggingRow, hoveredRow } = table.getState();
+                              if (hoveredRow && draggingRow) {
+                                data.splice(
+                                  (hoveredRow as MRT_Row<Person>).index,
+                                  0,
+                                  data.splice(draggingRow.index, 1)[0],
+                                );
+                                setData([...data]);
+                              }
+                            },
+                          })}
                     />
                 </div>
             </div>
@@ -510,4 +772,4 @@ const ProductList = () => {
     );
 };
 
-export default PrivateRouter(ProductList) ;
+export default PrivateRouter(ProductList);

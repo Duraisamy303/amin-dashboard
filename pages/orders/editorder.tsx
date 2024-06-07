@@ -58,7 +58,6 @@ const Editorder = () => {
         dispatch(setPageTitle('Edit Orders'));
     });
 
-
     const initialValues = {
         billing: {
             firstName: '',
@@ -133,6 +132,9 @@ const Editorder = () => {
     });
 
     const [lines, setLines] = useState([]);
+    const [isGiftWrap, setIsGiftWrap] = useState([]);
+
+    console.log('orderDetails: ', orderDetails);
 
     const { data: countryData } = useQuery(COUNTRY_LIST);
 
@@ -253,12 +255,12 @@ const Editorder = () => {
 
                 //Status
                 const filteredArray = orderDetails?.order?.events?.filter(
-                    (item:any) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
+                    (item: any) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
                 );
                 console.log('filteredArray: ', filteredArray);
 
-                const result = filteredArray?.map((item:any) => {
-                    const secondItem:any = NotesMsg.find((i) => i.type === item.type);
+                const result = filteredArray?.map((item: any) => {
+                    const secondItem: any = NotesMsg.find((i) => i.type === item.type);
                     return {
                         type: item.type,
                         message: item.type === 'NOTE_ADDED' ? item.message : secondItem.message,
@@ -276,6 +278,7 @@ const Editorder = () => {
 
                 setNotesList(result);
                 setLines(orderDetails?.order?.lines);
+                setIsGiftWrap(orderDetails?.order?.isGiftWrap);
                 setLoading(false);
                 setOrderStatus(orderDetails?.order?.status);
                 setPaymentStatus(orderDetails?.order?.paymentStatus);
@@ -495,12 +498,12 @@ const Editorder = () => {
     const orderStateUpdate = async () => {
         try {
             setOrderStatusLoading(true);
-            const isQuantity = fullfillData?.every((data:any) => data?.variant?.stocks.every((stock:any) => data?.quantity <= stock.quantity));
+            const isQuantity = fullfillData?.every((data: any) => data?.variant?.stocks.every((stock: any) => data?.quantity <= stock.quantity));
 
             if (isQuantity) {
-                const modify = fullfillData?.map((item:any) => ({
+                const modify = fullfillData?.map((item: any) => ({
                     orderLineId: item.id,
-                    stocks: item?.variant?.stocks?.map((data:any) => ({
+                    stocks: item?.variant?.stocks?.map((data: any) => ({
                         quantity: item?.quantity,
                         warehouse: data?.warehouse?.id,
                     })),
@@ -690,7 +693,7 @@ const Editorder = () => {
         }
     };
 
-    const stocks = (item:any) => {
+    const stocks = (item: any) => {
         const stock = item?.quantity + item?.variant?.stocks[0]?.quantity - item?.variant?.stocks[0]?.quantityAllocated;
         return stock;
     };
@@ -895,7 +898,22 @@ const Editorder = () => {
                                                         </select>
                                                     </div>
                                                 )}
-
+                                                {/* <div className="col-span-4">
+                                                    <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                        Payment Method:
+                                                    </label>
+                                                    <select
+                                                        disabled={paymentStatus == 'FULLY_CHARGED'}
+                                                        className="form-select"
+                                                        // value={paymentStatus}
+                                                        onChange={(e) => {
+                                                            const status = e.target.value;
+                                                        }}
+                                                    >
+                                                        <option value="NOT_CHARGET">RazorPay</option>
+                                                        <option value="FULLY_CHARGED">COD</option>
+                                                    </select>
+                                                </div> */}
                                                 <div className="col-span-4">
                                                     <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
                                                         Payment Status:
@@ -916,6 +934,12 @@ const Editorder = () => {
                                                         <option value="NOT_CHARGET">payment pending</option>
                                                         <option value="FULLY_CHARGED">payment completed</option>
                                                     </select>
+                                                </div>
+                                                <div className="col-span-4">
+                                                    <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                        Payment Method:
+                                                    </label>
+                                                    <input type="text" value={orderData?.paymentMethod?.name} name="paymentMenthod" className="form-input" disabled />
                                                 </div>
                                             </>
                                         )}
@@ -1464,12 +1488,19 @@ const Editorder = () => {
                                     <table>
                                         <thead>
                                             <tr>
-                                                <th>Product</th>
-                                                <th>Image</th>
+                                                <th>Item</th>
 
                                                 <th className="w-1">Cost</th>
                                                 <th className="w-1">Qty</th>
                                                 <th>Total</th>
+                                                {formData?.billing?.state !== '' && formData?.shipping?.state == 'Tamil Nadu' ? (
+                                                    <>
+                                                        <th>SGST</th>
+                                                        <th>CSGT</th>
+                                                    </>
+                                                ) : (
+                                                    <th>IGST</th>
+                                                )}
                                                 {/* <th>Action</th> */}
                                                 <th className="w-1"></th>
                                             </tr>
@@ -1478,11 +1509,14 @@ const Editorder = () => {
                                             {lines?.length > 0 &&
                                                 lines?.map((item: any, index: any) => (
                                                     <tr className="panel align-top" key={index}>
-                                                        <td>{item?.productName}</td>
-
-                                                        <td>
-                                                            <img src={item?.thumbnail?.url} height={100} width={100} alt="Selected" className="object-cover" />
+                                                        <td className="flex ">
+                                                            <img src={item?.thumbnail?.url} height={50} width={50} alt="Selected" className="object-cover" />
+                                                            <div>
+                                                                <div className="pl-5">{item?.productName}</div>
+                                                                <div className="pl-5">{item?.productSku}</div>
+                                                            </div>
                                                         </td>
+
                                                         <td>{`${formatCurrency(item?.unitPrice?.gross?.currency)}${addCommasToNumber(item?.unitPrice?.gross?.amount)}`} </td>
 
                                                         {/* <td>
@@ -1496,6 +1530,20 @@ const Editorder = () => {
                                                             <div> {`${formatCurrency(item?.totalPrice?.gross?.currency)}${addCommasToNumber(item?.totalPrice?.gross?.amount)}`}</div>{' '}
                                                             {/* <div>{`${formatCurrency(item?.totalPrice?.gross?.currency)}${item?.totalPrice?.gross?.amount}`}</div> */}
                                                         </td>
+                                                        {formData?.billing?.state !== '' && formData?.shipping?.state == 'Tamil Nadu' ? (
+                                                            <>
+                                                                <td>
+                                                                    <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
+                                                                </td>
+                                                                <td>
+                                                                    <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
+                                                                </td>
+                                                            </>
+                                                        ) : (
+                                                            <td>
+                                                                <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount)}`}</div>
+                                                            </td>
+                                                        )}
                                                         {/* <td>
                                                             <button
                                                                 type="button"
@@ -1559,13 +1607,15 @@ const Editorder = () => {
                                             <div>Tax(%)</div>
                                             <div>{orderData?.total?.tax?.amount}</div>
                                         </div> */}
-                                        <div className="mt-4 flex items-center justify-between">
+                                        <div className="mt-4 flex  justify-between">
                                             <div>Shipping Rate</div>
                                             <div>
-                                                <div>{`${formatCurrency(orderData?.shippingPrice?.gross?.currency)}${addCommasToNumber(orderData?.shippingPrice?.gross?.amount)}`}</div>
-
-                                                {/* {orderData?.shippingPrice?.gross?.currency} {orderData?.shippingPrice?.gross?.amount} */}
+                                                <div className="ml-[94px] items-end">
+                                                    {`${formatCurrency(orderData?.shippingPrice?.gross?.currency)}${addCommasToNumber(orderData?.shippingPrice?.gross?.amount)}`}
+                                                </div>
+                                                {isGiftWrap && <div className=" ">(Include Gift wrap &#8377;50)</div>}
                                             </div>
+                                            {/* {orderData?.shippingPrice?.gross?.currency} {orderData?.shippingPrice?.gross?.amount} */}
                                             {/* <div>{orderData?.shippingPrice?.gross?.amount}</div> */}
                                             {/* <div className="cursor-pointer" onClick={() => setShippingOpen(true)}>
                                                 <IconPencil />
@@ -2111,4 +2161,4 @@ const Editorder = () => {
     );
 };
 
-export default PrivateRouter(Editorder) ;
+export default PrivateRouter(Editorder);

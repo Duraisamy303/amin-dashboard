@@ -53,7 +53,7 @@ import { useDispatch } from 'react-redux';
 import Swal from 'sweetalert2';
 import * as Yup from 'yup';
 
-const NewOrder =() => {
+const NewOrder = () => {
     const router = useRouter();
 
     const orderId = router?.query?.orderId;
@@ -63,7 +63,6 @@ const NewOrder =() => {
     useEffect(() => {
         dispatch(setPageTitle('Add New Orders'));
     });
-
 
     const [state, setState] = useSetState({
         loading: false,
@@ -763,7 +762,7 @@ const NewOrder =() => {
             return;
         }
         try {
-            await updateDraftOrder({
+            const res = await updateDraftOrder({
                 variables: {
                     id: orderId,
                     input: {
@@ -783,19 +782,22 @@ const NewOrder =() => {
                     },
                 },
             });
-            updateShippingAmount();
-            getOrderData();
+            if (res?.data?.draftOrderUpdate?.errors?.length > 0) {
+                Failure(res?.data?.draftOrderUpdate?.errors[0]?.message);
+            } else {
+                updateShippingAmount();
+                getOrderData();
+                Success('Address updated successfully');
+            }
             setState({ setUpdateAddressLoading: false });
-
-            Success('Address updated successfully');
         } catch (error) {
             setState({ setUpdateAddressLoading: false });
-
+            Failure(error);
             console.log('error: ', error);
         }
     };
 
-    const handleSearch = async (e:any) => {
+    const handleSearch = async (e: any) => {
         try {
             setState({ search: e });
             let channel = '';
@@ -809,7 +811,7 @@ const NewOrder =() => {
                 query: e,
             });
             if (e?.length > 0) {
-                setState({ productList: res?.data?.products?.edges?.map((item:any) => item.node) });
+                setState({ productList: res?.data?.products?.edges?.map((item: any) => item.node) });
             } else {
                 const { data } = await productRefetch({
                     after: null,
@@ -1888,6 +1890,6 @@ const NewOrder =() => {
             />
         </>
     );
-}
+};
 
-export default PrivateRouter(NewOrder) ;
+export default PrivateRouter(NewOrder);

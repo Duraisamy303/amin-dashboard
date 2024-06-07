@@ -159,14 +159,14 @@ const Sidebar = () => {
                                             </div>
 
                                             <div className={currentMenu !== 'product' ? '-rotate-90 rtl:rotate-90' : ''} onClick={() => toggleMenu('product')}>
-                                                <IconCaretDown   />
+                                                <IconCaretDown />
                                             </div>
                                         </button>
 
                                         <AnimateHeight duration={300} height={currentMenu === 'product' ? 'auto' : 0}>
                                             <ul className="sub-menu text-gray-500">
                                                 <li>
-                                                    <Link href="/product/product">{t('All Product')}</Link>
+                                                    <Link href="/">{t('All Product')}</Link>
                                                 </li>
                                                 <li>
                                                     <Link href="/apps/product/add">{t('Add New')}</Link>
@@ -205,6 +205,15 @@ const Sidebar = () => {
                                                             <li>
                                                                 <Link href="/product/stone">{t('Stone type')}</Link>
                                                             </li>
+                                                            {/* <li>
+                                                                <Link href="/product/stoneColor">{t('Stone color')}</Link>
+                                                            </li>
+                                                            <li>
+                                                                <Link href="/product/type">{t('Type')}</Link>
+                                                            </li>
+                                                            <li>
+                                                                <Link href="/product/size">{t('Size')}</Link>
+                                                            </li> */}
                                                         </ul>
                                                     )}
                                                 </li>
@@ -227,6 +236,22 @@ const Sidebar = () => {
                                             </div>
                                         </Link>
                                     </li>
+                                    <li className="nav-item">
+                                        <Link href="/customer/customer" className="group">
+                                            <div className="flex items-center">
+                                                <IconMenuChat className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Customers')}</span>
+                                            </div>
+                                        </Link>
+                                    </li>
+                                    {/* <li className="nav-item">
+                                        <Link href="/shipping/shippingprovider" className="group">
+                                            <div className="flex items-center">
+                                                <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Gift cart')}</span>
+                                            </div>
+                                        </Link>
+                                    </li> */}
 
                                     <li className="nav-item">
                                         <Link href="/shipping/shippingprovider" className="group">

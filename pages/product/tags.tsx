@@ -22,46 +22,40 @@ import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
 import { useMutation, useQuery } from '@apollo/client';
-import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY } from '@/query/product';
+import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY, PRODUCT_LIST_TAGS, CREATE_TAG } from '@/query/product';
 import ReactQuill from 'react-quill';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import { Success } from '@/utils/functions';
 
 const Tags = () => {
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
         dispatch(setPageTitle('Tags'));
     });
 
-    const { error, data: categoryData } = useQuery(CATEGORY_LIST, {
-        variables: { channel: 'india-channel', first: 100 },
-    });
+    const { error, data: tagData, refetch: tagListRefetch } = useQuery(PRODUCT_LIST_TAGS);
+    console.log('tagData: ', tagData);
 
-    const [categoryList, setCategoryList] = useState([]);
+    const [tagList, setTagList] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        getCategoryList();
-    }, [categoryData]);
+        getTagList();
+    }, [tagData]);
 
-    const getCategoryList = () => {
+    const getTagList = () => {
         setLoading(true);
-        if (categoryData) {
-            if (categoryData.categories && categoryData.categories.edges) {
-                const newData = categoryData.categories.edges.map((item:any) => {
-                    const jsonObject = JSON.parse(item.node.description || item.node.description);
-                    // Extract the text value
-                    const textValue = jsonObject?.blocks[0]?.data?.text;
-
+        if (tagData) {
+            if (tagData.tags && tagData.tags.edges?.length > 0) {
+                const newData = tagData.tags?.edges?.map((item: any) => {
                     return {
-                        ...item.node,
-
-                        product: item.node.products?.totalCount,
-                        textdescription: textValue || '', // Set textValue or empty string if it doesn't exist
+                        name: item.node?.name,
+                        id: item.node?.id,
                     };
                 });
-                setCategoryList(newData);
+                setTagList(newData);
                 setLoading(false);
             }
         } else {
@@ -73,13 +67,14 @@ const Tags = () => {
     const PAGE_SIZES = [10, 20, 30, 50, 100];
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
+    console.log('initialRecords: ', initialRecords);
     const [recordsData, setRecordsData] = useState([]);
 
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(categoryList, 'id'));
-    }, [categoryList]);
+        setInitialRecords(tagList);
+    }, [tagList]);
 
     // Log initialRecords when it changes
     useEffect(() => {
@@ -101,12 +96,12 @@ const Tags = () => {
     // const [viewModal, setViewModal] = useState(false);
 
     //Mutation
-    const [addCategory] = useMutation(CREATE_CATEGORY);
-    const [updateCategory] = useMutation(UPDATE_CATEGORY);
+    const [addTag] = useMutation(CREATE_TAG);
+    const [updateTag] = useMutation(UPDATE_CATEGORY);
     const [deleteCategory] = useMutation(DELETE_CATEGORY);
     const [bulkDelete] = useMutation(DELETE_CATEGORY);
 
-    console.log('categoryList: ', categoryList);
+    console.log('tagList: ', tagList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -119,7 +114,7 @@ const Tags = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return categoryList.filter((item: any) => {
+            return tagList.filter((item: any) => {
                 console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
@@ -135,7 +130,7 @@ const Tags = () => {
 
     useEffect(() => {
         const data = sortBy(initialRecords, sortStatus.columnAccessor);
-        setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
+        setInitialRecords(initialRecords);
     }, [sortStatus]);
 
     // FORM VALIDATION
@@ -152,61 +147,43 @@ const Tags = () => {
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
         try {
-            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
-            console.log('✌️Description --->', Description);
-
             const variables = {
                 input: {
                     name: record.name,
-                    description: Description,
                 },
             };
 
-            const { data } = await (modalTitle ? updateCategory({ variables: { ...variables, id: modalContant.id } }) : addCategory({ variables }));
-            console.log('data: ', data);
+            const { data } = await addTag({ variables });
 
-            const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
-            console.log('newData: ', newData);
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
+            // const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
+            // console.log('newData: ', newData);
+            // if (!newData) {
+            //     console.error('Error: New data is undefined.');
+            //     return;
+            // }
 
-            const jsonObject = JSON.parse(newData.description || newData.description);
-            // Extract the text value
-            const textValue = jsonObject?.blocks[0]?.data?.text;
-            console.log('✌️textValue --->', textValue);
+            // const jsonObject = JSON.parse(newData.description || newData.description);
+            // // Extract the text value
+            // const textValue = jsonObject?.blocks[0]?.data?.text;
 
-            const finalData = {
-                ...newData,
-                textdescription: textValue || '',
-            };
-            console.log("finalData", finalData)
+            // const finalData = {
+            //     ...newData,
+            //     textdescription: textValue || '',
+            // };
 
-            const updatedId = finalData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
+            // const updatedId = finalData.id;
+            // const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = finalData;
-            } else {
-                updatedDesignList.push(finalData);
-            }
-console.log("updatedDesignList", updatedDesignList)
-            // setCategoryList(updatedDesignList);
-            setRecordsData(updatedDesignList);
-            const toast = Swal.mixin({
-                toast: true,
-                position: 'top',
-                showConfirmButton: false,
-                timer: 3000,
-            });
-            toast.fire({
-                icon: modalTitle ? 'success' : 'info',
-                title: modalTitle ? 'Data updated successfully' : 'New data added successfully',
-                padding: '10px 20px',
-            });
-
+            // const updatedDesignList: any = [...recordsData];
+            // if (index !== -1) {
+            //     updatedDesignList[index] = finalData;
+            // } else {
+            //     updatedDesignList.push(finalData);
+            // }
+            // console.log('updatedDesignList', updatedDesignList);
+            // setRecordsData(updatedDesignList);
+            Success('Tag created successfully');
+            tagListRefetch();
             setModal1(false);
             resetForm();
         } catch (error) {
@@ -275,8 +252,8 @@ console.log("updatedDesignList", updatedDesignList)
                 selectedRecords?.map(async (item: any) => {
                     await bulkDelete({ variables: { id: item.id } });
                 });
-                const updatedRecordsData = categoryList.filter((record) => !selectedRecords.includes(record));
-                setCategoryList(updatedRecordsData);
+                const updatedRecordsData = tagList.filter((record) => !selectedRecords.includes(record));
+                setTagList(updatedRecordsData);
                 setSelectedRecords([]);
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
@@ -290,9 +267,9 @@ console.log("updatedDesignList", updatedDesignList)
         showDeleteAlert(
             async () => {
                 const { data } = await deleteCategory({ variables: { id: record.id } });
-                const updatedRecordsData = categoryList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                const updatedRecordsData = tagList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
-                setCategoryList(updatedRecordsData);
+                setTagList(updatedRecordsData);
                 // getCategoryList()
                 setSelectedRecords([]);
                 // setCategoryList(finishList)
@@ -360,15 +337,15 @@ console.log("updatedDesignList", updatedDesignList)
                                 // { accessor: 'id', sortable: true },
                                 // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                                 { accessor: 'name', sortable: true },
-                                {
-                                    accessor: 'textdescription',
-                                    sortable: true,
-                                    title: 'Description',
-                                },
-                                {
-                                    accessor: 'product',
-                                    sortable: true,
-                                },
+                                // {
+                                //     accessor: 'textdescription',
+                                //     sortable: true,
+                                //     title: 'Description',
+                                // },
+                                // {
+                                //     accessor: 'product',
+                                //     sortable: true,
+                                // },
 
                                 {
                                     // Custom column for actions
@@ -382,16 +359,16 @@ console.log("updatedDesignList", updatedDesignList)
                                                 <IconEye className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy> */}
-                                            <Tippy content="Edit">
+                                            {/* <Tippy content="Edit">
                                                 <button type="button" onClick={() => EditCategory(row)}>
                                                     <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                                 </button>
-                                            </Tippy>
-                                            <Tippy content="Delete">
+                                            </Tippy> */}
+                                            {/* <Tippy content="Delete">
                                                 <button type="button" onClick={() => DeleteCategory(row)}>
                                                     <IconTrashLines />
                                                 </button>
-                                            </Tippy>
+                                            </Tippy> */}
                                         </>
                                     ),
                                 },
@@ -444,10 +421,9 @@ console.log("updatedDesignList", updatedDesignList)
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', textdescription: '' }
+                                                    ? { name: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                          description: modalContant?.textdescription,
 
                                                           //   count: modalContant?.count,
                                                           //   image: modalContant?.image,
@@ -496,7 +472,7 @@ console.log("updatedDesignList", updatedDesignList)
                                                         ></textarea>
                                                     </div> */}
 
-                                                    <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
+                                                    {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="description">description </label>
                                                         <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
 
@@ -509,7 +485,7 @@ console.log("updatedDesignList", updatedDesignList)
                                                         ) : (
                                                             ''
                                                         )}
-                                                    </div>
+                                                    </div> */}
 
                                                     {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="slug">Slug </label>
@@ -545,7 +521,7 @@ console.log("updatedDesignList", updatedDesignList)
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {modalTitle === null ? 'Submit' : 'Update'}
+                                                        {'Submit'}
                                                     </button>
                                                 </Form>
                                             )}

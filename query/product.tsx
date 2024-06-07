@@ -31,6 +31,10 @@ export const PRODUCT_LIST = gql`
         id
         name
         slug
+        metadata {
+            key
+            value
+        }
         pricing {
             priceRange {
                 start {
@@ -86,6 +90,40 @@ export const PRODUCT_LIST = gql`
             isPublished
             __typename
         }
+        __typename
+    }
+`;
+
+export const CUSTOMER_ALL_LIST = gql`
+    query ListCustomers($after: String, $before: String, $first: Int, $last: Int, $filter: CustomerFilterInput, $sort: UserSortingInput, $PERMISSION_MANAGE_ORDERS: Boolean!) {
+        customers(after: $after, before: $before, first: $first, last: $last, filter: $filter, sortBy: $sort) {
+            edges {
+                node {
+                    ...Customer
+                    orders @include(if: $PERMISSION_MANAGE_ORDERS) {
+                        totalCount
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment Customer on User {
+        id
+        email
+        firstName
+        lastName
         __typename
     }
 `;
@@ -217,6 +255,18 @@ export const UPDATE_CATEGORY = gql`
                 id
                 name
                 description
+                slug
+            }
+        }
+    }
+`;
+
+export const CREATE_TAG = gql`
+    mutation ProductStyleCreate($input: TagInput!) {
+        tagCreate(input: $input) {
+            tag {
+                id
+                name
                 slug
             }
         }
@@ -5802,6 +5852,10 @@ export const GET_ORDER_DETAILS = gql`
                 name
                 trackingUrl
             }
+            paymentMethod {
+                name
+                id
+            }
         }
         shop {
             countries {
@@ -5831,6 +5885,7 @@ export const GET_ORDER_DETAILS = gql`
             __typename
         }
         __typename
+        isGiftWrap
     }
 
     fragment OrderDetails on Order {
@@ -6630,6 +6685,223 @@ export const COUNTRY_LIST = gql`
     }
 `;
 
+export const ADD_CUSTOMER = gql`
+    mutation CreateCustomer($input: UserCreateInput!) {
+        customerCreate(input: $input) {
+            errors {
+                ...AccountError
+                __typename
+            }
+            user {
+                id
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment AccountError on AccountError {
+        code
+        field
+        addressType
+        message
+        __typename
+    }
+`;
+
+export const UPDATE_CUSTOMER = gql`
+    mutation UpdateCustomer($id: ID!, $input: CustomerInput!) {
+        customerUpdate(id: $id, input: $input) {
+            errors {
+                ...AccountError
+                __typename
+            }
+            user {
+                ...CustomerDetails
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment AccountError on AccountError {
+        code
+        field
+        addressType
+        message
+        __typename
+    }
+
+    fragment CustomerDetails on User {
+        ...Customer
+        ...Metadata
+        dateJoined
+        lastLogin
+        defaultShippingAddress {
+            ...Address
+            __typename
+        }
+        defaultBillingAddress {
+            ...Address
+            __typename
+        }
+        note
+        isActive
+        __typename
+    }
+
+    fragment Customer on User {
+        id
+        email
+        firstName
+        lastName
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
+    }
+`;
+
+export const CUSTOMER_DETAILS = gql`
+    query CustomerDetails($id: ID!, $PERMISSION_MANAGE_ORDERS: Boolean!) {
+        user(id: $id) {
+            ...CustomerDetails
+            orders(last: 5) @include(if: $PERMISSION_MANAGE_ORDERS) {
+                edges {
+                    node {
+                        id
+                        created
+                        number
+                        paymentStatus
+                        total {
+                            gross {
+                                currency
+                                amount
+                                __typename
+                            }
+                            __typename
+                        }
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+            lastPlacedOrder: orders(last: 1) @include(if: $PERMISSION_MANAGE_ORDERS) {
+                edges {
+                    node {
+                        id
+                        created
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment CustomerDetails on User {
+        ...Customer
+        ...Metadata
+        dateJoined
+        lastLogin
+        defaultShippingAddress {
+            ...Address
+            __typename
+        }
+        defaultBillingAddress {
+            ...Address
+            __typename
+        }
+        note
+        isActive
+        __typename
+    }
+
+    fragment Customer on User {
+        id
+        email
+        firstName
+        lastName
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
+    }
+`;
+
 export const STATES_LIST = gql`
     query CountryArea($code: CountryCode!) {
         addressValidationRules(countryCode: $code) {
@@ -6638,6 +6910,50 @@ export const STATES_LIST = gql`
                 verbose
             }
         }
+    }
+`;
+
+export const UPDATE_CUSTOMER_ADDRESS = gql`
+    mutation UpdateCustomerAddress($id: ID!, $input: AddressInput!) {
+        addressUpdate(id: $id, input: $input) {
+            errors {
+                ...AccountError
+                __typename
+            }
+            address {
+                ...Address
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment AccountError on AccountError {
+        code
+        field
+        addressType
+        message
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
     }
 `;
 
@@ -7741,24 +8057,29 @@ export const PRODUCT_FULL_DETAILS = gql`
             metadata {
                 key
                 value
+                __typename
             }
             ...Product
             __typename
             productFinish {
                 id
                 name
+                __typename
             }
             productStoneType {
                 id
                 name
+                __typename
             }
             productstyle {
                 id
                 name
+                __typename
             }
             prouctDesign {
                 id
                 name
+                __typename
             }
         }
     }
@@ -7817,23 +8138,28 @@ export const PRODUCT_FULL_DETAILS = gql`
         productFinish {
             id
             name
+            __typename
         }
         productStoneType {
             id
             name
+            __typename
         }
         productstyle {
             id
             name
+            __typename
         }
         prouctDesign {
             id
             name
+            __typename
         }
         orderNo
         tags {
             id
             name
+            __typename
         }
     }
 
@@ -7848,10 +8174,7 @@ export const PRODUCT_FULL_DETAILS = gql`
                 entityType
                 valueRequired
                 unit
-                choices(first: $firstValues, after: $afterValues, last: $lastValues, before: $beforeValues) {
-                    ...AttributeValueList
-                    __typename
-                }
+
                 __typename
             }
             values {
@@ -7881,6 +8204,7 @@ export const PRODUCT_FULL_DETAILS = gql`
         thumbnail {
             url
             alt
+            __typename
         }
     }
 
@@ -8665,6 +8989,26 @@ export const DELETE_PRODUCTS = gql`
     fragment ProductError on ProductError {
         code
         field
+        message
+        __typename
+    }
+`;
+
+export const DELETE_CUSTOMER = gql`
+    mutation BulkRemoveCustomers($ids: [ID!]!) {
+        customerBulkDelete(ids: $ids) {
+            errors {
+                ...AccountError
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment AccountError on AccountError {
+        code
+        field
+        addressType
         message
         __typename
     }
