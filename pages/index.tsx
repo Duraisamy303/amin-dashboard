@@ -752,19 +752,19 @@ const ProductList = () => {
                         }}
                         minHeight={200}
                         paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                        mantineRowDragHandleProps={({ table }) => ({
-                            onDragEnd: () => {
-                              const { draggingRow, hoveredRow } = table.getState();
-                              if (hoveredRow && draggingRow) {
-                                data.splice(
-                                  (hoveredRow as MRT_Row<Person>).index,
-                                  0,
-                                  data.splice(draggingRow.index, 1)[0],
-                                );
-                                setData([...data]);
-                              }
-                            },
-                          })}
+                        // mantineRowDragHandleProps={({ table }) => ({
+                        //     onDragEnd: () => {
+                        //       const { draggingRow, hoveredRow } = table.getState();
+                        //       if (hoveredRow && draggingRow) {
+                        //         data.splice(
+                        //           (hoveredRow as MRT_Row<Person>).index,
+                        //           0,
+                        //           data.splice(draggingRow.index, 1)[0],
+                        //         );
+                        //         setData([...data]);
+                        //       }
+                        //     },
+                        //   })}
                     />
                 </div>
             </div>

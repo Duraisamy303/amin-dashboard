@@ -126,7 +126,7 @@ const Calendar = () => {
     const [minStartDate, setMinStartDate] = useState<any>('');
     const [minEndDate, setMinEndDate] = useState<any>('');
     const defaultParams = {
-        id: null,
+        id: "",
         title: '',
         start: '',
         end: '',

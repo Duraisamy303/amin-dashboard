@@ -16,10 +16,11 @@
         "jsx": "preserve",
         "incremental": true,
         "baseUrl": ".",
+        "typeRoots": ["./types", "./node_modules/@types"],
         "paths": {
             "@/*": ["./*"]
         }
     },
-    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "pages/apps/todolist.tsx"],
+    "include": ["src","next-env.d.ts", "**/*.ts", "**/*.tsx", "pages/apps/todolist.tsx"],
     "exclude": ["node_modules"]
 }
