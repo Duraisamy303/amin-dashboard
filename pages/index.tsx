@@ -545,7 +545,7 @@ const ProductList = () => {
         try {
             let metadata = [];
             if (row.metadata?.length > 0) {
-                metadata = row.metadata?.map((item) => ({ key: item.key, value: item.value }));
+                metadata = row.metadata?.map((item:any) => ({ key: item.key, value: item.value }));
             }
             const { data } = await updateMedatData({
                 variables: {
