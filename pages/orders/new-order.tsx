@@ -438,7 +438,6 @@ const NewOrder = () => {
     const handleSubHeadingSelect = (heading: any, subHeading: any) => {
         handleSelect(heading, subHeading);
     };
-    console.log('productList', state.productList);
 
     const addProducts = async () => {
         try {
@@ -745,8 +744,6 @@ const NewOrder = () => {
         }
     };
 
-    console.log('state.selectedCustomer: ', state.selectedCustomer);
-
     const updateAddress = async () => {
         if (state.selectedCustomerId == '') {
             Failure('Please select customer');
@@ -800,17 +797,18 @@ const NewOrder = () => {
     const handleSearch = async (e: any) => {
         try {
             setState({ search: e });
-            let channel = '';
-            if (channels() == 'INR') {
-                channel = 'india-channel';
-            } else {
-                channel = 'default-channel';
-            }
-            const res = await searchProductRefetch({
-                channel,
-                query: e,
-            });
-            if (e?.length > 0) {
+            if (e !== '') {
+                let channel = '';
+                if (channels() == 'INR') {
+                    channel = 'india-channel';
+                } else {
+                    channel = 'default-channel';
+                }
+                const res = await searchProductRefetch({
+                    channel,
+                    query: e,
+                });
+
                 setState({ productList: res?.data?.products?.edges?.map((item: any) => item.node) });
             } else {
                 const { data } = await productRefetch({
@@ -1782,7 +1780,7 @@ const NewOrder = () => {
                                                             </div>
                                                             <div className="flex">
                                                                 <div>
-                                                                    <div> {costPrice}</div>
+                                                                    {/* <div> {costPrice}</div> */}
                                                                     <div> {`${formatCurrency(pricing?.price?.gross?.currency)}${addCommasToNumber(pricing?.price?.gross?.amount)}`}</div>
 
                                                                     {/* <div> {pricing?.price?.gross?.amount}</div> */}

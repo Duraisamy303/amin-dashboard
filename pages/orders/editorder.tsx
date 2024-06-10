@@ -28,6 +28,9 @@ import {
     UPDATE_PAYSLIP,
     UPDATE_SHIPPING_PROVIDER,
     UPDATE_TRACKING_NUMBER,
+    SEND_GIFT_CART,
+    DRAFT_ORDER_CANCEL,
+    UNFULFILLMENT_ORDER,
 } from '@/query/product';
 import { Loader } from '@mantine/core';
 import moment from 'moment';
@@ -108,15 +111,16 @@ const Editorder = () => {
     const [shippingProviderUpdate] = useMutation(UPDATE_SHIPPING_PROVIDER);
     const [editTrackingNumber] = useMutation(UPDATE_TRACKING_NUMBER);
     const [confirmNewOrder] = useMutation(CONFIRM_ORDER);
-
+    const [draftOrderCancel] = useMutation(DRAFT_ORDER_CANCEL);
     const [createInvoice] = useMutation(CREATE_INVOICE);
     const [updatesInvoice] = useMutation(UPDATE_INVOICE);
     const [updateInvoicePdf] = useMutation(UPDATE_INVOICE_PDF);
-
+    const [unfillmentOrder] = useMutation(UNFULFILLMENT_ORDER);
     const [createPayslip] = useMutation(CREATE_PAYSLIP);
     const [updatePayslip] = useMutation(UPDATE_PAYSLIP);
     const [sendInvoice] = useMutation(SEND_INVOICE);
     const [sendPayslip] = useMutation(SEND_PAYLSIP);
+    const [sendGiftCart] = useMutation(SEND_GIFT_CART);
 
     // updateFullfillStatus
 
@@ -173,6 +177,7 @@ const Editorder = () => {
     const [reference, setReference] = useState('');
 
     const [orderStatus, setOrderStatus] = useState('');
+    const [giftCartLoading, setGiftCartLoading] = useState(false);
 
     const [discount, setDiscount] = useState(0);
     const [isOrderOpen, setIsOrderOpen] = useState(false);
@@ -215,6 +220,7 @@ const Editorder = () => {
     const [updateLoading, setUpdateLoading] = useState(false);
     const [trackingError, setTrackingError] = useState(false);
     const [shippingError, setShippingError] = useState(false);
+    const [isGiftCart, setIsGiftCart] = useState(false);
 
     useEffect(() => {
         getOrderData();
@@ -246,6 +252,9 @@ const Editorder = () => {
                 }
 
                 setOrderData(orderDetails?.order);
+                const allGiftCards = orderDetails?.order?.lines.every((line) => line?.variant?.product?.category?.name === 'Gift Card');
+                console.log('allGiftCards: ', allGiftCards);
+                setIsGiftCart(allGiftCards);
 
                 //Payslip
                 {
@@ -683,19 +692,88 @@ const Editorder = () => {
     };
 
     const handleOrderChange = async (status: any) => {
-        if (status == 'FULFILLED') {
-            setWaitingStatus(status);
-            setIsOrderOpen(true);
-            const res = await fulfillRefetch();
-            setFullfillData(res?.data?.order?.lines);
-        } else {
-            setOrderStatus(status);
+        if (orderStatus == 'UNCONFIRMED') {
+            if (status == 'CANCELED') {
+                orderCancelDraft();
+            } else {
+                Failure('Need to confirm order');
+            }
+        } else if (orderStatus == 'UNFULFILLED') {
+            if (status == 'UNCONFIRMED') {
+                Failure('Counld not change status');
+            } else if (status == 'FULFILLED') {
+                setWaitingStatus(status);
+                setIsOrderOpen(true);
+                const res = await fulfillRefetch();
+                setFullfillData(res?.data?.order?.lines);
+            } else if (status == 'CANCELED') {
+                unfillmentOrderCancel(status);
+            }
+        } else if (orderStatus == 'FULFILLED') {
+            if (status == 'UNCONFIRMED' || status == 'UNFULFILLED') {
+                Failure('Counld not change status');
+            } else {
+                unfillmentOrderCancel(status);
+            }
+        } else if (orderStatus == 'CANCELED') {
+            if (status == 'UNCONFIRMED' || status == 'FULFILLED' || status == 'UNFULFILLED') {
+                Failure('Counld not change status');
+            }
+        }
+    };
+
+    const orderCancelDraft = async () => {
+        try {
+            showDeleteAlert(
+                async () => {
+                    const res = await draftOrderCancel({
+                        variables: {
+                            id,
+                        },
+                    });
+                    getOrderDetails();
+
+                    Swal.fire('Deleted!', 'Your product have been deleted.', 'success');
+                },
+                () => {
+                    Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
+                }
+            );
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const unfillmentOrderCancel = async (status: any) => {
+        try {
+            let fulfillId = '';
+            if (orderData?.fulfillments?.length > 0) {
+                fulfillId = orderData?.fulfillments[0]?.id;
+                const res = await unfillmentOrder({
+                    variables: {
+                        id: fulfillId,
+                        input: {
+                            warehouseId: 'V2FyZWhvdXNlOmRmODMzODUzLTQyMGYtNGRkZi04YzQzLTVkMzdjMzI4MDRlYQ==',
+                        },
+                    },
+                });
+                orderCancelDraft();
+            } else {
+                orderCancelDraft();
+            }
+        } catch (error) {
+            console.log('error: ', error);
         }
     };
 
     const stocks = (item: any) => {
         const stock = item?.quantity + item?.variant?.stocks[0]?.quantity - item?.variant?.stocks[0]?.quantityAllocated;
-        return stock;
+        console.log('stock: ', stock);
+        if (stock > 0) {
+            return stock;
+        } else {
+            return 'Out of stock';
+        }
     };
 
     const confirmOrder = async (country?: any) => {
@@ -844,61 +922,86 @@ const Editorder = () => {
         }
     };
 
+    const send_giftCart = async () => {
+        try {
+            setGiftCartLoading(true);
+
+            const res = await sendGiftCart({
+                variables: {
+                    orderid: id,
+                },
+            });
+            if (res?.data?.sendGiftCard?.errors?.length > 0) {
+                Failure(res?.data?.sendGiftCard?.errors[0]?.message);
+            } else {
+                getOrderDetails();
+                Success('Gift cart sent Successfully');
+            }
+            setGiftCartLoading(false);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
     return (
         <>
-            {loading ? (
-                <Loader />
-            ) : (
-                <>
-                    <div className="panel mb-5 flex items-center justify-between gap-3 p-5 ">
-                        <h3 className="text-lg font-semibold dark:text-white-light">Edit Order</h3>
-                        <button type="button" className="btn btn-primary" onClick={() => setIsOpenChannel(true)}>
-                            Add Order
-                        </button>
-                    </div>
-                    <div className="grid grid-cols-12 gap-5 ">
-                        <div className=" col-span-9 mb-5  ">
-                            <div className="panel mb-5 p-5">
-                                <div className="flex justify-between">
-                                    <h3 className="text-lg font-semibold">{`Order #${orderData?.number} Details`}</h3>
-                                    {orderStatus == 'UNCONFIRMED' && (
-                                        <button type="submit" className="btn btn-outline-primary" onClick={() => confirmOrder()}>
-                                            {confirmLoading ? <IconLoader /> : ' Order Confirm'}
-                                        </button>
-                                    )}
-                                    {/* <p className=" pt-1 text-gray-500">Payment via Cash on delivery. Customer IP: 122.178.161.16</p> */}
-                                </div>
-                                <div className="mt-8">
-                                    <h5 className="mb-3 text-lg font-semibold">General</h5>
-                                    <div className="grid grid-cols-12 gap-5">
-                                        <div className="col-span-4">
-                                            <label htmlFor="dateTimeCreated" className="block pr-2 text-sm font-medium text-gray-700">
-                                                Order created:
-                                            </label>
+            <>
+                <div className="panel mb-5 flex items-center justify-between gap-3 p-5 ">
+                    <h3 className="text-lg font-semibold dark:text-white-light">Edit Order</h3>
+                    <button type="button" className="btn btn-primary" onClick={() => setIsOpenChannel(true)}>
+                        Add Order
+                    </button>
+                </div>
+                <div className="grid grid-cols-12 gap-5 ">
+                    <div className=" col-span-9 mb-5  ">
+                        <div className="panel mb-5 p-5">
+                            <div className="flex justify-between">
+                                <h3 className="text-lg font-semibold">{`Order #${orderData?.number} Details`}</h3>
+                                {orderStatus == 'UNCONFIRMED' && (
+                                    <button type="submit" className="btn btn-outline-primary" onClick={() => confirmOrder()}>
+                                        {confirmLoading ? <IconLoader /> : ' Order Confirm'}
+                                    </button>
+                                )}
+                                {/* <p className=" pt-1 text-gray-500">Payment via Cash on delivery. Customer IP: 122.178.161.16</p> */}
+                            </div>
+                            <div className="mt-8">
+                                <h5 className="mb-3 text-lg font-semibold">General</h5>
+                                <div className="grid grid-cols-12 gap-5">
+                                    <div className="col-span-4">
+                                        <label htmlFor="dateTimeCreated" className="block pr-2 text-sm font-medium text-gray-700">
+                                            Order created:
+                                        </label>
 
-                                            <input
-                                                type="datetime-local"
-                                                value={moment(orderDetails?.order?.created).format('YYYY-MM-DDTHH:mm')}
-                                                id="dateTimeCreated"
-                                                name="dateTimeCreated"
-                                                className="form-input"
-                                                disabled
-                                            />
+                                        <input
+                                            type="datetime-local"
+                                            value={moment(orderDetails?.order?.created).format('YYYY-MM-DDTHH:mm')}
+                                            id="dateTimeCreated"
+                                            name="dateTimeCreated"
+                                            className="form-input"
+                                            disabled
+                                        />
+                                    </div>
+                                    {/* {orderStatus != 'UNCONFIRMED' && ( */}
+                                    <>
+                                        {/* {paymentStatus == 'FULLY_CHARGED' && ( */}
+                                        <div className="col-span-4">
+                                            <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                Order Status:
+                                            </label>
+                                            <select
+                                                //  disabled={orderStatus == 'FULFILLED'}
+                                                className="form-select"
+                                                value={orderStatus}
+                                                onChange={(e) => handleOrderChange(e.target.value)}
+                                            >
+                                                <option value="UNCONFIRMED">Processing</option>
+                                                <option value="UNFULFILLED">Fulfill</option>
+                                                <option value="FULFILLED">Completed</option>
+                                                <option value="CANCELED">Cancelled</option>
+                                            </select>
                                         </div>
-                                        {orderStatus != 'UNCONFIRMED' && (
-                                            <>
-                                                {paymentStatus == 'FULLY_CHARGED' && (
-                                                    <div className="col-span-4">
-                                                        <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                            Order Status:
-                                                        </label>
-                                                        <select disabled={orderStatus == 'FULFILLED'} className="form-select" value={orderStatus} onChange={(e) => handleOrderChange(e.target.value)}>
-                                                            <option value="UNFULFILLED">Processing</option>
-                                                            <option value="FULFILLED">Shipped</option>
-                                                        </select>
-                                                    </div>
-                                                )}
-                                                {/* <div className="col-span-4">
+                                        {/* )} */}
+                                        {/* <div className="col-span-4">
                                                     <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
                                                         Payment Method:
                                                     </label>
@@ -914,271 +1017,273 @@ const Editorder = () => {
                                                         <option value="FULLY_CHARGED">COD</option>
                                                     </select>
                                                 </div> */}
-                                                <div className="col-span-4">
-                                                    <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                        Payment Status:
+                                        <div className="col-span-4">
+                                            <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                Payment Status:
+                                            </label>
+                                            <select
+                                                disabled={paymentStatus == 'FULLY_CHARGED'}
+                                                className="form-select"
+                                                value={paymentStatus}
+                                                onChange={(e) => {
+                                                    const status = e.target.value;
+                                                    if (status == 'FULLY_CHARGED') {
+                                                        setIsPaymentOpen(true);
+                                                    } else {
+                                                        setPaymentStatus(status);
+                                                    }
+                                                }}
+                                            >
+                                                <option value="NOT_CHARGET">payment pending</option>
+                                                <option value="FULLY_CHARGED">payment completed</option>
+                                            </select>
+                                        </div>
+                                        {orderData?.paymentMethod?.name && (
+                                            <div className="col-span-4">
+                                                <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
+                                                    Payment Method:
+                                                </label>
+                                                <input type="text" value={orderData?.paymentMethod?.name} name="paymentMenthod" className="form-input" disabled />
+                                            </div>
+                                        )}
+                                    </>
+                                    {/* )} */}
+                                </div>
+                            </div>
+
+                            <div className="mt-8 grid grid-cols-12 gap-5">
+                                <div className="col-span-6 mr-5">
+                                    <div className="flex w-52 items-center justify-between">
+                                        <h5 className="mb-3 text-lg font-semibold">Billing</h5>
+                                        <button type="button" onClick={() => BillingInputs()}>
+                                            <IconPencil className="cursor-pointer" />
+                                        </button>
+                                    </div>
+                                    {showBillingInputs === false ? (
+                                        <>
+                                            <div className="mt-3 text-gray-500">
+                                                <p>{`${formData?.billing?.firstName} ${formData?.billing?.lastName}`}</p>
+                                                <p>{formData?.billing?.company}</p>
+                                                <p>
+                                                    {formData?.billing?.address_1}
+                                                    {formData?.billing?.address_2 && <div>{formData.billing.address_2}</div>}
+                                                    <br /> {formData?.billing?.city}
+                                                    <br /> {formData?.billing?.state}
+                                                    <br /> {formData?.billing?.countryArea}
+                                                </p>
+                                                {formData?.billing?.email && (
+                                                    <>
+                                                        <p className="mt-3 font-semibold">Email Address:</p>
+                                                        <p>
+                                                            <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
+                                                                {formData?.billing?.email}
+                                                            </a>
+                                                        </p>
+                                                    </>
+                                                )}
+                                                {formData?.billing?.phone && (
+                                                    <>
+                                                        <p className="mt-3 font-semibold">Phone:</p>
+                                                        <p>
+                                                            <a href="tel:01803556656" className="text-primary underline">
+                                                                {formData?.billing?.phone}
+                                                            </a>
+                                                        </p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <a href="#" className="text-primary underline">
+                                                Load billing address
+                                            </a>
+
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="firstname" className=" text-sm font-medium text-gray-700">
+                                                        First Name
+                                                    </label>
+
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['billing.firstName'] && 'border border-danger focus:border-danger'}`}
+                                                        name="billing.firstName"
+                                                        value={formData.billing.firstName}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['billing.firstName'] && <div className="mt-1 text-danger">{errors['billing.firstName']}</div>}
+                                                </div>
+                                                <div className="col-span-6">
+                                                    <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
+                                                        Last Name
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['billing.lastName'] && 'border border-danger focus:border-danger'}`}
+                                                        name="billing.lastName"
+                                                        value={formData.billing.lastName}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['billing.lastName'] && <div className="mt-1 text-danger">{errors['billing.lastName']}</div>}
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-12">
+                                                    <label htmlFor="company" className=" text-sm font-medium text-gray-700">
+                                                        Company
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['billing.company'] && 'border border-danger focus:border-danger'}`}
+                                                        name="billing.company"
+                                                        value={formData.billing.company}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['billing.company'] && <div className="mt-1 text-danger">{errors['billing.company']}</div>}
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
+                                                        Addres Line 1
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['billing.address_1'] && 'border border-danger focus:border-danger'}`}
+                                                        name="billing.address_1"
+                                                        value={formData.billing.address_1}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['billing.address_1'] && <div className="mt-1 text-danger">{errors['billing.address_1']}</div>}
+
+                                                    {/* <input type="text" id="billingaddress1" name="billingaddress1" className="form-input" required /> */}
+                                                </div>
+                                                <div className="col-span-6">
+                                                    <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
+                                                        Addres Line 2
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['billing.address_2'] && 'border border-danger focus:border-danger'}`}
+                                                        name="billing.address_2"
+                                                        value={formData.billing.address_2}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['billing.address_2'] && <div className="mt-1 text-danger">{errors['billing.address_2']}</div>}
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="city" className=" text-sm font-medium text-gray-700">
+                                                        City
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['billing.city'] && 'border border-danger focus:border-danger'}`}
+                                                        name="billing.city"
+                                                        value={formData.billing.city}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['billing.city'] && <div className="mt-1 text-danger">{errors['billing.city']}</div>}
+                                                </div>
+                                                <div className="col-span-6">
+                                                    <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
+                                                        Post Code / ZIP
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['billing.pincode'] && 'border border-danger focus:border-danger'}`}
+                                                        name="billing.pincode"
+                                                        value={formData.billing.pincode}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['billing.pincode'] && <div className="mt-1 text-danger">{errors['billing.pincode']}</div>}
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="country" className=" text-sm font-medium text-gray-700">
+                                                        Country / Region
                                                     </label>
                                                     <select
-                                                        disabled={paymentStatus == 'FULLY_CHARGED'}
-                                                        className="form-select"
-                                                        value={paymentStatus}
-                                                        onChange={(e) => {
-                                                            const status = e.target.value;
-                                                            if (status == 'FULLY_CHARGED') {
-                                                                setIsPaymentOpen(true);
-                                                            } else {
-                                                                setPaymentStatus(status);
-                                                            }
-                                                        }}
+                                                        className={`form-select mr-3 ${errors['billing.country'] && 'border border-danger focus:border-danger'}`}
+                                                        // className="form-select mr-3"
+                                                        id="billingcountry"
+                                                        name="billing.country"
+                                                        value={formData.billing.country}
+                                                        onChange={handleChange}
+                                                        // value={selectedCountry}
+                                                        // onChange={(e) => getStateList(e.target.value)}
                                                     >
-                                                        <option value="NOT_CHARGET">payment pending</option>
-                                                        <option value="FULLY_CHARGED">payment completed</option>
+                                                        {countryList?.map((item: any) => (
+                                                            <option key={item.code} value={item.code}>
+                                                                {item.country}
+                                                            </option>
+                                                        ))}
                                                     </select>
+                                                    {errors['billing.country'] && <div className="mt-1 text-danger">{errors['billing.country']}</div>}
                                                 </div>
-                                                <div className="col-span-4">
-                                                    <label htmlFor="regularPrice" className="block pr-2 text-sm font-medium text-gray-700">
-                                                        Payment Method:
+                                                <div className="col-span-6">
+                                                    <label htmlFor="state" className=" text-sm font-medium text-gray-700">
+                                                        State / Country
                                                     </label>
-                                                    <input type="text" value={orderData?.paymentMethod?.name} name="paymentMenthod" className="form-input" disabled />
+                                                    <select
+                                                        className={`form-select mr-3 ${errors['billing.state'] && 'border border-danger focus:border-danger'}`}
+                                                        id="billingstate"
+                                                        name="billing.state"
+                                                        value={formData.billing.state}
+                                                        onChange={handleChange}
+                                                    >
+                                                        {stateList?.map((item: any) => (
+                                                            <option key={item.raw} value={item.raw}>
+                                                                {item.raw}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors['billing.state'] && <div className="mt-1 text-danger">{errors['billing.state']}</div>}
                                                 </div>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
+                                            </div>
 
-                                <div className="mt-8 grid grid-cols-12 gap-5">
-                                    <div className="col-span-6 mr-5">
-                                        <div className="flex w-52 items-center justify-between">
-                                            <h5 className="mb-3 text-lg font-semibold">Billing</h5>
-                                            <button type="button" onClick={() => BillingInputs()}>
-                                                <IconPencil className="cursor-pointer" />
-                                            </button>
-                                        </div>
-                                        {showBillingInputs === false ? (
-                                            <>
-                                                <div className="mt-3 text-gray-500">
-                                                    <p>{`${formData?.billing?.firstName} ${formData?.billing?.lastName}`}</p>
-                                                    <p>{formData?.billing?.company}</p>
-                                                    <p>
-                                                        {formData?.billing?.address_1}
-                                                        {formData?.billing?.address_2 && <div>{formData.billing.address_2}</div>}
-                                                        <br /> {formData?.billing?.city}
-                                                        <br /> {formData?.billing?.state}
-                                                        <br /> {formData?.billing?.countryArea}
-                                                    </p>
-                                                    {formData?.billing?.email && (
-                                                        <>
-                                                            <p className="mt-3 font-semibold">Email Address:</p>
-                                                            <p>
-                                                                <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
-                                                                    {formData?.billing?.email}
-                                                                </a>
-                                                            </p>
-                                                        </>
-                                                    )}
-                                                    {formData?.billing?.phone && (
-                                                        <>
-                                                            <p className="mt-3 font-semibold">Phone:</p>
-                                                            <p>
-                                                                <a href="tel:01803556656" className="text-primary underline">
-                                                                    {formData?.billing?.phone}
-                                                                </a>
-                                                            </p>
-                                                        </>
-                                                    )}
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="email" className=" text-sm font-medium text-gray-700">
+                                                        Email address
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['billing.email'] && 'border border-danger focus:border-danger'}`}
+                                                        name="billing.email"
+                                                        value={formData.billing.email}
+                                                        maxLength={10}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['billing.email'] && <div className="mt-1 text-danger">{errors['billing.email']}</div>}
+                                                    {/* <input type="mail" className="form-input" name="billing.email" value={formData.billing.email} onChange={handleChange} /> */}
+
+                                                    {/* <input type="mail" id="billingemail" name="billingemail" className="form-input" required /> */}
                                                 </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <a href="#" className="text-primary underline">
-                                                    Load billing address
-                                                </a>
-
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="firstname" className=" text-sm font-medium text-gray-700">
-                                                            First Name
-                                                        </label>
-
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['billing.firstName'] && 'border border-danger focus:border-danger'}`}
-                                                            name="billing.firstName"
-                                                            value={formData.billing.firstName}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['billing.firstName'] && <div className="mt-1 text-danger">{errors['billing.firstName']}</div>}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
-                                                            Last Name
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['billing.lastName'] && 'border border-danger focus:border-danger'}`}
-                                                            name="billing.lastName"
-                                                            value={formData.billing.lastName}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['billing.lastName'] && <div className="mt-1 text-danger">{errors['billing.lastName']}</div>}
-                                                    </div>
+                                                <div className="col-span-6">
+                                                    <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
+                                                        Phone
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['billing.phone'] && 'border border-danger focus:border-danger'}`}
+                                                        name="billing.phone"
+                                                        value={formData.billing.phone}
+                                                        maxLength={10}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['billing.phone'] && <div className="mt-1 text-danger">{errors['billing.phone']}</div>}
                                                 </div>
+                                            </div>
 
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-12">
-                                                        <label htmlFor="company" className=" text-sm font-medium text-gray-700">
-                                                            Company
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['billing.company'] && 'border border-danger focus:border-danger'}`}
-                                                            name="billing.company"
-                                                            value={formData.billing.company}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['billing.company'] && <div className="mt-1 text-danger">{errors['billing.company']}</div>}
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
-                                                            Addres Line 1
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['billing.address_1'] && 'border border-danger focus:border-danger'}`}
-                                                            name="billing.address_1"
-                                                            value={formData.billing.address_1}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['billing.address_1'] && <div className="mt-1 text-danger">{errors['billing.address_1']}</div>}
-
-                                                        {/* <input type="text" id="billingaddress1" name="billingaddress1" className="form-input" required /> */}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
-                                                            Addres Line 2
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['billing.address_2'] && 'border border-danger focus:border-danger'}`}
-                                                            name="billing.address_2"
-                                                            value={formData.billing.address_2}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['billing.address_2'] && <div className="mt-1 text-danger">{errors['billing.address_2']}</div>}
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="city" className=" text-sm font-medium text-gray-700">
-                                                            City
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['billing.city'] && 'border border-danger focus:border-danger'}`}
-                                                            name="billing.city"
-                                                            value={formData.billing.city}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['billing.city'] && <div className="mt-1 text-danger">{errors['billing.city']}</div>}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
-                                                            Post Code / ZIP
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['billing.pincode'] && 'border border-danger focus:border-danger'}`}
-                                                            name="billing.pincode"
-                                                            value={formData.billing.pincode}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['billing.pincode'] && <div className="mt-1 text-danger">{errors['billing.pincode']}</div>}
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="country" className=" text-sm font-medium text-gray-700">
-                                                            Country / Region
-                                                        </label>
-                                                        <select
-                                                            className={`form-select mr-3 ${errors['billing.country'] && 'border border-danger focus:border-danger'}`}
-                                                            // className="form-select mr-3"
-                                                            id="billingcountry"
-                                                            name="billing.country"
-                                                            value={formData.billing.country}
-                                                            onChange={handleChange}
-                                                            // value={selectedCountry}
-                                                            // onChange={(e) => getStateList(e.target.value)}
-                                                        >
-                                                            {countryList?.map((item: any) => (
-                                                                <option key={item.code} value={item.code}>
-                                                                    {item.country}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        {errors['billing.country'] && <div className="mt-1 text-danger">{errors['billing.country']}</div>}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="state" className=" text-sm font-medium text-gray-700">
-                                                            State / Country
-                                                        </label>
-                                                        <select
-                                                            className={`form-select mr-3 ${errors['billing.state'] && 'border border-danger focus:border-danger'}`}
-                                                            id="billingstate"
-                                                            name="billing.state"
-                                                            value={formData.billing.state}
-                                                            onChange={handleChange}
-                                                        >
-                                                            {stateList?.map((item: any) => (
-                                                                <option key={item.raw} value={item.raw}>
-                                                                    {item.raw}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        {errors['billing.state'] && <div className="mt-1 text-danger">{errors['billing.state']}</div>}
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="email" className=" text-sm font-medium text-gray-700">
-                                                            Email address
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['billing.email'] && 'border border-danger focus:border-danger'}`}
-                                                            name="billing.email"
-                                                            value={formData.billing.email}
-                                                            maxLength={10}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['billing.email'] && <div className="mt-1 text-danger">{errors['billing.email']}</div>}
-                                                        {/* <input type="mail" className="form-input" name="billing.email" value={formData.billing.email} onChange={handleChange} /> */}
-
-                                                        {/* <input type="mail" id="billingemail" name="billingemail" className="form-input" required /> */}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
-                                                            Phone
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['billing.phone'] && 'border border-danger focus:border-danger'}`}
-                                                            name="billing.phone"
-                                                            value={formData.billing.phone}
-                                                            maxLength={10}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['billing.phone'] && <div className="mt-1 text-danger">{errors['billing.phone']}</div>}
-                                                    </div>
-                                                </div>
-
-                                                {/* <div className="mt-5 grid grid-cols-12 gap-3">
+                                            {/* <div className="mt-5 grid grid-cols-12 gap-3">
                                                     <div className="col-span-12">
                                                         <label htmlFor="payments" className=" text-sm font-medium text-gray-700">
                                                             Payment method:
@@ -1196,7 +1301,7 @@ const Editorder = () => {
                                                     </div>
                                                 </div> */}
 
-                                                {/* <div className="mt-5 grid grid-cols-12 gap-3">
+                                            {/* <div className="mt-5 grid grid-cols-12 gap-3">
                                                     <div className="col-span-12">
                                                         <label htmlFor="transaction" className=" text-sm font-medium text-gray-700">
                                                             Transaction ID
@@ -1205,245 +1310,245 @@ const Editorder = () => {
 
                                                     </div>
                                                 </div> */}
-                                            </>
-                                        )}
+                                        </>
+                                    )}
+                                </div>
+
+                                <div className="col-span-6 mr-5">
+                                    <div className="flex w-52 items-center justify-between">
+                                        <h5 className="mb-3 text-lg font-semibold">Shipping</h5>
+                                        <button type="button" onClick={() => ShippingInputs()}>
+                                            <IconPencil />
+                                        </button>
                                     </div>
 
-                                    <div className="col-span-6 mr-5">
-                                        <div className="flex w-52 items-center justify-between">
-                                            <h5 className="mb-3 text-lg font-semibold">Shipping</h5>
-                                            <button type="button" onClick={() => ShippingInputs()}>
-                                                <IconPencil />
-                                            </button>
-                                        </div>
+                                    {showShippingInputs === false ? (
+                                        <>
+                                            <div className="mt-3 text-gray-500">
+                                                <p>{`${formData?.shipping?.firstName} ${formData?.shipping?.lastName}`}</p>
+                                                <p>{formData?.shipping?.company}</p>
+                                                <p>
+                                                    {`${formData?.shipping?.address_1} - ${formData?.shipping?.address_2}`}
+                                                    <br /> {formData?.shipping?.city}
+                                                    <br /> {formData?.shipping?.state}
+                                                    <br /> {formData?.shipping?.countryArea}
+                                                </p>
+                                                {formData?.shipping?.email && (
+                                                    <>
+                                                        <p className="mt-3 font-semibold">Email Address:</p>
+                                                        <p>
+                                                            <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
+                                                                {formData?.shipping?.email}
+                                                            </a>
+                                                        </p>
+                                                    </>
+                                                )}
+                                                {formData?.shipping?.phone && (
+                                                    <>
+                                                        <p className="mt-3 font-semibold">Phone:</p>
+                                                        <p>
+                                                            <a href="tel:01803556656" className="text-primary underline">
+                                                                {formData?.shipping?.phone}
+                                                            </a>
+                                                        </p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <a href="#" className="mr-3 text-primary underline">
+                                                Load Shipping address
+                                            </a>
+                                            <a href="#" className="text-primary underline">
+                                                Copy Billing address
+                                            </a>
 
-                                        {showShippingInputs === false ? (
-                                            <>
-                                                <div className="mt-3 text-gray-500">
-                                                    <p>{`${formData?.shipping?.firstName} ${formData?.shipping?.lastName}`}</p>
-                                                    <p>{formData?.shipping?.company}</p>
-                                                    <p>
-                                                        {`${formData?.shipping?.address_1} - ${formData?.shipping?.address_2}`}
-                                                        <br /> {formData?.shipping?.city}
-                                                        <br /> {formData?.shipping?.state}
-                                                        <br /> {formData?.shipping?.countryArea}
-                                                    </p>
-                                                    {formData?.shipping?.email && (
-                                                        <>
-                                                            <p className="mt-3 font-semibold">Email Address:</p>
-                                                            <p>
-                                                                <a href="mailto:mail2inducs@gmail.com" className="text-primary underline">
-                                                                    {formData?.shipping?.email}
-                                                                </a>
-                                                            </p>
-                                                        </>
-                                                    )}
-                                                    {formData?.shipping?.phone && (
-                                                        <>
-                                                            <p className="mt-3 font-semibold">Phone:</p>
-                                                            <p>
-                                                                <a href="tel:01803556656" className="text-primary underline">
-                                                                    {formData?.shipping?.phone}
-                                                                </a>
-                                                            </p>
-                                                        </>
-                                                    )}
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="firstname" className=" text-sm font-medium text-gray-700">
+                                                        First Name
+                                                    </label>
+
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['shipping.firstName'] && 'border border-danger focus:border-danger'}`}
+                                                        name="shipping.firstName"
+                                                        value={formData.shipping.firstName}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['shipping.firstName'] && <div className="mt-1 text-danger">{errors['shipping.firstName']}</div>}
                                                 </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <a href="#" className="mr-3 text-primary underline">
-                                                    Load Shipping address
-                                                </a>
-                                                <a href="#" className="text-primary underline">
-                                                    Copy Billing address
-                                                </a>
-
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="firstname" className=" text-sm font-medium text-gray-700">
-                                                            First Name
-                                                        </label>
-
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['shipping.firstName'] && 'border border-danger focus:border-danger'}`}
-                                                            name="shipping.firstName"
-                                                            value={formData.shipping.firstName}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['shipping.firstName'] && <div className="mt-1 text-danger">{errors['shipping.firstName']}</div>}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
-                                                            Last Name
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['shipping.lastName'] && 'border border-danger focus:border-danger'}`}
-                                                            name="shipping.lastName"
-                                                            value={formData.shipping.lastName}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['shipping.lastName'] && <div className="mt-1 text-danger">{errors['shipping.lastName']}</div>}
-                                                    </div>
+                                                <div className="col-span-6">
+                                                    <label htmlFor="Lastname" className=" text-sm font-medium text-gray-700">
+                                                        Last Name
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['shipping.lastName'] && 'border border-danger focus:border-danger'}`}
+                                                        name="shipping.lastName"
+                                                        value={formData.shipping.lastName}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['shipping.lastName'] && <div className="mt-1 text-danger">{errors['shipping.lastName']}</div>}
                                                 </div>
+                                            </div>
 
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-12">
-                                                        <label htmlFor="company" className=" text-sm font-medium text-gray-700">
-                                                            Company
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['shipping.company'] && 'border border-danger focus:border-danger'}`}
-                                                            name="shipping.company"
-                                                            value={formData.shipping.company}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['shipping.company'] && <div className="mt-1 text-danger">{errors['shipping.company']}</div>}
-                                                    </div>
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-12">
+                                                    <label htmlFor="company" className=" text-sm font-medium text-gray-700">
+                                                        Company
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['shipping.company'] && 'border border-danger focus:border-danger'}`}
+                                                        name="shipping.company"
+                                                        value={formData.shipping.company}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['shipping.company'] && <div className="mt-1 text-danger">{errors['shipping.company']}</div>}
                                                 </div>
+                                            </div>
 
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
-                                                            Addres Line 1
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['shipping.address_1'] && 'border border-danger focus:border-danger'}`}
-                                                            name="shipping.address_1"
-                                                            value={formData.shipping.address_1}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['shipping.address_1'] && <div className="mt-1 text-danger">{errors['shipping.address_1']}</div>}
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
+                                                        Addres Line 1
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['shipping.address_1'] && 'border border-danger focus:border-danger'}`}
+                                                        name="shipping.address_1"
+                                                        value={formData.shipping.address_1}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['shipping.address_1'] && <div className="mt-1 text-danger">{errors['shipping.address_1']}</div>}
 
-                                                        {/* <input type="text" id="shippingaddress1" name="shippingaddress1" className="form-input" required /> */}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
-                                                            Addres Line 2
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['shipping.address_2'] && 'border border-danger focus:border-danger'}`}
-                                                            name="shipping.address_2"
-                                                            value={formData.shipping.address_2}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['shipping.address_2'] && <div className="mt-1 text-danger">{errors['shipping.address_2']}</div>}
-                                                    </div>
+                                                    {/* <input type="text" id="shippingaddress1" name="shippingaddress1" className="form-input" required /> */}
                                                 </div>
-
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="city" className=" text-sm font-medium text-gray-700">
-                                                            City
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['shipping.city'] && 'border border-danger focus:border-danger'}`}
-                                                            name="shipping.city"
-                                                            value={formData.shipping.city}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['shipping.city'] && <div className="mt-1 text-danger">{errors['shipping.city']}</div>}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
-                                                            Post Code / ZIP
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['shipping.pincode'] && 'border border-danger focus:border-danger'}`}
-                                                            name="shipping.pincode"
-                                                            value={formData.shipping.pincode}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['shipping.pincode'] && <div className="mt-1 text-danger">{errors['shipping.pincode']}</div>}
-                                                    </div>
+                                                <div className="col-span-6">
+                                                    <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
+                                                        Addres Line 2
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['shipping.address_2'] && 'border border-danger focus:border-danger'}`}
+                                                        name="shipping.address_2"
+                                                        value={formData.shipping.address_2}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['shipping.address_2'] && <div className="mt-1 text-danger">{errors['shipping.address_2']}</div>}
                                                 </div>
+                                            </div>
 
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="country" className=" text-sm font-medium text-gray-700">
-                                                            Country / Region
-                                                        </label>
-                                                        <select
-                                                            className={`form-select mr-3 ${errors['shipping.country'] && 'border border-danger focus:border-danger'}`}
-                                                            // className="form-select mr-3"
-                                                            id="shippingcountry"
-                                                            name="shipping.country"
-                                                            value={formData.shipping.country}
-                                                            onChange={handleChange}
-                                                            // value={selectedCountry}
-                                                            // onChange={(e) => getStateList(e.target.value)}
-                                                        >
-                                                            {countryList?.map((item: any) => (
-                                                                <option key={item.code} value={item.code}>
-                                                                    {item.country}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        {errors['shipping.country'] && <div className="mt-1 text-danger">{errors['shipping.country']}</div>}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="state" className=" text-sm font-medium text-gray-700">
-                                                            State / Country
-                                                        </label>
-                                                        <select
-                                                            className={`form-select mr-3 ${errors['shipping.state'] && 'border border-danger focus:border-danger'}`}
-                                                            id="shippingstate"
-                                                            name="shipping.state"
-                                                            value={formData.shipping.state}
-                                                            onChange={handleChange}
-                                                        >
-                                                            {stateList?.map((item: any) => (
-                                                                <option key={item.raw} value={item.raw}>
-                                                                    {item.raw}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        {errors['shipping.state'] && <div className="mt-1 text-danger">{errors['shipping.state']}</div>}
-                                                    </div>
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="city" className=" text-sm font-medium text-gray-700">
+                                                        City
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['shipping.city'] && 'border border-danger focus:border-danger'}`}
+                                                        name="shipping.city"
+                                                        value={formData.shipping.city}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['shipping.city'] && <div className="mt-1 text-danger">{errors['shipping.city']}</div>}
                                                 </div>
-
-                                                <div className="mt-5 grid grid-cols-12 gap-3">
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="email" className=" text-sm font-medium text-gray-700">
-                                                            Email address
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className={`form-input ${errors['shipping.email'] && 'border border-danger focus:border-danger'}`}
-                                                            name="shipping.email"
-                                                            value={formData.shipping.email}
-                                                            maxLength={10}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['shipping.email'] && <div className="mt-1 text-danger">{errors['shipping.email']}</div>}
-                                                        {/* <input type="mail" className="form-input" name="shipping.email" value={formData.shipping.email} onChange={handleChange} /> */}
-
-                                                        {/* <input type="mail" id="shippingemail" name="shippingemail" className="form-input" required /> */}
-                                                    </div>
-                                                    <div className="col-span-6">
-                                                        <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
-                                                            Phone
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            className={`form-input ${errors['shipping.phone'] && 'border border-danger focus:border-danger'}`}
-                                                            name="shipping.phone"
-                                                            value={formData.shipping.phone}
-                                                            maxLength={10}
-                                                            onChange={handleChange}
-                                                        />
-                                                        {errors['shipping.phone'] && <div className="mt-1 text-danger">{errors['shipping.phone']}</div>}
-                                                    </div>
+                                                <div className="col-span-6">
+                                                    <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
+                                                        Post Code / ZIP
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['shipping.pincode'] && 'border border-danger focus:border-danger'}`}
+                                                        name="shipping.pincode"
+                                                        value={formData.shipping.pincode}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['shipping.pincode'] && <div className="mt-1 text-danger">{errors['shipping.pincode']}</div>}
                                                 </div>
+                                            </div>
 
-                                                {/* <div className="mt-5 grid grid-cols-12 gap-3">
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="country" className=" text-sm font-medium text-gray-700">
+                                                        Country / Region
+                                                    </label>
+                                                    <select
+                                                        className={`form-select mr-3 ${errors['shipping.country'] && 'border border-danger focus:border-danger'}`}
+                                                        // className="form-select mr-3"
+                                                        id="shippingcountry"
+                                                        name="shipping.country"
+                                                        value={formData.shipping.country}
+                                                        onChange={handleChange}
+                                                        // value={selectedCountry}
+                                                        // onChange={(e) => getStateList(e.target.value)}
+                                                    >
+                                                        {countryList?.map((item: any) => (
+                                                            <option key={item.code} value={item.code}>
+                                                                {item.country}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors['shipping.country'] && <div className="mt-1 text-danger">{errors['shipping.country']}</div>}
+                                                </div>
+                                                <div className="col-span-6">
+                                                    <label htmlFor="state" className=" text-sm font-medium text-gray-700">
+                                                        State / Country
+                                                    </label>
+                                                    <select
+                                                        className={`form-select mr-3 ${errors['shipping.state'] && 'border border-danger focus:border-danger'}`}
+                                                        id="shippingstate"
+                                                        name="shipping.state"
+                                                        value={formData.shipping.state}
+                                                        onChange={handleChange}
+                                                    >
+                                                        {stateList?.map((item: any) => (
+                                                            <option key={item.raw} value={item.raw}>
+                                                                {item.raw}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors['shipping.state'] && <div className="mt-1 text-danger">{errors['shipping.state']}</div>}
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-5 grid grid-cols-12 gap-3">
+                                                <div className="col-span-6">
+                                                    <label htmlFor="email" className=" text-sm font-medium text-gray-700">
+                                                        Email address
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`form-input ${errors['shipping.email'] && 'border border-danger focus:border-danger'}`}
+                                                        name="shipping.email"
+                                                        value={formData.shipping.email}
+                                                        maxLength={10}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['shipping.email'] && <div className="mt-1 text-danger">{errors['shipping.email']}</div>}
+                                                    {/* <input type="mail" className="form-input" name="shipping.email" value={formData.shipping.email} onChange={handleChange} /> */}
+
+                                                    {/* <input type="mail" id="shippingemail" name="shippingemail" className="form-input" required /> */}
+                                                </div>
+                                                <div className="col-span-6">
+                                                    <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
+                                                        Phone
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        className={`form-input ${errors['shipping.phone'] && 'border border-danger focus:border-danger'}`}
+                                                        name="shipping.phone"
+                                                        value={formData.shipping.phone}
+                                                        maxLength={10}
+                                                        onChange={handleChange}
+                                                    />
+                                                    {errors['shipping.phone'] && <div className="mt-1 text-danger">{errors['shipping.phone']}</div>}
+                                                </div>
+                                            </div>
+
+                                            {/* <div className="mt-5 grid grid-cols-12 gap-3">
                                                     <div className="col-span-12">
                                                         <label htmlFor="payments" className=" text-sm font-medium text-gray-700">
                                                             Payment method:
@@ -1478,73 +1583,73 @@ const Editorder = () => {
                                                         <textarea className="form-input" name="note" id="note" cols="30" rows="2"></textarea>
                                                     </div>
                                                 </div> */}
-                                            </>
-                                        )}
-                                    </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
-                            <div className="panel p-5">
-                                <div className="table-responsive">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>Item</th>
+                        </div>
+                        <div className="panel p-5">
+                            <div className="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
 
-                                                <th className="w-1">Cost</th>
-                                                <th className="w-1">Qty</th>
-                                                <th>Total</th>
-                                                {formData?.billing?.state !== '' && formData?.shipping?.state == 'Tamil Nadu' ? (
-                                                    <>
-                                                        <th>SGST</th>
-                                                        <th>CSGT</th>
-                                                    </>
-                                                ) : (
-                                                    <th>IGST</th>
-                                                )}
-                                                {/* <th>Action</th> */}
-                                                <th className="w-1"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {lines?.length > 0 &&
-                                                lines?.map((item: any, index: any) => (
-                                                    <tr className="panel align-top" key={index}>
-                                                        <td className="flex ">
-                                                            <img src={item?.thumbnail?.url} height={50} width={50} alt="Selected" className="object-cover" />
-                                                            <div>
-                                                                <div className="pl-5">{item?.productName}</div>
-                                                                <div className="pl-5">{item?.productSku}</div>
-                                                            </div>
-                                                        </td>
+                                            <th className="w-1">Cost</th>
+                                            <th className="w-1">Qty</th>
+                                            <th>Total</th>
+                                            {formData?.billing?.state !== '' && formData?.shipping?.state == 'Tamil Nadu' ? (
+                                                <>
+                                                    <th>SGST</th>
+                                                    <th>CSGT</th>
+                                                </>
+                                            ) : (
+                                                <th>IGST</th>
+                                            )}
+                                            {/* <th>Action</th> */}
+                                            <th className="w-1"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {lines?.length > 0 &&
+                                            lines?.map((item: any, index: any) => (
+                                                <tr className="panel align-top" key={index}>
+                                                    <td className="flex ">
+                                                        <img src={item?.thumbnail?.url} height={50} width={50} alt="Selected" className="object-cover" />
+                                                        <div>
+                                                            <div className="pl-5">{item?.productName}</div>
+                                                            <div className="pl-5">{item?.productSku}</div>
+                                                        </div>
+                                                    </td>
 
-                                                        <td>{`${formatCurrency(item?.unitPrice?.gross?.currency)}${addCommasToNumber(item?.unitPrice?.gross?.amount)}`} </td>
+                                                    <td>{`${formatCurrency(item?.unitPrice?.gross?.currency)}${addCommasToNumber(item?.unitPrice?.gross?.amount)}`} </td>
 
-                                                        {/* <td>
+                                                    {/* <td>
                                                             {formatCurrency(item?.unitPrice?.gross?.currency)}
                                                             {item?.unitPrice?.gross?.amount}
                                                         </td> */}
-                                                        <td>
-                                                            <div>{item?.quantity}</div>
-                                                        </td>
-                                                        <td>
-                                                            <div> {`${formatCurrency(item?.totalPrice?.gross?.currency)}${addCommasToNumber(item?.totalPrice?.gross?.amount)}`}</div>{' '}
-                                                            {/* <div>{`${formatCurrency(item?.totalPrice?.gross?.currency)}${item?.totalPrice?.gross?.amount}`}</div> */}
-                                                        </td>
-                                                        {formData?.billing?.state !== '' && formData?.shipping?.state == 'Tamil Nadu' ? (
-                                                            <>
-                                                                <td>
-                                                                    <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
-                                                                </td>
-                                                                <td>
-                                                                    <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
-                                                                </td>
-                                                            </>
-                                                        ) : (
+                                                    <td>
+                                                        <div>{item?.quantity}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div> {`${formatCurrency(item?.totalPrice?.gross?.currency)}${addCommasToNumber(item?.totalPrice?.gross?.amount)}`}</div>{' '}
+                                                        {/* <div>{`${formatCurrency(item?.totalPrice?.gross?.currency)}${item?.totalPrice?.gross?.amount}`}</div> */}
+                                                    </td>
+                                                    {formData?.billing?.state !== '' && formData?.shipping?.state == 'Tamil Nadu' ? (
+                                                        <>
                                                             <td>
-                                                                <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount)}`}</div>
+                                                                <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
                                                             </td>
-                                                        )}
-                                                        {/* <td>
+                                                            <td>
+                                                                <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
+                                                            </td>
+                                                        </>
+                                                    ) : (
+                                                        <td>
+                                                            <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount)}`}</div>
+                                                        </td>
+                                                    )}
+                                                    {/* <td>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => {
@@ -1561,275 +1666,335 @@ const Editorder = () => {
                                                                 <IconTrashLines className="h-5 w-5" />
                                                             </button>
                                                         </td> */}
-                                                    </tr>
-                                                ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="mt-6 flex flex-col justify-between px-4 sm:flex-row">
-                                    <div className="mb-6 sm:mb-0"></div>
-                                    <div className="sm:w-2/5">
-                                        <div className="flex items-center justify-between">
-                                            <div>Subtotal</div>
-                                            <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount)}`}</div>
-                                        </div>
-                                        {formData?.billing?.state !== '' &&
-                                            (formData?.shipping?.state == 'Tamil Nadu' ? (
-                                                <>
-                                                    <div className="mt-4 flex items-center justify-between">
-                                                        <div>SGST</div>
-                                                        <div>
-                                                            <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
-
-                                                            {/* {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2} */}
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-4 flex items-center justify-between">
-                                                        <div>CSGT</div>
-                                                        <div>
-                                                            <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
-
-                                                            {/* {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2} */}
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            ) : (
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="mt-6 flex flex-col justify-between px-4 sm:flex-row">
+                                <div className="mb-6 sm:mb-0"></div>
+                                <div className="sm:w-2/5">
+                                    <div className="flex items-center justify-between">
+                                        <div>Subtotal</div>
+                                        <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount)}`}</div>
+                                    </div>
+                                    {formData?.billing?.state !== '' &&
+                                        (formData?.shipping?.state == 'Tamil Nadu' ? (
+                                            <>
                                                 <div className="mt-4 flex items-center justify-between">
-                                                    <div>IGST</div>
+                                                    <div>SGST</div>
                                                     <div>
-                                                        <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount)}`}</div>
+                                                        <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
 
-                                                        {/* {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount} */}
+                                                        {/* {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2} */}
                                                     </div>
                                                 </div>
-                                            ))}
-                                        {/* <div className="mt-4 flex items-center justify-between">
+                                                <div className="mt-4 flex items-center justify-between">
+                                                    <div>CSGT</div>
+                                                    <div>
+                                                        <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount / 2)}`}</div>
+
+                                                        {/* {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount / 2} */}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <div>IGST</div>
+                                                <div>
+                                                    <div>{`${formatCurrency(orderData?.subtotal?.gross?.currency)}${addCommasToNumber(orderData?.subtotal?.gross?.amount)}`}</div>
+
+                                                    {/* {orderData?.subtotal?.gross?.currency} {orderData?.subtotal?.gross?.amount} */}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    {/* <div className="mt-4 flex items-center justify-between">
                                             <div>Tax(%)</div>
                                             <div>{orderData?.total?.tax?.amount}</div>
                                         </div> */}
-                                        <div className="mt-4 flex  justify-between">
-                                            <div>Shipping Rate</div>
-                                            <div>
-                                                <div className="ml-[94px] items-end">
-                                                    {`${formatCurrency(orderData?.shippingPrice?.gross?.currency)}${addCommasToNumber(orderData?.shippingPrice?.gross?.amount)}`}
-                                                </div>
-                                                {isGiftWrap && <div className=" ">(Include Gift wrap &#8377;50)</div>}
+                                    <div className="mt-4 flex  justify-between">
+                                        <div>Shipping Rate</div>
+                                        <div>
+                                            <div className="ml-[94px] items-end">
+                                                {`${formatCurrency(orderData?.shippingPrice?.gross?.currency)}${addCommasToNumber(orderData?.shippingPrice?.gross?.amount)}`}
                                             </div>
-                                            {/* {orderData?.shippingPrice?.gross?.currency} {orderData?.shippingPrice?.gross?.amount} */}
-                                            {/* <div>{orderData?.shippingPrice?.gross?.amount}</div> */}
-                                            {/* <div className="cursor-pointer" onClick={() => setShippingOpen(true)}>
+                                            {isGiftWrap && <div className=" ">(Include Gift wrap &#8377;50)</div>}
+                                        </div>
+                                        {/* {orderData?.shippingPrice?.gross?.currency} {orderData?.shippingPrice?.gross?.amount} */}
+                                        {/* <div>{orderData?.shippingPrice?.gross?.amount}</div> */}
+                                        {/* <div className="cursor-pointer" onClick={() => setShippingOpen(true)}>
                                                 <IconPencil />
                                             </div> */}
+                                    </div>
+                                    {orderData?.discounts?.length > 0 && (
+                                        <div className="mt-4 flex items-center justify-between">
+                                            <div>Discount</div>
+                                            <div>{orderData?.discounts[0]?.amount?.amount}</div>
                                         </div>
-                                        {orderData?.discounts?.length > 0 && (
-                                            <div className="mt-4 flex items-center justify-between">
-                                                <div>Discount</div>
-                                                <div>{orderData?.discounts[0]?.amount?.amount}</div>
-                                            </div>
-                                        )}
-                                        <div className="mt-4 flex items-center justify-between font-semibold">
-                                            <div>Total</div>
-                                            <div>{`${formatCurrency(orderData?.total?.gross?.currency)}${addCommasToNumber(orderData?.total?.gross?.amount)}`}</div>
+                                    )}
+                                    <div className="mt-4 flex items-center justify-between font-semibold">
+                                        <div>Total</div>
+                                        <div>
+                                            <div className="ml-[94px] justify-end">{`${formatCurrency(orderData?.total?.gross?.currency)}${addCommasToNumber(orderData?.total?.gross?.amount)}`}</div>
 
-                                            {/* <div>{orderData?.total?.gross?.amount}</div> */}
+                                            <div className='pl-4'>
+                                                (includes {orderData?.total?.tax?.currency == 'USD' ? '$' : '₹'}
+                                                {roundOff(orderData?.total?.tax?.amount)} GST)
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        {isGiftCart ? (
+                            orderData?.giftCardsPurchased?.length > 0 ? (
+                                <div className="panel p-5">
+                                    <div className="table-responsive">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Code</th>
+                                                    <th>Amount</th>
 
-                        <div className="col-span-3">
-                            {orderStatus != 'UNCONFIRMED' && (
-                                <div className="panel mb-5 p-5">
-                                    <div className="mb-5 border-b border-gray-200 pb-2 ">
-                                        <h3 className="text-lg font-semibold">Order Actions</h3>
+                                                    <th>Created By</th>
+                                                    <th>Last Used On</th>
+                                                    <th>Used By</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {orderData?.giftCardsPurchased?.length > 0 &&
+                                                    orderData?.giftCardsPurchased?.map((item: any, index: any) => (
+                                                        <tr className="panel align-top" key={index}>
+                                                            <td>
+                                                                <div className="pl-5">{item?.code}</div>
+                                                            </td>
+                                                            <td>
+                                                                <div className="pl-5">
+                                                                    {formatCurrency(item?.currentBalance?.currency)}
+                                                                    {item?.currentBalance?.amount}
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div className="pl-5">{item?.createdByEmail ? item?.createdByEmail : '-'}</div>
+                                                            </td>
+                                                            <td>
+                                                                <div className="pl-5">{item?.lastUsedOn ? moment(item?.lastUsedOn).format('YYYY-MM-DD HH:mm') : '-'}</div>
+                                                            </td>
+                                                            <td>
+                                                                <div className="pl-5">{item?.usedByEmail ? item?.usedByEmail : '-'}</div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                            </tbody>
+                                        </table>
                                     </div>
-                                    {orderStatus == 'FULFILLED' && (
-                                        <div className="col-span-4 pb-4">
-                                            <div className="items-center justify-between ">
-                                                <label htmlFor="status" className="block pr-2 text-sm font-medium text-gray-700">
-                                                    Shipping Provider
-                                                </label>
-                                            </div>
+                                    <div className="mt-5 flex justify-end">
+                                        <button onClick={() => send_giftCart()} className="btn btn-outline-primary">
+                                            {giftCartLoading ? <IconLoader /> : 'Send Gift cart'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="mt-5 flex justify-end">
+                                    <button onClick={() => send_giftCart()} className="btn btn-outline-primary">
+                                        {giftCartLoading ? <IconLoader /> : 'Send Gift cart'}
+                                    </button>
+                                </div>
+                            )
+                        ) : null}
+                    </div>
 
-                                            <select className="form-select" value={shippingPatner} onChange={(e) => setShippingPatner(e.target.value)}>
-                                                <option value="">Choose Shipping Provider</option>
-                                                {customerData?.map((item: any) => (
-                                                    <option value={item?.node?.id}>{item?.node?.name}</option>
-                                                ))}
-                                            </select>
-                                            {shippingPatner == '' && shippingError && <div className=" text-danger">Required this field</div>}
-                                            <input type="text" className={`form-input mt-4`} placeholder="Tracking number" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} />
-                                            {trackingNumber == '' && trackingError && <div className=" text-danger">Required this field</div>}
+                    <div className="col-span-3">
+                        {orderStatus != 'UNCONFIRMED' && (
+                            <div className="panel mb-5 p-5">
+                                <div className="mb-5 border-b border-gray-200 pb-2 ">
+                                    <h3 className="text-lg font-semibold">Order Actions</h3>
+                                </div>
+                                {orderStatus == 'FULFILLED' && (
+                                    <div className="col-span-4 pb-4">
+                                        <div className="items-center justify-between ">
+                                            <label htmlFor="status" className="block pr-2 text-sm font-medium text-gray-700">
+                                                Shipping Provider
+                                            </label>
                                         </div>
-                                    )}
-                                    <div>
-                                        <select className="form-select mr-3">
-                                            <option value="">Choose An Action</option>
-                                            <option value="Email Invoice">Email Invoice</option>
+
+                                        <select className="form-select" value={shippingPatner} onChange={(e) => setShippingPatner(e.target.value)}>
+                                            <option value="">Choose Shipping Provider</option>
+                                            {customerData?.map((item: any) => (
+                                                <option value={item?.node?.id}>{item?.node?.name}</option>
+                                            ))}
                                         </select>
+                                        {shippingPatner == '' && shippingError && <div className=" text-danger">Required this field</div>}
+                                        <input type="text" className={`form-input mt-4`} placeholder="Tracking number" value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} />
+                                        {trackingNumber == '' && trackingError && <div className=" text-danger">Required this field</div>}
                                     </div>
-                                    <div className="mt-5 border-t border-gray-200 pb-2 ">
-                                        <div className=" pt-3">
-                                            {/* <a href="#" className="text-danger underline">
+                                )}
+                                <div>
+                                    <select className="form-select mr-3">
+                                        <option value="">Choose An Action</option>
+                                        <option value="Email Invoice">Email Invoice</option>
+                                    </select>
+                                </div>
+                                <div className="mt-5 border-t border-gray-200 pb-2 ">
+                                    <div className=" pt-3">
+                                        {/* <a href="#" className="text-danger underline">
                                             Move To Trash
                                         </a> */}
-                                            <button onClick={() => handleSubmit()} className="btn btn-outline-primary">
-                                                {updateLoading ? <IconLoader /> : 'Update'}
-                                            </button>
-                                        </div>
+                                        <button onClick={() => handleSubmit()} className="btn btn-outline-primary">
+                                            {updateLoading ? <IconLoader /> : 'Update'}
+                                        </button>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+                        <div className="panel max-h-[810px]  overflow-y-auto p-5">
+                            <div className="mb-5 border-b border-gray-200 pb-2 ">
+                                <h3 className="text-lg font-semibold">Order Notes</h3>
+                            </div>
+                            <div className="mb-5 border-b border-gray-200 pb-2 ">
+                                {notesList?.length > 0 ? (
+                                    notesList?.map((data: any) => (
+                                        <div className="mb-5">
+                                            <div className="text-gray-500">
+                                                <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
+                                                <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>
+                                                {data?.user && data?.user?.email && `by ${data.user.email}`}
+                                                {data?.type == 'NOTE_ADDED' && (
+                                                    <span className="ml-2 cursor-pointer text-danger" onClick={() => removeNotes(data)}>
+                                                        Delete note
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <span className=" mr-1 border-b border-dotted border-gray-500">No data found</span>
+                                )}
+                            </div>
+                            <Formik
+                                initialValues={{ message: '', mail: false }}
+                                validationSchema={SubmittedForm}
+                                onSubmit={(values, { resetForm }) => {
+                                    onSubmit(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
+                                }}
+                            >
+                                {({ errors, submitCount, touched, setFieldValue, values }) => (
+                                    <Form>
+                                        <label className="text-gray-700">Add note</label>
+                                        <Field name="message" component="textarea" id="message" placeholder="Add a note" className="form-textarea" />
+
+                                        {errors.message && touched.message && <div className="mt-1 text-danger">{errors.message}</div>}
+                                        {/* <textarea className="form-textarea" rows="2" placeholder="Add a note"></textarea> */}
+
+                                        <div className="mt-3 flex items-center justify-between">
+                                            <select
+                                                className="form-select mr-3"
+                                                onChange={(e) => {
+                                                    const modeValue = e.target.value === 'private-note';
+                                                    setFieldValue('mail', modeValue);
+                                                }}
+                                            >
+                                                <option value="private-note">Private note</option>
+                                                <option value="note-customer">Note to customer</option>
+                                            </select>
+                                            <button type="submit" className="btn btn-outline-primary">
+                                                {addNoteLoading ? <IconLoader /> : 'Add'}
+                                            </button>
+                                        </div>
+                                    </Form>
+                                )}
+                            </Formik>
+                        </div>
+
+                        <div className="panel max-h-[810px]  overflow-y-auto p-5">
+                            <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
+                                <h3 className="text-lg font-semibold">Payslip</h3>
+
+                                {orderData?.metadata?.length > 0 && (
+                                    <button
+                                        type="submit"
+                                        // className="btn btn-outline-primary"
+                                        onClick={() => {
+                                            setSlipDate(mintDateTime(slipDate));
+                                            setSlipNumber(slipNumber);
+                                            setIsOpenPayslip(true);
+                                        }}
+                                    >
+                                        <IconEdit />
+                                    </button>
+                                )}
+                            </div>
+                            {orderData?.metadata?.length > 0 ? (
+                                <div className="pt-4">
+                                    <div className="flex justify-between">
+                                        <p>Number</p>
+                                        <p>{orderData?.metadata[1]?.value}</p>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <p>Date</p>
+                                        <p>{moment(orderData?.metadata[0]?.value).format('YYYY/MM/DD')}</p>
+                                    </div>
+                                    <div className="flex justify-between pt-3">
+                                        <button type="submit" className="btn btn-primary" onClick={() => payslipSend()}>
+                                            {sendPayslipLoading ? <IconLoader /> : 'Send'}
+                                        </button>
+                                        <button type="submit" className="btn btn-outline-primary" onClick={() => router.push('http://file.prade.in/' + orderData?.metadata[2]?.value)}>
+                                            <IconDownload />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                orderStatus == 'FULFILLED' && (
+                                    <div className="flex justify-end pt-5">
+                                        <button type="submit" className="btn btn-primary" onClick={() => setIsOpenPayslip(true)}>
+                                            Generate
+                                        </button>
+                                    </div>
+                                )
                             )}
-                            <div className="panel max-h-[810px]  overflow-y-auto p-5">
-                                <div className="mb-5 border-b border-gray-200 pb-2 ">
-                                    <h3 className="text-lg font-semibold">Order Notes</h3>
-                                </div>
-                                <div className="mb-5 border-b border-gray-200 pb-2 ">
-                                    {notesList?.length > 0 ? (
-                                        notesList?.map((data: any) => (
-                                            <div className="mb-5">
-                                                <div className="text-gray-500">
-                                                    <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
-                                                    <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>
-                                                    {data?.user && data?.user?.email && `by ${data.user.email}`}
-                                                    {data?.type == 'NOTE_ADDED' && (
-                                                        <span className="ml-2 cursor-pointer text-danger" onClick={() => removeNotes(data)}>
-                                                            Delete note
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <span className=" mr-1 border-b border-dotted border-gray-500">No data found</span>
-                                    )}
-                                </div>
-                                <Formik
-                                    initialValues={{ message: '', mail: false }}
-                                    validationSchema={SubmittedForm}
-                                    onSubmit={(values, { resetForm }) => {
-                                        onSubmit(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
-                                    }}
-                                >
-                                    {({ errors, submitCount, touched, setFieldValue, values }) => (
-                                        <Form>
-                                            <label className="text-gray-700">Add note</label>
-                                            <Field name="message" component="textarea" id="message" placeholder="Add a note" className="form-textarea" />
+                        </div>
 
-                                            {errors.message && touched.message && <div className="mt-1 text-danger">{errors.message}</div>}
-                                            {/* <textarea className="form-textarea" rows="2" placeholder="Add a note"></textarea> */}
-
-                                            <div className="mt-3 flex items-center justify-between">
-                                                <select
-                                                    className="form-select mr-3"
-                                                    onChange={(e) => {
-                                                        const modeValue = e.target.value === 'private-note';
-                                                        setFieldValue('mail', modeValue);
-                                                    }}
-                                                >
-                                                    <option value="private-note">Private note</option>
-                                                    <option value="note-customer">Note to customer</option>
-                                                </select>
-                                                <button type="submit" className="btn btn-outline-primary">
-                                                    {addNoteLoading ? <IconLoader /> : 'Add'}
-                                                </button>
-                                            </div>
-                                        </Form>
-                                    )}
-                                </Formik>
-                            </div>
-
-                            <div className="panel max-h-[810px]  overflow-y-auto p-5">
-                                <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
-                                    <h3 className="text-lg font-semibold">Payslip</h3>
-
-                                    {orderData?.metadata?.length > 0 && (
-                                        <button
-                                            type="submit"
-                                            // className="btn btn-outline-primary"
-                                            onClick={() => {
-                                                setSlipDate(mintDateTime(slipDate));
-                                                setSlipNumber(slipNumber);
-                                                setIsOpenPayslip(true);
-                                            }}
-                                        >
-                                            <IconEdit />
-                                        </button>
-                                    )}
-                                </div>
-                                {orderData?.metadata?.length > 0 ? (
-                                    <div className="pt-4">
-                                        <div className="flex justify-between">
-                                            <p>Number</p>
-                                            <p>{orderData?.metadata[1]?.value}</p>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <p>Date</p>
-                                            <p>{moment(orderData?.metadata[0]?.value).format('YYYY/MM/DD')}</p>
-                                        </div>
-                                        <div className="flex justify-between pt-3">
-                                            <button type="submit" className="btn btn-primary" onClick={() => payslipSend()}>
-                                                {sendPayslipLoading ? <IconLoader /> : 'Send'}
-                                            </button>
-                                            <button type="submit" className="btn btn-outline-primary" onClick={() => router.push('http://file.prade.in/' + orderData?.metadata[2]?.value)}>
-                                                <IconDownload />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    orderStatus == 'FULFILLED' && (
-                                        <div className="flex justify-end pt-5">
-                                            <button type="submit" className="btn btn-primary" onClick={() => setIsOpenPayslip(true)}>
-                                                Generate
-                                            </button>
-                                        </div>
-                                    )
+                        <div className="panel max-h-[810px]  overflow-y-auto p-5">
+                            <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
+                                <h3 className="text-lg font-semibold">Invoice</h3>
+                                {orderData?.invoices?.length > 0 && (
+                                    <button type="submit" onClick={() => setOpenInvoice(true)}>
+                                        <IconEdit />
+                                    </button>
                                 )}
                             </div>
-
-                            <div className="panel max-h-[810px]  overflow-y-auto p-5">
-                                <div className=" flex items-center justify-between border-b border-gray-200 pb-2 ">
-                                    <h3 className="text-lg font-semibold">Invoice</h3>
-                                    {orderData?.invoices?.length > 0 && (
-                                        <button type="submit" onClick={() => setOpenInvoice(true)}>
-                                            <IconEdit />
-                                        </button>
-                                    )}
-                                </div>
-                                {orderData?.invoices?.length > 0 ? (
-                                    <div className="pt-4">
-                                        <div className="flex justify-between">
-                                            <p>Number</p>
-                                            <p>{orderData?.invoices[0]?.number}</p>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <p>Date</p>
-                                            <p>{moment(orderData?.invoices[0]?.createdAt).format('YYYY/MM/DD')}</p>
-                                        </div>
-                                        <div className="flex justify-between pt-3">
-                                            <button type="submit" className="btn btn-primary" onClick={() => invoiceSend()}>
-                                                {invoiceSendLoading ? <IconLoader /> : 'Send'}
-                                            </button>
-                                            <button type="submit" className="btn btn-outline-primary" onClick={() => router.push(orderData?.invoices[0]?.url)}>
-                                                <IconDownload />
-                                            </button>
-                                        </div>
+                            {orderData?.invoices?.length > 0 ? (
+                                <div className="pt-4">
+                                    <div className="flex justify-between">
+                                        <p>Number</p>
+                                        <p>{orderData?.invoices[0]?.number}</p>
                                     </div>
-                                ) : (
-                                    orderStatus == 'FULFILLED' && (
-                                        <div className="flex justify-end pt-5">
-                                            <button type="submit" className="btn btn-primary" onClick={() => generateInvoice()}>
-                                                {invoiceLoading ? <IconLoader /> : 'Generate'}
-                                            </button>
-                                        </div>
-                                    )
-                                )}
-                            </div>
+                                    <div className="flex justify-between">
+                                        <p>Date</p>
+                                        <p>{moment(orderData?.invoices[0]?.createdAt).format('YYYY/MM/DD')}</p>
+                                    </div>
+                                    <div className="flex justify-between pt-3">
+                                        <button type="submit" className="btn btn-primary" onClick={() => invoiceSend()}>
+                                            {invoiceSendLoading ? <IconLoader /> : 'Send'}
+                                        </button>
+                                        <button type="submit" className="btn btn-outline-primary" onClick={() => router.push(orderData?.invoices[0]?.url)}>
+                                            <IconDownload />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                orderStatus == 'FULFILLED' && (
+                                    <div className="flex justify-end pt-5">
+                                        <button type="submit" className="btn btn-primary" onClick={() => generateInvoice()}>
+                                            {invoiceLoading ? <IconLoader /> : 'Generate'}
+                                        </button>
+                                    </div>
+                                )
+                            )}
                         </div>
                     </div>
-                </>
-            )}
+                </div>
+            </>
 
             <Modal
                 addHeader={'Update Quantity'}

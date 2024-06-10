@@ -139,6 +139,16 @@ export const DELETE_PRODUCT = gql`
     }
 `;
 
+export const SEND_GIFT_CART = gql`
+    mutation SendGiftCard($orderid: ID!) {
+        sendGiftCard(id: $orderid) {
+            errors {
+                message
+            }
+        }
+    }
+`;
+
 export const CATEGORY_LIST = gql`
     query CategoryList($first: Int!, $after: String, $channel: String!) {
         categories(first: $first, after: $after) {
@@ -482,65 +492,61 @@ export const DELETE_STYLE = gql`
 `;
 
 export const ORDER_LIST = gql`
-    query GetOrdersList($first: Int!, $direction: OrderDirection!, $field: OrderSortField!) {
-        orders(first: $first, sortBy: { direction: $direction, field: $field }) {
+    query OrderList($first: Int, $after: String, $last: Int, $before: String, $filter: OrderFilterInput, $sort: OrderSortingInput) {
+        orders(before: $before, after: $after, first: $first, last: $last, filter: $filter, sortBy: $sort) {
             edges {
                 node {
+                    __typename
+                    billingAddress {
+                        ...Address
+                        __typename
+                    }
+                    created
                     id
-                    total {
-                        gross {
-                            currency
-                            amount
-                            __typename
-                        }
-                        __typename
-                    }
-                    user {
-                        email
-                        firstName
-                        lastName
-                        id
-                        __typename
-                    }
-                    updatedAt
                     number
                     paymentStatus
                     status
-                    invoices {
-                        id
-                        number
-                        createdAt
-                        url
+                    total {
                         __typename
+                        gross {
+                            __typename
+                            amount
+                            currency
+                        }
                     }
-                    __typename
-                    courierPartner {
-                        id
-                        name
-                        trackingUrl
-                        __typename
-                    }
-                    chargeStatus
-                    fulfillments {
-                        trackingNumber
-                        __typename
-                    }
-                    billingAddress {
-                        firstName
-                        lastName
-                    }
+                    userEmail
                 }
                 __typename
             }
             pageInfo {
-                endCursor
-                hasNextPage
                 hasPreviousPage
+                hasNextPage
                 startCursor
+                endCursor
                 __typename
             }
             __typename
         }
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
     }
 `;
 
@@ -822,6 +828,707 @@ export const UPDATE_SHIPPING_PROVIDER = gql`
                 message
             }
         }
+    }
+`;
+
+export const DRAFT_ORDER_CANCEL = gql`
+    mutation OrderCancel($id: ID!) {
+        orderCancel(id: $id) {
+            errors {
+                ...OrderError
+                __typename
+            }
+            order {
+                ...OrderDetails
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment OrderError on OrderError {
+        code
+        field
+        addressType
+        message
+        orderLines
+        __typename
+    }
+
+    fragment OrderDetails on Order {
+        id
+        token
+        ...Metadata
+        billingAddress {
+            ...Address
+            __typename
+        }
+        transactions {
+            ...TransactionItem
+            __typename
+        }
+        payments {
+            ...OrderPayment
+            __typename
+        }
+        giftCards {
+            ...OrderGiftCard
+            __typename
+        }
+        grantedRefunds {
+            ...OrderGrantedRefund
+            __typename
+        }
+        isShippingRequired
+        canFinalize
+        created
+        customerNote
+        discounts {
+            id
+            type
+            calculationMode: valueType
+            value
+            reason
+            amount {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        events {
+            ...OrderEvent
+            __typename
+        }
+        fulfillments {
+            ...Fulfillment
+            __typename
+        }
+        lines {
+            ...OrderLine
+            __typename
+        }
+        number
+        isPaid
+        paymentStatus
+        shippingAddress {
+            ...Address
+            __typename
+        }
+        deliveryMethod {
+            __typename
+            ... on ShippingMethod {
+                id
+                __typename
+            }
+            ... on Warehouse {
+                id
+                clickAndCollectOption
+                __typename
+            }
+        }
+        shippingMethod {
+            id
+            __typename
+        }
+        shippingMethodName
+        collectionPointName
+        shippingPrice {
+            gross {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        status
+        subtotal {
+            gross {
+                ...Money
+                __typename
+            }
+            net {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        total {
+            gross {
+                ...Money
+                __typename
+            }
+            net {
+                ...Money
+                __typename
+            }
+            tax {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        totalRemainingGrant {
+            ...Money
+            __typename
+        }
+        totalGrantedRefund {
+            ...Money
+            __typename
+        }
+        totalRefundPending {
+            ...Money
+            __typename
+        }
+        totalRefunded {
+            ...Money
+            __typename
+        }
+        actions
+        totalAuthorizePending {
+            ...Money
+            __typename
+        }
+        totalAuthorized {
+            ...Money
+            __typename
+        }
+        totalCaptured {
+            ...Money
+            __typename
+        }
+        totalCharged {
+            ...Money
+            __typename
+        }
+        totalChargePending {
+            ...Money
+            __typename
+        }
+        totalCanceled {
+            ...Money
+            __typename
+        }
+        totalCancelPending {
+            ...Money
+            __typename
+        }
+        totalBalance {
+            ...Money
+            __typename
+        }
+        undiscountedTotal {
+            net {
+                ...Money
+                __typename
+            }
+            gross {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        user {
+            id
+            email
+            __typename
+        }
+        userEmail
+        shippingMethods {
+            id
+            name
+            price {
+                ...Money
+                __typename
+            }
+            active
+            message
+            __typename
+        }
+        invoices {
+            ...Invoice
+            __typename
+        }
+        channel {
+            isActive
+            id
+            name
+            currencyCode
+            slug
+            defaultCountry {
+                code
+                __typename
+            }
+            orderSettings {
+                markAsPaidStrategy
+                __typename
+            }
+            __typename
+        }
+        isPaid
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
+    }
+
+    fragment TransactionItem on TransactionItem {
+        id
+        pspReference
+        actions
+        name
+        externalUrl
+        events {
+            ...TransactionEvent
+            __typename
+        }
+        authorizedAmount {
+            ...Money
+            __typename
+        }
+        chargedAmount {
+            ...Money
+            __typename
+        }
+        refundedAmount {
+            ...Money
+            __typename
+        }
+        canceledAmount {
+            ...Money
+            __typename
+        }
+        authorizePendingAmount {
+            ...Money
+            __typename
+        }
+        chargePendingAmount {
+            ...Money
+            __typename
+        }
+        refundPendingAmount {
+            ...Money
+            __typename
+        }
+        cancelPendingAmount {
+            ...Money
+            __typename
+        }
+        __typename
+    }
+
+    fragment TransactionEvent on TransactionEvent {
+        id
+        pspReference
+        amount {
+            ...Money
+            __typename
+        }
+        type
+        message
+        createdAt
+        createdBy {
+            ... on User {
+                ...StaffMemberAvatar
+                __typename
+            }
+            ... on App {
+                ...AppAvatar
+                __typename
+            }
+            __typename
+        }
+        externalUrl
+        __typename
+    }
+
+    fragment Money on Money {
+        amount
+        currency
+        __typename
+    }
+
+    fragment StaffMemberAvatar on User {
+        ...StaffMember
+        avatar(size: 512) {
+            url
+            __typename
+        }
+        __typename
+    }
+
+    fragment StaffMember on User {
+        id
+        email
+        firstName
+        isActive
+        lastName
+        __typename
+    }
+
+    fragment AppAvatar on App {
+        id
+        name
+        __typename
+    }
+
+    fragment OrderPayment on Payment {
+        id
+        isActive
+        actions
+        gateway
+        paymentMethodType
+        availableCaptureAmount {
+            ...Money
+            __typename
+        }
+        capturedAmount {
+            ...Money
+            __typename
+        }
+        total {
+            ...Money
+            __typename
+        }
+        availableRefundAmount {
+            ...Money
+            __typename
+        }
+        modified
+        transactions {
+            id
+            token
+            created
+            kind
+            isSuccess
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderGiftCard on GiftCard {
+        id
+        last4CodeChars
+        events {
+            id
+            type
+            orderId
+            date
+            balance {
+                initialBalance {
+                    ...Money
+                    __typename
+                }
+                currentBalance {
+                    ...Money
+                    __typename
+                }
+                oldInitialBalance {
+                    ...Money
+                    __typename
+                }
+                oldCurrentBalance {
+                    ...Money
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderGrantedRefund on OrderGrantedRefund {
+        id
+        createdAt
+        shippingCostsIncluded
+        amount {
+            currency
+            amount
+            __typename
+        }
+        reason
+        user {
+            ...UserBaseAvatar
+            __typename
+        }
+        app {
+            id
+            name
+            __typename
+        }
+        __typename
+    }
+
+    fragment UserBaseAvatar on User {
+        id
+        firstName
+        lastName
+        email
+        avatar {
+            url
+            alt
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderEvent on OrderEvent {
+        id
+        amount
+        shippingCostsIncluded
+        date
+        email
+        emailType
+        invoiceNumber
+        discount {
+            valueType
+            value
+            reason
+            amount {
+                amount
+                currency
+                __typename
+            }
+            oldValueType
+            oldValue
+            oldAmount {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        relatedOrder {
+            id
+            number
+            __typename
+        }
+        message
+        quantity
+        transactionReference
+        type
+        user {
+            id
+            email
+            firstName
+            lastName
+            __typename
+        }
+        app {
+            id
+            name
+            appUrl
+            __typename
+        }
+        lines {
+            quantity
+            itemName
+            discount {
+                valueType
+                value
+                reason
+                amount {
+                    amount
+                    currency
+                    __typename
+                }
+                oldValueType
+                oldValue
+                oldAmount {
+                    amount
+                    currency
+                    __typename
+                }
+                __typename
+            }
+            orderLine {
+                id
+                productName
+                variantName
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+
+    fragment Fulfillment on Fulfillment {
+        ...Metadata
+        id
+        lines {
+            id
+            quantity
+            orderLine {
+                ...OrderLine
+                __typename
+            }
+            __typename
+        }
+        fulfillmentOrder
+        status
+        trackingNumber
+        warehouse {
+            id
+            name
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderLine on OrderLine {
+        id
+        isShippingRequired
+        allocations {
+            id
+            quantity
+            warehouse {
+                id
+                name
+                __typename
+            }
+            __typename
+        }
+        variant {
+            id
+            name
+            quantityAvailable
+            preorder {
+                endDate
+                __typename
+            }
+            stocks {
+                ...Stock
+                __typename
+            }
+            product {
+                id
+                isAvailableForPurchase
+                __typename
+            }
+            __typename
+        }
+        productName
+        productSku
+        quantity
+        quantityFulfilled
+        quantityToFulfill
+        totalPrice {
+            ...TaxedMoney
+            __typename
+        }
+        unitDiscount {
+            amount
+            currency
+            __typename
+        }
+        unitDiscountValue
+        unitDiscountReason
+        unitDiscountType
+        undiscountedUnitPrice {
+            currency
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        unitPrice {
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        thumbnail {
+            url
+            __typename
+        }
+        __typename
+    }
+
+    fragment Stock on Stock {
+        id
+        quantity
+        quantityAllocated
+        warehouse {
+            ...Warehouse
+            __typename
+        }
+        __typename
+    }
+
+    fragment Warehouse on Warehouse {
+        id
+        name
+        __typename
+    }
+
+    fragment TaxedMoney on TaxedMoney {
+        net {
+            ...Money
+            __typename
+        }
+        gross {
+            ...Money
+            __typename
+        }
+        __typename
+    }
+
+    fragment Invoice on Invoice {
+        id
+        number
+        createdAt
+        url
+        status
+        __typename
     }
 `;
 
@@ -5844,6 +6551,19 @@ export const GET_ORDER_DETAILS = gql`
             metadata {
                 key
                 value
+                __typename
+            }
+            giftCardsPurchased {
+                code
+                id
+                createdByEmail
+                lastUsedOn
+                usedByEmail
+                expiryDate
+                currentBalance {
+                    amount
+                    currency
+                }
             }
             ...OrderDetailsWithMetadata
             __typename
@@ -5851,10 +6571,12 @@ export const GET_ORDER_DETAILS = gql`
                 id
                 name
                 trackingUrl
+                __typename
             }
             paymentMethod {
                 name
                 id
+                __typename
             }
         }
         shop {
@@ -6596,6 +7318,11 @@ export const GET_ORDER_DETAILS = gql`
                 __typename
             }
             __typename
+            product {
+                category {
+                    name
+                }
+            }
         }
         __typename
     }
@@ -6634,6 +7361,707 @@ export const CREATE_NOTES = gql`
     }
 `;
 
+export const UNFULFILLMENT_ORDER = gql`
+    mutation OrderFulfillmentCancel($id: ID!, $input: FulfillmentCancelInput!) {
+        orderFulfillmentCancel(id: $id, input: $input) {
+            errors {
+                ...OrderError
+                __typename
+            }
+            order {
+                ...OrderDetails
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment OrderError on OrderError {
+        code
+        field
+        addressType
+        message
+        orderLines
+        __typename
+    }
+
+    fragment OrderDetails on Order {
+        id
+        token
+        ...Metadata
+        billingAddress {
+            ...Address
+            __typename
+        }
+        transactions {
+            ...TransactionItem
+            __typename
+        }
+        payments {
+            ...OrderPayment
+            __typename
+        }
+        giftCards {
+            ...OrderGiftCard
+            __typename
+        }
+        grantedRefunds {
+            ...OrderGrantedRefund
+            __typename
+        }
+        isShippingRequired
+        canFinalize
+        created
+        customerNote
+        discounts {
+            id
+            type
+            calculationMode: valueType
+            value
+            reason
+            amount {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        events {
+            ...OrderEvent
+            __typename
+        }
+        fulfillments {
+            ...Fulfillment
+            __typename
+        }
+        lines {
+            ...OrderLine
+            __typename
+        }
+        number
+        isPaid
+        paymentStatus
+        shippingAddress {
+            ...Address
+            __typename
+        }
+        deliveryMethod {
+            __typename
+            ... on ShippingMethod {
+                id
+                __typename
+            }
+            ... on Warehouse {
+                id
+                clickAndCollectOption
+                __typename
+            }
+        }
+        shippingMethod {
+            id
+            __typename
+        }
+        shippingMethodName
+        collectionPointName
+        shippingPrice {
+            gross {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        status
+        subtotal {
+            gross {
+                ...Money
+                __typename
+            }
+            net {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        total {
+            gross {
+                ...Money
+                __typename
+            }
+            net {
+                ...Money
+                __typename
+            }
+            tax {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        totalRemainingGrant {
+            ...Money
+            __typename
+        }
+        totalGrantedRefund {
+            ...Money
+            __typename
+        }
+        totalRefundPending {
+            ...Money
+            __typename
+        }
+        totalRefunded {
+            ...Money
+            __typename
+        }
+        actions
+        totalAuthorizePending {
+            ...Money
+            __typename
+        }
+        totalAuthorized {
+            ...Money
+            __typename
+        }
+        totalCaptured {
+            ...Money
+            __typename
+        }
+        totalCharged {
+            ...Money
+            __typename
+        }
+        totalChargePending {
+            ...Money
+            __typename
+        }
+        totalCanceled {
+            ...Money
+            __typename
+        }
+        totalCancelPending {
+            ...Money
+            __typename
+        }
+        totalBalance {
+            ...Money
+            __typename
+        }
+        undiscountedTotal {
+            net {
+                ...Money
+                __typename
+            }
+            gross {
+                ...Money
+                __typename
+            }
+            __typename
+        }
+        user {
+            id
+            email
+            __typename
+        }
+        userEmail
+        shippingMethods {
+            id
+            name
+            price {
+                ...Money
+                __typename
+            }
+            active
+            message
+            __typename
+        }
+        invoices {
+            ...Invoice
+            __typename
+        }
+        channel {
+            isActive
+            id
+            name
+            currencyCode
+            slug
+            defaultCountry {
+                code
+                __typename
+            }
+            orderSettings {
+                markAsPaidStrategy
+                __typename
+            }
+            __typename
+        }
+        isPaid
+        __typename
+    }
+
+    fragment Metadata on ObjectWithMetadata {
+        metadata {
+            ...MetadataItem
+            __typename
+        }
+        privateMetadata {
+            ...MetadataItem
+            __typename
+        }
+        __typename
+    }
+
+    fragment MetadataItem on MetadataItem {
+        key
+        value
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
+    }
+
+    fragment TransactionItem on TransactionItem {
+        id
+        pspReference
+        actions
+        name
+        externalUrl
+        events {
+            ...TransactionEvent
+            __typename
+        }
+        authorizedAmount {
+            ...Money
+            __typename
+        }
+        chargedAmount {
+            ...Money
+            __typename
+        }
+        refundedAmount {
+            ...Money
+            __typename
+        }
+        canceledAmount {
+            ...Money
+            __typename
+        }
+        authorizePendingAmount {
+            ...Money
+            __typename
+        }
+        chargePendingAmount {
+            ...Money
+            __typename
+        }
+        refundPendingAmount {
+            ...Money
+            __typename
+        }
+        cancelPendingAmount {
+            ...Money
+            __typename
+        }
+        __typename
+    }
+
+    fragment TransactionEvent on TransactionEvent {
+        id
+        pspReference
+        amount {
+            ...Money
+            __typename
+        }
+        type
+        message
+        createdAt
+        createdBy {
+            ... on User {
+                ...StaffMemberAvatar
+                __typename
+            }
+            ... on App {
+                ...AppAvatar
+                __typename
+            }
+            __typename
+        }
+        externalUrl
+        __typename
+    }
+
+    fragment Money on Money {
+        amount
+        currency
+        __typename
+    }
+
+    fragment StaffMemberAvatar on User {
+        ...StaffMember
+        avatar(size: 512) {
+            url
+            __typename
+        }
+        __typename
+    }
+
+    fragment StaffMember on User {
+        id
+        email
+        firstName
+        isActive
+        lastName
+        __typename
+    }
+
+    fragment AppAvatar on App {
+        id
+        name
+        __typename
+    }
+
+    fragment OrderPayment on Payment {
+        id
+        isActive
+        actions
+        gateway
+        paymentMethodType
+        availableCaptureAmount {
+            ...Money
+            __typename
+        }
+        capturedAmount {
+            ...Money
+            __typename
+        }
+        total {
+            ...Money
+            __typename
+        }
+        availableRefundAmount {
+            ...Money
+            __typename
+        }
+        modified
+        transactions {
+            id
+            token
+            created
+            kind
+            isSuccess
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderGiftCard on GiftCard {
+        id
+        last4CodeChars
+        events {
+            id
+            type
+            orderId
+            date
+            balance {
+                initialBalance {
+                    ...Money
+                    __typename
+                }
+                currentBalance {
+                    ...Money
+                    __typename
+                }
+                oldInitialBalance {
+                    ...Money
+                    __typename
+                }
+                oldCurrentBalance {
+                    ...Money
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderGrantedRefund on OrderGrantedRefund {
+        id
+        createdAt
+        shippingCostsIncluded
+        amount {
+            currency
+            amount
+            __typename
+        }
+        reason
+        user {
+            ...UserBaseAvatar
+            __typename
+        }
+        app {
+            id
+            name
+            __typename
+        }
+        __typename
+    }
+
+    fragment UserBaseAvatar on User {
+        id
+        firstName
+        lastName
+        email
+        avatar {
+            url
+            alt
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderEvent on OrderEvent {
+        id
+        amount
+        shippingCostsIncluded
+        date
+        email
+        emailType
+        invoiceNumber
+        discount {
+            valueType
+            value
+            reason
+            amount {
+                amount
+                currency
+                __typename
+            }
+            oldValueType
+            oldValue
+            oldAmount {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        relatedOrder {
+            id
+            number
+            __typename
+        }
+        message
+        quantity
+        transactionReference
+        type
+        user {
+            id
+            email
+            firstName
+            lastName
+            __typename
+        }
+        app {
+            id
+            name
+            appUrl
+            __typename
+        }
+        lines {
+            quantity
+            itemName
+            discount {
+                valueType
+                value
+                reason
+                amount {
+                    amount
+                    currency
+                    __typename
+                }
+                oldValueType
+                oldValue
+                oldAmount {
+                    amount
+                    currency
+                    __typename
+                }
+                __typename
+            }
+            orderLine {
+                id
+                productName
+                variantName
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+
+    fragment Fulfillment on Fulfillment {
+        ...Metadata
+        id
+        lines {
+            id
+            quantity
+            orderLine {
+                ...OrderLine
+                __typename
+            }
+            __typename
+        }
+        fulfillmentOrder
+        status
+        trackingNumber
+        warehouse {
+            id
+            name
+            __typename
+        }
+        __typename
+    }
+
+    fragment OrderLine on OrderLine {
+        id
+        isShippingRequired
+        allocations {
+            id
+            quantity
+            warehouse {
+                id
+                name
+                __typename
+            }
+            __typename
+        }
+        variant {
+            id
+            name
+            quantityAvailable
+            preorder {
+                endDate
+                __typename
+            }
+            stocks {
+                ...Stock
+                __typename
+            }
+            product {
+                id
+                isAvailableForPurchase
+                __typename
+            }
+            __typename
+        }
+        productName
+        productSku
+        quantity
+        quantityFulfilled
+        quantityToFulfill
+        totalPrice {
+            ...TaxedMoney
+            __typename
+        }
+        unitDiscount {
+            amount
+            currency
+            __typename
+        }
+        unitDiscountValue
+        unitDiscountReason
+        unitDiscountType
+        undiscountedUnitPrice {
+            currency
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        unitPrice {
+            gross {
+                amount
+                currency
+                __typename
+            }
+            net {
+                amount
+                currency
+                __typename
+            }
+            __typename
+        }
+        thumbnail {
+            url
+            __typename
+        }
+        __typename
+    }
+
+    fragment Stock on Stock {
+        id
+        quantity
+        quantityAllocated
+        warehouse {
+            ...Warehouse
+            __typename
+        }
+        __typename
+    }
+
+    fragment Warehouse on Warehouse {
+        id
+        name
+        __typename
+    }
+
+    fragment TaxedMoney on TaxedMoney {
+        net {
+            ...Money
+            __typename
+        }
+        gross {
+            ...Money
+            __typename
+        }
+        __typename
+    }
+
+    fragment Invoice on Invoice {
+        id
+        number
+        createdAt
+        url
+        status
+        __typename
+    }
+`;
+
 export const UPDATE_NOTES = gql`
     mutation Shipping_CarrierUpdate($id: ID!, $input: Shipping_CarrierInput!) {
         shippingCarrierUpdate(id: $id, input: $input) {
@@ -6655,6 +8083,18 @@ export const DELETE_NOTES = gql`
         }
     }
 `;
+
+export const STATE_LIST = gql`
+    query CountryArea($code: CountryCode!) {
+        addressValidationRules(countryCode: $code) {
+            countryAreaChoices {
+                raw
+                verbose
+            }
+        }
+    }
+`;
+
 export const UPDATE_SHIPPING_COUNTRY = gql`
     mutation checkoutShippingAddressUpdate($checkoutId: ID!, $shippingAddress: AddressInput!, $validationRules: CheckoutAddressValidationRules) {
         checkoutShippingAddressUpdate(id: $checkoutId, shippingAddress: $shippingAddress, validationRules: $validationRules) {
@@ -6706,6 +8146,15 @@ export const ADD_CUSTOMER = gql`
         addressType
         message
         __typename
+    }
+`;
+
+export const RESET_PASSWORD = gql`
+    mutation Password_Reset($email: String!) {
+        passwordReset(email: $email) {
+            success
+            message
+        }
     }
 `;
 
@@ -8751,6 +10200,50 @@ export const PRODUCT_LIST_TAGS = gql`
     }
 `;
 
+export const CUSTOMER_UPDATE_ADDRESS = gql`
+    mutation UpdateCustomerAddress($id: ID!, $input: AddressInput!) {
+        addressUpdate(id: $id, input: $input) {
+            errors {
+                ...AccountError
+                __typename
+            }
+            address {
+                ...Address
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment AccountError on AccountError {
+        code
+        field
+        addressType
+        message
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
+    }
+`;
+
 export const SEND_INVOICE = gql`
     mutation InvoiceEmailSend($id: ID!) {
         invoiceSendNotification(id: $id) {
@@ -8798,6 +10291,79 @@ export const ASSIGN_TAG_PRODUCT = gql`
     }
 `;
 
+export const CREATE_CUSTOMER_ADDRESS = gql`
+    mutation CreateCustomerAddress($id: ID!, $input: AddressInput!) {
+        addressCreate(userId: $id, input: $input) {
+            errors {
+                ...AccountError
+                __typename
+            }
+            address {
+                ...Address
+                __typename
+            }
+            user {
+                ...CustomerAddresses
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment AccountError on AccountError {
+        code
+        field
+        addressType
+        message
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
+    }
+
+    fragment CustomerAddresses on User {
+        ...Customer
+        addresses {
+            ...Address
+            __typename
+        }
+        defaultBillingAddress {
+            id
+            __typename
+        }
+        defaultShippingAddress {
+            id
+            __typename
+        }
+        __typename
+    }
+
+    fragment Customer on User {
+        id
+        email
+        firstName
+        lastName
+        __typename
+    }
+`;
+
 export const PRODUCT_SEARCH = gql`
     query ProductSearchbyName($query: String!, $channel: String!) {
         products(first: 100, channel: $channel, search: $query, sortBy: { direction: DESC, field: NAME }) {
@@ -8808,34 +10374,56 @@ export const PRODUCT_SEARCH = gql`
                     defaultVariant {
                         id
                         name
+                        __typename
                     }
                     thumbnail {
                         url
+                        __typename
                     }
                     pricing {
                         priceRange {
                             start {
                                 gross {
                                     amount
+                                    __typename
                                 }
+                                __typename
                             }
                             stop {
                                 gross {
                                     amount
+                                    __typename
                                 }
+                                __typename
                             }
+                            __typename
                         }
+                        __typename
                     }
                     variants {
                         id
                         images {
                             url
                             id
+                            __typename
                         }
                         name
+                        __typename
+                        costPrice
+                        pricing {
+                            price {
+                                gross {
+                                    amount
+                                    currency
+                                }
+                            }
+                        }
                     }
+                    __typename
                 }
+                __typename
             }
+            __typename
         }
     }
 `;
@@ -9010,6 +10598,144 @@ export const DELETE_CUSTOMER = gql`
         field
         addressType
         message
+        __typename
+    }
+`;
+
+export const DELETE_CUSTOMER_ADDRESS = gql`
+    mutation RemoveCustomerAddress($id: ID!) {
+        addressDelete(id: $id) {
+            errors {
+                ...AccountError
+                __typename
+            }
+            user {
+                ...CustomerAddresses
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment AccountError on AccountError {
+        code
+        field
+        addressType
+        message
+        __typename
+    }
+
+    fragment CustomerAddresses on User {
+        ...Customer
+        addresses {
+            ...Address
+            __typename
+        }
+        defaultBillingAddress {
+            id
+            __typename
+        }
+        defaultShippingAddress {
+            id
+            __typename
+        }
+        __typename
+    }
+
+    fragment Customer on User {
+        id
+        email
+        firstName
+        lastName
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
+        __typename
+    }
+`;
+
+export const SET_DEFAULT_ADDRESS = gql`
+    mutation SetCustomerDefaultAddress($addressId: ID!, $userId: ID!, $type: AddressTypeEnum!) {
+        addressSetDefault(addressId: $addressId, userId: $userId, type: $type) {
+            errors {
+                ...AccountError
+                __typename
+            }
+            user {
+                ...CustomerAddresses
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment AccountError on AccountError {
+        code
+        field
+        addressType
+        message
+        __typename
+    }
+
+    fragment CustomerAddresses on User {
+        ...Customer
+        addresses {
+            ...Address
+            __typename
+        }
+        defaultBillingAddress {
+            id
+            __typename
+        }
+        defaultShippingAddress {
+            id
+            __typename
+        }
+        __typename
+    }
+
+    fragment Customer on User {
+        id
+        email
+        firstName
+        lastName
+        __typename
+    }
+
+    fragment Address on Address {
+        city
+        cityArea
+        companyName
+        country {
+            __typename
+            code
+            country
+        }
+        countryArea
+        firstName
+        id
+        lastName
+        phone
+        postalCode
+        streetAddress1
+        streetAddress2
         __typename
     }
 `;

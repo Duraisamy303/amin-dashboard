@@ -581,11 +581,7 @@ const ProductList = () => {
         },
     ];
 
-    return loading ? (
-        <>
-            <IconLoader />
-        </>
-    ) : (
+    return  (
         <div>
             <div className="panel mt-6">
                 <div className="mb-10 flex flex-col gap-5 lg:mb-5 lg:flex-row lg:items-center">
@@ -646,7 +642,7 @@ const ProductList = () => {
                                     );
                                 })}
                             </select>
-                            <select className="form-select flex-1" value={status} onChange={(e) => statusChange(e.target.value)}>
+                            {/* <select className="form-select flex-1" value={status} onChange={(e) => statusChange(e.target.value)}>
                                 <option value={''}>Select a status</option>;
                                 {statusFilter?.map((item: any) => {
                                     return (
@@ -655,7 +651,7 @@ const ProductList = () => {
                                         </>
                                     );
                                 })}
-                            </select>
+                            </select> */}
 
                             {/* New select dropdown for stock status */}
                             {/* <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>

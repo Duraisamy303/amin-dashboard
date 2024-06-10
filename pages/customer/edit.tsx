@@ -1,5 +1,5 @@
 import IconLoader from '@/components/Icon/IconLoader';
-import { ADD_CUSTOMER, COUNTRY_LIST, CUSTOMER_DETAILS, STATES_LIST, UPDATE_CUSTOMER } from '@/query/product';
+import { ADD_CUSTOMER, COUNTRY_LIST, CUSTOMER_DETAILS, RESET_PASSWORD, STATES_LIST, UPDATE_CUSTOMER } from '@/query/product';
 import { Failure, Success, useSetState } from '@/utils/functions';
 import { useMutation, useQuery } from '@apollo/client';
 import { useRouter } from 'next/router';
@@ -55,6 +55,7 @@ export default function Edit() {
             cityArea: '',
             country: '',
         },
+        manageLoading: false,
     });
 
     const { data: countryData } = useQuery(COUNTRY_LIST);
@@ -89,6 +90,7 @@ export default function Edit() {
     });
 
     const [updateCustomers] = useMutation(UPDATE_CUSTOMER);
+    const [passwordReset] = useMutation(RESET_PASSWORD);
 
     const { data: stateData, refetch: countryAreaRefetch } = useQuery(STATES_LIST);
 
@@ -126,31 +128,31 @@ export default function Edit() {
                 const billing = data?.defaultBillingAddress;
                 const shipping = data?.defaultShippingAddress;
 
-                if (billing) {
-                    const res = await countryAreaRefetch({
-                        code: billing?.country?.code,
-                    });
-                    setState({
-                        countryAreaList: res?.data?.addressValidationRules?.countryAreaChoices,
-                        billingAddress: { ...billing, countryArea: res?.data?.addressValidationRules?.countryAreaChoices },
-                    });
-                }
+                // if (billing) {
+                //     const res = await countryAreaRefetch({
+                //         code: billing?.country?.code,
+                //     });
+                //     setState({
+                //         countryAreaList: res?.data?.addressValidationRules?.countryAreaChoices,
+                //         billingAddress: { ...billing, countryArea: billing?.countryArea },
+                //     });
+                // }
 
-                if (shipping) {
-                    const res = await countryAreaRefetch({
-                        code: shipping?.country?.code,
-                    });
-                    setState({
-                        countryAreaList: res?.data?.addressValidationRules?.countryAreaChoices,
-                        shippingAddress: { ...shipping, countryArea: res?.data?.addressValidationRules?.countryAreaChoices },
-                    });
-                }
+                // if (shipping) {
+                // const res = await countryAreaRefetch({
+                //     code: shipping?.country?.code,
+                // });
+                // setState({
+                //     countryAreaList: res?.data?.addressValidationRules?.countryAreaChoices,
+                //     shippingAddress: { ...shipping, countryArea: res?.data?.addressValidationRules?.countryAreaChoices },
+                // });
+                // }
                 setState({
                     firstName: data?.firstName,
                     lastName: data?.lastName,
                     email: data?.email,
-                    billingAddress: { ...billing, country: billing?.country?.code },
-                    shippingAddress: { ...shipping, country: shipping?.country?.code },
+                    billingAddress: { ...billing, country: billing?.country?.country },
+                    shippingAddress: { ...shipping, country: shipping?.country?.country },
                 });
             } else {
                 setState({ loading: false });
@@ -191,42 +193,48 @@ export default function Edit() {
 
     const updateCustomer = async () => {
         try {
-            const address = {
-                city: state.city,
-                cityArea: '',
-                companyName: state.company,
-                country: state.country,
-                countryArea: state.countryArea,
-                firstName: state.pFirstName,
-                lastName: state.pLastName,
-                phone: state.phone,
-                postalCode: state.postalCode,
-                streetAddress1: state.address1,
-                streetAddress2: state.address2,
-            };
-            console.log('address: ', address);
-
+            setState({ updateLoading: true });
             const res = await updateCustomers({
                 variables: {
                     id,
                     input: {
-                        // defaultBillingAddress: address,
-                        // defaultShippingAddress: address,
                         email: state.email,
                         firstName: state.firstName,
                         lastName: state.lastName,
                         note: '',
+                        isActive: true,
                     },
                 },
             });
-            if (res.data?.customerCreate?.errors?.length > 0) {
-                Failure(res.data?.customerCreate?.errors[0]?.message);
+            if (res.data?.customerUpdate?.errors?.length > 0) {
+                setState({ updateLoading: false });
+                Failure(res.data?.customerUpdate?.errors[0]?.message);
             } else {
                 // router.push('/customer/customer');
                 Success('Customer update successfully');
+                setState({ updateLoading: false });
             }
         } catch (error) {
+            setState({ updateLoading: false });
+
             // Failure(error);
+            console.log('error: ', error);
+        }
+    };
+
+    const resetPassword = async () => {
+        try {
+            setState({ passwordLoader: true });
+            const res = await passwordReset({
+                variables: { email: state.email },
+            });
+            if (res?.data?.passwordReset?.message) {
+                Success(res?.data?.passwordReset?.message);
+            }
+            setState({ passwordLoader: false });
+        } catch (error) {
+            setState({ passwordLoader: false });
+
             console.log('error: ', error);
         }
     };
@@ -235,9 +243,9 @@ export default function Edit() {
         <>
             <div className="panel mb-5 flex items-center justify-between gap-3 p-5 ">
                 <h3 className="text-lg font-semibold dark:text-white-light">Update Customer</h3>
-                {/* <button type="button" className="btn btn-primary">
-                            Add Order
-                        </button> */}
+                <button type="button" className="btn btn-primary" onClick={() => resetPassword()}>
+                    {state.passwordLoader ? <IconLoader /> : 'Reset Password'}
+                </button>
             </div>
             <div className="panel mt-5 grid grid-cols-12 gap-3">
                 <div className="col-span-6">
@@ -265,371 +273,84 @@ export default function Edit() {
 
                     {/* <input type="mail" id="billingemail" name="billingemail" className="form-input" required /> */}
                 </div>
-            </div>
-            <div className="flex gap-3">
-                <div className="col-span-6">
-                    <div className=" mt-5">
-                        <label htmlFor="firstname" className=" text-lg font-bold text-gray-700">
-                            Billing Address
-                        </label>
-                    </div>
-                    <div className="panel mt-8 grid grid-cols-12 gap-3">
-                        <div className="col-span-6">
-                            <label htmlFor="pFirstName" className=" text-sm font-medium text-gray-700">
-                                First Name
-                            </label>
-
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.firstName && 'border border-danger focus:border-danger'}`}
-                                name="billingAddress.firstName"
-                                value={state.billingAddress.firstName}
-                                onChange={handleChange}
-                            />
-                            {state.errors.pFirstName && <div className="mt-1 text-danger">{state.errors.firstName}</div>}
-                        </div>
-                        <div className="col-span-6">
-                            <label htmlFor="pLastName" className=" text-sm font-medium text-gray-700">
-                                Last Name
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.lastName && 'border border-danger focus:border-danger'}`}
-                                name="billingAddress.lastName"
-                                value={state.billingAddress.lastName}
-                                onChange={handleChange}
-                            />
-                            {state.errors.pLastName && <div className="mt-1 text-danger">{state.errors.lastName}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="company" className=" text-sm font-medium text-gray-700">
-                                Company
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.company && 'border border-danger focus:border-danger'}`}
-                                name="billingAddress.companyName"
-                                value={state.billingAddress.companyName}
-                                onChange={handleChange}
-                            />
-                            {state.errors.company && <div className="mt-1 text-danger">{state.errors.company}</div>}
-                        </div>
-                        <div className="col-span-6">
-                            <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
-                                Phone
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.phone && 'border border-danger focus:border-danger'}`}
-                                name="billingAddress.phone"
-                                value={state.billingAddress.phone}
-                                maxLength={10}
-                                onChange={handleChange}
-                            />
-                            {state.errors.phone && <div className="mt-1 text-danger">{state.errors.phone}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
-                                Addres Line 1
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.address1 && 'border border-danger focus:border-danger'}`}
-                                name="billingAddress.streetAddress1"
-                                value={state.billingAddress.streetAddress1}
-                                onChange={handleChange}
-                            />
-                            {state.errors.address1 && <div className="mt-1 text-danger">{state.errors.address1}</div>}
-                        </div>
-                        <div className="col-span-6">
-                            <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
-                                Addres Line 2
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.address2 && 'border border-danger focus:border-danger'}`}
-                                name="billingAddress.streetAddress2"
-                                value={state.billingAddress.streetAddress2}
-                                onChange={handleChange}
-                            />
-                            {state.errors.address2 && <div className="mt-1 text-danger">{state.errors.address2}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="city" className=" text-sm font-medium text-gray-700">
-                                City
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.city && 'border border-danger focus:border-danger'}`}
-                                name="billingAddress.city"
-                                value={state.billingAddress.city}
-                                onChange={handleChange}
-                            />
-                            {state.errors.city && <div className="mt-1 text-danger">{state.errors.city}</div>}
-                        </div>
-                        <div className="col-span-6">
-                            <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
-                                Post Code / ZIP
-                            </label>
-                            <input
-                                type="number"
-                                className={`form-input ${state.errors.postalCode && 'border border-danger focus:border-danger'}`}
-                                name="billingAddress.postalCode"
-                                value={state.billingAddress.postalCode}
-                                onChange={handleChange}
-                            />
-                            {state.errors.postalCode && <div className="mt-1 text-danger">{state.errors.postalCode}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="country" className=" text-sm font-medium text-gray-700">
-                                Country / Region
-                            </label>
-                            <select
-                                className={`form-select mr-3 ${state.errors.country && 'border border-danger focus:border-danger'}`}
-                                // className="form-select mr-3"
-                                id="billingcountry"
-                                name="billingAddress.country"
-                                value={state.billingAddress.country}
-                                onChange={async (e) => {
-                                    handleChange(e);
-                                    const selectedCountryCode = e.target.value;
-                                    const selectedCountry: any = state.countryList.find((country: any) => country.code === selectedCountryCode);
-                                    if (selectedCountry) {
-                                        setState({ country: selectedCountry.code });
-                                        // setSelectedCountry(selectedCountry.country);
-                                    }
-                                    const res = await countryAreaRefetch({
-                                        code: selectedCountry.code,
-                                    });
-                                    console.log('res: ', res);
-
-                                    setState({ countryAreaList: res?.data?.addressValidationRules?.countryAreaChoices });
-                                }}
-                                // value={selectedCountry}
-                                // onChange={(e) => getStateList(e.target.value)}
-                            >
-                                <option value={''}>Select country</option>
-
-                                {state.countryList?.map((item: any) => (
-                                    <option key={item.code} value={item.code}>
-                                        {item.country}
-                                    </option>
-                                ))}
-                            </select>
-                            {state.errors.country && <div className="mt-1 text-danger">{state.errors.country}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="state" className=" text-sm font-medium text-gray-700">
-                                State / Country
-                            </label>
-                            <select
-                                className={`form-select mr-3 ${state.errors.countryArea && 'border border-danger focus:border-danger'}`}
-                                id="countryArea"
-                                name="billingAddress.countryArea"
-                                value={state.billingAddress.countryArea}
-                                onChange={handleChange}
-                            >
-                                <option value={''}>Select countryArea</option>
-
-                                {state.countryAreaList?.map((item: any) => (
-                                    <option key={item.raw} value={item.raw}>
-                                        {item.raw}
-                                    </option>
-                                ))}
-                            </select>
-                            {state.errors.countryArea && <div className="mt-1 text-danger">{state.errors.countryArea}</div>}
-                        </div>
-                    </div>
+                <div className="col-span-12 ">
+                    <button type="button" className="btn btn-primary" onClick={() => updateCustomer()}>
+                        {state.updateLoading ? <IconLoader /> : 'Update'}
+                    </button>
                 </div>
-
-                <div className="col-span-6">
-                    <div className="flex items-center justify-between">
-                        <div className=" mt-5">
-                            <label htmlFor="firstname" className=" text-lg font-bold text-gray-700">
+            </div>
+            <div className="gap-3">
+                <div className="flex flex-wrap">
+                    <div className="flex flex-1 justify-around ">
+                        <div className="mt-5">
+                            <label htmlFor="firstname" className="text-lg font-bold text-gray-700">
+                                Billing Address
+                            </label>
+                        </div>
+                        <div className="mt-5">
+                            <label htmlFor="firstname" className="text-lg font-bold text-gray-700">
                                 Shipping Address
                             </label>
                         </div>
-                        <div className="pt-4">
-                            <button type="button" className="btn btn-primary " onClick={() => router.push(`/customer/address?id=${id}`)}>
-                                Manage
-                            </button>
+                    </div>
+                    <div className="flex-initial pt-4">
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => {
+                                setState({ manageLoading: true });
+                                router.push(`/customer/address?id=${id}`);
+                                setState({ manageLoading: false });
+                            }}
+                        >
+                            {state.manageLoading ? <IconLoader /> : 'Manage'}
+                        </button>
+                    </div>
+                </div>
+                <div className="mt-5 flex flex-row gap-3">
+                    <div className="flex-1">
+                        <div className="panel h-full gap-3">
+                            {state.billingAddress !== null && state.billingAddress?.country !== undefined ? (
+                                <div>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>
+                                        {state.billingAddress?.firstName} {state.billingAddress?.lastName}
+                                    </p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.billingAddress?.phone}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.billingAddress?.companyName}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.billingAddress?.email}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>
+                                        {state.billingAddress?.streetAddress1} {state.billingAddress?.streetAddress2}
+                                    </p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.billingAddress?.city}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.billingAddress?.countryArea}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.billingAddress?.country}</p>
+                                </div>
+                            ) : (
+                                <div>No Address found</div>
+                            )}
                         </div>
                     </div>
-                    <div className="panel mt-5 grid grid-cols-12 gap-3">
-                        <div className="col-span-6">
-                            <label htmlFor="pFirstName" className=" text-sm font-medium text-gray-700">
-                                First Name
-                            </label>
 
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.firstName && 'border border-danger focus:border-danger'}`}
-                                name="shippingAddress.firstName"
-                                value={state.shippingAddress.firstName}
-                                onChange={handleChange}
-                            />
-                            {state.errors.pFirstName && <div className="mt-1 text-danger">{state.errors.firstName}</div>}
-                        </div>
-                        <div className="col-span-6">
-                            <label htmlFor="pLastName" className=" text-sm font-medium text-gray-700">
-                                Last Name
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.lastName && 'border border-danger focus:border-danger'}`}
-                                name="shippingAddress.lastName"
-                                value={state.shippingAddress.lastName}
-                                onChange={handleChange}
-                            />
-                            {state.errors.pLastName && <div className="mt-1 text-danger">{state.errors.lastName}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="company" className=" text-sm font-medium text-gray-700">
-                                Company
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.company && 'border border-danger focus:border-danger'}`}
-                                name="shippingAddress.companyName"
-                                value={state.shippingAddress.companyName}
-                                onChange={handleChange}
-                            />
-                            {state.errors.company && <div className="mt-1 text-danger">{state.errors.company}</div>}
-                        </div>
-                        <div className="col-span-6">
-                            <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
-                                Phone
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.phone && 'border border-danger focus:border-danger'}`}
-                                name="shippingAddress.phone"
-                                value={state.shippingAddress.phone}
-                                maxLength={10}
-                                onChange={handleChange}
-                            />
-                            {state.errors.phone && <div className="mt-1 text-danger">{state.errors.phone}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="addressline1" className=" text-sm font-medium text-gray-700">
-                                Addres Line 1
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.address1 && 'border border-danger focus:border-danger'}`}
-                                name="shippingAddress.streetAddress1"
-                                value={state.shippingAddress.streetAddress1}
-                                onChange={handleChange}
-                            />
-                            {state.errors.address1 && <div className="mt-1 text-danger">{state.errors.address1}</div>}
-                        </div>
-                        <div className="col-span-6">
-                            <label htmlFor="addressline2" className=" text-sm font-medium text-gray-700">
-                                Addres Line 2
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.address2 && 'border border-danger focus:border-danger'}`}
-                                name="shippingAddress.streetAddress2"
-                                value={state.shippingAddress.streetAddress2}
-                                onChange={handleChange}
-                            />
-                            {state.errors.address2 && <div className="mt-1 text-danger">{state.errors.address2}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="city" className=" text-sm font-medium text-gray-700">
-                                City
-                            </label>
-                            <input
-                                type="text"
-                                className={`form-input ${state.errors.city && 'border border-danger focus:border-danger'}`}
-                                name="shippingAddress.city"
-                                value={state.shippingAddress.city}
-                                onChange={handleChange}
-                            />
-                            {state.errors.city && <div className="mt-1 text-danger">{state.errors.city}</div>}
-                        </div>
-                        <div className="col-span-6">
-                            <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
-                                Post Code / ZIP
-                            </label>
-                            <input
-                                type="number"
-                                className={`form-input ${state.errors.postalCode && 'border border-danger focus:border-danger'}`}
-                                name="shippingAddress.postalCode"
-                                value={state.shippingAddress.postalCode}
-                                onChange={handleChange}
-                            />
-                            {state.errors.postalCode && <div className="mt-1 text-danger">{state.errors.postalCode}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="country" className=" text-sm font-medium text-gray-700">
-                                Country / Region
-                            </label>
-                            <select
-                                className={`form-select mr-3 ${state.errors.country && 'border border-danger focus:border-danger'}`}
-                                // className="form-select mr-3"
-                                id="billingcountry"
-                                name="shippingAddress.country"
-                                value={state.shippingAddress.country}
-                                onChange={async (e) => {
-                                    handleChange(e);
-                                    const selectedCountryCode = e.target.value;
-                                    const selectedCountry: any = state.countryList.find((country: any) => country.code === selectedCountryCode);
-                                    if (selectedCountry) {
-                                        setState({ country: selectedCountry.code });
-                                        // setSelectedCountry(selectedCountry.country);
-                                    }
-                                    const res = await countryAreaRefetch({
-                                        code: selectedCountry.code,
-                                    });
-                                    console.log('res: ', res);
-
-                                    setState({ countryAreaList: res?.data?.addressValidationRules?.countryAreaChoices });
-                                }}
-                                // value={selectedCountry}
-                                // onChange={(e) => getStateList(e.target.value)}
-                            >
-                                <option value={''}>Select country</option>
-
-                                {state.countryList?.map((item: any) => (
-                                    <option key={item.code} value={item.code}>
-                                        {item.country}
-                                    </option>
-                                ))}
-                            </select>
-                            {state.errors.country && <div className="mt-1 text-danger">{state.errors.country}</div>}
-                        </div>
-
-                        <div className="col-span-6">
-                            <label htmlFor="state" className=" text-sm font-medium text-gray-700">
-                                State / Country
-                            </label>
-                            <select
-                                className={`form-select mr-3 ${state.errors.countryArea && 'border border-danger focus:border-danger'}`}
-                                id="countryArea"
-                                name="shippingAddress.countryArea"
-                                value={state.shippingAddress.countryArea}
-                                onChange={handleChange}
-                            >
-                                <option value={''}>Select countryArea</option>
-
-                                {state.countryAreaList?.map((item: any) => (
-                                    <option key={item.raw} value={item.raw}>
-                                        {item.raw}
-                                    </option>
-                                ))}
-                            </select>
-                            {state.errors.countryArea && <div className="mt-1 text-danger">{state.errors.countryArea}</div>}
+                    <div className="flex-1">
+                        <div className="panel h-full gap-3">
+                            {state.shippingAddress !== null && state.shippingAddress?.country !== undefined ? (
+                                <div>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>
+                                        {state.shippingAddress?.firstName} {state.shippingAddress?.lastName}
+                                    </p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.shippingAddress?.phone}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.shippingAddress?.companyName}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.shippingAddress?.email}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>
+                                        {state.shippingAddress?.streetAddress1} {state.shippingAddress?.streetAddress2}
+                                    </p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.shippingAddress?.city}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.shippingAddress?.countryArea}</p>
+                                    <p style={{ color: 'gray', marginBottom: '0px' }}>{state.shippingAddress?.country}</p>
+                                </div>
+                            ) : (
+                                <div>No Address found</div>
+                            )}
                         </div>
                     </div>
                 </div>

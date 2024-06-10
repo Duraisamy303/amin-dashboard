@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment, useCallback, useRef } from 'react';
+import React, { useEffect, useState, Fragment, useCallback, useRef } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -98,6 +98,12 @@ const ProductAdd = () => {
     const [stackMgmt, setStackMgmt] = useState('');
     const [publish, setPublish] = useState('published');
     const [modal4, setModal4] = useState(false);
+
+    const [formData, setFormData] = useState({
+        name: '',
+        description: '',
+        parentCategory: '',
+    });
 
     //for accordiant
     const [selectedArr, setSelectedArr] = useState<any>([]);
@@ -631,7 +637,7 @@ const ProductAdd = () => {
                 } else {
                     const resVariants = data?.productVariantBulkCreate?.productVariants;
                     if (resVariants?.length > 0) {
-                        resVariants?.map((item:any) => {
+                        resVariants?.map((item: any) => {
                             variantChannelListUpdate(productId, item.id);
                         });
                     }
@@ -737,28 +743,32 @@ const ProductAdd = () => {
     // };
 
     // form submit
-    const onSubmit = async (record: any, { resetForm }: any) => {
-        console.log('record: ', record);
+    const createNewCategory = async () => {
+        console.log('createNewCategory: ');
         setCreateCategoryLoader(true);
         try {
             setCreateCategoryLoader(true);
 
-            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
+            const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: formData.description }, type: 'paragraph' }], version: '2.24.3' });
 
             const variables = {
                 input: {
-                    name: record.name,
+                    name: formData.name,
                     description: Description,
                 },
-                parent: record.parentCategory,
+                parent: formData.parentCategory,
             };
 
             const { data } = await addCategory({ variables });
             categoryListRefetch();
             setIsOpenCat(false);
-            resetForm();
             setCreateCategoryLoader(false);
             Success('Category created successfully');
+            setFormData({
+                name: '',
+                description: '',
+                parentCategory: '',
+            });
         } catch (error) {
             console.log('error: ', error);
             setCreateCategoryLoader(false);
@@ -864,6 +874,14 @@ const ProductAdd = () => {
 
             console.log('error: ', error);
         }
+    };
+
+    const handleCatChange = (e: any) => {
+        const { name, value } = e.target;
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value,
+        }));
     };
 
     return (
@@ -1926,90 +1944,77 @@ const ProductAdd = () => {
                 renderComponent={() => (
                     <div>
                         <div className="mb-5 p-5">
-                            <Formik
-                                initialValues={{ name: '', textdescription: '', parentCategory: '' }}
-                                validationSchema={SubmittedForm}
-                                onSubmit={(values, { resetForm }) => {
-                                    onSubmit(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
-                                }}
-                            >
-                                {({ errors, submitCount, touched, setFieldValue, values }: any) => (
-                                    <>
-                                        <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
-                                            <label htmlFor="fullName">Name </label>
-                                            <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
+                            <form>
+                                <div>
+                                    <label htmlFor="name">Name </label>
+                                    <input name="name" type="text" id="name" placeholder="Enter Name" className="form-input" value={formData.name} onChange={handleCatChange} />
+                                </div>
 
-                                            {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
-                                        </div>
+                                <div>
+                                    <label htmlFor="description">Description </label>
+                                    <textarea name="description" id="description" placeholder="Enter Description" className="form-input" value={formData.description} onChange={handleCatChange} />
+                                </div>
 
-                                        <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
-                                            <label htmlFor="description">description </label>
-                                            <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
+                                <div>
+                                    <label htmlFor="parentCategory">Parent Category</label>
+                                    <select name="parentCategory" className="form-select" value={formData.parentCategory} onChange={handleCatChange}>
+                                        <option value="">Open this select</option>
+                                        {parentLists?.map((item) => (
+                                            <React.Fragment key={item?.node?.id}>
+                                                <option value={item?.node?.id}>{item.node?.name}</option>
+                                                {item?.node?.children?.edges?.map((child) => (
+                                                    <option key={child?.node?.id} value={child?.node?.id} style={{ paddingLeft: '20px' }}>
+                                                        -- {child?.node?.name}
+                                                    </option>
+                                                ))}
+                                            </React.Fragment>
+                                        ))}
+                                    </select>
+                                </div>
 
-                                            {submitCount ? errors.description ? <div className="mt-1 text-danger">{errors.description}</div> : <div className="mt-1 text-success"></div> : ''}
-                                        </div>
-
-                                        <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
-                                            <label htmlFor="parentCategory">Parent Category</label>
-                                            <Field as="select" name="parentCategory" className="form-select">
-                                                <option value="">Open this select</option>
-                                                {parentLists?.map((item: any) => {
-                                                    return (
-                                                        <>
-                                                            <option value={item?.node?.id}>{item.node?.name}</option>
-                                                            {item?.node?.children?.edges?.map((child: any) => (
-                                                                <option key={child?.id} value={child?.node?.id} style={{ paddingLeft: '20px' }}>
-                                                                    -- {child?.node?.name}
-                                                                </option>
-                                                            ))}
-                                                        </>
-                                                    );
-                                                })}
-
-                                                {/* <option value="">Open this select menu</option>
-                                                            <option value="Anklets">Anklets</option>
-                                                            <option value="BlackThread">__Black Thread</option>
-                                                            <option value="Kada">__Kada</option> */}
-                                            </Field>
-                                            {/* {submitCount ? (
-                                                            errors.parentCategory ? (
-                                                                <div className=" mt-1 text-danger">{errors.parentCategory}</div>
-                                                            ) : (
-                                                                <div className=" mt-1 text-[#1abc9c]"></div>
-                                                            )
-                                                        ) : (
-                                                            ''
-                                                        )} */}
-                                        </div>
-
-                                        <button type="submit" className="btn btn-primary !mt-6">
-                                            {createCategoryLoader ? <IconLoader className="mr-2 h-4 w-4 animate-spin" /> : 'Submit'}
-                                        </button>
-                                    </>
-                                )}
-                            </Formik>
+                                <button type="button" onClick={() => createNewCategory()} className="btn btn-primary !mt-6">
+                                    {createCategoryLoader ? <IconLoader className="mr-2 h-4 w-4 animate-spin" /> : 'Submit'}
+                                </button>
+                            </form>
                         </div>
                     </div>
                 )}
             />
 
-            <Modal
-                addHeader={'Create Tags'}
-                open={isOpenTag}
-                close={() => setIsOpenTag(false)}
-                renderComponent={() => (
-                    <>
-                        <div className="mb-5 p-5">
-                            <Formik
-                                initialValues={{ name: '' }}
-                                validationSchema={SubmittedForm}
-                                onSubmit={(values, { resetForm }) => {
-                                    createTags(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
-                                }}
+            <Transition appear show={isOpenTag} as={Fragment}>
+                <Dialog as="div" open={isOpenTag} onClose={() => setIsOpenTag(false)}>
+                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
+                        <div className="fixed inset-0" />
+                    </Transition.Child>
+                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
+                        <div className="flex min-h-screen items-start justify-center px-4">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
                             >
-                                {({ errors, submitCount, touched, setFieldValue, values }: any) => (
-                                    <div className="space-y-5">
-                                        {/* <div className={submitCount ? (errors.image ? 'has-error' : 'has-success') : ''}>
+                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
+                                    <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
+                                        <div className="text-lg font-bold">{'Create Tags'}</div>
+                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setIsOpenTag(false)}>
+                                            <IconX />
+                                        </button>
+                                    </div>
+                                    <div className="mb-5 p-5">
+                                        <Formik
+                                            initialValues={{ name: '' }}
+                                            validationSchema={SubmittedForm}
+                                            onSubmit={(values, { resetForm }) => {
+                                                createTags(values, { resetForm }); // Call the onSubmit function with form values and resetForm method
+                                            }}
+                                        >
+                                            {({ errors, submitCount, touched, setFieldValue, values }: any) => (
+                                                <Form className="space-y-5">
+                                                    {/* <div className={submitCount ? (errors.image ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="image">Image</label>
                                                         <input
                                                             id="image"
@@ -2026,13 +2031,13 @@ const ProductAdd = () => {
                                                         {submitCount ? errors.image ? <div className="mt-1 text-danger">{errors.image}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div> */}
 
-                                        <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
-                                            <label htmlFor="fullName">Name </label>
-                                            <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
+                                                    <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="fullName">Name </label>
+                                                        <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
 
-                                            {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
-                                        </div>
-                                        {/* <div className="mb-5">
+                                                        {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
+                                                    </div>
+                                                    {/* <div className="mb-5">
                                                         <label htmlFor="description">Description</label>
 
                                                         <textarea
@@ -2044,28 +2049,36 @@ const ProductAdd = () => {
                                                         ></textarea>
                                                     </div> */}
 
-                                        {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
-                                            <label htmlFor="description">description </label>
-                                            <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
+                                                    {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
+                                                        <label htmlFor="description">description </label>
+                                                        <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
 
-                                            {submitCount ? errors.description ? <div className="mt-1 text-danger">{errors.description}</div> : <div className="mt-1 text-success"></div> : ''}
-                                        </div> */}
+                                                        {submitCount ? (
+                                                            errors.description ? (
+                                                                <div className="mt-1 text-danger">{errors.description}</div>
+                                                            ) : (
+                                                                <div className="mt-1 text-success"></div>
+                                                            )
+                                                        ) : (
+                                                            ''
+                                                        )}
+                                                    </div> */}
 
-                                        {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
+                                                    {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="slug">Slug </label>
                                                         <Field name="slug" type="text" id="slug" placeholder="Enter Description" className="form-input" />
 
                                                         {submitCount ? errors.slug ? <div className="mt-1 text-danger">{errors.slug}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div> */}
 
-                                        {/* <div className={submitCount ? (errors.count ? 'has-error' : 'has-success') : ''}>
+                                                    {/* <div className={submitCount ? (errors.count ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="count">Count</label>
                                                         <Field name="count" type="number" id="count" placeholder="Enter Count" className="form-input" />
 
                                                         {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div> */}
 
-                                        {/* <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
+                                                    {/* <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="parentCategory">Parent Category</label>
                                                         <Field as="select" name="parentCategory" className="form-select">
                                                             <option value="">Open this select menu</option>
@@ -2084,16 +2097,19 @@ const ProductAdd = () => {
                                                         )}
                                                     </div> */}
 
-                                        <button type="submit" className="btn btn-primary !mt-6">
-                                            {tagLoader ? <IconLoader className="mr-2 h-4 w-4 animate-spin" /> : 'Submit'}
-                                        </button>
+                                                    <button type="submit" className="btn btn-primary !mt-6">
+                                                        {'Submit'}
+                                                    </button>
+                                                </Form>
+                                            )}
+                                        </Formik>
                                     </div>
-                                )}
-                            </Formik>
+                                </Dialog.Panel>
+                            </Transition.Child>
                         </div>
-                    </>
-                )}
-            />
+                    </div>
+                </Dialog>
+            </Transition>
         </div>
     );
 };

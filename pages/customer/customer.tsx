@@ -171,7 +171,6 @@ const CustomerList = () => {
     };
 
     const BulkDeleteProduct = async () => {
-        console.log('recordsData: ', selectedRecords);
         showDeleteAlert(
             async () => {
                 if (selectedRecords.length === 0) {
@@ -179,7 +178,6 @@ const CustomerList = () => {
                     return;
                 }
                 const records = selectedRecords?.map((item: any) => item.id);
-                console.log('records: ', records);
 
                 const { data }: any = deleteCustomer({
                     variables: {
@@ -187,19 +185,20 @@ const CustomerList = () => {
                     },
                 });
 
-                // const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
-                // setRecordsData(updatedRecordsData);
+                const updatedRecordsData = recordsData.filter((dataRecord: any) => !records.includes(dataRecord.id));
+                setRecordsData(updatedRecordsData);
                 await customerListRefetch();
 
-                Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
+                Swal.fire('Deleted!', 'Your Customer has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Customer List is safe :)', 'error');
             }
         );
+        await customerListRefetch();
     };
 
-    const DeleteProduct = (record: any) => {
+    const DeleteProduct = async (record: any) => {
         console.log('record: ', record);
         showDeleteAlert(
             async () => {
@@ -209,8 +208,8 @@ const CustomerList = () => {
                     },
                 });
 
-                // const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
-                // setRecordsData(updatedRecordsData);
+                const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
+                setRecordsData(updatedRecordsData);
                 await customerListRefetch();
 
                 Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
@@ -219,6 +218,7 @@ const CustomerList = () => {
                 Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
             }
         );
+        await customerListRefetch();
     };
 
     return (

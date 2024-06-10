@@ -66,18 +66,13 @@ const Orders = () => {
     const [draftOrder] = useMutation(CREATE_DRAFT_ORDER);
 
     const router = useRouter();
-    const variables = {
-        first: 100,
-        direction: 'DESC',
-        field: 'CREATED_AT',
-    };
 
     const dispatch = useDispatch();
 
     useEffect(() => {
         dispatch(setPageTitle('Orders'));
     });
-    const { data: finishData } = useQuery(ORDER_LIST, { variables });
+    const { data: finishData, refetch: orderRefetch } = useQuery(ORDER_LIST);
 
     const [finishList, setFinishList] = useState([]);
     const [allData, setAllData] = useState([]);
@@ -93,35 +88,33 @@ const Orders = () => {
     const [currencyPopup, setCurrencyPopup] = useState('');
 
     useEffect(() => {
-        getFinishList();
-    }, [finishData]);
+        getOrderList();
+    }, []);
 
-    const getFinishList = () => {
+    const getOrderList = async () => {
         setLoading(true);
-        if (finishData) {
-            if (finishData && finishData.orders && finishData.orders?.edges?.length > 0) {
-                SetFinalDate(finishData.orders?.edges);
-                setLoading(false);
-            } else {
-                setLoading(false);
-            }
-        } else {
-            setLoading(false);
+        const res = await orderRefetch({
+            first: 100,
+            direction: 'DESC',
+            field: 'CREATED_AT',
+        });
+
+        if (res?.data?.orders?.edges?.length > 0) {
+            SetFinalDate(res?.data?.orders?.edges);
         }
+        setLoading(false);
     };
 
     const [page, setPage] = useState(1);
     const PAGE_SIZES = [10, 20, 30, 50, 100];
     const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
     const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
-    console.log('initialRecords: ', initialRecords);
     const [recordsData, setRecordsData] = useState([]);
 
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
         setInitialRecords(finishList);
-        console.log('finishList: ', finishList);
     }, [finishList]);
 
     // Log initialRecords when it changes
@@ -326,6 +319,9 @@ const Orders = () => {
                     setExportBy(e);
                     filterByDateAndYear(e);
                 }
+            }else{
+                setExportBy(e);
+                getOrderList()
             }
         } catch (error) {
             console.log('error: ', error);
@@ -334,7 +330,6 @@ const Orders = () => {
 
     const filterByDateAndYear = async (e: any) => {
         const response = handleExportByChange(e);
-        console.log('response: ', response);
 
         const res = await exportListeRefetch({
             first: 100,
@@ -358,15 +353,16 @@ const Orders = () => {
 
     const orderNumber = (item: any) => {
         let label = '';
-        if (item?.node?.user?.firstName == '') {
+        if (item?.node?.billingAddress?.firstName == '') {
             label = `#${item?.node?.number} ${item.node?.billingAddress?.firstName} ${item.node?.billingAddress?.lastName}`;
         } else {
-            label = `#${item?.node?.number} ${item?.node?.user?.firstName} ${item?.node?.user?.lastName}`;
+            label = `#${item?.node?.number} ${item?.node?.billingAddress?.firstName} ${item?.node?.billingAddress?.lastName}`;
         }
         return label;
     };
 
     const SetFinalDate = (res: any) => {
+        console.log('res: ', res);
         const newData = res?.map((item: any) => ({
             ...item.node,
             order: orderNumber(item),
@@ -379,13 +375,6 @@ const Orders = () => {
 
             // shipmentTracking:item?.node?.fulfillments?.length>0 ?{`${item?.node?.courierPartner?.name} ${"\n"} ${item?.node?.courierPartner?.trackingUrl}${item?.node?.fulfillments[0]?.trackingNumber}`}:"-"
         }));
-
-        console.log(
-            'item?.node?.fulfillments',
-            res?.map((item: any) => item?.node?.fulfillments)
-        );
-
-        console.log('newData: ');
 
         setFinishList(newData);
         setAllData(res);
@@ -445,8 +434,50 @@ const Orders = () => {
         }
     };
 
-    const handleChangeStaus = async (e) => {
+    const handleChangeStaus = async (e: any) => {
         try {
+            const status = e;
+            if (status == '') {
+                console.log(' if: ');
+                const res = await orderRefetch({
+                    first: 500,
+                    filter: {},
+                    sort: {
+                        direction: 'DESC',
+                        field: 'NUMBER',
+                    },
+                });
+                SetFinalDate(res?.data?.orders?.edges);
+            } else {
+                const res = await orderRefetch({
+                    first: 500,
+                    filter: {
+                        created: null,
+                        status: [status],
+                    },
+                    sort: {
+                        direction: 'DESC',
+                        field: 'NUMBER',
+                    },
+                });
+
+                const newData = res?.data?.orders?.edges?.map((item: any) => ({
+                    ...item.node,
+                    order: orderNumber(item),
+                    date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
+                    total: `${formatCurrency(item?.node?.total.gross.currency)}${addCommasToNumber(item?.node?.total.gross.amount)}`,
+                    status: OrderStatus(item?.node?.status),
+                    paymentStatus: PaymentStatus(item?.node?.paymentStatus),
+                    invoice: item?.node?.invoices?.length > 0 ? item?.node?.invoices[0]?.number : '-',
+                    shipmentTracking: item?.node?.fulfillments?.length > 0 ? `${item?.node?.courierPartner?.name}\n${item?.node?.fulfillments[0]?.trackingNumber}` : '-',
+
+                    // shipmentTracking:item?.node?.fulfillments?.length>0 ?{`${item?.node?.courierPartner?.name} ${"\n"} ${item?.node?.courierPartner?.trackingUrl}${item?.node?.fulfillments[0]?.trackingNumber}`}:"-"
+                }));
+
+                setFinishList(newData);
+                setAllData(res?.data?.orders?.edges);
+                SetFinalDate(res?.data?.orders?.edges);
+            }
             setStatus(e);
         } catch (error) {
             console.log('error: ', error);
@@ -471,13 +502,12 @@ const Orders = () => {
                         <input type="text" className="form-input mr-2 w-[300px]" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
 
                         <div className="dropdown  mr-2  w-[200px]">
-                            <select id="priority" className="form-select " value={status} onChange={(e) => handleChangeStaus(e.target.value)}>
+                            <select id="priority" className="form-select" value={status} onChange={(e) => handleChangeStaus(e.target.value)}>
                                 <option value="">Status</option>
-                                <option value="processing">Processing</option>
-                                <option value="monthly"> Pending payment</option>
-                                <option value="3Months">Completed</option>
-                                <option value="6Months">Cancelled</option>
-                                <option value="year">Refunded</option>
+                                <option value="UNCONFIRMED">Processing</option>
+                                <option value="UNFULFILLED">Fulfill</option>
+                                <option value="FULFILLED">Completed</option>
+                                <option value="CANCELED">Cancelled</option>
                             </select>
                         </div>
                     </div>
@@ -560,83 +590,80 @@ const Orders = () => {
                         </div>
                     </div>
                 )}
-                {loading ? (
-                    <Loader />
-                ) : (
-                    <div className="datatables">
-                        <DataTable
-                            className="table-hover whitespace-nowrap"
-                            records={initialRecords}
-                            columns={[
-                                // { accessor: 'id', sortable: true },
-                                // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                                { accessor: 'order', sortable: true },
-                                { accessor: 'invoice', sortable: true, title: 'Invoice Number' },
 
-                                { accessor: 'date', sortable: true },
-                                { accessor: 'status', sortable: true, title: 'Order status' },
-                                { accessor: 'paymentStatus', sortable: true, title: 'Payment status' },
-                                {
-                                    accessor: 'shipmentTracking',
-                                    sortable: true,
-                                    title: 'Shipment Tracking',
-                                    render: (item) => {
-                                        return item?.courierPartner && item?.fulfillments?.length > 0 ? (
-                                            <Link href={`${item?.courierPartner?.trackingUrl}${item?.fulfillments[0]?.trackingNumber}`.trim()} target="_blank">
-                                                <div>{item?.courierPartner?.name}</div>
-                                                <div>{item?.fulfillments[0]?.trackingNumber}</div>
-                                            </Link>
-                                        ) : (
-                                            <div>-</div>
-                                        );
-                                    },
+                <div className="datatables">
+                    <DataTable
+                        className="table-hover whitespace-nowrap"
+                        records={initialRecords}
+                        columns={[
+                            // { accessor: 'id', sortable: true },
+                            // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                            { accessor: 'order', sortable: true },
+                            { accessor: 'invoice', sortable: true, title: 'Invoice Number' },
+
+                            { accessor: 'date', sortable: true },
+                            { accessor: 'status', sortable: true, title: 'Order status' },
+                            { accessor: 'paymentStatus', sortable: true, title: 'Payment status' },
+                            {
+                                accessor: 'shipmentTracking',
+                                sortable: true,
+                                title: 'Shipment Tracking',
+                                render: (item) => {
+                                    return item?.courierPartner && item?.fulfillments?.length > 0 ? (
+                                        <Link href={`${item?.courierPartner?.trackingUrl}${item?.fulfillments[0]?.trackingNumber}`.trim()} target="_blank">
+                                            <div>{item?.courierPartner?.name}</div>
+                                            <div>{item?.fulfillments[0]?.trackingNumber}</div>
+                                        </Link>
+                                    ) : (
+                                        <div>-</div>
+                                    );
                                 },
+                            },
 
-                                { accessor: 'total', sortable: true },
-                                {
-                                    // Custom column for actions
-                                    accessor: 'actions', // You can use any accessor name you want
-                                    title: 'Actions',
-                                    // Render method for custom column
-                                    render: (row: any) => (
-                                        <>
-                                            {/* <Tippy content="View">
+                            { accessor: 'total', sortable: true },
+                            {
+                                // Custom column for actions
+                                accessor: 'actions', // You can use any accessor name you want
+                                title: 'Actions',
+                                // Render method for custom column
+                                render: (row: any) => (
+                                    <>
+                                        {/* <Tippy content="View">
                                                 <button type="button" onClick={() => ViewOrder(row)}>
                                                     <IconEye className="ltr:mr-2 rtl:ml-2" />
                                                 </button>
                                             </Tippy> */}
-                                            <Tippy content="Edit">
-                                                <button type="button" onClick={() => EditOrder(row)}>
-                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                                </button>
-                                            </Tippy>
-                                            <Tippy content="Delete">
-                                                <button type="button" onClick={() => DeleteOrder(row)}>
-                                                    <IconTrashLines />
-                                                </button>
-                                            </Tippy>
-                                        </>
-                                    ),
-                                },
-                            ]}
-                            highlightOnHover
-                            totalRecords={initialRecords.length}
-                            recordsPerPage={pageSize}
-                            page={page}
-                            onPageChange={(p) => setPage(p)}
-                            recordsPerPageOptions={PAGE_SIZES}
-                            onRecordsPerPageChange={setPageSize}
-                            sortStatus={sortStatus}
-                            onSortStatusChange={setSortStatus}
-                            selectedRecords={selectedRecords}
-                            onSelectedRecordsChange={(selectedRecords) => {
-                                setSelectedRecords(selectedRecords);
-                            }}
-                            minHeight={200}
-                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                        />
-                    </div>
-                )}
+                                        <Tippy content="Edit">
+                                            <button type="button" onClick={() => EditOrder(row)}>
+                                                <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                            </button>
+                                        </Tippy>
+                                        <Tippy content="Delete">
+                                            <button type="button" onClick={() => DeleteOrder(row)}>
+                                                <IconTrashLines />
+                                            </button>
+                                        </Tippy>
+                                    </>
+                                ),
+                            },
+                        ]}
+                        highlightOnHover
+                        totalRecords={initialRecords.length}
+                        recordsPerPage={pageSize}
+                        page={page}
+                        onPageChange={(p) => setPage(p)}
+                        recordsPerPageOptions={PAGE_SIZES}
+                        onRecordsPerPageChange={setPageSize}
+                        sortStatus={sortStatus}
+                        onSortStatusChange={setSortStatus}
+                        selectedRecords={selectedRecords}
+                        onSelectedRecordsChange={(selectedRecords) => {
+                            setSelectedRecords(selectedRecords);
+                        }}
+                        minHeight={200}
+                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                    />
+                </div>
             </div>
 
             {/* CREATE AND EDIT CATEGORY FORM */}

@@ -642,7 +642,7 @@ const ProductEdit = (props: any) => {
 
         const res = await uploadImage(id, selectedFile);
         console.log('res: ', res);
-        setImages(res.data?.productMediaCreate?.product?.media);
+        setImages(res?.data?.productMediaCreate?.product?.media);
     };
 
     const multiImageDelete = async (item: any) => {

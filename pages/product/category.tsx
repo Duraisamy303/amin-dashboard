@@ -157,7 +157,7 @@ const Category = () => {
 
     useEffect(() => {
         const data = sortBy(initialRecords, sortStatus.columnAccessor);
-        setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
+        setInitialRecords(initialRecords);
     }, [sortStatus]);
 
     // FORM VALIDATION

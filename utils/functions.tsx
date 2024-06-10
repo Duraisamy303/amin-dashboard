@@ -445,10 +445,17 @@ export const OrderStatus = (status: any) => {
     if (status === 'FULFILLED') {
         return 'Completed';
     } else if (status == 'UNCONFIRMED') {
-        return 'UnConfirmed';
-    } else {
         return 'Processing';
+    } else if (status == 'UNFULFILLED') {
+        return 'UNFULFILLED';
+    } else if (status == 'CANCELED') {
+        return 'Cancelled';
     }
+
+    //     Processing  == UNCONFIRMED
+    // on hold    == UNFULFILLED
+    // completed == FULFILLED
+    // cancelled == cancelled
 };
 
 export const PaymentStatus = (status: any) => {
@@ -458,5 +465,3 @@ export const PaymentStatus = (status: any) => {
         return 'Completed';
     }
 };
-
-
