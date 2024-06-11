@@ -9689,6 +9689,18 @@ export const PRODUCT_FULL_DETAILS = gql`
                 name
                 __typename
             }
+            productStonecolor {
+                id
+                name
+            }
+            productSize {
+                id
+                name
+            }
+            productItemtype {
+                id
+                name
+            }
         }
     }
 
@@ -9759,6 +9771,21 @@ export const PRODUCT_FULL_DETAILS = gql`
             __typename
         }
         prouctDesign {
+            id
+            name
+            __typename
+        }
+        productStonecolor {
+            id
+            name
+            __typename
+        }
+        productSize {
+            id
+            name
+            __typename
+        }
+        productItemtype {
             id
             name
             __typename

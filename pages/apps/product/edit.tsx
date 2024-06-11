@@ -315,7 +315,7 @@ const ProductEdit = (props: any) => {
         }, {});
 
         setDropdownData(singleObj);
-    }, [finishData, stoneData, designData, styleData,typeData,sizeData,stoneColorData]);
+    }, [finishData, stoneData, designData, styleData, typeData, sizeData, stoneColorData]);
 
     //     const updateEditorValue = (newValue) => {
     // console.log('✌️newValue --->', newValue);
@@ -328,7 +328,7 @@ const ProductEdit = (props: any) => {
             if (productDetails) {
                 if (productDetails && productDetails?.product) {
                     const data = productDetails?.product;
-                    console.log("data: ", data);
+                    console.log('data: ', data);
                     setProductData(data);
                     setSlug(data?.slug);
                     setSeoTittle(data?.seoTitle);
@@ -390,42 +390,98 @@ const ProductEdit = (props: any) => {
                     const arr = [];
                     const type: any[] = [];
                     let selectedAccValue: any = {};
-                    if (data?.prouctDesign?.length > 0) {
-                        const obj = {
-                            type: 'design',
-                            designName: dropdowndata?.design,
-                        };
-                        arr.push(obj);
-                        type.push('design');
-                        selectedAccValue.design = data?.prouctDesign?.map((item: any) => item.id);
-                    }
-                    if (data?.productstyle?.length > 0) {
-                        const obj = {
-                            type: 'style',
-                            styleName: dropdowndata?.style,
-                        };
-                        arr.push(obj);
-                        type.push('style');
-                        selectedAccValue.style = data?.productstyle?.map((item: any) => item.id);
-                    }
-                    if (data?.productStoneType?.length > 0) {
-                        const obj = {
-                            type: 'stone',
-                            stoneName: dropdowndata?.stoneType,
-                        };
-                        arr.push(obj);
-                        type.push('stone');
-                        selectedAccValue.stone = data?.productStoneType?.map((item: any) => item.id);
-                    }
-                    if (data?.productFinish?.length > 0) {
-                        const obj = {
-                            type: 'finish',
-                            finishName: dropdowndata?.finish,
-                        };
-                        arr.push(obj);
-                        type.push('finish');
-                        selectedAccValue.finish = data?.productFinish?.map((item: any) => item.id);
-                    }
+                    
+                    const attributes = [
+                        { key: 'prouctDesign', type: 'design', name: 'designName', dropdowndataKey: 'design' },
+                        { key: 'productstyle', type: 'style', name: 'styleName', dropdowndataKey: 'style' },
+                        { key: 'productStoneType', type: 'stone', name: 'stoneName', dropdowndataKey: 'stoneType' },
+                        { key: 'productFinish', type: 'finish', name: 'finishName', dropdowndataKey: 'finish' },
+                        { key: 'productStonecolor', type: 'stoneColor', name: 'stoneColorName', dropdowndataKey: 'stoneColor' },
+                        { key: 'productItemtype', type: 'type', name: 'typeName', dropdowndataKey: 'type' },
+                        { key: 'productSize', type: 'size', name: 'sizeName', dropdowndataKey: 'size' },
+                    ];
+
+                    attributes.forEach((attribute) => {
+                        if (data?.[attribute.key]?.length > 0) {
+                            const obj = {
+                                type: attribute.type,
+                                [attribute.name]: dropdowndata?.[attribute.dropdowndataKey],
+                            };
+                            arr.push(obj);
+                            type.push(attribute.type);
+                            selectedAccValue[attribute.type] = data?.[attribute.key].map((item: any) => item.id);
+                        }
+                    });
+                    // if (data?.prouctDesign?.length > 0) {
+                    //     const obj = {
+                    //         type: 'design',
+                    //         designName: dropdowndata?.design,
+                    //     };
+                    //     arr.push(obj);
+                    //     type.push('design');
+                    //     selectedAccValue.design = data?.prouctDesign?.map((item: any) => item.id);
+                    // }
+                    // if (data?.productstyle?.length > 0) {
+                    //     const obj = {
+                    //         type: 'style',
+                    //         styleName: dropdowndata?.style,
+                    //     };
+                    //     arr.push(obj);
+                    //     type.push('style');
+                    //     selectedAccValue.style = data?.productstyle?.map((item: any) => item.id);
+                    // }
+                    // if (data?.productStoneType?.length > 0) {
+                    //     const obj = {
+                    //         type: 'stone',
+                    //         stoneName: dropdowndata?.stoneType,
+                    //     };
+                    //     arr.push(obj);
+                    //     type.push('stone');
+                    //     selectedAccValue.stone = data?.productStoneType?.map((item: any) => item.id);
+                    // }
+                    // if (data?.productFinish?.length > 0) {
+                    //     const obj = {
+                    //         type: 'finish',
+                    //         finishName: dropdowndata?.finish,
+                    //     };
+                    //     arr.push(obj);
+                    //     type.push('finish');
+                    //     selectedAccValue.finish = data?.productFinish?.map((item: any) => item.id);
+                    // }
+
+                    // if (data?.productStonecolor?.length > 0) {
+                    //     const obj = {
+                    //         type: 'stoneColor',
+                    //         stoneColorName: dropdowndata?.stoneColor,
+                    //     };
+                    //     arr.push(obj);
+                    //     type.push('stoneColor');
+                    //     selectedAccValue.stoneColor = data?.productStonecolor?.map((item: any) => item.id);
+                    // }
+                    // //Type
+                    // if (data?.productItemtype?.length > 0) {
+                    //     const obj = {
+                    //         type: 'type',
+                    //         typeName: dropdowndata?.type,
+                    //     };
+                    //     arr.push(obj);
+                    //     type.push('type');
+                    //     selectedAccValue.type = data?.productItemtype?.map((item: any) => item.id);
+                    // }
+
+                    // //size
+                    // if (data?.productSize?.length > 0) {
+                    //     const obj = {
+                    //         type: 'size',
+                    //         sizeName: dropdowndata?.size,
+                    //     };
+                    //     arr.push(obj);
+                    //     type.push('size');
+                    //     selectedAccValue.size = data?.productSize?.map((item: any) => item.id);
+                    // }
+
+                    // const selectedAccValue: any = {};
+                    
 
                     setAccordions(arr.flat());
                     setSelectedArr(type);
@@ -846,8 +902,7 @@ const ProductEdit = (props: any) => {
 
             // const formattedDescription = JSON.stringify(savedContent);
             // console.log('✌️formattedDescription --->', formattedDescription);
-            console.log("selectedValues: ", selectedValues);
-
+            console.log('selectedValues: ', selectedValues);
 
             const { data } = await updateProduct({
                 variables: {
@@ -871,9 +926,9 @@ const ProductEdit = (props: any) => {
                         ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
                         ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
 
-                        // ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productType: selectedValues.type }),
-                        // ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSize: selectedValues.size }),
-                        // ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStoneColor: selectedValues.stoneColor }),
+                        ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productItemtype: selectedValues.type }),
+                        ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSize: selectedValues.size }),
+                        ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStonecolor: selectedValues.stoneColor }),
                     },
                     firstValues: 10,
                 },

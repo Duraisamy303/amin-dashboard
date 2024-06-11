@@ -551,9 +551,9 @@ const ProductAdd = () => {
                         ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
                         ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
                         // ------------------------New --------------------------------
-                        // ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productTypeType: selectedValues.type }),
-                        // ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSizeType: selectedValues.size }),
-                        // ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStoneColorType: selectedValues.stoneColor }),
+                        ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productItemtype: selectedValues.type }),
+                        ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSize: selectedValues.size }),
+                        ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStonecolor: selectedValues.stoneColor }),
                     },
                 },
             });
