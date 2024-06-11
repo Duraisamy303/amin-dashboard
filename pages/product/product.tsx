@@ -303,7 +303,7 @@ const ProductList = () => {
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your List is safe :)', 'error');
             }
         );
     };
@@ -324,7 +324,7 @@ const ProductList = () => {
                 Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your List is safe :)', 'error');
             }
         );
     };

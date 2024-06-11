@@ -252,7 +252,7 @@ const Editorder = () => {
                 }
 
                 setOrderData(orderDetails?.order);
-                const allGiftCards = orderDetails?.order?.lines.every((line) => line?.variant?.product?.category?.name === 'Gift Card');
+                const allGiftCards = orderDetails?.order?.lines?.every((line: any) => line?.variant?.product?.category?.name === 'Gift Card');
                 console.log('allGiftCards: ', allGiftCards);
                 setIsGiftCart(allGiftCards);
 
@@ -725,7 +725,6 @@ const Editorder = () => {
     const orderCancelDraft = async () => {
         try {
             showDeleteAlert(
-
                 async () => {
                     const res = await draftOrderCancel({
                         variables: {
@@ -739,7 +738,7 @@ const Editorder = () => {
 
                 () => {
                     Swal.fire('Cancelled', 'Your order is safe :)', 'error');
-                },
+                }
             );
         } catch (error) {
             console.log('error: ', error);
@@ -1732,8 +1731,7 @@ const Editorder = () => {
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Discount</div>
                                             <div>
-                                              
-                                               {orderData?.discounts[0]?.amount?.currency == 'USD' ? '$' : '₹'}
+                                                {orderData?.discounts[0]?.amount?.currency == 'USD' ? '$' : '₹'}
                                                 {orderData?.discounts[0]?.amount?.amount}
                                             </div>
                                         </div>
@@ -1741,9 +1739,9 @@ const Editorder = () => {
                                     <div className="mt-4 flex items-center justify-between font-semibold">
                                         <div>Total</div>
                                         <div>
-                                            <div className="ml-[94px] justify-end">{`${formatCurrency(orderData?.total?.gross?.currency)}${addCommasToNumber(orderData?.total?.gross?.amount)}`}</div>
+                                            <div className="ml-[98px] justify-end">{`${formatCurrency(orderData?.total?.gross?.currency)}${addCommasToNumber(orderData?.total?.gross?.amount)}`}</div>
 
-                                            <div className="pl-4 text-sm">
+                                            <div className="pl-3 text-sm">
                                                 (includes {orderData?.total?.tax?.currency == 'USD' ? '$' : '₹'}
                                                 {roundOff(orderData?.total?.tax?.amount)} GST)
                                             </div>
@@ -1754,52 +1752,56 @@ const Editorder = () => {
                         </div>
                         {isGiftCart ? (
                             orderData?.giftCardsPurchased?.length > 0 ? (
-                                <div className="panel p-5">
-                                    <div className="table-responsive">
-                                        <table>
-                                            <thead>
-                                                <tr>
-                                                    <th>Code</th>
-                                                    <th>Amount</th>
+                                <>
+                                    <h5 className="m-3 text-lg font-semibold">Gift Cards</h5>
 
-                                                    <th>Created By</th>
-                                                    <th>Last Used On</th>
-                                                    <th>Used By</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {orderData?.giftCardsPurchased?.length > 0 &&
-                                                    orderData?.giftCardsPurchased?.map((item: any, index: any) => (
-                                                        <tr className="panel align-top" key={index}>
-                                                            <td>
-                                                                <div className="pl-5">{item?.code}</div>
-                                                            </td>
-                                                            <td>
-                                                                <div className="pl-5">
-                                                                    {formatCurrency(item?.currentBalance?.currency)}
-                                                                    {item?.currentBalance?.amount}
-                                                                </div>
-                                                            </td>
-                                                            <td>
-                                                                <div className="pl-5">{item?.createdByEmail ? item?.createdByEmail : '-'}</div>
-                                                            </td>
-                                                            <td>
-                                                                <div className="pl-5">{item?.lastUsedOn ? moment(item?.lastUsedOn).format('YYYY-MM-DD HH:mm') : '-'}</div>
-                                                            </td>
-                                                            <td>
-                                                                <div className="pl-5">{item?.usedByEmail ? item?.usedByEmail : '-'}</div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                            </tbody>
-                                        </table>
+                                    <div className="panel p-5">
+                                        <div className="table-responsive">
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Code</th>
+                                                        <th>Amount</th>
+
+                                                        <th>Created By</th>
+                                                        <th>Last Used On</th>
+                                                        <th>Used By</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {orderData?.giftCardsPurchased?.length > 0 &&
+                                                        orderData?.giftCardsPurchased?.map((item: any, index: any) => (
+                                                            <tr className="panel align-top" key={index}>
+                                                                <td>
+                                                                    <div className="pl-5">{item?.code}</div>
+                                                                </td>
+                                                                <td>
+                                                                    <div className="pl-5">
+                                                                        {formatCurrency(item?.currentBalance?.currency)}
+                                                                        {item?.currentBalance?.amount}
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div className="pl-5">{item?.createdByEmail ? item?.createdByEmail : '-'}</div>
+                                                                </td>
+                                                                <td>
+                                                                    <div className="pl-5">{item?.lastUsedOn ? moment(item?.lastUsedOn).format('YYYY-MM-DD HH:mm') : '-'}</div>
+                                                                </td>
+                                                                <td>
+                                                                    <div className="pl-5">{item?.usedByEmail ? item?.usedByEmail : '-'}</div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div className="mt-5 flex justify-end">
+                                            <button onClick={() => send_giftCart()} className="btn btn-outline-primary">
+                                                {giftCartLoading ? <IconLoader /> : 'Send Gift cart'}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="mt-5 flex justify-end">
-                                        <button onClick={() => send_giftCart()} className="btn btn-outline-primary">
-                                            {giftCartLoading ? <IconLoader /> : 'Send Gift cart'}
-                                        </button>
-                                    </div>
-                                </div>
+                                </>
                             ) : (
                                 <div className="mt-5 flex justify-end">
                                     <button onClick={() => send_giftCart()} className="btn btn-outline-primary">

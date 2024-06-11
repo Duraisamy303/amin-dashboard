@@ -285,7 +285,7 @@ Router.push(`/product/attributes/${record.id}`);
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your List is safe :)', 'error');
             }
         );
     };
@@ -303,7 +303,7 @@ Router.push(`/product/attributes/${record.id}`);
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Finish List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your List is safe :)', 'error');
             }
         );
     };

@@ -69,11 +69,11 @@ export const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => 
     swalWithBootstrapButtons
         .fire({
             title: 'Are you sure?',
-            text: "You won't be able to Delete this!",
+            // text: "You won't be able to Delete this!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'No, cancel!',
+            // confirmButtonText: 'Yes, delete it!',
+            // cancelButtonText: 'No, cancel!',
             reverseButtons: true,
             padding: '2em',
         })

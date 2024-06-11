@@ -212,7 +212,7 @@ const CustomerList = () => {
                 setRecordsData(updatedRecordsData);
                 await customerListRefetch();
 
-                Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
+                Swal.fire('Deleted!', 'Your Customer has been deleted.', 'success');
             },
             () => {
                 Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
