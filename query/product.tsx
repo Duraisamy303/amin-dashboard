@@ -660,6 +660,20 @@ export const ORDER_LIST = gql`
                         }
                     }
                     userEmail
+                    invoices {
+                        number
+                        url
+                        id
+                    }
+                    courierPartner {
+                        name
+                        trackingUrl
+                        id
+                    }
+                    fulfillments {
+                        id
+                        trackingNumber
+                    }
                 }
                 __typename
             }

@@ -39,6 +39,7 @@ import {
     isEmptyObject,
     objIsEmpty,
     profilePic,
+    roundOff,
     shippingAddress,
     showDeleteAlert,
     useSetState,
@@ -304,7 +305,7 @@ const NewOrder = () => {
     const handleSearch = async () => {
         try {
             if (state.search !== '') {
-                console.log("if: ");
+                console.log('if: ');
                 let channel = '';
                 if (channels() == 'INR') {
                     channel = 'india-channel';
@@ -315,13 +316,13 @@ const NewOrder = () => {
                     channel,
                     query: state.search,
                 });
-                console.log("res: ", res);
+                console.log('res: ', res);
 
                 setState({ productList: res?.data?.products?.edges?.map((item: any) => item.node) });
             } else {
-                console.log("else: ");
+                console.log('else: ');
                 const funRes = await productsDropdown(productData);
-                console.log("funRes: ", funRes);
+                console.log('funRes: ', funRes);
                 setState({ productList: funRes, loading: false });
             }
         } catch (error) {
@@ -1581,11 +1582,16 @@ const NewOrder = () => {
                                 )}
                                 <div className="mt-4 flex items-center justify-between font-semibold">
                                     <div>Total</div>
-                                    <div>
-                                        {`${formatCurrency(productDetails?.order?.total?.gross?.currency)}${addCommasToNumber(productDetails?.order?.total?.gross?.amount)}`}
+                                   
 
-                                        {/* {productDetails?.order?.total?.gross?.currency} {productDetails?.order?.total?.gross?.amount} */}
-                                    </div>
+                                    <div>
+                                            <div className="ml-[94px] justify-end">{`${formatCurrency(productDetails?.order?.total?.gross?.currency)}${addCommasToNumber(productDetails?.order?.total?.gross?.amount)}`}</div>
+
+                                            <div className="pl-8 text-sm">
+                                                (includes {productDetails?.order?.total?.tax?.currency == 'USD' ? '$' : '₹'}
+                                                {roundOff(productDetails?.order?.total?.tax?.amount)} GST)
+                                            </div>
+                                        </div>
                                 </div>
                             </div>
                         </div>
@@ -1843,7 +1849,7 @@ const NewOrder = () => {
                                 </div>
                             </div>
                             {couponOptionErrMsg && <div className="text-red-500">{couponOptionErrMsg}</div>}
-                            <div className="flex items-center gap-5">
+                            <div className="flex items-center gap-2">
                                 <input
                                     type="number"
                                     className="form-input mt-4"
@@ -1856,7 +1862,7 @@ const NewOrder = () => {
                                         });
                                     }}
                                 />
-                                <span>{state.coupenOption === 'percentage' ? '%' : 'INR'}</span>
+                                <span className='pt-5'>{state.coupenOption === 'percentage' ? '%' : productDetails?.order?.total?.gross?.currency}</span>
                             </div>
                             {precentageErrMsg && <div className="mt-1 text-red-500">{precentageErrMsg}</div>}
                             {fixedErrMsg && <div className="mt-1 text-red-500">{fixedErrMsg}</div>}{' '}

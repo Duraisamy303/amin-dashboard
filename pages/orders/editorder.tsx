@@ -409,10 +409,10 @@ const Editorder = () => {
                 const newData = { ...orderData, events: filter };
                 setOrderData(newData);
                 getOrderDetails();
-                Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
+                Swal.fire('Deleted!', 'Are you sure to delete noted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Notes List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your notes list is safe :)', 'error');
             }
         );
     };
@@ -725,6 +725,7 @@ const Editorder = () => {
     const orderCancelDraft = async () => {
         try {
             showDeleteAlert(
+
                 async () => {
                     const res = await draftOrderCancel({
                         variables: {
@@ -733,11 +734,12 @@ const Editorder = () => {
                     });
                     getOrderDetails();
 
-                    Swal.fire('Deleted!', 'Your product have been deleted.', 'success');
+                    Swal.fire('Cancelled!', 'Are you sure to cancelled the order.', 'success');
                 },
+
                 () => {
-                    Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
-                }
+                    Swal.fire('Cancelled', 'Your order is safe :)', 'error');
+                },
             );
         } catch (error) {
             console.log('error: ', error);
@@ -1729,7 +1731,11 @@ const Editorder = () => {
                                     {orderData?.discounts?.length > 0 && (
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Discount</div>
-                                            <div>{orderData?.discounts[0]?.amount?.amount}</div>
+                                            <div>
+                                              
+                                               {orderData?.discounts[0]?.amount?.currency == 'USD' ? '$' : '₹'}
+                                                {orderData?.discounts[0]?.amount?.amount}
+                                            </div>
                                         </div>
                                     )}
                                     <div className="mt-4 flex items-center justify-between font-semibold">
@@ -1737,7 +1743,7 @@ const Editorder = () => {
                                         <div>
                                             <div className="ml-[94px] justify-end">{`${formatCurrency(orderData?.total?.gross?.currency)}${addCommasToNumber(orderData?.total?.gross?.amount)}`}</div>
 
-                                            <div className='pl-4'>
+                                            <div className="pl-4 text-sm">
                                                 (includes {orderData?.total?.tax?.currency == 'USD' ? '$' : '₹'}
                                                 {roundOff(orderData?.total?.tax?.amount)} GST)
                                             </div>
@@ -2233,7 +2239,7 @@ const Editorder = () => {
                                             <th className="w-1">Product</th>
                                             <th className="w-1">Image</th>
 
-                                            <th className="w-1">Cost</th>
+                                            <th className="w-1">Sku</th>
                                             <th className="w-1">Qty</th>
                                             <th className="w-1">Stock</th>
                                         </tr>
