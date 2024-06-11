@@ -692,7 +692,7 @@ const ProductList = () => {
                                 ),
                             },
 
-                            { accessor: 'sku', sortable: true },
+                            { accessor: 'sku', sortable: true,title:"SKU" },
                             { accessor: 'status', sortable: true },
                             { accessor: 'price', sortable: true },
                             { accessor: 'categories', sortable: true },
