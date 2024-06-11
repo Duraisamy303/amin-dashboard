@@ -297,6 +297,38 @@ const NewOrder = () => {
         getProductList();
     }, [productData]);
 
+    useEffect(() => {
+        handleSearch();
+    }, [state.search]);
+
+    const handleSearch = async () => {
+        try {
+            if (state.search !== '') {
+                console.log("if: ");
+                let channel = '';
+                if (channels() == 'INR') {
+                    channel = 'india-channel';
+                } else {
+                    channel = 'default-channel';
+                }
+                const res = await searchProductRefetch({
+                    channel,
+                    query: state.search,
+                });
+                console.log("res: ", res);
+
+                setState({ productList: res?.data?.products?.edges?.map((item: any) => item.node) });
+            } else {
+                console.log("else: ");
+                const funRes = await productsDropdown(productData);
+                console.log("funRes: ", funRes);
+                setState({ productList: funRes, loading: false });
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
     const getProductList = async () => {
         try {
             setState({ loading: true });
@@ -794,40 +826,6 @@ const NewOrder = () => {
         }
     };
 
-    const handleSearch = async (e: any) => {
-        try {
-            setState({ search: e });
-            if (e !== '') {
-                let channel = '';
-                if (channels() == 'INR') {
-                    channel = 'india-channel';
-                } else {
-                    channel = 'default-channel';
-                }
-                const res = await searchProductRefetch({
-                    channel,
-                    query: e,
-                });
-
-                setState({ productList: res?.data?.products?.edges?.map((item: any) => item.node) });
-            } else {
-                const { data } = await productRefetch({
-                    after: null,
-                    first: 100,
-                    query: '',
-                    channel: channels() == 'INR' ? 'india-channel' : 'default-channel',
-                    address: {
-                        country: 'IN',
-                    },
-                });
-
-                const funRes = await productsDropdown(data);
-                setState({ productList: funRes, loading: false });
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
     return (
         <>
             <div className="panel mb-5 flex items-center justify-between gap-3 p-5 ">
@@ -1746,7 +1744,7 @@ const NewOrder = () => {
                         ) : (
                             <div className="h-[700px] p-5 ">
                                 <div className="p-3">
-                                    <input type="text" className="form-input w-full p-3" placeholder="Search..." value={state.search} onChange={(e) => handleSearch(e.target.value)} />
+                                    <input type="text" className="form-input w-full p-3" placeholder="Search..." value={state.search} onChange={(e) => setState({ search: e.target.value })} />
                                 </div>
                                 <div className="h-[550px] overflow-scroll">
                                     {/* Product list */}
