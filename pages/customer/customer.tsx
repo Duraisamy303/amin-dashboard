@@ -226,7 +226,7 @@ const CustomerList = () => {
             <div className="panel mt-6">
                 <div className="mb-10 flex flex-col gap-5 lg:mb-5 lg:flex-row lg:items-center">
                     <div className="flex items-center gap-2">
-                        <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
+                        <h5 className="text-lg font-semibold dark:text-white-light">Customer</h5>
                         {/* <button type="button" className="btn btn-outline-primary">
                             Import
                         </button>
@@ -293,8 +293,7 @@ const CustomerList = () => {
                                             <button className="flex hover:text-info" onClick={() => router.push(`/customer/edit?id=${row.id}`)}>
                                                 <IconEdit className="h-4.5 w-4.5" />
                                             </button>
-                                            {/* {row?.status == 'Published' && ( */}
-                                            <button
+                                            {/* <button
                                                 className="flex hover:text-info"
                                                 onClick={() => {
                                                     if (row.status == 'Draft') {
@@ -304,10 +303,9 @@ const CustomerList = () => {
                                                     }
                                                 }}
                                             >
-                                                {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
                                                 <IconEye />
-                                            </button>
-                                            {/* )} */}
+                                            </button> */}
+                                         
 
                                             <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
                                                 <IconTrashLines />

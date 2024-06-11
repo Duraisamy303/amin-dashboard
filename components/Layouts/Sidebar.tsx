@@ -150,29 +150,29 @@ const Sidebar = () => {
                                     </li> */}
 
                                     <li className="menu nav-item">
-                                        <button type="button" className={`${currentMenu === 'product' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('product')}>
+                                        <button type="button" className={`${currentMenu === 'product' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('products')}>
                                             <div className="flex items-center">
                                                 <Link href="#" className="flex items-center">
                                                     <IconMenuMailbox className="shrink-0 group-hover:!text-primary" />
-                                                    <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Product')}</span>
+                                                    <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Products')}</span>
                                                 </Link>
                                             </div>
 
-                                            <div className={currentMenu !== 'product' ? '-rotate-90 rtl:rotate-90' : ''} onClick={() => toggleMenu('product')}>
+                                            <div className={currentMenu !== 'product' ? '-rotate-90 rtl:rotate-90' : ''} onClick={() => toggleMenu('products')}>
                                                 <IconCaretDown />
                                             </div>
                                         </button>
 
-                                        <AnimateHeight duration={300} height={currentMenu === 'product' ? 'auto' : 0}>
+                                        <AnimateHeight duration={300} height={currentMenu === 'products' ? 'auto' : 0}>
                                             <ul className="sub-menu text-gray-500">
                                                 <li>
-                                                    <Link href="/">{t('All Product')}</Link>
+                                                    <Link href="/">{t('All Products')}</Link>
                                                 </li>
                                                 <li>
                                                     <Link href="/apps/product/add">{t('Add New')}</Link>
                                                 </li>
                                                 <li>
-                                                    <Link href="/product/category">{t('Category')}</Link>
+                                                    <Link href="/product/category">{t('Categories')}</Link>
                                                 </li>
                                                 <li>
                                                     <Link href="/product/tags">{t('Tags')}</Link>
@@ -194,26 +194,26 @@ const Sidebar = () => {
                                                     {menuOpen && (
                                                         <ul>
                                                             <li>
-                                                                <Link href="/product/finish">{t('Finish')}</Link>
+                                                                <Link href="/product/finish">{t('Finishes')}</Link>
                                                             </li>
                                                             <li>
-                                                                <Link href="/product/style">{t('Style')}</Link>
+                                                                <Link href="/product/style">{t('Styles')}</Link>
                                                             </li>
                                                             <li>
                                                                 <Link href="/product/design">{t('Designs')}</Link>
                                                             </li>
                                                             <li>
-                                                                <Link href="/product/stone">{t('Stone type')}</Link>
-                                                            </li>
-                                                            {/* <li>
-                                                                <Link href="/product/stoneColor">{t('Stone color')}</Link>
+                                                                <Link href="/product/stone">{t('Stone Types')}</Link>
                                                             </li>
                                                             <li>
-                                                                <Link href="/product/type">{t('Type')}</Link>
+                                                                <Link href="/product/stoneColor">{t('Stone Colors')}</Link>
                                                             </li>
                                                             <li>
-                                                                <Link href="/product/size">{t('Size')}</Link>
-                                                            </li> */}
+                                                                <Link href="/product/type">{t('Types')}</Link>
+                                                            </li>
+                                                            <li>
+                                                                <Link href="/product/size">{t('Sizes')}</Link>
+                                                            </li>
                                                         </ul>
                                                     )}
                                                 </li>
@@ -257,7 +257,7 @@ const Sidebar = () => {
                                         <Link href="/shipping/shippingprovider" className="group">
                                             <div className="flex items-center">
                                                 <IconMenuUsers className="shrink-0 group-hover:!text-primary" />
-                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Shipping provider')}</span>
+                                                <span className="text-black ltr:pl-3 rtl:pr-3 dark:text-[#506690] dark:group-hover:text-white-dark">{t('Shipping Providers')}</span>
                                             </div>
                                         </Link>
                                     </li>

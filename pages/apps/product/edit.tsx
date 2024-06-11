@@ -38,6 +38,7 @@ import {
     CATEGORY_LIST,
     CHANNEL_LIST,
     COLLECTION_LIST,
+    COLOR_LIST,
     CREATE_PRODUCT,
     CREATE_VARIANT,
     DELETE_VARIENT,
@@ -51,8 +52,10 @@ import {
     PRODUCT_MEDIA_CREATE,
     PRODUCT_TYPE_LIST,
     REMOVE_IMAGE,
+    SIZE_LIST,
     STONE_LIST,
     STYLE_LIST,
+    TYPE_LIST,
     UPDATE_META_DATA,
     UPDATE_PRODUCT,
     UPDATE_PRODUCT_CHANNEL,
@@ -176,6 +179,18 @@ const ProductEdit = (props: any) => {
         variables: sampleParams,
     });
 
+    const { data: stoneColorData } = useQuery(COLOR_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: typeData } = useQuery(TYPE_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: sizeData } = useQuery(SIZE_LIST, {
+        variables: sampleParams,
+    });
+
     const [addFormData] = useMutation(CREATE_PRODUCT);
     const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
     const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
@@ -289,6 +304,9 @@ const ProductEdit = (props: any) => {
             style: styleData?.productStyles,
             finish: finishData?.productFinishes,
             stoneType: stoneData?.productStoneTypes,
+            stoneColor: stoneColorData?.stoneColors,
+            type: typeData?.itemTypes,
+            size: sizeData?.sizes,
         };
 
         const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
@@ -297,7 +315,7 @@ const ProductEdit = (props: any) => {
         }, {});
 
         setDropdownData(singleObj);
-    }, [finishData, stoneData, designData, styleData]);
+    }, [finishData, stoneData, designData, styleData,typeData,sizeData,stoneColorData]);
 
     //     const updateEditorValue = (newValue) => {
     // console.log('✌️newValue --->', newValue);
@@ -310,6 +328,7 @@ const ProductEdit = (props: any) => {
             if (productDetails) {
                 if (productDetails && productDetails?.product) {
                     const data = productDetails?.product;
+                    console.log("data: ", data);
                     setProductData(data);
                     setSlug(data?.slug);
                     setSeoTittle(data?.seoTitle);
@@ -827,6 +846,8 @@ const ProductEdit = (props: any) => {
 
             // const formattedDescription = JSON.stringify(savedContent);
             // console.log('✌️formattedDescription --->', formattedDescription);
+            console.log("selectedValues: ", selectedValues);
+
 
             const { data } = await updateProduct({
                 variables: {
@@ -849,6 +870,10 @@ const ProductEdit = (props: any) => {
                         ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
                         ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
                         ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
+
+                        // ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productType: selectedValues.type }),
+                        // ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSize: selectedValues.size }),
+                        // ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStoneColor: selectedValues.stoneColor }),
                     },
                     firstValues: 10,
                 },
@@ -902,7 +927,6 @@ const ProductEdit = (props: any) => {
     };
 
     const variantListUpdate = async () => {
-
         try {
             const arrayOfVariants = variants?.map((item: any) => ({
                 attributes: [],
@@ -946,11 +970,9 @@ const ProductEdit = (props: any) => {
                 },
             });
 
-
             if (data?.productVariantUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
-
                 updateMetaData();
             }
         } catch (error) {
@@ -995,7 +1017,7 @@ const ProductEdit = (props: any) => {
 
     const bulkVariantCreate = async (NewAddedVariant: any) => {
         try {
-            const variantArr = NewAddedVariant?.map((item:any) => ({
+            const variantArr = NewAddedVariant?.map((item: any) => ({
                 attributes: [],
                 sku: item.sku,
                 name: item.name,
@@ -1030,7 +1052,7 @@ const ProductEdit = (props: any) => {
                 } else {
                     const resVariants = data?.productVariantBulkCreate?.productVariants;
                     if (resVariants?.length > 0) {
-                        resVariants?.map((item:any) => {
+                        resVariants?.map((item: any) => {
                             variantChannelListUpdate(item.id, NewAddedVariant);
                         });
                     }
@@ -1044,7 +1066,7 @@ const ProductEdit = (props: any) => {
     const variantChannelListUpdate = async (variantId: any, NewAddedVariant: any) => {
         console.log('variantChannelListUpdate: ');
         try {
-            const variantArr = NewAddedVariant?.map((item:any) => ({
+            const variantArr = NewAddedVariant?.map((item: any) => ({
                 channelId: 'Q2hhbm5lbDoy',
                 price: item.regularPrice,
                 costPrice: item.regularPrice,
@@ -1100,6 +1122,9 @@ const ProductEdit = (props: any) => {
         { type: 'style', styleName: dropdowndata?.style },
         { type: 'stone', stoneName: dropdowndata?.stoneType },
         { type: 'finish', finishName: dropdowndata?.finish },
+        { type: 'stoneColor', stoneColorName: dropdowndata?.stoneColor },
+        { type: 'type', typeName: dropdowndata?.type },
+        { type: 'size', sizeName: dropdowndata?.size },
     ];
 
     const optionsVal = arr.map((item) => ({ value: item.type, label: item.type }));

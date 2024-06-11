@@ -21,46 +21,53 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
-import { CREATE_STONE, DELETE_STONE, STONE_LIST, UPDATE_STONE } from '@/query/product';
+import { CREATE_SIZE, DELETE_SIZE, SIZE_LIST, UPDATE_SIZE } from '@/query/product';
 
 import { useMutation, useQuery } from '@apollo/client';
 import IconLoader from '@/components/Icon/IconLoader';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import { showDeleteAlert } from '@/utils/functions';
 
 const Size = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Stone Type'));
+        dispatch(setPageTitle('Size Type'));
     });
 
-    const { error, data: stoneData } = useQuery(STONE_LIST, {
-        variables: { channel: 'india-channel' }, // Pass variables here
+    const {
+        error,
+        data: sizeData,
+        refetch: sizeRefetch,
+    } = useQuery(SIZE_LIST, {
+        variables: {}, // Pass variables here
     });
-    console.log('stoneData: ', stoneData);
-    // const [designList, setStonList] = useState([]);
-    const [stonList, setStonList] = useState([]);
+    // const [designList, setSizeList] = useState([]);
+    const [sizeList, setSizeList] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const [createStoneLoader, setCreateStoneLoader] = useState(false);
-    const [updateStoneLoader, setUpdateStoneLoader] = useState(false);
+    const [createSizeLoader, setCreateSizeLoader] = useState(false);
+    const [updateSizeLoader, setUpdateSizeLoader] = useState(false);
 
     useEffect(() => {
         getDesignList();
-    }, [stoneData]);
-    console.log('designList: ', stonList);
+    }, [sizeData]);
 
     const getDesignList = () => {
         setLoading(true);
-        if (stoneData) {
-            if (stoneData && stoneData.productStoneTypes && stoneData.productStoneTypes.edges?.length > 0) {
-                const newData = stoneData.productStoneTypes.edges.map((item: any) => ({
+        console.log('sizeData.data?.sizes?.edges: ', sizeData);
+
+        if (sizeData) {
+            if (sizeData && sizeData.sizes?.edges?.length > 0) {
+                const newData = sizeData?.sizes?.edges?.map((item: any) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
+                console.log('newData: ', newData);
+
                 // const sorting: any = sortBy(newData, 'id');
-                setStonList(newData);
+                setSizeList(newData);
                 setLoading(false);
 
                 // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
@@ -81,8 +88,8 @@ const Size = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(stonList, 'id'));
-    }, [stonList]);
+        setInitialRecords(sortBy(sizeList, 'id'));
+    }, [sizeList]);
 
     // Log initialRecords when it changes
     useEffect(() => {
@@ -104,12 +111,12 @@ const Size = () => {
     // const [viewModal, setViewModal] = useState(false);
 
     //Mutation
-    const [addStone] = useMutation(CREATE_STONE);
-    const [updateStone] = useMutation(UPDATE_STONE);
-    const [deleteStone] = useMutation(DELETE_STONE);
-    const [bulkDelete] = useMutation(DELETE_STONE);
+    const [addSize] = useMutation(CREATE_SIZE);
+    const [updateSize] = useMutation(UPDATE_SIZE);
+    const [deleteSize] = useMutation(DELETE_SIZE);
+    const [bulkDelete] = useMutation(DELETE_SIZE);
 
-    console.log('finishList: ', stonList);
+    console.log('finishList: ', sizeList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -122,7 +129,7 @@ const Size = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return stonList.filter((item: any) => {
+            return sizeList.filter((item: any) => {
                 console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
@@ -154,11 +161,11 @@ const Size = () => {
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
-        setCreateStoneLoader(true);
-        setUpdateStoneLoader(true);
+        setCreateSizeLoader(true);
+        setUpdateSizeLoader(true);
         try {
-            setCreateStoneLoader(true);
-            setUpdateStoneLoader(true);
+            setCreateSizeLoader(true);
+            setUpdateSizeLoader(true);
 
             const variables = {
                 input: {
@@ -166,27 +173,28 @@ const Size = () => {
                 },
             };
 
-            const { data } = await (modalTitle ? updateStone({ variables: { ...variables, id: modalContant.id } }) : addStone({ variables }));
-            console.log('✌️data --->', data);
+            const { data } = await (modalTitle ? updateSize({ variables: { ...variables, id: modalContant.id } }) : addSize({ variables }));
+            await sizeRefetch();
+            // console.log('✌️data --->', data);
 
-            const newData = modalTitle ? data?.productStoneTypeUpdate?.productStoneType : data?.productStoneTypeCreate?.productStoneType;
-            console.log('✌️newData --->', newData);
+            // const newData = modalTitle ? data?.sizeUpdate?.size : data?.sizeCreate?.size;
+            // console.log('✌️newData --->', newData);
 
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
-            const updatedId = newData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
+            // if (!newData) {
+            //     console.error('Error: New data is undefined.');
+            //     return;
+            // }
+            // const updatedId = newData.id;
+            // const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = newData;
-            } else {
-                updatedDesignList.push(newData);
-            }
+            // const updatedDesignList: any = [...recordsData];
+            // if (index !== -1) {
+            //     updatedDesignList[index] = newData;
+            // } else {
+            //     updatedDesignList.push(newData);
+            // }
 
-            setRecordsData(updatedDesignList);
+            // setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -202,68 +210,32 @@ const Size = () => {
             setModal1(false);
             resetForm();
 
-            setCreateStoneLoader(false);
-            setUpdateStoneLoader(false);
+            setCreateSizeLoader(false);
+            setUpdateSizeLoader(false);
         } catch (error) {
             console.log('error: ', error);
-            setCreateStoneLoader(false);
-            setUpdateStoneLoader(false);
+            setCreateSizeLoader(false);
+            setUpdateSizeLoader(false);
         }
     };
 
     // category table edit
-    const EditStone = (record: any) => {
+    const EditSize = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
     // category table create
-    const CreateStone = () => {
+    const CreateSize = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
     };
 
-    // view categotry
-    // const ViewCategory = (record: any) => {
-    //     setViewModal(true);
-    // };
-
-    // delete Alert Message
-    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
-        const swalWithBootstrapButtons = Swal.mixin({
-            customClass: {
-                confirmButton: 'btn btn-secondary',
-                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
-                popup: 'sweet-alerts',
-            },
-            buttonsStyling: false,
-        });
-
-        swalWithBootstrapButtons
-            .fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, cancel!',
-                reverseButtons: true,
-                padding: '2em',
-            })
-            .then((result) => {
-                if (result.isConfirmed) {
-                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    onCancel(); // Call the onCancel function if the user cancels the deletion
-                }
-            });
-    };
-
-    const BulkDeleteStone = async () => {
+    const BulkDeleteSize = async () => {
         showDeleteAlert(
-            () => {
+            async () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
@@ -271,9 +243,10 @@ const Size = () => {
                 selectedRecords?.map(async (item: any) => {
                     await bulkDelete({ variables: { id: item.id } });
                 });
-                const updatedRecordsData = stonList.filter((record) => !selectedRecords.includes(record));
-                setStonList(updatedRecordsData);
+                const updatedRecordsData = sizeList.filter((record) => !selectedRecords.includes(record));
+                setSizeList(updatedRecordsData);
                 setSelectedRecords([]);
+                await sizeRefetch();
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
@@ -282,21 +255,23 @@ const Size = () => {
         );
     };
 
-    const DeleteStone = (record: any) => {
+    const DeleteSize = async (record: any) => {
         showDeleteAlert(
             async () => {
-                const { data } = await deleteStone({ variables: { id: record.id } });
-                const updatedRecordsData = stonList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                const { data } = await deleteSize({ variables: { id: record.id } });
+                const updatedRecordsData = sizeList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
-                setStonList(updatedRecordsData);
+                setSizeList(updatedRecordsData);
+                await sizeRefetch();
                 // getFinishList()
                 setSelectedRecords([]);
                 // setFinishList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Stone Type List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Size List is safe :)', 'error');
             }
+            // await sizeRefetch()
         );
     };
 
@@ -325,14 +300,14 @@ const Size = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteStone()}>
+                                        <button type="button" onClick={() => BulkDeleteSize()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateStone()}>
+                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateSize()}>
                             + Create
                         </button>
                     </div>
@@ -359,12 +334,12 @@ const Size = () => {
                                             </button>
                                         </Tippy> */}
                                         <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditStone(row)}>
+                                            <button type="button" onClick={() => EditSize(row)}>
                                                 <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy>
                                         <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteStone(row)}>
+                                            <button type="button" onClick={() => DeleteSize(row)}>
                                                 <IconTrashLines />
                                             </button>
                                         </Tippy>
@@ -410,7 +385,7 @@ const Size = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Stone' : 'Edit Stone'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Size' : 'Edit Size'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -509,7 +484,7 @@ const Size = () => {
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {createStoneLoader || updateStoneLoader ? (
+                                                        {createSizeLoader || updateSizeLoader ? (
                                                             <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" />
                                                         ) : modalTitle === null ? (
                                                             'Submit'
@@ -563,4 +538,4 @@ const Size = () => {
     );
 };
 
-export default PrivateRouter(Size) ;
+export default PrivateRouter(Size);

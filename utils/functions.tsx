@@ -182,7 +182,7 @@ export const uploadImage = async (productId: any, file: any) => {
         formData.append('map', JSON.stringify({ '1': ['variables.image'] }));
         formData.append('1', file);
 
-        const response = await fetch('http://file.prade.in/graphql/', {
+        const response = await fetch('https://file.prade.in/graphql/', {
             method: 'POST',
             headers: {
                 Authorization: `JWT ${token}`,
@@ -217,7 +217,7 @@ export const duplicateUploadImage = async (productId, imageUrl) => {
             })
         );
 
-        const response = await fetch('http://file.prade.in/graphql/', {
+        const response = await fetch('https://file.prade.in/graphql/', {
             method: 'POST',
             headers: {
                 Authorization: `JWT ${token}`,

@@ -410,6 +410,151 @@ export const STONE_LIST = gql`
     }
 `;
 
+export const SIZE_LIST = gql`
+    query Size_List {
+        sizes(first: 100) {
+            edges {
+                node {
+                    id
+                    name
+                }
+            }
+        }
+    }
+`;
+
+export const CREATE_SIZE = gql`
+    mutation Create_Size($input: SizeInput!) {
+        sizeCreate(input: $input) {
+            size {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const UPDATE_SIZE = gql`
+    mutation Size_Update($id: ID!, $input: SizeInput!) {
+        sizeUpdate(id: $id, input: $input) {
+            size {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const DELETE_SIZE = gql`
+    mutation Size_Delete($id: ID!) {
+        sizeDelete(id: $id) {
+            errors {
+                message
+            }
+        }
+    }
+`;
+
+export const TYPE_LIST = gql`
+    query Itemtype_List {
+        itemTypes(first: 100) {
+            edges {
+                node {
+                    id
+                    name
+                }
+            }
+        }
+    }
+`;
+
+export const CREATE_TYPE = gql`
+    mutation Itemtype_Create($input: ItemTypeInput!) {
+        itemTypeCreate(input: $input) {
+            errors {
+                message
+            }
+            itemType {
+                id
+                name
+            }
+        }
+    }
+`;
+
+export const UPDATE_TYPE = gql`
+    mutation ItemtypeUpdate($id: ID!, $input: ItemTypeInput!) {
+        itemTypeUpdate(id: $id, input: $input) {
+            errors {
+                message
+            }
+            itemType {
+                id
+                name
+            }
+        }
+    }
+`;
+
+export const DELETE_TYPE = gql`
+    mutation Item_Type_Delete($id: ID!) {
+        itemTypeDelete(id: $id) {
+            errors {
+                message
+            }
+        }
+    }
+`;
+
+export const COLOR_LIST = gql`
+    query Stone_Color_List {
+        stoneColors(first: 100) {
+            edges {
+                node {
+                    id
+                    name
+                }
+            }
+        }
+    }
+`;
+
+export const CREATE_COLOR = gql`
+    mutation Stone_Color_Create($input: StoneColorInput!) {
+        stoneColorCreate(input: $input) {
+            stoneColor {
+                name
+                id
+                slug
+            }
+        }
+    }
+`;
+
+export const UPDATE_COLOR = gql`
+    mutation Stone_Color_Update($id: ID!, $input: StoneColorInput!) {
+        stoneColorUpdate(id: $id, input: $input) {
+            stoneColor {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const DELETE_COLOR = gql`
+    mutation Stone_Color_Delete($id: ID!) {
+        stoneColorDelete(id: $id) {
+            errors {
+                message
+            }
+        }
+    }
+`;
+
 export const CREATE_STONE = gql`
     mutation CreateStoneType($input: ProductStoneTypeInput!) {
         productStoneTypeCreate(input: $input) {

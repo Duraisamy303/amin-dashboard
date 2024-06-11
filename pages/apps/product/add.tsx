@@ -38,6 +38,7 @@ import {
     CATEGORY_LIST,
     CHANNEL_LIST,
     COLLECTION_LIST,
+    COLOR_LIST,
     CREATE_CATEGORY,
     CREATE_PRODUCT,
     CREATE_TAG,
@@ -48,8 +49,10 @@ import {
     PRODUCT_CAT_LIST,
     PRODUCT_LIST_TAGS,
     PRODUCT_TYPE_LIST,
+    SIZE_LIST,
     STONE_LIST,
     STYLE_LIST,
+    TYPE_LIST,
     UPDATE_META_DATA,
     UPDATE_PRODUCT_CHANNEL,
     UPDATE_VARIANT_LIST,
@@ -234,17 +237,18 @@ const ProductAdd = () => {
         variables: sampleParams,
     });
     // -----------------New --------------------------------
-    const { data: stoneColorData } = useQuery(DESIGN_LIST, {
+    const { data: stoneColorData } = useQuery(COLOR_LIST, {
         variables: sampleParams,
     });
 
-    const { data: typeData } = useQuery(DESIGN_LIST, {
+    const { data: typeData } = useQuery(TYPE_LIST, {
         variables: sampleParams,
     });
 
-    const { data: sizeData } = useQuery(DESIGN_LIST, {
+    const { data: sizeData } = useQuery(SIZE_LIST, {
         variables: sampleParams,
     });
+    console.log('stoneColorData: ', sizeData);
 
     const [addCategory] = useMutation(CREATE_CATEGORY);
     const [addTag] = useMutation(CREATE_TAG);
@@ -259,10 +263,11 @@ const ProductAdd = () => {
             style: styleData?.productStyles,
             finish: finishData?.productFinishes,
             stoneType: stoneData?.productStoneTypes,
-            stoneColor: stoneColorData?.productDesigns,
-            type: typeData?.productDesigns,
-            size: sizeData?.productDesigns,
+            stoneColor: stoneColorData?.stoneColors,
+            type: typeData?.itemTypes,
+            size: sizeData?.sizes,
         };
+        console.log("arr1: ", arr1);
 
         const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
             acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
@@ -270,7 +275,7 @@ const ProductAdd = () => {
         }, {});
 
         setDropdownData(singleObj);
-    }, [finishData, stoneData, designData, styleData, stoneColorData]);
+    }, [finishData, stoneData, designData, styleData, stoneColorData,typeData,sizeData]);
 
     useEffect(() => {
         const getparentCategoryList = parentList?.categories?.edges;
@@ -546,9 +551,9 @@ const ProductAdd = () => {
                         ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
                         ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
                         // ------------------------New --------------------------------
-                        ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productTypeType: selectedValues.type }),
-                        ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSizeType: selectedValues.size }),
-                        ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStoneColorType: selectedValues.stoneColor }),
+                        // ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productTypeType: selectedValues.type }),
+                        // ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSizeType: selectedValues.size }),
+                        // ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStoneColorType: selectedValues.stoneColor }),
                     },
                 },
             });

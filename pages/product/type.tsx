@@ -21,46 +21,49 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
-import { CREATE_STONE, DELETE_STONE, STONE_LIST, UPDATE_STONE } from '@/query/product';
+import { CREATE_TYPE, DELETE_TYPE, TYPE_LIST, UPDATE_TYPE } from '@/query/product';
 
 import { useMutation, useQuery } from '@apollo/client';
 import IconLoader from '@/components/Icon/IconLoader';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import { showDeleteAlert } from '@/utils/functions';
 
 const Type = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const dispatch = useDispatch();
     useEffect(() => {
-        dispatch(setPageTitle('Stone Type'));
+        dispatch(setPageTitle('Type Type'));
     });
 
-    const { error, data: stoneData } = useQuery(STONE_LIST, {
+    const {
+        error,
+        data: TypeData,
+        refetch: typeRefetch,
+    } = useQuery(TYPE_LIST, {
         variables: { channel: 'india-channel' }, // Pass variables here
     });
-    console.log('stoneData: ', stoneData);
-    // const [designList, setStonList] = useState([]);
-    const [stonList, setStonList] = useState([]);
+    // const [designList, setTypeList] = useState([]);
+    const [typeList, setTypeList] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const [createStoneLoader, setCreateStoneLoader] = useState(false);
-    const [updateStoneLoader, setUpdateStoneLoader] = useState(false);
+    const [createTypeLoader, setCreateTypeLoader] = useState(false);
+    const [updateTypeLoader, setUpdateTypeLoader] = useState(false);
 
     useEffect(() => {
         getDesignList();
-    }, [stoneData]);
-    console.log('designList: ', stonList);
+    }, [TypeData]);
 
     const getDesignList = () => {
         setLoading(true);
-        if (stoneData) {
-            if (stoneData && stoneData.productStoneTypes && stoneData.productStoneTypes.edges?.length > 0) {
-                const newData = stoneData.productStoneTypes.edges.map((item: any) => ({
+        if (TypeData) {
+            if (TypeData && TypeData.itemTypes && TypeData.itemTypes.edges?.length > 0) {
+                const newData = TypeData.itemTypes.edges.map((item: any) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
                 // const sorting: any = sortBy(newData, 'id');
-                setStonList(newData);
+                setTypeList(newData);
                 setLoading(false);
 
                 // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
@@ -81,8 +84,8 @@ const Type = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(stonList, 'id'));
-    }, [stonList]);
+        setInitialRecords(sortBy(typeList, 'id'));
+    }, [typeList]);
 
     // Log initialRecords when it changes
     useEffect(() => {
@@ -104,12 +107,11 @@ const Type = () => {
     // const [viewModal, setViewModal] = useState(false);
 
     //Mutation
-    const [addStone] = useMutation(CREATE_STONE);
-    const [updateStone] = useMutation(UPDATE_STONE);
-    const [deleteStone] = useMutation(DELETE_STONE);
-    const [bulkDelete] = useMutation(DELETE_STONE);
+    const [addType] = useMutation(CREATE_TYPE);
+    const [updateType] = useMutation(UPDATE_TYPE);
+    const [deleteType] = useMutation(DELETE_TYPE);
+    const [bulkDelete] = useMutation(DELETE_TYPE);
 
-    console.log('finishList: ', stonList);
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
@@ -122,7 +124,7 @@ const Type = () => {
 
     useEffect(() => {
         setInitialRecords(() => {
-            return stonList.filter((item: any) => {
+            return typeList.filter((item: any) => {
                 console.log('✌️item --->', item);
                 return (
                     item.id.toString().includes(search.toLowerCase()) ||
@@ -154,11 +156,11 @@ const Type = () => {
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
-        setCreateStoneLoader(true);
-        setUpdateStoneLoader(true);
+        setCreateTypeLoader(true);
+        setUpdateTypeLoader(true);
         try {
-            setCreateStoneLoader(true);
-            setUpdateStoneLoader(true);
+            setCreateTypeLoader(true);
+            setUpdateTypeLoader(true);
 
             const variables = {
                 input: {
@@ -166,27 +168,28 @@ const Type = () => {
                 },
             };
 
-            const { data } = await (modalTitle ? updateStone({ variables: { ...variables, id: modalContant.id } }) : addStone({ variables }));
+            const { data } = await (modalTitle ? updateType({ variables: { ...variables, id: modalContant.id } }) : addType({ variables }));
             console.log('✌️data --->', data);
+            await typeRefetch();
 
-            const newData = modalTitle ? data?.productStoneTypeUpdate?.productStoneType : data?.productStoneTypeCreate?.productStoneType;
-            console.log('✌️newData --->', newData);
+            // const newData = modalTitle ? data?.productTypeTypeUpdate?.productTypeType : data?.productTypeTypeCreate?.productTypeType;
+            // console.log('✌️newData --->', newData);
 
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
-            const updatedId = newData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
+            // if (!newData) {
+            //     console.error('Error: New data is undefined.');
+            //     return;
+            // }
+            // const updatedId = newData.id;
+            // const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = newData;
-            } else {
-                updatedDesignList.push(newData);
-            }
+            // const updatedDesignList: any = [...recordsData];
+            // if (index !== -1) {
+            //     updatedDesignList[index] = newData;
+            // } else {
+            //     updatedDesignList.push(newData);
+            // }
 
-            setRecordsData(updatedDesignList);
+            // setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -202,68 +205,32 @@ const Type = () => {
             setModal1(false);
             resetForm();
 
-            setCreateStoneLoader(false);
-            setUpdateStoneLoader(false);
+            setCreateTypeLoader(false);
+            setUpdateTypeLoader(false);
         } catch (error) {
             console.log('error: ', error);
-            setCreateStoneLoader(false);
-            setUpdateStoneLoader(false);
+            setCreateTypeLoader(false);
+            setUpdateTypeLoader(false);
         }
     };
 
     // category table edit
-    const EditStone = (record: any) => {
+    const EditType = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
     // category table create
-    const CreateStone = () => {
+    const CreateType = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
     };
 
-    // view categotry
-    // const ViewCategory = (record: any) => {
-    //     setViewModal(true);
-    // };
-
-    // delete Alert Message
-    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
-        const swalWithBootstrapButtons = Swal.mixin({
-            customClass: {
-                confirmButton: 'btn btn-secondary',
-                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
-                popup: 'sweet-alerts',
-            },
-            buttonsStyling: false,
-        });
-
-        swalWithBootstrapButtons
-            .fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, cancel!',
-                reverseButtons: true,
-                padding: '2em',
-            })
-            .then((result) => {
-                if (result.isConfirmed) {
-                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    onCancel(); // Call the onCancel function if the user cancels the deletion
-                }
-            });
-    };
-
-    const BulkDeleteStone = async () => {
+    const BulkDeleteType = async () => {
         showDeleteAlert(
-            () => {
+            async () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
@@ -271,9 +238,11 @@ const Type = () => {
                 selectedRecords?.map(async (item: any) => {
                     await bulkDelete({ variables: { id: item.id } });
                 });
-                const updatedRecordsData = stonList.filter((record) => !selectedRecords.includes(record));
-                setStonList(updatedRecordsData);
+                const updatedRecordsData = typeList.filter((record) => !selectedRecords.includes(record));
+                setTypeList(updatedRecordsData);
                 setSelectedRecords([]);
+                await typeRefetch();
+
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
@@ -282,20 +251,22 @@ const Type = () => {
         );
     };
 
-    const DeleteStone = (record: any) => {
+    const DeleteType = (record: any) => {
         showDeleteAlert(
             async () => {
-                const { data } = await deleteStone({ variables: { id: record.id } });
-                const updatedRecordsData = stonList.filter((dataRecord: any) => dataRecord.id !== record.id);
+                const { data } = await deleteType({ variables: { id: record.id } });
+                const updatedRecordsData = typeList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
-                setStonList(updatedRecordsData);
+                setTypeList(updatedRecordsData);
                 // getFinishList()
                 setSelectedRecords([]);
+                await typeRefetch();
+
                 // setFinishList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Stone Type List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Type Type List is safe :)', 'error');
             }
         );
     };
@@ -306,7 +277,7 @@ const Type = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex-col gap-5 md:flex md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Type</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Types</h5>
 
                     <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
                         <input type="text" className="form-input mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -325,14 +296,14 @@ const Type = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteStone()}>
+                                        <button type="button" onClick={() => BulkDeleteType()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateStone()}>
+                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateType()}>
                             + Create
                         </button>
                     </div>
@@ -359,12 +330,12 @@ const Type = () => {
                                             </button>
                                         </Tippy> */}
                                         <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditStone(row)}>
+                                            <button type="button" onClick={() => EditType(row)}>
                                                 <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy>
                                         <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteStone(row)}>
+                                            <button type="button" onClick={() => DeleteType(row)}>
                                                 <IconTrashLines />
                                             </button>
                                         </Tippy>
@@ -410,7 +381,7 @@ const Type = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Stone' : 'Edit Stone'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Type' : 'Edit Type'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -509,7 +480,7 @@ const Type = () => {
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {createStoneLoader || updateStoneLoader ? (
+                                                        {createTypeLoader || updateTypeLoader ? (
                                                             <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" />
                                                         ) : modalTitle === null ? (
                                                             'Submit'
@@ -563,4 +534,4 @@ const Type = () => {
     );
 };
 
-export default PrivateRouter(Type) ;
+export default PrivateRouter(Type);

@@ -21,11 +21,12 @@ import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
-import { CREATE_STONE, DELETE_STONE, STONE_LIST, UPDATE_STONE } from '@/query/product';
+import { CREATE_COLOR, DELETE_COLOR, COLOR_LIST, UPDATE_COLOR } from '@/query/product';
 
 import { useMutation, useQuery } from '@apollo/client';
 import IconLoader from '@/components/Icon/IconLoader';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import { showDeleteAlert } from '@/utils/functions';
 
 const StoneColor = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -35,27 +36,28 @@ const StoneColor = () => {
         dispatch(setPageTitle('Stone Type'));
     });
 
-    const { error, data: stoneData } = useQuery(STONE_LIST, {
+    const {
+        error,
+        data: ColorData,
+        refetch: colorRefetch,
+    } = useQuery(COLOR_LIST, {
         variables: { channel: 'india-channel' }, // Pass variables here
     });
-    console.log('stoneData: ', stoneData);
-    // const [designList, setStonList] = useState([]);
     const [stonList, setStonList] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const [createStoneLoader, setCreateStoneLoader] = useState(false);
-    const [updateStoneLoader, setUpdateStoneLoader] = useState(false);
+    const [createColorLoader, setCreateColorLoader] = useState(false);
+    const [updateColorLoader, setUpdateColorLoader] = useState(false);
 
     useEffect(() => {
         getDesignList();
-    }, [stoneData]);
-    console.log('designList: ', stonList);
+    }, [ColorData]);
 
     const getDesignList = () => {
         setLoading(true);
-        if (stoneData) {
-            if (stoneData && stoneData.productStoneTypes && stoneData.productStoneTypes.edges?.length > 0) {
-                const newData = stoneData.productStoneTypes.edges.map((item: any) => ({
+        if (ColorData) {
+            if (ColorData && ColorData.stoneColors && ColorData.stoneColors.edges?.length > 0) {
+                const newData = ColorData.stoneColors.edges.map((item: any) => ({
                     ...item.node,
                     name: item?.node?.name,
                 }));
@@ -104,10 +106,10 @@ const StoneColor = () => {
     // const [viewModal, setViewModal] = useState(false);
 
     //Mutation
-    const [addStone] = useMutation(CREATE_STONE);
-    const [updateStone] = useMutation(UPDATE_STONE);
-    const [deleteStone] = useMutation(DELETE_STONE);
-    const [bulkDelete] = useMutation(DELETE_STONE);
+    const [addColor] = useMutation(CREATE_COLOR);
+    const [updateColor] = useMutation(UPDATE_COLOR);
+    const [deleteColor] = useMutation(DELETE_COLOR);
+    const [bulkDelete] = useMutation(DELETE_COLOR);
 
     console.log('finishList: ', stonList);
     useEffect(() => {
@@ -154,11 +156,11 @@ const StoneColor = () => {
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
-        setCreateStoneLoader(true);
-        setUpdateStoneLoader(true);
+        setCreateColorLoader(true);
+        setUpdateColorLoader(true);
         try {
-            setCreateStoneLoader(true);
-            setUpdateStoneLoader(true);
+            setCreateColorLoader(true);
+            setUpdateColorLoader(true);
 
             const variables = {
                 input: {
@@ -166,27 +168,8 @@ const StoneColor = () => {
                 },
             };
 
-            const { data } = await (modalTitle ? updateStone({ variables: { ...variables, id: modalContant.id } }) : addStone({ variables }));
-            console.log('✌️data --->', data);
-
-            const newData = modalTitle ? data?.productStoneTypeUpdate?.productStoneType : data?.productStoneTypeCreate?.productStoneType;
-            console.log('✌️newData --->', newData);
-
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
-            const updatedId = newData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
-
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = newData;
-            } else {
-                updatedDesignList.push(newData);
-            }
-
-            setRecordsData(updatedDesignList);
+            const { data } = await (modalTitle ? updateColor({ variables: { ...variables, id: modalContant.id } }) : addColor({ variables }));
+            await colorRefetch();
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -202,68 +185,32 @@ const StoneColor = () => {
             setModal1(false);
             resetForm();
 
-            setCreateStoneLoader(false);
-            setUpdateStoneLoader(false);
+            setCreateColorLoader(false);
+            setUpdateColorLoader(false);
         } catch (error) {
             console.log('error: ', error);
-            setCreateStoneLoader(false);
-            setUpdateStoneLoader(false);
+            setCreateColorLoader(false);
+            setUpdateColorLoader(false);
         }
     };
 
     // category table edit
-    const EditStone = (record: any) => {
+    const EditColor = (record: any) => {
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
     };
 
     // category table create
-    const CreateStone = () => {
+    const CreateColor = () => {
         setModal1(true);
         setModalTitle(null);
         setModalContant(null);
     };
 
-    // view categotry
-    // const ViewCategory = (record: any) => {
-    //     setViewModal(true);
-    // };
-
-    // delete Alert Message
-    const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
-        const swalWithBootstrapButtons = Swal.mixin({
-            customClass: {
-                confirmButton: 'btn btn-secondary',
-                cancelButton: 'btn btn-dark ltr:mr-3 rtl:ml-3',
-                popup: 'sweet-alerts',
-            },
-            buttonsStyling: false,
-        });
-
-        swalWithBootstrapButtons
-            .fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, cancel!',
-                reverseButtons: true,
-                padding: '2em',
-            })
-            .then((result) => {
-                if (result.isConfirmed) {
-                    onConfirm(); // Call the onConfirm function if the user confirms the deletion
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    onCancel(); // Call the onCancel function if the user cancels the deletion
-                }
-            });
-    };
-
-    const BulkDeleteStone = async () => {
+    const BulkDeleteColor = async () => {
         showDeleteAlert(
-            () => {
+            async () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
@@ -274,6 +221,8 @@ const StoneColor = () => {
                 const updatedRecordsData = stonList.filter((record) => !selectedRecords.includes(record));
                 setStonList(updatedRecordsData);
                 setSelectedRecords([]);
+                await colorRefetch();
+
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
@@ -282,20 +231,22 @@ const StoneColor = () => {
         );
     };
 
-    const DeleteStone = (record: any) => {
+    const DeleteColor = (record: any) => {
         showDeleteAlert(
             async () => {
-                const { data } = await deleteStone({ variables: { id: record.id } });
+                const { data } = await deleteColor({ variables: { id: record.id } });
                 const updatedRecordsData = stonList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
                 setStonList(updatedRecordsData);
                 // getFinishList()
                 setSelectedRecords([]);
+                await colorRefetch();
+
                 // setFinishList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
-                Swal.fire('Cancelled', 'Your Stone Type List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Color Type List is safe :)', 'error');
             }
         );
     };
@@ -306,7 +257,7 @@ const StoneColor = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-5 flex-col gap-5 md:flex md:flex-row md:items-center">
-                    <h5 className="text-lg font-semibold dark:text-white-light">Stone Color</h5>
+                    <h5 className="text-lg font-semibold dark:text-white-light">Colors</h5>
 
                     <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
                         <input type="text" className="form-input mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -325,14 +276,14 @@ const StoneColor = () => {
                             >
                                 <ul className="!min-w-[170px]">
                                     <li>
-                                        <button type="button" onClick={() => BulkDeleteStone()}>
+                                        <button type="button" onClick={() => BulkDeleteColor()}>
                                             Delete
                                         </button>
                                     </li>
                                 </ul>
                             </Dropdown>
                         </div>
-                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateStone()}>
+                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateColor()}>
                             + Create
                         </button>
                     </div>
@@ -359,12 +310,12 @@ const StoneColor = () => {
                                             </button>
                                         </Tippy> */}
                                         <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditStone(row)}>
+                                            <button type="button" onClick={() => EditColor(row)}>
                                                 <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                             </button>
                                         </Tippy>
                                         <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteStone(row)}>
+                                            <button type="button" onClick={() => DeleteColor(row)}>
                                                 <IconTrashLines />
                                             </button>
                                         </Tippy>
@@ -410,7 +361,7 @@ const StoneColor = () => {
                             >
                                 <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
                                     <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Stone' : 'Edit Stone'}</div>
+                                        <div className="text-lg font-bold">{modalTitle === null ? 'Create Color' : 'Edit Color'}</div>
                                         <button type="button" className="text-white-dark hover:text-dark" onClick={() => setModal1(false)}>
                                             <IconX />
                                         </button>
@@ -509,7 +460,7 @@ const StoneColor = () => {
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {createStoneLoader || updateStoneLoader ? (
+                                                        {createColorLoader || updateColorLoader ? (
                                                             <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" />
                                                         ) : modalTitle === null ? (
                                                             'Submit'
