@@ -34,8 +34,8 @@ const Finish = () => {
         dispatch(setPageTitle('Finish'));
     });
 
-    const { error, data: finishData } = useQuery(FINISH_LIST, {
-        variables: { channel: 'india-channel', first: 20 },
+    const { error, data: finishData,refetch:finishRefetch } = useQuery(FINISH_LIST, {
+        variables: { channel: 'india-channel', first: 100 },
     });
 
     const [finishList, setFinishList] = useState([]);
@@ -76,7 +76,7 @@ const Finish = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(finishList, 'id'));
+        setInitialRecords(finishList);
     }, [finishList]);
 
     // Log initialRecords when it changes
@@ -133,7 +133,9 @@ const Finish = () => {
 
     useEffect(() => {
         const data = sortBy(initialRecords, sortStatus.columnAccessor);
+        // setInitialRecords( initialRecords);
         setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
+
     }, [sortStatus]);
 
     // FORM VALIDATION
@@ -165,23 +167,8 @@ const Finish = () => {
 
             const newData = modalTitle ? data?.productFinishUpdate?.productFinish : data?.productFinishCreate?.productFinish;
             console.log('newData: ', newData);
+           await  finishRefetch()
 
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
-            const updatedId = newData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
-
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = newData;
-            } else {
-                updatedDesignList.push(newData);
-            }
-
-            // setFinishList(updatedDesignList);
-            setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -268,6 +255,8 @@ const Finish = () => {
                 const updatedRecordsData = finishList.filter((record) => !selectedRecords.includes(record));
                 setFinishList(updatedRecordsData);
                 setSelectedRecords([]);
+               await finishRefetch()
+
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
@@ -285,6 +274,7 @@ const Finish = () => {
                 setFinishList(updatedRecordsData);
                 // getFinishList()
                 setSelectedRecords([]);
+               await finishRefetch()
                 // setFinishList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },

@@ -88,7 +88,7 @@ const Size = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(sizeList, 'id'));
+        setInitialRecords(sizeList);
     }, [sizeList]);
 
     // Log initialRecords when it changes

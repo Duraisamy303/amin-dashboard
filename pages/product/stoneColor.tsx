@@ -83,7 +83,7 @@ const StoneColor = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(stonList, 'id'));
+        setInitialRecords(stonList);
     }, [stonList]);
 
     // Log initialRecords when it changes

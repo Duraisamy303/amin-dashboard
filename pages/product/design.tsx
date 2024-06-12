@@ -36,7 +36,11 @@ const Design = () => {
         dispatch(setPageTitle('Design'));
     });
 
-    const { error, data: designData } = useQuery(DESIGN_LIST, {
+    const {
+        error,
+        data: designData,
+        refetch: designRefetch,
+    } = useQuery(DESIGN_LIST, {
         variables: { channel: 'india-channel' }, // Pass variables here
     });
     const [designList, setDesignList] = useState([]);
@@ -79,7 +83,7 @@ const Design = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(designList, 'id'));
+        setInitialRecords(designList);
     }, [designList]);
 
     // Log initialRecords when it changes
@@ -166,22 +170,8 @@ const Design = () => {
             const { data } = await (modalTitle ? updateDesign({ variables: { ...variables, id: modalContant.id } }) : addDesign({ variables }));
 
             const newData = modalTitle ? data?.productDesignUpdate?.productDesign : data?.productDesignCreate?.productDesign;
+            await designRefetch();
 
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
-            const updatedId = newData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
-
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = newData;
-            } else {
-                updatedDesignList.push(newData);
-            }
-
-            setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -570,4 +560,4 @@ const Design = () => {
     );
 };
 
-export default PrivateRouter(Design) ;
+export default PrivateRouter(Design);

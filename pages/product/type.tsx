@@ -84,7 +84,7 @@ const Type = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(typeList, 'id'));
+        setInitialRecords(typeList);
     }, [typeList]);
 
     // Log initialRecords when it changes

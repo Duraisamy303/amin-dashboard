@@ -33,7 +33,11 @@ const Style = () => {
         dispatch(setPageTitle('Style'));
     });
 
-    const { error, data: finishData } = useQuery(STYLE_LIST, {
+    const {
+        error,
+        data: finishData,
+        refetch: styleRefetch,
+    } = useQuery(STYLE_LIST, {
         variables: { channel: 'india-channel', first: 20 },
     });
 
@@ -74,13 +78,10 @@ const Style = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(finishList, 'id'));
+        setInitialRecords(finishList);
     }, [finishList]);
 
     // Log initialRecords when it changes
-    useEffect(() => {
-        // console.log('initialRecords: ', initialRecords);
-    }, [initialRecords]);
 
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
 
@@ -161,23 +162,24 @@ const Style = () => {
 
             const newData = modalTitle ? data?.productStyleUpdate?.productStyle : data?.productStyleCreate?.productStyle;
             console.log('newData: ', newData);
+            await styleRefetch();
 
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
-            const updatedId = newData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
+            // if (!newData) {
+            //     console.error('Error: New data is undefined.');
+            //     return;
+            // }
+            // const updatedId = newData.id;
+            // const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
 
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = newData;
-            } else {
-                updatedDesignList.push(newData);
-            }
+            // const updatedDesignList: any = [...recordsData];
+            // if (index !== -1) {
+            //     updatedDesignList[index] = newData;
+            // } else {
+            //     updatedDesignList.push(newData);
+            // }
 
-            // setFinishList(updatedDesignList);
-            setRecordsData(updatedDesignList);
+            // // setFinishList(updatedDesignList);
+            // setRecordsData(updatedDesignList);
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -253,7 +255,7 @@ const Style = () => {
 
     const BulkDeleteFinish = async () => {
         showDeleteAlert(
-            () => {
+            async () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
@@ -264,6 +266,7 @@ const Style = () => {
                 const updatedRecordsData = finishList.filter((record) => !selectedRecords.includes(record));
                 setFinishList(updatedRecordsData);
                 setSelectedRecords([]);
+                await styleRefetch();
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
@@ -281,6 +284,7 @@ const Style = () => {
                 setFinishList(updatedRecordsData);
                 // getFinishList()
                 setSelectedRecords([]);
+                await styleRefetch();
                 // setFinishList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
@@ -505,8 +509,10 @@ const Style = () => {
                                                     <button type="submit" className="btn btn-primary !mt-6">
                                                         {createStyleLoader || updateStyleLoader ? (
                                                             <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" />
+                                                        ) : modalTitle === null ? (
+                                                            'Submit'
                                                         ) : (
-                                                            modalTitle === null ? 'Submit' : 'Update'
+                                                            'Update'
                                                         )}
                                                     </button>
                                                 </Form>

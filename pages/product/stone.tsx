@@ -35,7 +35,11 @@ const Stone = () => {
         dispatch(setPageTitle('Stone Type'));
     });
 
-    const { error, data: stoneData } = useQuery(STONE_LIST, {
+    const {
+        error,
+        data: stoneData,
+        refetch: stoneRefetch,
+    } = useQuery(STONE_LIST, {
         variables: { channel: 'india-channel' }, // Pass variables here
     });
     console.log('stoneData: ', stoneData);
@@ -81,7 +85,7 @@ const Stone = () => {
     // Update initialRecords whenever finishList changes
     useEffect(() => {
         // Sort finishList by 'id' and update initialRecords
-        setInitialRecords(sortBy(stonList, 'id'));
+        setInitialRecords(stonList);
     }, [stonList]);
 
     // Log initialRecords when it changes
@@ -170,23 +174,7 @@ const Stone = () => {
             console.log('✌️data --->', data);
 
             const newData = modalTitle ? data?.productStoneTypeUpdate?.productStoneType : data?.productStoneTypeCreate?.productStoneType;
-            console.log('✌️newData --->', newData);
-
-            if (!newData) {
-                console.error('Error: New data is undefined.');
-                return;
-            }
-            const updatedId = newData.id;
-            const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
-
-            const updatedDesignList: any = [...recordsData];
-            if (index !== -1) {
-                updatedDesignList[index] = newData;
-            } else {
-                updatedDesignList.push(newData);
-            }
-
-            setRecordsData(updatedDesignList);
+            await stoneRefetch();
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -263,7 +251,7 @@ const Stone = () => {
 
     const BulkDeleteStone = async () => {
         showDeleteAlert(
-            () => {
+            async () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
@@ -274,6 +262,8 @@ const Stone = () => {
                 const updatedRecordsData = stonList.filter((record) => !selectedRecords.includes(record));
                 setStonList(updatedRecordsData);
                 setSelectedRecords([]);
+                await stoneRefetch();
+
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
@@ -291,6 +281,8 @@ const Stone = () => {
                 setStonList(updatedRecordsData);
                 // getFinishList()
                 setSelectedRecords([]);
+                await stoneRefetch();
+
                 // setFinishList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
@@ -563,4 +555,4 @@ const Stone = () => {
     );
 };
 
-export default PrivateRouter(Stone) ;
+export default PrivateRouter(Stone);

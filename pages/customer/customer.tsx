@@ -29,6 +29,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import { DELETE_PRODUCTS, CUSTOMER_ALL_LIST, DELETE_CUSTOMER } from '@/query/product';
 import { Failure, showDeleteAlert } from '@/utils/functions';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import moment from 'moment';
 
 const CustomerList = () => {
     const router = useRouter();
@@ -95,6 +96,7 @@ const CustomerList = () => {
                     name: item?.node?.firstName + item?.node?.lastName,
                     email: item?.node?.email,
                     orderCount: item?.node?.orders?.totalCount,
+                    dateJoined: moment(item?.node?.dateJoined).format('YYYY-MM-DD'),
                 }));
                 console.log('newData: ', newData);
 
@@ -281,7 +283,19 @@ const CustomerList = () => {
                             },
 
                             { accessor: 'email', sortable: true },
-                            { accessor: 'orderCount', sortable: true },
+                            { accessor: 'dateJoined', sortable: true, title: 'Registered Date' },
+
+                            {
+                                accessor: 'orderCount',
+                                sortable: true,
+                                // render: (row) => (
+                                //     <>
+                                //         <button className="" onClick={() => router.push(`/orders/orders?customer=${row.email}`)}>
+                                //             {row.orderCount}
+                                //         </button>
+                                //     </>
+                                // ),
+                            },
                             {
                                 // Custom column for actions
                                 accessor: 'actions', // You can use any accessor name you want
@@ -305,7 +319,6 @@ const CustomerList = () => {
                                             >
                                                 <IconEye />
                                             </button> */}
-                                         
 
                                             <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
                                                 <IconTrashLines />
