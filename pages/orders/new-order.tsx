@@ -372,6 +372,7 @@ const NewOrder = () => {
         try {
             if (state.selectedCustomerId != '' && state.selectedCustomerId != undefined) {
                 const funRes: any = await setBilling(customerAddress);
+                console.log('funRes: ', funRes);
                 if (!objIsEmpty(funRes)) {
                     setState({ billingAddress: funRes });
                 } else {
@@ -684,15 +685,14 @@ const NewOrder = () => {
     };
 
     const createOrder = async () => {
-        setCustomerErrMsg('');
-        if (!state.selectedCustomerId) {
-            setCustomerErrMsg('required this field');
-        }
-        if (state.lineList.length == 0) {
-            Failure('Please add product to order');
-        }
-
         try {
+            setCustomerErrMsg('');
+            if (!state.selectedCustomerId) {
+                setCustomerErrMsg('Required this field');
+            } else if (state.lineList.length == 0) {
+                Failure('Please add product to order');
+            }else{
+
             const data = await updateDraftOrder({
                 variables: {
                     id: orderId,
@@ -728,6 +728,7 @@ const NewOrder = () => {
                 },
             });
             finalizeNewOrder();
+        }
         } catch (error) {
             console.log('error: ', error);
         }
@@ -789,6 +790,7 @@ const NewOrder = () => {
         setShippingErrMsg(address.shippingAddress);
         setBillingErrMsg(address.billingAddress);
         if (Object.keys(address.shippingAddress).length > 0 || Object.keys(address.billingAddress).length > 0) {
+            setState({ setUpdateAddressLoading: false });
             return;
         }
         try {
@@ -813,10 +815,12 @@ const NewOrder = () => {
                 },
             });
             if (res?.data?.draftOrderUpdate?.errors?.length > 0) {
+                setState({ setUpdateAddressLoading: false });
                 Failure(res?.data?.draftOrderUpdate?.errors[0]?.message);
             } else {
                 updateShippingAmount();
                 getOrderData();
+
                 Success('Address updated successfully');
             }
             setState({ setUpdateAddressLoading: false });
@@ -1092,7 +1096,7 @@ const NewOrder = () => {
                                     </div>
 
                                     <div className="mt-5 grid grid-cols-12 gap-3">
-                                        <div className="col-span-6">
+                                        {/* <div className="col-span-6">
                                             <label htmlFor="email" className=" text-sm font-medium text-gray-700">
                                                 Email address
                                             </label>
@@ -1106,10 +1110,8 @@ const NewOrder = () => {
                                             />
                                             {billingErrMsg.email && <div className="mt-1 text-danger">{billingErrMsg.email}</div>}
                                             {state.billingAddress['billing.email'] && <div className="mt-1 text-danger">{state.billingAddress['billing.email']}</div>}
-                                            {/* <input type="mail" className="form-input" name="billing.email" value={state.billingAddress?.email} onChange={handleChange} /> */}
 
-                                            {/* <input type="mail" id="billingemail" name="billingemail" className="form-input" required /> */}
-                                        </div>
+                                        </div> */}
                                         <div className="col-span-6">
                                             <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
                                                 Phone
@@ -1372,7 +1374,7 @@ const NewOrder = () => {
                                     </div>
 
                                     <div className="mt-5 grid grid-cols-12 gap-3">
-                                        <div className="col-span-6">
+                                        {/* <div className="col-span-6">
                                             <label htmlFor="email" className=" text-sm font-medium text-gray-700">
                                                 Email address
                                             </label>
@@ -1386,13 +1388,13 @@ const NewOrder = () => {
                                             />
                                             {shippingErrMsg.email && <div className="mt-1 text-danger">{shippingErrMsg.email}</div>}
                                             {state.shippingAddress['shipping.email'] && <div className="mt-1 text-danger">{state.shippingAddress['shipping.email']}</div>}
-                                        </div>
+                                        </div> */}
                                         <div className="col-span-6">
                                             <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
                                                 Phone
                                             </label>
                                             <input
-                                                type="number"
+                                                type="text"
                                                 className={`form-input ${state.shippingAddress['shipping.phone'] && 'border border-danger focus:border-danger'}`}
                                                 name="shipping.phone"
                                                 value={state.shippingAddress.phone}
@@ -1582,16 +1584,17 @@ const NewOrder = () => {
                                 )}
                                 <div className="mt-4 flex items-center justify-between font-semibold">
                                     <div>Total</div>
-                                   
 
                                     <div>
-                                            <div className="ml-[94px] justify-end">{`${formatCurrency(productDetails?.order?.total?.gross?.currency)}${addCommasToNumber(productDetails?.order?.total?.gross?.amount)}`}</div>
+                                        <div className="ml-[94px] justify-end">{`${formatCurrency(productDetails?.order?.total?.gross?.currency)}${addCommasToNumber(
+                                            productDetails?.order?.total?.gross?.amount
+                                        )}`}</div>
 
-                                            <div className="pl-8 text-sm">
-                                                (includes {productDetails?.order?.total?.tax?.currency == 'USD' ? '$' : '₹'}
-                                                {roundOff(productDetails?.order?.total?.tax?.amount)} GST)
-                                            </div>
+                                        <div className="pl-8 text-sm">
+                                            (includes {productDetails?.order?.total?.tax?.currency == 'USD' ? '$' : '₹'}
+                                            {roundOff(productDetails?.order?.total?.tax?.amount)} GST)
                                         </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1862,7 +1865,7 @@ const NewOrder = () => {
                                         });
                                     }}
                                 />
-                                <span className='pt-5'>{state.coupenOption === 'percentage' ? '%' : productDetails?.order?.total?.gross?.currency}</span>
+                                <span className="pt-5">{state.coupenOption === 'percentage' ? '%' : productDetails?.order?.total?.gross?.currency}</span>
                             </div>
                             {precentageErrMsg && <div className="mt-1 text-red-500">{precentageErrMsg}</div>}
                             {fixedErrMsg && <div className="mt-1 text-red-500">{fixedErrMsg}</div>}{' '}

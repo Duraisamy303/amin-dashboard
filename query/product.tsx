@@ -124,6 +124,10 @@ export const CUSTOMER_ALL_LIST = gql`
         email
         firstName
         lastName
+        dateJoined
+        isActive
+        updatedAt
+        lastLogin
         __typename
     }
 `;

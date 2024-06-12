@@ -43,6 +43,7 @@ import {
     CREATE_PRODUCT,
     CREATE_TAG,
     CREATE_VARIANT,
+    DELETE_PRODUCTS,
     DESIGN_LIST,
     FINISH_LIST,
     PARENT_CATEGORY_LIST,
@@ -57,7 +58,7 @@ import {
     UPDATE_PRODUCT_CHANNEL,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { Failure, Success, sampleParams, uploadImage } from '@/utils/functions';
+import { Failure, Success, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
 import { cA } from '@fullcalendar/core/internal-common';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
@@ -129,6 +130,7 @@ const ProductAdd = () => {
     const [descriptionErrMsg, setDescriptionErrMsg] = useState('');
     const [attributeError, setAttributeError] = useState('');
     const [variantErrors, setVariantErrors] = useState<any>([]);
+    const [createLoading, setCreateLoading] = useState(false);
 
     // error message end
 
@@ -267,7 +269,6 @@ const ProductAdd = () => {
             type: typeData?.itemTypes,
             size: sizeData?.sizes,
         };
-        console.log("arr1: ", arr1);
 
         const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
             acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
@@ -275,7 +276,7 @@ const ProductAdd = () => {
         }, {});
 
         setDropdownData(singleObj);
-    }, [finishData, stoneData, designData, styleData, stoneColorData,typeData,sizeData]);
+    }, [finishData, stoneData, designData, styleData, stoneColorData, typeData, sizeData]);
 
     useEffect(() => {
         const getparentCategoryList = parentList?.categories?.edges;
@@ -299,6 +300,7 @@ const ProductAdd = () => {
     });
 
     const [addFormData] = useMutation(CREATE_PRODUCT);
+    const [deleteProducts] = useMutation(DELETE_PRODUCTS);
     const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
     const [createVariant] = useMutation(CREATE_VARIANT);
     const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
@@ -407,128 +409,85 @@ const ProductAdd = () => {
     });
 
     const CreateProduct = async () => {
-        setProductNameErrMsg('');
-        setSlugErrMsg('');
-        setSeoTittleErrMsg('');
-        setSeoDescErrMsg('');
-        setShortDesErrMsg('');
-        setCategoryErrMsg('');
-        setDescriptionErrMsg('');
-        setAttributeError('');
-        setVariantErrors([]);
-
-        let AttributesErrors: any = {};
-        let newVariantErrors: any = [];
-
-        if (productName.trim() === '') {
-            setProductNameErrMsg('Product name cannot be empty');
-        }
-
-        if (slug.trim() === '') {
-            setSlugErrMsg('Slug cannot be empty');
-        }
-
-        if (seoTittle.trim() === '') {
-            setSeoTittleErrMsg('Seo title cannot be empty');
-        }
-
-        if (seoDesc.trim() === '') {
-            setSeoDescErrMsg('Seo description cannot be empty');
-        }
-        if (description.trim() === '') {
-            setDescriptionErrMsg('Description cannot be empty');
-        }
-
-        if (shortDescription?.trim() === '') {
-            setShortDesErrMsg('Short description cannot be empty');
-        }
-
-        if (selectedCat === '') {
-            setCategoryErrMsg('Category cannot be empty');
-        }
-
-        if (!selectedValues || Object.keys(selectedValues).length === 0) {
+        try {
+            setCreateLoading(true);
+            // Reset error messages
+            setProductNameErrMsg('');
+            setSlugErrMsg('');
+            setSeoTittleErrMsg('');
+            setSeoDescErrMsg('');
+            setShortDesErrMsg('');
+            setCategoryErrMsg('');
+            setDescriptionErrMsg('');
             setAttributeError('');
-        } else {
-            if (selectedValues?.stone?.length === 0) {
-                AttributesErrors.stone = 'Stone cannot be empty';
+            setVariantErrors([]);
+
+            // Validation
+            const errors = {
+                productName: productName.trim() === '' ? 'Product name cannot be empty' : '',
+                slug: slug.trim() === '' ? 'Slug cannot be empty' : '',
+                seoTittle: seoTittle.trim() === '' ? 'Seo title cannot be empty' : '',
+                seoDesc: seoDesc.trim() === '' ? 'Seo description cannot be empty' : '',
+                description: description.trim() === '' ? 'Description cannot be empty' : '',
+                shortDescription: shortDescription?.trim() === '' ? 'Short description cannot be empty' : '',
+                category: selectedCat === '' ? 'Category cannot be empty' : '',
+            };
+
+            setProductNameErrMsg(errors.productName);
+            setSlugErrMsg(errors.slug);
+            setSeoTittleErrMsg(errors.seoTittle);
+            setSeoDescErrMsg(errors.seoDesc);
+            setDescriptionErrMsg(errors.description);
+            setShortDesErrMsg(errors.shortDescription);
+            setCategoryErrMsg(errors.category);
+
+            if (Object.values(errors).some((msg) => msg !== '')) {
+                setCreateLoading(false);
+
+                return; // Exit if any required fields are empty
             }
 
-            if (selectedValues?.design?.length === 0) {
-                AttributesErrors.design = 'Design cannot be empty';
+            const attributeErrors: any = {};
+            if (!selectedValues || Object.keys(selectedValues).length === 0) {
+                setCreateLoading(false);
+
+                setAttributeError('Attributes cannot be empty');
+            } else {
+                if (selectedValues?.stone?.length === 0) attributeErrors.stone = 'Stone cannot be empty';
+                if (selectedValues?.design?.length === 0) attributeErrors.design = 'Design cannot be empty';
+                if (selectedValues?.style?.length === 0) attributeErrors.style = 'Style cannot be empty';
+                if (selectedValues?.finish?.length === 0) attributeErrors.finish = 'Finish cannot be empty';
+
+                if (selectedValues?.type?.length === 0) attributeErrors.type = 'Type cannot be empty';
+                if (selectedValues?.size?.length === 0) attributeErrors.size = 'Size cannot be empty';
+                if (selectedValues?.stoneColor?.length === 0) attributeErrors.stoneColor = 'Stone color cannot be empty';
+
+                setCreateLoading(false);
+
+                setAttributeError(attributeErrors);
             }
 
-            if (selectedValues?.style?.length === 0) {
-                AttributesErrors.style = 'Style cannot be empty';
-            }
+            const variantErrors = variants?.map((variant) => {
+                const errors = {};
+                if (!variant.sku) errors.sku = 'SKU cannot be empty';
+                if (variant.quantity <= 0 || isNaN(variant.quantity)) errors.quantity = 'Quantity must be a valid number and greater than 0';
+                if (variant.regularPrice <= 0 || isNaN(variant.regularPrice)) errors.regularPrice = 'Regular Price must be a valid number and greater than 0';
+                if (!variant.stackMgmt) errors.stackMgmt = 'Check Stack Management';
+                setCreateLoading(false);
 
-            if (selectedValues?.finish?.length === 0) {
-                AttributesErrors.finish = 'finish cannot be empty';
-            }
-
-            setAttributeError(AttributesErrors);
-        }
-
-        if (variants?.length > 0) {
-            variants.forEach((variant, index) => {
-                console.log('✌️variant --->', variant);
-                let errors: any = {};
-
-                if (!variant.sku) {
-                    errors.sku = 'SKU cannot be empty';
-                }
-
-                if (variant.quantity <= 0) {
-                    errors.quantity = 'Quantity must be greater than 0';
-                } else if (isNaN(variant.quantity)) {
-                    errors.quantity = 'Quantity must be a number';
-                }
-
-                if (variant.regularPrice < 0) {
-                    errors.regularPrice = 'Regular Price cannot be negative';
-                } else if (variant.regularPrice == 0) {
-                    errors.regularPrice = 'Regular Price cannot be empty';
-                } else if (isNaN(variant.regularPrice)) {
-                    errors.regularPrice = 'Regular Price must be a number';
-                }
-
-                // if (variant.salePrice < 0) {
-                //     errors.salePrice = 'Sale price cannot be negative';
-                // } else if (isNaN(variant.salePrice)) {
-                //     errors.salePrice = 'Sale Price must be a number';
-                // } else if (variant.regularPrice < variant.salePrice) {
-                //     errors.salePrice = 'Sale price is greater than Regular price';
-                // }
-
-                if (!variant.stackMgmt) {
-                    errors.stackMgmt = 'Check Stack Management';
-                }
-
-                newVariantErrors[index] = errors;
+                return errors;
             });
 
-            setVariantErrors(newVariantErrors);
-        }
+            setVariantErrors(variantErrors);
+            if (variantErrors.some((err) => Object.keys(err).length > 0)) {
+                setCreateLoading(false);
 
-        try {
-            // const savedContent = await editorInstance.save();
-            // console.log('Editor content:', savedContent);
-            // setValue2(savedContent);
-            // console.log('✌️setValue2 --->', value2);
-
-            const catId = selectedCat?.value;
-            let collectionId: any = [];
-            if (selectedCollection?.length > 0) {
-                collectionId = selectedCollection.map((item: any) => item.value);
+                return; // Exit if any variant has errors
             }
 
-            // console.log('savedContent', savedContent);
-
-            // const formattedDescription = JSON.stringify(savedContent);
-
-            let tagId: any[] = [];
-            // if (selectedCollection?.length > 0) {
-            tagId = selectedTag?.map((item: any) => item.value);
+            const catId = selectedCat?.value;
+            const collectionId = selectedCollection?.map((item) => item.value) || [];
+            const tagId = selectedTag?.map((item) => item.value) || [];
 
             const { data } = await addFormData({
                 variables: {
@@ -537,7 +496,6 @@ const ProductAdd = () => {
                         category: catId,
                         collections: collectionId,
                         tags: tagId,
-                        // description: formattedDescription,
                         name: productName,
                         productType: 'UHJvZHVjdFR5cGU6Mg==',
                         seo: {
@@ -546,32 +504,34 @@ const ProductAdd = () => {
                         },
                         slug: slug,
                         ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
-                        ...(selectedValues && selectedValues.design && selectedValues.design.length > 0 && { prouctDesign: selectedValues.design }),
-                        ...(selectedValues && selectedValues.style && selectedValues.style.length > 0 && { productstyle: selectedValues.style }),
-                        ...(selectedValues && selectedValues.finish && selectedValues.finish.length > 0 && { productFinish: selectedValues.finish }),
-                        ...(selectedValues && selectedValues.stone && selectedValues.stone.length > 0 && { productStoneType: selectedValues.stone }),
-                        // ------------------------New --------------------------------
-                        ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productItemtype: selectedValues.type }),
-                        ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSize: selectedValues.size }),
-                        ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStonecolor: selectedValues.stoneColor }),
+                        ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
+                        ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
+                        ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
+                        ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
+                        ...(selectedValues && selectedValues.type && { productItemtype: selectedValues.type }),
+                        ...(selectedValues && selectedValues.size && { productSize: selectedValues.size }),
+                        ...(selectedValues && selectedValues.stoneColor && { productStonecolor: selectedValues.stoneColor }),
                     },
                 },
             });
 
             if (data?.productCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productCreate?.errors[0]?.message);
+                setCreateLoading(false);
+
+                Failure(data?.productCreate?.errors[0]?.message);
+                console.log('Error: ', data?.productCreate?.errors[0]?.message);
             } else {
                 const productId = data?.productCreate?.product?.id;
                 productChannelListUpdate(productId);
                 if (images?.length > 0) {
-                    images?.map((item: any) => {
-                        const imageUpload = uploadImage(productId, item);
-                        console.log('imageUpload: ', imageUpload);
+                    images.forEach(async (item) => {
+                        const imageUpload = await uploadImage(productId, item);
+                        console.log('Image upload: ', imageUpload);
                     });
                 }
             }
         } catch (error) {
-            console.log('error: ', error);
+            console.log('Error: ', error);
         }
     };
 
@@ -596,7 +556,10 @@ const ProductAdd = () => {
                 // variables: { email: formData.email, password: formData.password },
             });
             if (data?.productChannelListingUpdate?.errors?.length > 0) {
+                setCreateLoading(false);
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+                Failure(data?.productChannelListingUpdate?.errors[0]?.message);
+                deleteProduct(productId);
             } else {
                 variantListUpdate(productId);
             }
@@ -634,35 +597,32 @@ const ProductAdd = () => {
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
-            if (data?.productVariantCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+
+            if (data?.productVariantBulkCreate?.errors?.length > 0) {
+                setCreateLoading(false);
+                Failure(data?.productVariantBulkCreate?.errors[0]?.message);
+                deleteProduct(productId);
             } else {
-                if (data?.productVariantBulkCreate?.errors?.length > 0) {
-                    Failure(data?.productVariantBulkCreate?.errors[0]?.message);
-                } else {
-                    const resVariants = data?.productVariantBulkCreate?.productVariants;
-                    if (resVariants?.length > 0) {
-                        resVariants?.map((item: any) => {
-                            variantChannelListUpdate(productId, item.id);
-                        });
-                    }
+                const resVariants = data?.productVariantBulkCreate?.productVariants;
+                if (resVariants?.length > 0) {
+                    resVariants?.map((item: any) => {
+                        variantChannelListUpdate(productId, item.id);
+                    });
                 }
-                updateMetaData(productId);
             }
+            updateMetaData(productId);
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
     const variantChannelListUpdate = async (productId: any, variantId: any) => {
-        console.log('variantChannelListUpdate: ');
         try {
             const variantArr = variants?.map((item) => ({
                 channelId: 'Q2hhbm5lbDoy',
                 price: item.regularPrice,
                 costPrice: item.regularPrice,
             }));
-            console.log('variantArr: ', variantArr);
 
             const { data } = await updateVariantList({
                 variables: {
@@ -672,7 +632,9 @@ const ProductAdd = () => {
                 // variables: { email: formData.email, password: formData.password },
             });
             if (data?.productVariantChannelListingUpdate?.errors?.length > 0) {
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+                setCreateLoading(false);
+                Failure(data?.productVariantChannelListingUpdate?.errors[0]?.message);
+                deleteProduct(productId);
             } else {
             }
         } catch (error) {
@@ -681,30 +643,49 @@ const ProductAdd = () => {
     };
 
     const updateMetaData = async (productId: any) => {
-        console.log('label: ', label);
         try {
+            const input = [];
+            input.push({
+                key: 'short_descripton',
+                value: shortDescription,
+            });
+            input.push({
+                key: 'description',
+                value: description,
+            });
+            if (label?.value) {
+                input.push({
+                    key: 'label',
+                    value: label.value,
+                });
+            }
+
             const { data } = await updateMedatData({
                 variables: {
                     id: productId,
-                    input: [
-                        {
-                            key: 'short_descripton',
-                            value: shortDescription,
-                        },
-                        {
-                            key: 'label',
-                            value: label.value,
-                        },
-                        {
-                            key: 'description',
-                            value: description,
-                        },
-                    ],
+                    input,
+                    // input: [
+                    //     {
+                    //         key: 'short_descripton',
+                    //         value: shortDescription,
+                    //     },
+                    //     {
+                    //         key: 'label',
+                    //         value: label.value,
+                    //     },
+                    //     {
+                    //         key: 'description',
+                    //         value: description,
+                    //     },
+                    // ],
                     keysToDelete: [],
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
             if (data?.updateMetadata?.errors?.length > 0) {
+                setCreateLoading(false);
+                Failure(data?.updateMetadata?.errors[0]?.message);
+                deleteProduct(productId);
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
                 // if (selectedTag?.length > 0) {
@@ -715,8 +696,17 @@ const ProductAdd = () => {
                 router.push(`/apps/product/edit?id=${productId}`);
             }
         } catch (error) {
+            setCreateLoading(false);
             console.log('error: ', error);
         }
+    };
+
+    const deleteProduct = (productId: any) => {
+        const { data }: any = deleteProducts({
+            variables: {
+                ids: [productId],
+            },
+        });
     };
 
     // const assignsTagToProduct = async (productId: any) => {
@@ -1558,7 +1548,7 @@ const ProductAdd = () => {
                             ) : null} */}
 
                             <button type="submit" className="btn btn-primary w-full" onClick={() => CreateProduct()}>
-                                Create
+                                {createLoading ? <IconLoader /> : 'Create'}
                             </button>
                         </div>
 

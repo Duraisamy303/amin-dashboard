@@ -62,8 +62,9 @@ import {
     UPDATE_VARIANT,
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
-import { Failure, Success, getValueByKey, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
+import { Failure, Success, getValueByKey, objIsEmpty, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import IconLoader from '@/components/Icon/IconLoader';
 const ProductEdit = (props: any) => {
     const router = useRouter();
 
@@ -234,6 +235,7 @@ const ProductEdit = (props: any) => {
     const [dropdowndata, setDropdownData] = useState<any>([]);
     const [dropIndex, setDropIndex] = useState<any>(null);
     const [descriptionContent, setDescriptionContent] = useState<any>('');
+    const [updateLoading, setUpdateLoading] = useState(false);
 
     const [variants, setVariants] = useState([
         {
@@ -390,7 +392,7 @@ const ProductEdit = (props: any) => {
                     const arr = [];
                     const type: any[] = [];
                     let selectedAccValue: any = {};
-                    
+
                     const attributes = [
                         { key: 'prouctDesign', type: 'design', name: 'designName', dropdowndataKey: 'design' },
                         { key: 'productstyle', type: 'style', name: 'styleName', dropdowndataKey: 'style' },
@@ -481,7 +483,6 @@ const ProductEdit = (props: any) => {
                     // }
 
                     // const selectedAccValue: any = {};
-                    
 
                     setAccordions(arr.flat());
                     setSelectedArr(type);
@@ -769,150 +770,130 @@ const ProductEdit = (props: any) => {
     };
 
     const updateProducts = async () => {
-        setProductNameErrMsg('');
-        setSlugErrMsg('');
-        setSeoTittleErrMsg('');
-        setSeoDescErrMsg('');
-        setShortDesErrMsg('');
-        setSkuErrMsg('');
-        setSalePriceErrMsg('');
-        setCategoryErrMsg('');
-        setAttributeError('');
-        setVariantErrors([]);
-
-        let AttributesErrors: any = {};
-        let newVariantErrors: any = [];
-        let hasError = false; // Variable to track validation errors
-
-        // Validate the product name and slug
-        if (productName.trim() === '') {
-            setProductNameErrMsg('Product name cannot be empty');
-            hasError = true;
-        }
-
-        if (slug?.trim() === '') {
-            setSlugErrMsg('Slug cannot be empty');
-            hasError = true;
-        }
-        if (seoTittle?.trim() === '') {
-            setSeoTittleErrMsg('Seo title cannot be empty');
-            hasError = true;
-        }
-        if (seoDesc?.trim() === '') {
-            setSeoDescErrMsg('Seo description cannot be empty');
-            hasError = true;
-        }
-        if (shortDescription?.trim() === '') {
-            setShortDesErrMsg('Short description cannot be empty');
-            hasError = true;
-        }
-        if (selectedCat == '') {
-            setCategoryErrMsg('Category cannot be empty');
-            hasError = true;
-        }
-        if (!selectedValues || Object.keys(selectedValues).length === 0) {
-            setAttributeError('');
-        } else {
-            if (selectedValues?.stone?.length === 0) {
-                AttributesErrors.stone = 'Stone cannot be empty';
-                hasError = true;
-            }
-
-            if (selectedValues?.design?.length === 0) {
-                AttributesErrors.design = 'Design cannot be empty';
-                hasError = true;
-            }
-
-            if (selectedValues?.style?.length === 0) {
-                AttributesErrors.style = 'Style cannot be empty';
-                hasError = true;
-            }
-
-            if (selectedValues?.finish?.length === 0) {
-                AttributesErrors.finish = 'Finish cannot be empty';
-                hasError = true;
-            }
-
-            setAttributeError(AttributesErrors);
-        }
-        if (variants?.length > 0) {
-            variants.forEach((variant, index) => {
-                let errors: any = {};
-
-                if (!variant.sku) {
-                    errors.sku = 'SKU cannot be empty';
-                    hasError = true;
-                }
-
-                if (variant.quantity <= 0) {
-                    errors.quantity = 'Quantity must be greater than 0';
-                    hasError = true;
-                } else if (isNaN(variant.quantity)) {
-                    errors.quantity = 'Quantity must be a number';
-                    hasError = true;
-                }
-
-                if (variant.regularPrice < 0) {
-                    errors.regularPrice = 'Regular Price cannot be negative';
-                    hasError = true;
-                } else if (variant.regularPrice == 0) {
-                    errors.regularPrice = 'Regular Price cannot be empty';
-                    hasError = true;
-                } else if (isNaN(variant.regularPrice)) {
-                    errors.regularPrice = 'Regular Price must be a number';
-                    hasError = true;
-                }
-
-                // if (variant.salePrice < 0) {
-                //     errors.salePrice = 'Sale Price cannot be negative';
-                //     hasError = true;
-                // } else if (isNaN(variant.salePrice)) {
-                //     errors.salePrice = 'Sale Price must be a number';
-                //     hasError = true;
-                // } else if (variant.regularPrice < variant.salePrice) {
-                //     errors.salePrice = 'Sale price is greater than Regular price';
-                //     hasError = true;
-                // }
-
-                if (!variant.stackMgmt) {
-                    errors.stackMgmt = 'Check Stack Management';
-                    hasError = true;
-                }
-
-                newVariantErrors[index] = errors;
-            });
-
-            setVariantErrors(newVariantErrors);
-        }
-
-        // If there are any errors, do not proceed with the update
-        // if (hasError) {
-        //     return;
-        // }
-
-        // if (editorInstance) {
+        console.log('updateProducts: ');
         try {
-            // const savedContent = await editorInstance.save();
-            // console.log('Editor content:', savedContent);
+            setUpdateLoading(true);
 
-            // console.log('selectedCat: ', selectedCat);
+            // Reset error messages
+            const resetErrors = () => {
+                setProductNameErrMsg('');
+                setSlugErrMsg('');
+                setSeoTittleErrMsg('');
+                setSeoDescErrMsg('');
+                setShortDesErrMsg('');
+                setCategoryErrMsg('');
+                setAttributeError('');
+                setVariantErrors([]);
+            };
 
-            // console.log('selectedCollection: ', selectedCollection);
-            let tagId = selectedTag?.map((item: any) => item.value) || [];
+            resetErrors();
 
-            // const formattedDescription = JSON.stringify(savedContent);
-            // console.log('✌️formattedDescription --->', formattedDescription);
+            let hasError = false;
+            let AttributesErrors: any = {};
+
+            let newVariantErrors: any = [];
+
+            // Validation
+            const validateField = (value, setError, message) => {
+                if (value.trim() === '') {
+                    setError(message);
+                    hasError = true;
+                }
+            };
+
+            validateField(productName, setProductNameErrMsg, 'Product name cannot be empty');
+            validateField(slug, setSlugErrMsg, 'Slug cannot be empty');
+            validateField(seoTittle, setSeoTittleErrMsg, 'Seo title cannot be empty');
+            validateField(seoDesc, setSeoDescErrMsg, 'Seo description cannot be empty');
+            validateField(shortDescription, setShortDesErrMsg, 'Short description cannot be empty');
+            if (selectedCat === '') {
+                setCategoryErrMsg('Category cannot be empty');
+                hasError = true;
+            }
+
             console.log('selectedValues: ', selectedValues);
 
+            // if (!objIsEmpty(selectedValues)) {
+            //     if (selectedValues?.stone?.length > 0) {
+            //         AttributesErrors.stone = 'Stone cannot be empty';
+            //         hasError = true;
+            //     }
+            //     if (selectedValues?.design?.length > 0) {
+            //         AttributesErrors.design = 'Design cannot be empty';
+            //         hasError = true;
+            //     }
+            //     if (selectedValues?.style?.length > 0) {
+            //         AttributesErrors.style = 'Style cannot be empty';
+            //         hasError = true;
+            //     }
+            //     if (selectedValues?.finish?.length > 0) {
+            //         AttributesErrors.finish = 'Finish cannot be empty';
+            //         hasError = true;
+            //     }
+
+            //     if (selectedValues?.type?.length > 0) {
+            //         AttributesErrors.type = 'Type cannot be empty';
+            //         hasError = true;
+            //     }
+
+            //     if (selectedValues?.size?.length > 0) {
+            //         AttributesErrors.size = 'Size cannot be empty';
+            //         hasError = true;
+            //     }
+
+            //     if (selectedValues?.stoneColor?.length === 0) {
+            //         AttributesErrors.stoneColor = 'Stone color cannot be empty';
+            //         hasError = true;
+            //     }
+
+            //     setAttributeError(AttributesErrors);
+            // }
+
+            if (variants && variants.length > 0) {
+                variants.forEach((variant, index) => {
+                    let errors: any = {};
+
+                    if (!variant.sku) {
+                        errors.sku = 'SKU cannot be empty';
+                        hasError = true;
+                    }
+                    if (variant.quantity <= 0 || isNaN(variant.quantity)) {
+                        errors.quantity = 'Quantity must be a valid number and greater than 0';
+                        hasError = true;
+                    }
+                    if (variant.regularPrice <= 0 || isNaN(variant.regularPrice)) {
+                        errors.regularPrice = 'Regular Price must be a valid number and greater than 0';
+                        hasError = true;
+                    }
+                    if (!variant.stackMgmt) {
+                        errors.stackMgmt = 'Check Stack Management';
+                        hasError = true;
+                    }
+
+                    newVariantErrors[index] = errors;
+                });
+                setVariantErrors(newVariantErrors);
+            }
+
+            // If there are any errors, do not proceed with the update
+            if (hasError) {
+                setUpdateLoading(false);
+                return;
+            }
+
+            console.log('hasError: ', hasError);
+            console.log('AttributesErrors: ', AttributesErrors);
+            console.log('newVariantErrors: ', newVariantErrors);
+
+            const tagId = selectedTag?.map((item) => item.value) || [];
             const { data } = await updateProduct({
                 variables: {
                     id: id,
                     input: {
                         attributes: [],
                         category: selectedCat?.value,
-                        collections: selectedCollection.map((item: any) => item.value),
+                        collections: selectedCollection.map((item) => item.value),
                         tags: tagId,
-                        // description: formattedDescription,
                         name: productName,
                         rating: 0,
                         seo: {
@@ -925,25 +906,29 @@ const ProductEdit = (props: any) => {
                         ...(selectedValues && selectedValues.style && { productstyle: selectedValues.style }),
                         ...(selectedValues && selectedValues.finish && { productFinish: selectedValues.finish }),
                         ...(selectedValues && selectedValues.stone && { productStoneType: selectedValues.stone }),
-
-                        ...(selectedValues && selectedValues.type && selectedValues.type.length > 0 && { productItemtype: selectedValues.type }),
-                        ...(selectedValues && selectedValues.size && selectedValues.size.length > 0 && { productSize: selectedValues.size }),
-                        ...(selectedValues && selectedValues.stoneColor && selectedValues.stoneColor.length > 0 && { productStonecolor: selectedValues.stoneColor }),
+                        ...(selectedValues && selectedValues.type && { productItemtype: selectedValues.type }),
+                        ...(selectedValues && selectedValues.size && { productSize: selectedValues.size }),
+                        ...(selectedValues && selectedValues.stoneColor && { productStonecolor: selectedValues.stoneColor }),
                     },
                     firstValues: 10,
                 },
             });
 
             if (data?.productUpdate?.errors?.length > 0) {
+                Failure(data?.productUpdate?.errors[0]?.message);
+                setUpdateLoading(false);
                 console.log('Error updating product');
             } else {
                 productChannelListUpdate();
                 console.log('Product update successful:', data);
             }
         } catch (error) {
-            console.error('Failed to save editor content:', error);
+            setUpdateLoading(false);
+
+            console.error('Failed to update product:', error);
+        } finally {
+            setUpdateLoading(false);
         }
-        // }
     };
 
     const productChannelListUpdate = async () => {
@@ -967,16 +952,19 @@ const ProductEdit = (props: any) => {
                 // variables: { email: formData.email, password: formData.password },
             });
             if (data?.productChannelListingUpdate?.errors?.length > 0) {
+                setUpdateLoading(false);
+                Failure(data?.productChannelListingUpdate?.errors[0]?.message);
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
                 console.log('productChannelListUpdate: ', data);
-
                 // variantCreate(productId);
                 console.log('productChannelListUpdate end');
                 variantListUpdate();
                 console.log('variantListUpdate start');
             }
         } catch (error) {
+            setUpdateLoading(false);
+
             console.log('error: ', error);
         }
     };
@@ -1015,57 +1003,108 @@ const ProductEdit = (props: any) => {
 
             if (NewAddedVariant?.length > 0) {
                 bulkVariantCreate(NewAddedVariant);
-            }
-
-            const { data } = await updateVariant({
-                variables: {
-                    product: id,
-                    input: updateArr,
-                    errorPolicy: 'REJECT_FAILED_ROWS',
-                },
-            });
-
-            if (data?.productVariantUpdate?.errors?.length > 0) {
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
-                updateMetaData();
+                const { data } = await updateVariant({
+                    variables: {
+                        product: id,
+                        input: updateArr,
+                        errorPolicy: 'REJECT_FAILED_ROWS',
+                    },
+                });
+
+                if (data?.productVariantBulkUpdate?.errors?.length > 0) {
+                    console.log(' if: ');
+                    setUpdateLoading(false);
+                    Failure(data?.productVariantBulkUpdate?.errors[0]?.message);
+                } else {
+                    console.log('else: ');
+                    const results = data?.productVariantBulkUpdate?.results || [];
+
+                    if (results.length > 0) {
+                        console.log('data?.productVariantBulkUpdate?.results:', results);
+
+                        // Find the first result with errors
+                        const firstErrorResult = results.find((result) => result.errors?.length > 0);
+
+                        if (firstErrorResult) {
+                            const errorMessage = firstErrorResult.errors[0]?.message;
+                            if (errorMessage) {
+                                Failure(errorMessage);
+                            }
+                        } else {
+                            console.log('No errors found in results.');
+                            if (NewAddedVariant?.length === 0) {
+                                updateMetaData();
+                            }
+                        }
+                    } else {
+                        console.log('No results found.');
+                        if (NewAddedVariant?.length === 0) {
+                            updateMetaData();
+                        }
+                    }
+                }
             }
         } catch (error) {
+            setUpdateLoading(false);
+
             console.log('error: ', error);
         }
     };
 
     const updateMetaData = async () => {
         try {
+            const input = [];
+            input.push({
+                key: 'short_descripton',
+                value: shortDescription,
+            });
+            input.push({
+                key: 'description',
+                value: description,
+            });
+            if (label?.value) {
+                input.push({
+                    key: 'label',
+                    value: label.value,
+                });
+            }
             const { data } = await updateMedatData({
                 variables: {
                     id: id,
-                    input: [
-                        {
-                            key: 'short_descripton',
-                            value: shortDescription,
-                        },
-                        {
-                            key: 'label',
-                            value: label.value,
-                        },
-                        {
-                            key: 'description',
-                            value: description,
-                        },
-                    ],
+                    input,
+                    // input: [
+                    //     {
+                    //         key: 'short_descripton',
+                    //         value: shortDescription,
+                    //     },
+                    //     {
+                    //         key: 'label',
+                    //         value: label.value,
+                    //     },
+                    //     {
+                    //         key: 'description',
+                    //         value: description,
+                    //     },
+                    // ],
                     keysToDelete: [],
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
             if (data?.updateMetadata?.errors?.length > 0) {
+                setUpdateLoading(false);
+                Failure(data?.updateMetadata?.errors[0]?.message);
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
                 Success('Product updated successfully');
                 productDataRefetch();
+                setUpdateLoading(false);
+
                 // assignsTagToProduct();
             }
         } catch (error) {
+            setUpdateLoading(false);
+
             console.log('error: ', error);
         }
     };
@@ -1099,21 +1138,23 @@ const ProductEdit = (props: any) => {
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
-            if (data?.productVariantCreate?.errors?.length > 0) {
+            console.log('data: ', data);
+
+            if (data?.productVariantBulkCreate?.errors?.length > 0) {
+                setUpdateLoading(false);
+                Failure(data?.productVariantBulkCreate?.errors[0]?.message);
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
-                if (data?.productVariantBulkCreate?.errors?.length > 0) {
-                    Failure(data?.productVariantBulkCreate?.errors[0]?.message);
-                } else {
-                    const resVariants = data?.productVariantBulkCreate?.productVariants;
-                    if (resVariants?.length > 0) {
-                        resVariants?.map((item: any) => {
-                            variantChannelListUpdate(item.id, NewAddedVariant);
-                        });
-                    }
+                const resVariants = data?.productVariantBulkCreate?.productVariants;
+                if (resVariants?.length > 0) {
+                    resVariants?.map((item: any) => {
+                        variantChannelListUpdate(item.id, NewAddedVariant);
+                    });
                 }
             }
         } catch (error) {
+            setUpdateLoading(false);
+
             console.log('error: ', error);
         }
     };
@@ -1136,10 +1177,15 @@ const ProductEdit = (props: any) => {
                 // variables: { email: formData.email, password: formData.password },
             });
             if (data?.productVariantChannelListingUpdate?.errors?.length > 0) {
+                setUpdateLoading(false);
+                Failure(data?.productVariantChannelListingUpdate?.errors[0]?.message);
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
+                updateMetaData();
             }
         } catch (error) {
+            setUpdateLoading(false);
+
             console.log('error: ', error);
         }
     };
@@ -1997,7 +2043,7 @@ const ProductEdit = (props: any) => {
                             ) : null} */}
 
                             <button type="submit" className="btn btn-primary w-full" onClick={() => updateProducts()}>
-                                Update
+                                {updateLoading ? <IconLoader /> : 'Update'}
                             </button>
                         </div>
 

@@ -232,6 +232,62 @@ export const duplicateUploadImage = async (productId, imageUrl) => {
     }
 };
 
+export const categoryImageUpload = async (categoryId, backgroundImageUrl) => {
+    try {
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+
+        formData.append(
+            'operations',
+            JSON.stringify({
+                operationName: 'CategoryUpdate',
+                variables: {
+                    id: categoryId,
+                    input: { backgroundImage: backgroundImageUrl },
+                },
+                query: `mutation CategoryUpdate($id: ID!, $input: CategoryInput!) {
+                categoryUpdate(id: $id, input: $input) {
+                    category {
+                        id
+                        backgroundImage {
+                            alt
+                            url
+                        }
+                        name
+                        slug
+                        description
+                        seoDescription
+                        seoTitle
+                        parent {
+                            id
+                        }
+                    }
+                    errors {
+                        code
+                        field
+                        message
+                    }
+                }
+            }`,
+            })
+        );
+
+        const response = await fetch('https://file.prade.in/graphql/', {
+            method: 'POST',
+            headers: {
+                Authorization: `JWT ${token}`,
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+        throw error; // Rethrow the error to be handled by the caller
+    }
+};
+
 export const getValueByKey = (metadata: any[], key: string) => {
     const item = metadata.find((item) => item.key === key);
     return item ? item.value : null;
@@ -273,7 +329,7 @@ export const billingAddress = {
     city: '',
     state: '',
     country: '',
-    email: '',
+    // email: '',
     phone: '',
     paymentMethod: '',
     transactionId: '',
@@ -290,7 +346,7 @@ export const shippingAddress = {
     city: '',
     state: '',
     country: '',
-    email: '',
+    // email: '',
     phone: '',
     paymentMethod: '',
     transactionId: '',

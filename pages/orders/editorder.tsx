@@ -1946,7 +1946,7 @@ const Editorder = () => {
                                         <button type="submit" className="btn btn-primary" onClick={() => payslipSend()}>
                                             {sendPayslipLoading ? <IconLoader /> : 'Send'}
                                         </button>
-                                        <button type="submit" className="btn btn-outline-primary" onClick={() => router.push('http://file.prade.in/' + orderData?.metadata[2]?.value)}>
+                                        <button type="submit" className="btn btn-outline-primary" onClick={() => window.open('http://file.prade.in'+orderData?.metadata[2]?.value, '_blank')}>
                                             <IconDownload />
                                         </button>
                                     </div>
@@ -1985,7 +1985,7 @@ const Editorder = () => {
                                         <button type="submit" className="btn btn-primary" onClick={() => invoiceSend()}>
                                             {invoiceSendLoading ? <IconLoader /> : 'Send'}
                                         </button>
-                                        <button type="submit" className="btn btn-outline-primary" onClick={() => router.push(orderData?.invoices[0]?.url)}>
+                                        <button type="submit" className="btn btn-outline-primary" onClick={() => window.open(orderData?.invoices[0]?.url, '_blank')}>
                                             <IconDownload />
                                         </button>
                                     </div>

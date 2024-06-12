@@ -64,11 +64,11 @@ export const AddressValidation = (state: any) => {
         newBillingErrMsg.phone = 'invalid phone number';
     }
 
-    if (!state?.billingAddress?.email) {
-        newBillingErrMsg.email = 'Required this field';
-    } else if (!emailRegex.test(state.billingAddress.email)) {
-        newBillingErrMsg.email = 'invalid email';
-    }
+    // if (!state?.billingAddress?.email) {
+    //     newBillingErrMsg.email = 'Required this field';
+    // } else if (!emailRegex.test(state.billingAddress.email)) {
+    //     newBillingErrMsg.email = 'invalid email';
+    // }
 
     if (!state?.shippingAddress?.pincode) {
         newShippingErrMsg.pincode = 'Required this field';
@@ -82,11 +82,11 @@ export const AddressValidation = (state: any) => {
         newShippingErrMsg.phone = 'invalid phone number';
     }
 
-    if (!state?.shippingAddress?.email) {
-        newShippingErrMsg.email = 'Required this field';
-    } else if (!emailRegex.test(state.shippingAddress.email)) {
-        newShippingErrMsg.email = 'invalid email';
-    }
+    // if (!state?.shippingAddress?.email) {
+    //     newShippingErrMsg.email = 'Required this field';
+    // } else if (!emailRegex.test(state.shippingAddress.email)) {
+    //     newShippingErrMsg.email = 'invalid email';
+    // }
     console.log('newshippingerror: ', newShippingErrMsg);
     return { billingAddress: newBillingErrMsg, shippingAddress: newShippingErrMsg };
 };

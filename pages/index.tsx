@@ -46,6 +46,7 @@ import IconLoader from '@/components/Icon/IconLoader';
 
 const ProductList = () => {
     const router = useRouter();
+
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const { error, data: productData } = useQuery(PRODUCT_LIST, {
@@ -64,8 +65,12 @@ const ProductList = () => {
     const [duplicateLoading, setDuplicateLoading] = useState(false);
 
     useEffect(() => {
-        getProductList();
-    }, [productData]);
+        if (router?.query?.category) {
+            OneCatProductList();
+        } else {
+            getProductList();
+        }
+    }, [router?.query, productData]);
 
     const getProductList = () => {
         setLoading(true);
@@ -195,6 +200,42 @@ const ProductList = () => {
     } = useQuery(CATEGORY_FILTER_LIST, {
         variables: { channel: 'india-channel', first: 100, categoryId: selectedCategory },
     });
+
+    const { data: CategoryProductList, refetch: CategoryProductListRefetch } = useQuery(CATEGORY_FILTER_LIST, {
+        variables: { channel: 'india-channel', first: 100, categoryId: router?.query?.category },
+    });
+
+    const OneCatProductList = async () => {
+        try {
+            const res = await CategoryProductListRefetch();
+            console.log('OneCatProductList: ', res);
+            const products = res?.data?.products?.edges;
+            if (products?.length > 0) {
+                const newData = products?.map((item: any) => ({
+                    ...item.node,
+                    product: item?.node?.products?.totalCount,
+                    image: item?.node?.thumbnail?.url,
+                    categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
+                    date: item?.node?.updatedAt
+                        ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
+                        : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
+                    // price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                    price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
+                    status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
+                    sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
+                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
+                    // shipmentTracking: item?.node?.shipments?.length>0?item
+                }));
+
+                // const sorting: any = sortBy(newData, 'id');
+                setProductList(newData);
+                setLoading(false);
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+        setLoading(false);
+    };
 
     const CategoryFilterList = () => {
         // const getFilterCategoryList = FilterCategoryList?.products?.edges;
@@ -366,8 +407,7 @@ const ProductList = () => {
         }
     };
 
-    const duplicate = async (row:any) => {
-        console.log('row: ', row);
+    const duplicate = async (row: any) => {
         try {
             setLoading(true);
             setRowId(row.id);
@@ -377,7 +417,6 @@ const ProductList = () => {
                 id: row.id,
             });
             const response = res.data?.product;
-            console.log('response: ', response);
             setLoading(false);
 
             CreateDuplicateProduct(response);
@@ -501,7 +540,7 @@ const ProductList = () => {
         try {
             let variants = [];
             if (row.variants.length > 0) {
-                const variantArr = row.variants?.map((item:any, index:any) => ({
+                const variantArr = row.variants?.map((item: any, index: any) => ({
                     attributes: [],
                     sku: `${item.sku}-1`,
                     name: item.name,
@@ -545,7 +584,7 @@ const ProductList = () => {
         try {
             let metadata = [];
             if (row.metadata?.length > 0) {
-                metadata = row.metadata?.map((item:any) => ({ key: item.key, value: item.value }));
+                metadata = row.metadata?.map((item: any) => ({ key: item.key, value: item.value }));
             }
             const { data } = await updateMedatData({
                 variables: {
@@ -581,7 +620,7 @@ const ProductList = () => {
         },
     ];
 
-    return  (
+    return (
         <div>
             <div className="panel mt-6">
                 <div className="mb-10 flex flex-col gap-5 lg:mb-5 lg:flex-row lg:items-center">
@@ -692,12 +731,21 @@ const ProductList = () => {
                                 ),
                             },
 
-                            { accessor: 'sku', sortable: true,title:"SKU" },
+                            { accessor: 'sku', sortable: true, title: 'SKU' },
                             { accessor: 'status', sortable: true },
                             { accessor: 'price', sortable: true },
                             { accessor: 'categories', sortable: true },
-                            // { accessor: 'tags', sortable: true ,cellsStyle:{width:"100%",flexWrap:"wrap"}},
-                            { accessor: 'date', sortable: true },
+                            {
+                                accessor: 'tags',
+                                sortable: true,
+                                width: 200,
+
+                                render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '200px' }}>{row.tags}</div>,
+                            },
+                            { accessor: 'date', sortable: true, width: 160,
+                            render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '160px' }}>{row.date}</div>,
+                        
+                        },
                             {
                                 // Custom column for actions
                                 accessor: 'actions', // You can use any accessor name you want
