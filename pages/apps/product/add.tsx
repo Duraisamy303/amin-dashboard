@@ -828,7 +828,7 @@ const ProductAdd = () => {
     };
 
     const multiImgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile: any = event.target.files?.[0];
+        const selectedFile: any = event.target.files[0];
         const imageUrl = URL.createObjectURL(selectedFile);
         console.log('imageUrl: ', imageUrl);
 

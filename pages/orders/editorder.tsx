@@ -37,7 +37,21 @@ import moment from 'moment';
 import { Field, Form, Formik } from 'formik';
 import * as Yup from 'yup';
 import { useMutation } from '@apollo/client';
-import { Failure, NotesMsg, Success, addCommasToNumber, channels, formatCurrency, getCurrentDateTime, mintDateTime, profilePic, roundOff, sampleParams, showDeleteAlert } from '@/utils/functions';
+import {
+    Failure,
+    NotesMsg,
+    Success,
+    addCommasToNumber,
+    channels,
+    formatCurrency,
+    getCurrentDateTime,
+    mintDateTime,
+    objIsEmpty,
+    profilePic,
+    roundOff,
+    sampleParams,
+    showDeleteAlert,
+} from '@/utils/functions';
 import Swal from 'sweetalert2';
 import IconPencil from '@/components/Icon/IconPencil';
 import IconX from '@/components/Icon/IconX';
@@ -1747,6 +1761,17 @@ const Editorder = () => {
                                             </div>
                                         </div>
                                     </div>
+                                    {orderData?.totalCaptured?.amount !== 0 && (
+                                        <div className="mt-4 flex items-center justify-between font-semibold">
+                                            <div>Paid Amount</div>
+                                            <div>
+                                                <div className="pl-3 text-sm">
+                                                    {orderData?.totalCaptured?.currency == 'USD' ? '$' : '₹'}
+                                                    {roundOff(orderData?.totalCaptured?.amount)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1946,7 +1971,7 @@ const Editorder = () => {
                                         <button type="submit" className="btn btn-primary" onClick={() => payslipSend()}>
                                             {sendPayslipLoading ? <IconLoader /> : 'Send'}
                                         </button>
-                                        <button type="submit" className="btn btn-outline-primary" onClick={() => window.open('http://file.prade.in'+orderData?.metadata[2]?.value, '_blank')}>
+                                        <button type="submit" className="btn btn-outline-primary" onClick={() => window.open('http://file.prade.in' + orderData?.metadata[2]?.value, '_blank')}>
                                             <IconDownload />
                                         </button>
                                     </div>
