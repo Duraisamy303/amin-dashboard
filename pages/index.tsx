@@ -40,7 +40,7 @@ import {
     PRODUCT_FULL_DETAILS,
 } from '@/query/product';
 import moment from 'moment';
-import { Failure, Success, duplicateUploadImage, formatCurrency, roundOff, uploadImage } from '@/utils/functions';
+import { Failure, Success, duplicateUploadImage, formatCurrency, profilePic, roundOff, uploadImage } from '@/utils/functions';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
 import IconLoader from '@/components/Icon/IconLoader';
 
@@ -173,7 +173,9 @@ const ProductList = () => {
 
     useEffect(() => {
         const data = sortBy(initialRecords, sortStatus.columnAccessor);
-        setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
+        // setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
+        setInitialRecords(initialRecords);
+
     }, [sortStatus]);
 
     //    parent category list query
@@ -484,16 +486,17 @@ const ProductList = () => {
             });
 
             if (data?.productCreate?.errors?.length > 0) {
+                Failure(data?.productCreate?.errors[0]?.message);
                 console.log('error: ', data?.productCreate?.errors[0]?.message);
             } else {
                 const productId = data?.productCreate?.product?.id;
                 productChannelListUpdate(productId, row);
-                if (row?.media?.length > 0) {
-                    row?.media?.map((item: any) => {
-                        const imageUpload = duplicateUploadImage(productId, item.url);
-                        console.log('imageUpload: ', imageUpload);
-                    });
-                }
+                // if (row?.media?.length > 0) {
+                //     row?.media?.map((item: any) => {
+                //         const imageUpload = duplicateUploadImage(productId, item.url);
+                //         console.log('imageUpload: ', imageUpload);
+                //     });
+                // }
             }
             setLoading(false);
         } catch (error) {
@@ -525,6 +528,8 @@ const ProductList = () => {
             });
             if (data?.productChannelListingUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+                Failure(data?.productChannelListingUpdate?.errors[0]?.message);
+                deleteDuplicateProduct(productId);
             } else {
                 console.log('productChannelListUpdate: ', data);
 
@@ -569,10 +574,62 @@ const ProductList = () => {
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
-            if (data?.productVariantCreate?.errors?.length > 0) {
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
+            if (data?.productVariantBulkCreate?.errors?.length > 0) {
+                Failure(data?.productVariantBulkCreate?.errors[0]?.message);
+                deleteDuplicateProduct(productId);
             } else {
-                // const variantId = data?.productVariantCreate?.productVariant?.id;
+                const resVariants = data?.productVariantBulkCreate?.productVariants;
+                console.log('resVariants: ', resVariants);
+
+                // const varArr = row?.variants.forEach((variant) => {
+                //     variant.channelListings.forEach((channelListing) => {
+                //         if (channelListing.channel.name === 'India Channel') {
+                //             variantChannelListUpdate(channelListing, productId, variant.id, row);
+                //         }
+                //     });
+                // });
+                if (resVariants?.length > 0) {
+                    const mergedVariants = row?.variants.map((variant: any, index: number) => ({
+                        ...variant,
+                        variantId: resVariants[index]?.id || null,
+                    }));
+                    console.log('mergedVariants: ', mergedVariants);
+                    const varArr = mergedVariants.forEach((variant) => {
+                        variant.channelListings.forEach((channelListing) => {
+                            if (channelListing.channel.name === 'India Channel') {
+                                console.log('channelListing: ', channelListing);
+                                variantChannelListUpdate(channelListing?.price?.amount, productId, variant.variantId, row);
+                            }
+                        });
+                    });
+                } else {
+                    updateMetaData(productId, row);
+                }
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const variantChannelListUpdate = async ( price: any,productId: any, variantId: any, row: any) => {
+        try {
+            const { data } = await updateVariantList({
+                variables: {
+                    id: variantId,
+                    input: [
+                        {
+                            channelId: 'Q2hhbm5lbDoy',
+                            price: price,
+                            costPrice: price,
+                        },
+                    ],
+                },
+                // variables: { email: formData.email, password: formData.password },
+            });
+            if (data?.productVariantChannelListingUpdate?.errors?.length > 0) {
+                Failure(data?.productVariantChannelListingUpdate?.errors[0]?.message);
+                deleteDuplicateProduct(productId);
+            } else {
                 updateMetaData(productId, row);
             }
         } catch (error) {
@@ -595,6 +652,8 @@ const ProductList = () => {
                 // variables: { email: formData.email, password: formData.password },
             });
             if (data?.updateMetadata?.errors?.length > 0) {
+                Failure(data?.updateMetadata?.errors[0]?.message);
+                deleteDuplicateProduct(productId);
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
                 // if (selectedTag?.length > 0) {
@@ -604,6 +663,18 @@ const ProductList = () => {
                 router.push(`/apps/product/edit?id=${productId}`);
                 Success('Product created successfully');
             }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const deleteDuplicateProduct = async (productId: any) => {
+        try {
+            const { data }: any = deleteProducts({
+                variables: {
+                    ids: [productId],
+                },
+            });
         } catch (error) {
             console.log('error: ', error);
         }
@@ -742,10 +813,12 @@ const ProductList = () => {
 
                                 render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '200px' }}>{row.tags}</div>,
                             },
-                            { accessor: 'date', sortable: true, width: 160,
-                            render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '160px' }}>{row.date}</div>,
-                        
-                        },
+                            {
+                                accessor: 'date',
+                                sortable: true,
+                                width: 160,
+                                render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '160px' }}>{row.date}</div>,
+                            },
                             {
                                 // Custom column for actions
                                 accessor: 'actions', // You can use any accessor name you want

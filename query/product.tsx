@@ -287,6 +287,28 @@ export const CREATE_TAG = gql`
     }
 `;
 
+export const UPDATE_TAG = gql`
+    mutation Tag_Update($id: ID!, $input: TagInput!) {
+        tagUpdate(id: $id, input: $input) {
+            tag {
+                id
+                name
+                slug
+            }
+        }
+    }
+`;
+
+export const DELETE_TAG = gql`
+    mutation Tag_Delete($id: ID!) {
+        tagDelete(id: $id) {
+            errors {
+                message
+            }
+        }
+    }
+`;
+
 export const DELETE_CATEGORY = gql`
     mutation deleteCategory($id: ID!) {
         categoryDelete(id: $id) {
@@ -14371,6 +14393,10 @@ export const CATEGORY_FILTER_LIST = gql`
             edges {
                 node {
                     ...ProductListItem
+                    tags {
+                        name
+                        id
+                    }
                     __typename
                 }
                 cursor

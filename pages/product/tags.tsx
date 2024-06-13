@@ -22,10 +22,11 @@ import * as Yup from 'yup';
 import Swal from 'sweetalert2';
 import IconEye from '@/components/Icon/IconEye';
 import { useMutation, useQuery } from '@apollo/client';
-import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY, PRODUCT_LIST_TAGS, CREATE_TAG } from '@/query/product';
+import { CATEGORY_LIST, CREATE_CATEGORY, DELETE_CATEGORY, PRODUCT_LIST, UPDATE_CATEGORY, PRODUCT_LIST_TAGS, CREATE_TAG, UPDATE_TAG, DELETE_TAG } from '@/query/product';
 import ReactQuill from 'react-quill';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
 import { Success } from '@/utils/functions';
+import IconLoader from '@/components/Icon/IconLoader';
 
 const Tags = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -97,9 +98,9 @@ const Tags = () => {
 
     //Mutation
     const [addTag] = useMutation(CREATE_TAG);
-    const [updateTag] = useMutation(UPDATE_CATEGORY);
-    const [deleteCategory] = useMutation(DELETE_CATEGORY);
-    const [bulkDelete] = useMutation(DELETE_CATEGORY);
+    const [updateTag] = useMutation(UPDATE_TAG);
+    const [deleteCategory] = useMutation(DELETE_TAG);
+    const [bulkDelete] = useMutation(DELETE_TAG);
 
     console.log('tagList: ', tagList);
     useEffect(() => {
@@ -136,57 +137,28 @@ const Tags = () => {
     // FORM VALIDATION
     const SubmittedForm = Yup.object().shape({
         name: Yup.string().required('Please fill the Name'),
-        // description: Yup.string().required('Please fill the Description'),
-        // slug: Yup.string().required('Please fill the Slug'),
-        // count: Yup.string().required('Please fill the count'),
-        // image: Yup.string().required('Please fill the Image'),
-        // parentCategory: Yup.string().required('Please fill the Parent Category'),
     });
 
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
         console.log('record: ', record);
         try {
+            setLoading(true);
             const variables = {
                 input: {
                     name: record.name,
                 },
             };
 
-            const { data } = await addTag({ variables });
-
-            // const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
-            // console.log('newData: ', newData);
-            // if (!newData) {
-            //     console.error('Error: New data is undefined.');
-            //     return;
-            // }
-
-            // const jsonObject = JSON.parse(newData.description || newData.description);
-            // // Extract the text value
-            // const textValue = jsonObject?.blocks[0]?.data?.text;
-
-            // const finalData = {
-            //     ...newData,
-            //     textdescription: textValue || '',
-            // };
-
-            // const updatedId = finalData.id;
-            // const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
-
-            // const updatedDesignList: any = [...recordsData];
-            // if (index !== -1) {
-            //     updatedDesignList[index] = finalData;
-            // } else {
-            //     updatedDesignList.push(finalData);
-            // }
-            // console.log('updatedDesignList', updatedDesignList);
-            // setRecordsData(updatedDesignList);
+            const { data } = await (modalTitle ? updateTag({ variables: { ...variables, id: modalContant.id } }) : addTag({ variables }));
             Success('Tag created successfully');
-            tagListRefetch();
+            await tagListRefetch();
             setModal1(false);
             resetForm();
+            setLoading(false);
         } catch (error) {
+            setLoading(false);
+
             console.log('error: ', error);
         }
     };
@@ -240,11 +212,10 @@ const Tags = () => {
                 }
             });
     };
-    console.log('mordelContentt', modalContant);
 
     const BulkDeleteCategory = async () => {
         showDeleteAlert(
-            () => {
+            async () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
@@ -252,10 +223,12 @@ const Tags = () => {
                 selectedRecords?.map(async (item: any) => {
                     await bulkDelete({ variables: { id: item.id } });
                 });
+                Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
                 const updatedRecordsData = tagList.filter((record) => !selectedRecords.includes(record));
                 setTagList(updatedRecordsData);
+                await tagListRefetch();
                 setSelectedRecords([]);
-                Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
+
             },
             () => {
                 Swal.fire('Cancelled', 'Your List is safe :)', 'error');
@@ -267,30 +240,19 @@ const Tags = () => {
         showDeleteAlert(
             async () => {
                 const { data } = await deleteCategory({ variables: { id: record.id } });
+                Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
                 const updatedRecordsData = tagList.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
                 setTagList(updatedRecordsData);
-                // getCategoryList()
                 setSelectedRecords([]);
-                // setCategoryList(finishList)
-                Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
+                await tagListRefetch();
             },
             () => {
-                Swal.fire('Cancelled', 'Your Finish List is safe :)', 'error');
+                Swal.fire('Cancelled', 'Your Tag List is safe :)', 'error');
             }
         );
     };
 
-    // completed category delete option
-    // if (productItem?.description || productItem?.node?.description) {
-    //     const jsonObject = JSON.parse(
-    //       productItem?.description || productItem?.node?.description
-    //     );
-    //     // Extract the text value
-    //     textValue = jsonObject?.blocks[0]?.data?.text;
-    //   }
-
-    console.log('recordsData', recordsData);
     return (
         <div>
             <div className="panel mt-6">
@@ -326,49 +288,29 @@ const Tags = () => {
                         </button>
                     </div>
                 </div>
-                {loading ? (
-                    <Loader />
-                ) : (
+             
                     <div className="datatables">
                         <DataTable
                             className="table-hover whitespace-nowrap"
                             records={recordsData}
                             columns={[
-                                // { accessor: 'id', sortable: true },
-                                // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                                 { accessor: 'name', sortable: true },
-                                // {
-                                //     accessor: 'textdescription',
-                                //     sortable: true,
-                                //     title: 'Description',
-                                // },
-                                // {
-                                //     accessor: 'product',
-                                //     sortable: true,
-                                // },
 
                                 {
-                                    // Custom column for actions
                                     accessor: 'actions', // You can use any accessor name you want
                                     title: 'Actions',
-                                    // Render method for custom column
                                     render: (row: any) => (
                                         <>
-                                            {/* <Tippy content="View">
-                                            <button type="button" onClick={() => ViewCategory(row)}>
-                                                <IconEye className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy> */}
-                                            {/* <Tippy content="Edit">
+                                            <Tippy content="Edit">
                                                 <button type="button" onClick={() => EditCategory(row)}>
                                                     <IconPencil className="ltr:mr-2 rtl:ml-2" />
                                                 </button>
-                                            </Tippy> */}
-                                            {/* <Tippy content="Delete">
+                                            </Tippy>
+                                            <Tippy content="Delete">
                                                 <button type="button" onClick={() => DeleteCategory(row)}>
                                                     <IconTrashLines />
                                                 </button>
-                                            </Tippy> */}
+                                            </Tippy>
                                         </>
                                     ),
                                 },
@@ -390,7 +332,6 @@ const Tags = () => {
                             paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
                         />
                     </div>
-                )}
             </div>
 
             {/* CREATE AND EDIT Tags FORM */}
@@ -424,10 +365,6 @@ const Tags = () => {
                                                     ? { name: '' }
                                                     : {
                                                           name: modalContant?.name,
-
-                                                          //   count: modalContant?.count,
-                                                          //   image: modalContant?.image,
-                                                          //   parentCategory: modalContant?.name,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
@@ -437,91 +374,15 @@ const Tags = () => {
                                         >
                                             {({ errors, submitCount, touched, setFieldValue, values }: any) => (
                                                 <Form className="space-y-5">
-                                                    {/* <div className={submitCount ? (errors.image ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="image">Image</label>
-                                                        <input
-                                                            id="image"
-                                                            name="image"
-                                                            type="file"
-                                                            onChange={(event: any) => {
-                                                                setFieldValue('image', event.currentTarget.files[0]);
-                                                            }}
-                                                            className="form-input"
-                                                        />
-                                                        {values.image && typeof values.image === 'string' && (
-                                                            <img src={values.image} alt="Product Image" style={{ width: '30px', height: 'auto', paddingTop: '5px' }} />
-                                                        )}
-                                                        {submitCount ? errors.image ? <div className="mt-1 text-danger">{errors.image}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div> */}
-
                                                     <div className={submitCount ? (errors.name ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="fullName">Name </label>
                                                         <Field name="name" type="text" id="fullName" placeholder="Enter Name" className="form-input" />
 
                                                         {submitCount ? errors.name ? <div className="mt-1 text-danger">{errors.name}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div>
-                                                    {/* <div className="mb-5">
-                                                        <label htmlFor="description">Description</label>
-
-                                                        <textarea
-                                                            id="description"
-                                                            rows={3}
-                                                            placeholder="Enter description"
-                                                            name="description"
-                                                            className="form-textarea min-h-[130px] resize-none"
-                                                        ></textarea>
-                                                    </div> */}
-
-                                                    {/* <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="description">description </label>
-                                                        <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
-
-                                                        {submitCount ? (
-                                                            errors.description ? (
-                                                                <div className="mt-1 text-danger">{errors.description}</div>
-                                                            ) : (
-                                                                <div className="mt-1 text-success"></div>
-                                                            )
-                                                        ) : (
-                                                            ''
-                                                        )}
-                                                    </div> */}
-
-                                                    {/* <div className={submitCount ? (errors.slug ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="slug">Slug </label>
-                                                        <Field name="slug" type="text" id="slug" placeholder="Enter Description" className="form-input" />
-
-                                                        {submitCount ? errors.slug ? <div className="mt-1 text-danger">{errors.slug}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div> */}
-
-                                                    {/* <div className={submitCount ? (errors.count ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="count">Count</label>
-                                                        <Field name="count" type="number" id="count" placeholder="Enter Count" className="form-input" />
-
-                                                        {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
-                                                    </div> */}
-
-                                                    {/* <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="parentCategory">Parent Category</label>
-                                                        <Field as="select" name="parentCategory" className="form-select">
-                                                            <option value="">Open this select menu</option>
-                                                            <option value="Anklets">Anklets</option>
-                                                            <option value="BlackThread">__Black Thread</option>
-                                                            <option value="Kada">__Kada</option>
-                                                        </Field>
-                                                        {submitCount ? (
-                                                            errors.parentCategory ? (
-                                                                <div className=" mt-1 text-danger">{errors.parentCategory}</div>
-                                                            ) : (
-                                                                <div className=" mt-1 text-[#1abc9c]"></div>
-                                                            )
-                                                        ) : (
-                                                            ''
-                                                        )}
-                                                    </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                        {'Submit'}
+                                                        {loading ? <IconLoader /> : 'Submit'}
                                                     </button>
                                                 </Form>
                                             )}
@@ -533,38 +394,6 @@ const Tags = () => {
                     </div>
                 </Dialog>
             </Transition>
-
-            {/* Full View Category data*/}
-            {/* <Transition appear show={viewModal} as={Fragment}>
-                <Dialog as="div" open={viewModal} onClose={() => setViewModal(false)}>
-                    <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-                        <div className="fixed inset-0" />
-                    </Transition.Child>
-                    <div className="fixed inset-0 z-[999] overflow-y-auto bg-[black]/60">
-                        <div className="flex min-h-screen items-start justify-center px-4">
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <Dialog.Panel as="div" className="panel my-8 w-full max-w-lg overflow-hidden rounded-lg border-0 p-0 text-black dark:text-white-dark">
-                                    <div className="flex items-center justify-between bg-[#fbfbfb] px-5 py-3 dark:bg-[#121c2c]">
-                                        <div className="text-lg font-bold">View Category</div>
-                                        <button type="button" className="text-white-dark hover:text-dark" onClick={() => setViewModal(false)}>
-                                            <IconX />
-                                        </button>
-                                    </div>
-                                    <div className="mb-5 p-5"></div>
-                                </Dialog.Panel>
-                            </Transition.Child>
-                        </div>
-                    </div>
-                </Dialog>
-            </Transition> */}
         </div>
     );
 };
