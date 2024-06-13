@@ -70,7 +70,7 @@ const ShippingProvider = () => {
     // Update initialRecords whenever shippingList changes
     useEffect(() => {
         // Sort shippingList by 'id' and update initialRecords
-        setInitialRecords(sortBy(shippingList, 'id'));
+        setInitialRecords(shippingList);
     }, [shippingList]);
 
     // Log initialRecords when it changes
