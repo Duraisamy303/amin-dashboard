@@ -1834,7 +1834,18 @@ const Editorder = () => {
                                     </button>
                                 </div>
                             )
-                        ) : null}
+                        ) : null}{' '}
+                        <>
+                            {orderData?.customerNote && (
+                                <>
+                                    <h5 className="m-3 text-lg font-semibold">Notes</h5>
+
+                                    <div className="panel p-5">
+                                        <div>{orderData?.customerNote}</div>
+                                    </div>
+                                </>
+                            )}
+                        </>
                     </div>
 
                     <div className="col-span-3">
@@ -1886,8 +1897,8 @@ const Editorder = () => {
                             </div>
                             <div className="mb-5 border-b border-gray-200 pb-2 ">
                                 {notesList?.length > 0 ? (
-                                    notesList?.map((data: any) => (
-                                        <div className="mb-5">
+                                    notesList?.map((data: any, index: number) => (
+                                        <div className="mb-5" key={index}>
                                             <div className="text-gray-500">
                                                 <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
                                                 <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>
@@ -2322,7 +2333,7 @@ const Editorder = () => {
             <Modal
                 addHeader={'Select a Currency'}
                 open={isOpenChannel}
-                close={() => setIsOpenChannel(true)}
+                close={() => setIsOpenChannel(false)}
                 renderComponent={() => (
                     <div className="p-5">
                         <select
