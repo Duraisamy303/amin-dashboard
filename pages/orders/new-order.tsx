@@ -372,7 +372,6 @@ const NewOrder = () => {
         try {
             if (state.selectedCustomerId != '' && state.selectedCustomerId != undefined) {
                 const funRes: any = await setBilling(customerAddress);
-                console.log('funRes: ', funRes);
                 if (!objIsEmpty(funRes)) {
                     setState({ billingAddress: funRes });
                 } else {
