@@ -169,6 +169,11 @@ export const CATEGORY_LIST = gql`
                     parent {
                         id
                         name
+                        __typename
+                    }
+                    backgroundImage {
+                        url
+                        alt
                     }
                 }
                 __typename

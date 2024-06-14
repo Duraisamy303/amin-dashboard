@@ -250,7 +250,6 @@ const ProductAdd = () => {
     const { data: sizeData } = useQuery(SIZE_LIST, {
         variables: sampleParams,
     });
-    console.log('stoneColorData: ', sizeData);
 
     const [addCategory] = useMutation(CREATE_CATEGORY);
     const [addTag] = useMutation(CREATE_TAG);
@@ -604,38 +603,51 @@ const ProductAdd = () => {
                 deleteProduct(productId);
             } else {
                 const resVariants = data?.productVariantBulkCreate?.productVariants;
+                console.log('resVariants: ', resVariants);
+                // if (resVariants?.length > 0) {
+                //     resVariants?.map((item: any) => {
+                //         variantChannelListUpdate(productId, item.id);
+                //     });
+                // }
+
                 if (resVariants?.length > 0) {
-                    resVariants?.map((item: any) => {
-                        variantChannelListUpdate(productId, item.id);
-                    });
+                    const mergedVariants = variants.map((variant: any, index: number) => ({
+                        ...variant,
+                        variantId: resVariants[index]?.id || null,
+                    }));
+                    mergedVariants?.map((item) => variantChannelListUpdate(item?.regularPrice, productId, item.variantId));
+                   
+                } else {
+                    updateMetaData(productId);
                 }
-                updateMetaData(productId);
+
+                // updateMetaData(productId);
             }
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
-    const variantChannelListUpdate = async (productId: any, variantId: any) => {
+    const variantChannelListUpdate = async (price: any, productId: any, variantId: any) => {
         try {
-            const variantArr = variants?.map((item) => ({
-                channelId: 'Q2hhbm5lbDoy',
-                price: item.regularPrice,
-                costPrice: item.regularPrice,
-            }));
-
             const { data } = await updateVariantList({
                 variables: {
                     id: variantId,
-                    input: variantArr,
+                    input: [
+                        {
+                            channelId: 'Q2hhbm5lbDoy',
+                            price: price,
+                            costPrice: price,
+                        },
+                    ],
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
             if (data?.productVariantChannelListingUpdate?.errors?.length > 0) {
-                setCreateLoading(false);
                 Failure(data?.productVariantChannelListingUpdate?.errors[0]?.message);
                 deleteProduct(productId);
             } else {
+                updateMetaData(productId);
             }
         } catch (error) {
             console.log('error: ', error);
@@ -755,10 +767,12 @@ const ProductAdd = () => {
             };
 
             const { data } = await addCategory({ variables });
+            console.log('data: ', data);
             categoryListRefetch();
             setIsOpenCat(false);
             setCreateCategoryLoader(false);
             Success('Category created successfully');
+            setselectedCat({ label: data?.categoryCreate?.category?.name, value: data?.categoryCreate?.category?.id });
             setFormData({
                 name: '',
                 description: '',
@@ -772,7 +786,6 @@ const ProductAdd = () => {
 
     const handleAddAccordion = () => {
         const selectedType = arr.find((item) => item?.type === chooseType);
-        console.log('selectedType: ', selectedType);
         setSelectedArr([chooseType, ...selectedArr]);
         setAccordions([selectedType, ...accordions]);
         setOpenAccordion(chooseType);
@@ -790,10 +803,6 @@ const ProductAdd = () => {
 
     const handleDropdownChange = (event: any, type: any) => {
         setChooseType(type);
-    };
-
-    const handleToggleAccordion = (type: any) => {
-        setOpenAccordion(openAccordion === type ? '' : type);
     };
 
     const handleMultiSelectChange = (selectedOptions: any, type: any) => {
@@ -830,7 +839,6 @@ const ProductAdd = () => {
     const multiImgUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile: any = event.target.files[0];
         const imageUrl = URL.createObjectURL(selectedFile);
-        console.log('imageUrl: ', imageUrl);
 
         // Push the selected file into the 'images' array
         setImages((prevImages: any) => [...prevImages, selectedFile]);
@@ -864,6 +872,7 @@ const ProductAdd = () => {
             tagListRefetch();
             setTagLoader(false);
             Success('Tag created successfully');
+            setSelectedTag([{ value: data?.tagCreate?.tag?.id, label: data?.tagCreate?.tag?.name }]);
         } catch (error) {
             setTagLoader(false);
 

@@ -27,9 +27,14 @@ import ReactQuill from 'react-quill';
 import { PARENT_CATEGORY_LIST } from '@/query/product';
 import IconLoader from '@/components/Icon/IconLoader';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import IconTrash from '@/components/Icon/IconTrash';
+import { categoryImageUpload } from '@/utils/functions';
+import { useRouter } from 'next/router';
 
 const Category = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+
+    const router = useRouter();
 
     const dispatch = useDispatch();
     useEffect(() => {
@@ -47,6 +52,7 @@ const Category = () => {
     const [categoryList, setCategoryList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [parentLists, setParentLists] = useState([]);
+    const [previewUrl, setPreviewUrl] = useState(null);
 
     const [createCategoryLoader, setCreateCategoryLoader] = useState(false);
     const [updateCategoryLoader, setUpdateCategoryLoader] = useState(false);
@@ -68,7 +74,8 @@ const Category = () => {
                         ...item.node,
                         parent: item.node.parent?.name || '',
                         product: item.node.products?.totalCount,
-                        textdescription: textValue || '', // Set textValue or empty string if it doesn't exist
+                        textdescription: textValue || '',
+                        image: item.node?.backgroundImage?.url, // Set textValue or empty string if it doesn't exist
                     };
                 });
                 setCategoryList(newData);
@@ -92,9 +99,7 @@ const Category = () => {
     }, [categoryList]);
 
     // Log initialRecords when it changes
-    useEffect(() => {
-        console.log('initialRecords: ', initialRecords);
-    }, [initialRecords]);
+    useEffect(() => {}, [initialRecords]);
 
     const [selectedRecords, setSelectedRecords] = useState<any>([]);
 
@@ -119,20 +124,24 @@ const Category = () => {
         variables: { channel: 'india-channel' },
     });
     useEffect(() => {
-        console.log('parentList: ', parentList?.categories?.edges);
         const getparentCategoryList = parentList?.categories?.edges;
         setParentLists(getparentCategoryList);
-    });
+    }, []);
 
     //Mutation
     const [addCategory] = useMutation(CREATE_CATEGORY);
     const [updateCategory] = useMutation(UPDATE_CATEGORY);
+    const [deleteCatImage] = useMutation(UPDATE_CATEGORY);
     const [deleteCategory] = useMutation(DELETE_CATEGORY);
     const [bulkDelete] = useMutation(DELETE_CATEGORY);
 
     useEffect(() => {
         setPage(1);
     }, [pageSize]);
+
+    useEffect(() => {
+        setPreviewUrl(previewUrl);
+    }, [previewUrl]);
 
     useEffect(() => {
         const from = (page - 1) * pageSize;
@@ -172,7 +181,6 @@ const Category = () => {
 
     // form submit
     const onSubmit = async (record: any, { resetForm }: any) => {
-        console.log('record: ', record);
         setCreateCategoryLoader(true);
         setUpdateCategoryLoader(true);
         try {
@@ -180,7 +188,6 @@ const Category = () => {
             setUpdateCategoryLoader(true);
 
             const Description = JSON.stringify({ time: Date.now(), blocks: [{ id: 'some-id', data: { text: record.description }, type: 'paragraph' }], version: '2.24.3' });
-            console.log('✌️Description --->', Description);
 
             const variables = {
                 input: {
@@ -189,44 +196,19 @@ const Category = () => {
                 },
                 parent: record.parentCategory,
             };
-            console.log('variables: ', variables);
 
             const { data } = await (modalTitle ? updateCategory({ variables: { ...variables, id: modalContant.id } }) : addCategory({ variables }));
-            console.log('data: ', data);
-            categoryListRefetch();
-            // const newData = modalTitle ? data?.categoryUpdate?.category : data?.categoryCreate?.category;
-            // console.log('newData: ', newData);
-            // if (!newData) {
-            //     console.error('Error: New data is undefined.');
-            //     return;
-            // }
 
-            // const jsonObject = JSON.parse(newData.description || newData.description);
-            // // Extract the text value
-            // const textValue = jsonObject?.blocks[0]?.data?.text;
-            // console.log('✌️textValue --->', textValue);
+            const catId = data?.categoryCreate?.category?.id;
 
-            // const finalData = {
-            //     ...newData,
-            //     textdescription: textValue || '',
-            // };
-            // console.log('finalData', finalData);
+            if (previewUrl) {
+                if (modalTitle == null) {
+                    const imageUpload = await categoryImageUpload(catId, previewUrl);
+                    console.log('imageUpload: ', imageUpload);
+                }
+            }
 
-            // const updatedId = finalData.id;
-            // const index = recordsData.findIndex((design: any) => design && design.id === updatedId);
-
-            // const updatedDesignList: any = [...recordsData];
-            // if (index !== -1) {
-            //     updatedDesignList[index] = finalData;
-            // } else {
-            //     updatedDesignList.push(finalData);
-            // }
-            // console.log('updatedDesignList', updatedDesignList);
-            // // setCategoryList(updatedDesignList);
-            // setRecordsData(updatedDesignList);
-
-            // getCategoryList();
-
+            await categoryListRefetch();
             const toast = Swal.mixin({
                 toast: true,
                 position: 'top',
@@ -252,10 +234,10 @@ const Category = () => {
 
     // category table edit
     const EditCategory = (record: any) => {
-        console.log('✌️record --->', record);
         setModal1(true);
         setModalTitle(record);
         setModalContant(record);
+        setPreviewUrl(record?.backgroundImage?.url);
     };
 
     // category table create
@@ -303,7 +285,7 @@ const Category = () => {
 
     const BulkDeleteCategory = async () => {
         showDeleteAlert(
-            () => {
+            async () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
@@ -314,6 +296,8 @@ const Category = () => {
                 const updatedRecordsData = categoryList.filter((record) => !selectedRecords.includes(record));
                 setCategoryList(updatedRecordsData);
                 setSelectedRecords([]);
+                await categoryListRefetch();
+
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
@@ -332,6 +316,8 @@ const Category = () => {
                 // getCategoryList()
                 setSelectedRecords([]);
                 // setCategoryList(finishList)
+                await categoryListRefetch();
+
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
             () => {
@@ -340,14 +326,40 @@ const Category = () => {
         );
     };
 
-    // completed category delete option
-    // if (productItem?.description || productItem?.node?.description) {
-    //     const jsonObject = JSON.parse(
-    //       productItem?.description || productItem?.node?.description
-    //     );
-    //     // Extract the text value
-    //     textValue = jsonObject?.blocks[0]?.data?.text;
-    //   }
+    const handleImageChange = async (e) => {
+        const selectedFile: any = e.target.files[0];
+        if (selectedFile) {
+            const imageUrl: any = URL.createObjectURL(selectedFile);
+            if (modalTitle !== null) {
+                console.log('if : ');
+                const res = await categoryImageUpload(modalTitle.id, imageUrl);
+                setModalTitle(res?.data?.categoryUpdate?.category);
+                setPreviewUrl(res?.data?.categoryUpdate?.category?.backgroundImage?.url);
+            } else {
+                setPreviewUrl(imageUrl);
+            }
+        }
+    };
+
+    const removeImage = async () => {
+        try {
+            const res = await deleteCatImage({
+                variables: {
+                    id: modalTitle.id,
+                    input: {
+                        backgroundImage: null,
+                    },
+                },
+            });
+
+            setModalTitle(res?.data?.categoryUpdate?.category);
+
+            setPreviewUrl(null);
+            // await categoryListRefetch();
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
     return (
         <div>
@@ -393,7 +405,7 @@ const Category = () => {
                             records={recordsData}
                             columns={[
                                 // { accessor: 'id', sortable: true },
-                                // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                                { accessor: 'image', sortable: true, render: (row) => <img src={row?.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
                                 { accessor: 'name', sortable: true },
                                 {
                                     accessor: 'textdescription',
@@ -407,6 +419,8 @@ const Category = () => {
                                 {
                                     accessor: 'product',
                                     sortable: true,
+
+                                    render: (row: any) => <button onClick={() => router.push(`/?category=${row.id}`)}>{row.product}</button>,
                                 },
 
                                 {
@@ -483,7 +497,7 @@ const Category = () => {
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', textdescription: '', parentCategory: '' }
+                                                    ? { name: '', textdescription: '', parentCategory: '', image: null }
                                                     : {
                                                           name: modalContant?.name,
                                                           description: modalContant?.textdescription,
@@ -536,7 +550,7 @@ const Category = () => {
                                                     </div> */}
 
                                                     <div className={submitCount ? (errors.description ? 'has-error' : 'has-success') : ''}>
-                                                        <label htmlFor="description">description </label>
+                                                        <label htmlFor="description">Description </label>
                                                         <Field name="description" as="textarea" id="description" placeholder="Enter Description" className="form-input" />
 
                                                         {submitCount ? (
@@ -563,7 +577,31 @@ const Category = () => {
 
                                                         {submitCount ? errors.count ? <div className="mt-1 text-danger">{errors.count}</div> : <div className="mt-1 text-success"></div> : ''}
                                                     </div> */}
-
+                                                    <div>
+                                                        <label htmlFor="description">Image </label>
+                                                        {previewUrl ? (
+                                                            <div className="relative flex items-center justify-around">
+                                                                <img src={previewUrl} alt="Selected" style={{ marginTop: '10px', maxHeight: '200px' }} />
+                                                                <div
+                                                                    className="absolute cursor-pointer rounded-full bg-red-500 p-1 text-white"
+                                                                    onClick={() => {
+                                                                        console.log('click');
+                                                                        if (modalTitle !== null) {
+                                                                            console.log('modalTitle: ');
+                                                                            removeImage();
+                                                                        } else {
+                                                                            console.log('else: ');
+                                                                            setPreviewUrl(null);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <IconTrashLines />
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <input type="file" id="product-gallery-image" className="form-input" onChange={handleImageChange} />
+                                                        )}
+                                                    </div>
                                                     <div className={submitCount ? (errors.parentCategory ? 'has-error' : 'has-success') : ''}>
                                                         <label htmlFor="parentCategory">Parent Category</label>
                                                         <Field as="select" name="parentCategory" className="form-select">

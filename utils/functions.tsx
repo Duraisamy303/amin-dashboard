@@ -232,20 +232,27 @@ export const duplicateUploadImage = async (productId, imageUrl) => {
     }
 };
 
-export const categoryImageUpload = async (categoryId, backgroundImageUrl) => {
+export const categoryImageUpload = async (categoryId, imageUrl) => {
+    console.log("categoryId, imageUrl: ", categoryId, imageUrl);
     try {
+        const res = await fetch(imageUrl);
+        const blob = await res.blob();
+        // Ensure the fileName has a valid extension
+        const fileExtension = blob.type.split('/')[1];
+        const fileName = `uploaded_image.${fileExtension}`;
+        const file = new File([blob], fileName, { type: blob.type });
         const token = localStorage.getItem('token');
         const formData = new FormData();
 
-        formData.append(
-            'operations',
-            JSON.stringify({
-                operationName: 'CategoryUpdate',
-                variables: {
-                    id: categoryId,
-                    input: { backgroundImage: backgroundImageUrl },
+        const operations = JSON.stringify({
+            operationName: 'CategoryUpdate',
+            variables: {
+                id: categoryId,
+                input: {
+                    backgroundImage: null, // Placeholder for the file variable
                 },
-                query: `mutation CategoryUpdate($id: ID!, $input: CategoryInput!) {
+            },
+            query: `mutation CategoryUpdate($id: ID!, $input: CategoryInput!) {
                 categoryUpdate(id: $id, input: $input) {
                     category {
                         id
@@ -269,8 +276,15 @@ export const categoryImageUpload = async (categoryId, backgroundImageUrl) => {
                     }
                 }
             }`,
-            })
-        );
+        });
+
+        const map = JSON.stringify({
+            '1': ['variables.input.backgroundImage'],
+        });
+
+        formData.append('operations', operations);
+        formData.append('map', map);
+        formData.append('1', file); // Append the actual file here
 
         const response = await fetch('https://file.prade.in/graphql/', {
             method: 'POST',
