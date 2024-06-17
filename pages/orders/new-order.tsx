@@ -1645,9 +1645,9 @@ const NewOrder = () => {
                         </div>
                         <div className="mb-5 border-b border-gray-200 pb-2 ">
                             {state.notesList?.length > 0 ? (
-                                state.notesList?.map((data: any) => {
+                                state.notesList?.map((data: any,index:number) => {
                                     return (
-                                        <div className="mb-5">
+                                        <div className="mb-5" key={index}>
                                             <div className="text-gray-500">
                                                 <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
                                                 <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>

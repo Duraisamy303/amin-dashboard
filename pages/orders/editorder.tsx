@@ -1865,7 +1865,7 @@ const Editorder = () => {
                                         <select className="form-select" value={shippingPatner} onChange={(e) => setShippingPatner(e.target.value)}>
                                             <option value="">Choose Shipping Provider</option>
                                             {customerData?.map((item: any) => (
-                                                <option value={item?.node?.id}>{item?.node?.name}</option>
+                                                <option key={item?.node?.id} value={item?.node?.id}>{item?.node?.name}</option>
                                             ))}
                                         </select>
                                         {shippingPatner == '' && shippingError && <div className=" text-danger">Required this field</div>}

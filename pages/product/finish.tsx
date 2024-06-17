@@ -34,13 +34,17 @@ const Finish = () => {
         dispatch(setPageTitle('Finish'));
     });
 
-    const { error, data: finishData,refetch:finishRefetch } = useQuery(FINISH_LIST, {
+    const {
+        error,
+        data: finishData,
+        refetch: finishRefetch,
+    } = useQuery(FINISH_LIST, {
         variables: { channel: 'india-channel', first: 100 },
     });
 
     const [finishList, setFinishList] = useState([]);
     const [loading, setLoading] = useState(false);
-    
+
     const [createFinishLoader, setCreateFinishLoader] = useState(false);
     const [updateFinishLoader, setUpdateFinishLoader] = useState(false);
 
@@ -135,7 +139,6 @@ const Finish = () => {
         const data = sortBy(initialRecords, sortStatus.columnAccessor);
         // setInitialRecords( initialRecords);
         setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
-
     }, [sortStatus]);
 
     // FORM VALIDATION
@@ -167,7 +170,7 @@ const Finish = () => {
 
             const newData = modalTitle ? data?.productFinishUpdate?.productFinish : data?.productFinishCreate?.productFinish;
             console.log('newData: ', newData);
-           await  finishRefetch()
+            await finishRefetch();
 
             const toast = Swal.mixin({
                 toast: true,
@@ -244,7 +247,7 @@ const Finish = () => {
 
     const BulkDeleteFinish = async () => {
         showDeleteAlert(
-            () => {
+            async () => {
                 if (selectedRecords.length === 0) {
                     Swal.fire('Cancelled', 'Please select at least one record!', 'error');
                     return;
@@ -255,7 +258,7 @@ const Finish = () => {
                 const updatedRecordsData = finishList.filter((record) => !selectedRecords.includes(record));
                 setFinishList(updatedRecordsData);
                 setSelectedRecords([]);
-               await finishRefetch()
+                await finishRefetch();
 
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
@@ -274,7 +277,7 @@ const Finish = () => {
                 setFinishList(updatedRecordsData);
                 // getFinishList()
                 setSelectedRecords([]);
-               await finishRefetch()
+                await finishRefetch();
                 // setFinishList(finishList)
                 Swal.fire('Deleted!', 'Your file has been deleted.', 'success');
             },
@@ -497,7 +500,13 @@ const Finish = () => {
                                                     </div> */}
 
                                                     <button type="submit" className="btn btn-primary !mt-6">
-                                                    {createFinishLoader || updateFinishLoader  ? <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" /> : (modalTitle === null ? 'Submit' : 'Update')}
+                                                        {createFinishLoader || updateFinishLoader ? (
+                                                            <IconLoader className="me-3 h-4 w-4 shrink-0 animate-spin" />
+                                                        ) : modalTitle === null ? (
+                                                            'Submit'
+                                                        ) : (
+                                                            'Update'
+                                                        )}
                                                     </button>
                                                 </Form>
                                             )}
@@ -545,4 +554,4 @@ const Finish = () => {
     );
 };
 
-export default PrivateRouter(Finish) ; 
+export default PrivateRouter(Finish);
