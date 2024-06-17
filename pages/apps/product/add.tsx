@@ -467,7 +467,7 @@ const ProductAdd = () => {
             }
 
             const variantErrors = variants?.map((variant) => {
-                const errors = {};
+                const errors: any = {};
                 if (!variant.sku) errors.sku = 'SKU cannot be empty';
                 if (variant.quantity <= 0 || isNaN(variant.quantity)) errors.quantity = 'Quantity must be a valid number and greater than 0';
                 if (variant.regularPrice <= 0 || isNaN(variant.regularPrice)) errors.regularPrice = 'Regular Price must be a valid number and greater than 0';
@@ -616,7 +616,6 @@ const ProductAdd = () => {
                         variantId: resVariants[index]?.id || null,
                     }));
                     mergedVariants?.map((item) => variantChannelListUpdate(item?.regularPrice, productId, item.variantId));
-                   
                 } else {
                     updateMetaData(productId);
                 }
@@ -1580,7 +1579,7 @@ const ProductAdd = () => {
                             <div className="grid grid-cols-12 gap-3">
                                 {imageUrl?.length > 0 &&
                                     imageUrl?.map((item: any, index: any) => (
-                                        <div className="relative col-span-4">
+                                        <div className="relative col-span-4" key={index}>
                                             <img src={item} alt="Product image" className=" object-cover" />
                                             <button onClick={() => handleRemoveImage(index)} className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white">
                                                 <IconTrashLines className="h-4 w-4" />
