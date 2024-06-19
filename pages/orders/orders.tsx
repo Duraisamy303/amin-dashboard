@@ -46,6 +46,10 @@ import PrivateRouter from '@/components/Layouts/PrivateRouter';
 const Orders = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
+    const router = useRouter();
+
+    const dispatch = useDispatch();
+
     const tableRef = useRef(null);
 
     const [state, setState] = useSetState({
@@ -65,13 +69,12 @@ const Orders = () => {
 
     const [draftOrder] = useMutation(CREATE_DRAFT_ORDER);
 
-    const router = useRouter();
+    const [page, setPage] = useState(1);
+    const PAGE_SIZES = [10, 20, 30, 50, 100];
+    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+    const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
+    const [recordsData, setRecordsData] = useState([]);
 
-    const dispatch = useDispatch();
-
-    useEffect(() => {
-        dispatch(setPageTitle('Orders'));
-    });
     const { data: finishData, refetch: orderRefetch } = useQuery(ORDER_LIST);
 
     const [finishList, setFinishList] = useState([]);
@@ -93,11 +96,25 @@ const Orders = () => {
 
     const getOrderList = async () => {
         setLoading(true);
-        const res = await orderRefetch({
-            first: 100,
-            direction: 'DESC',
-            field: 'CREATED_AT',
-        });
+        let body = {};
+
+        if (router.query?.customer) {
+            body = {
+                first: 100,
+                direction: 'DESC',
+                field: 'CREATED_AT',
+                filter: { created: null, customer: router.query?.customer },
+            };
+        } else {
+            body = {
+                first: 100,
+                direction: 'DESC',
+                field: 'CREATED_AT',
+            };
+        }
+        console.log('body: ', body);
+
+        const res = await orderRefetch(body);
 
         if (res?.data?.orders?.edges?.length > 0) {
             SetFinalDate(res?.data?.orders?.edges);
@@ -105,15 +122,7 @@ const Orders = () => {
         setLoading(false);
     };
 
-    const [page, setPage] = useState(1);
-    const PAGE_SIZES = [10, 20, 30, 50, 100];
-    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
-    const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
-    const [recordsData, setRecordsData] = useState([]);
-
-    // Update initialRecords whenever finishList changes
     useEffect(() => {
-        // Sort finishList by 'id' and update initialRecords
         setInitialRecords(finishList);
     }, [finishList]);
 
@@ -319,9 +328,9 @@ const Orders = () => {
                     setExportBy(e);
                     filterByDateAndYear(e);
                 }
-            }else{
+            } else {
                 setExportBy(e);
-                getOrderList()
+                getOrderList();
             }
         } catch (error) {
             console.log('error: ', error);
@@ -346,28 +355,26 @@ const Orders = () => {
                 field: 'NUMBER',
             },
         });
-        console.log('res: ', res);
 
         SetFinalDate(res?.data?.orders?.edges);
     };
 
     const orderNumber = (item: any) => {
         let label = '';
-        if (item?.node?.billingAddress?.firstName == '') {
-            label = `#${item?.node?.number} ${item.node?.billingAddress?.firstName} ${item.node?.billingAddress?.lastName}`;
+        if (item?.node?.user !== null) {
+            label = `#${item?.node?.number} ${item?.node?.user?.firstName} ${item?.node?.user?.lastName}`;
         } else {
-            label = `#${item?.node?.number} ${item?.node?.billingAddress?.firstName} ${item?.node?.billingAddress?.lastName}`;
+            label = `#${item?.node?.number} ${item.node?.billingAddress?.firstName} ${item.node?.billingAddress?.lastName}`;
         }
         return label;
     };
 
     const SetFinalDate = (res: any) => {
-        console.log('res: ', res);
         const newData = res?.map((item: any) => ({
             ...item.node,
             order: orderNumber(item),
             date: dayjs(item?.node?.updatedAt).format('MMM D, YYYY'),
-            total: `${formatCurrency(item?.node?.total.gross.currency)}${addCommasToNumber(item?.node?.total.gross.amount)}`,
+            total: `${item?.node?.total.gross.currency} ${addCommasToNumber(item?.node?.total.gross.amount)}`,
             status: OrderStatus(item?.node?.status),
             paymentStatus: PaymentStatus(item?.node?.paymentStatus),
             invoice: item?.node?.invoices?.length > 0 ? item?.node?.invoices[0]?.number : '-',
@@ -384,7 +391,7 @@ const Orders = () => {
         const excelData = allData?.map((item: any) => {
             const data = item?.node;
             const res = {
-                OrderNumber: data?.number,
+                OrderNumber:orderNumber(item),
                 CustomerName: ` ${data?.user?.firstName}${data?.user?.lastName}`,
                 EmailID: data?.userEmail,
                 PhoneNumber: data?.shippingAddress?.phone,

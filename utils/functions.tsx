@@ -233,7 +233,7 @@ export const duplicateUploadImage = async (productId, imageUrl) => {
 };
 
 export const categoryImageUpload = async (categoryId, imageUrl) => {
-    console.log("categoryId, imageUrl: ", categoryId, imageUrl);
+    console.log('categoryId, imageUrl: ', categoryId, imageUrl);
     try {
         const res = await fetch(imageUrl);
         const blob = await res.blob();
@@ -534,4 +534,33 @@ export const PaymentStatus = (status: any) => {
     } else {
         return 'Completed';
     }
+};
+
+export const getDateRange = (rangeType) => {
+    const today = new Date();
+    let startDate, endDate;
+
+    if (rangeType === 'thisMonth') {
+        // Start of this month
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        // End of today
+        endDate = today;
+    } else if (rangeType === 'lastMonth') {
+        // Start of last month
+        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        // End of last month
+        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (rangeType === 'last7Days') {
+        // Start date 7 days ago
+        startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+        // End of today
+        endDate = today;
+    } else {
+        throw new Error("Invalid rangeType. Use 'thisMonth', 'lastMonth', or 'last7Days'.");
+    }
+
+    const start = startDate.toISOString().split('T')[0];
+    const end = endDate.toISOString().split('T')[0];
+
+    return { start, end };
 };

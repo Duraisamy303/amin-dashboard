@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client';
 
 export const PRODUCT_LIST = gql`
-    query ProductListPaginated($channel: String!, $first: Int!, $after: String, $direction: OrderDirection!, $field: ProductOrderField!) {
-        products(first: $first, after: $after, channel: $channel, sortBy: { direction: $direction, field: $field }) {
+    query ProductListPaginated($channel: String!, $first: Int!, $after: String, $direction: OrderDirection!, $field: ProductOrderField!, $filter: ProductFilterInput) {
+        products(first: $first, after: $after, channel: $channel, filter: $filter, sortBy: { direction: $direction, field: $field }) {
             totalCount
             edges {
                 node {
@@ -74,6 +74,7 @@ export const PRODUCT_LIST = gql`
         variants {
             id
             sku
+            quantityAvailable
             __typename
         }
         defaultVariant {
@@ -704,6 +705,11 @@ export const ORDER_LIST = gql`
                     fulfillments {
                         id
                         trackingNumber
+                    }
+                    user {
+                        id
+                        lastName
+                        firstName
                     }
                 }
                 __typename
@@ -9405,6 +9411,27 @@ export const PRODUCT_TYPE_LIST = gql`
         hasPreviousPage
         startCursor
         __typename
+    }
+`;
+
+export const SALES_BY_DATE = gql`
+    mutation SalesByDate($fromdate: String!, $toDate: String!, $currency: String!) {
+        salesByDate(fromDate: $fromdate, inputString: $currency, toDate: $toDate) {
+            totalItemsSoldList
+            shippingAmountList
+            refundAmountList
+            noOfOrderList
+            dates
+            couponAmountList
+        }
+    }
+`;
+
+export const SALES_BY_PRODUCT = gql`
+    mutation SalesByProduct($fromdate: String!, $toDate: String!, $currency: String!) {
+        salesByProduct(fromDate: $fromdate, inputString: $currency, toDate: $toDate) {
+            topProducts
+        }
     }
 `;
 

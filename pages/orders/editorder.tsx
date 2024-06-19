@@ -152,8 +152,6 @@ const Editorder = () => {
     const [lines, setLines] = useState([]);
     const [isGiftWrap, setIsGiftWrap] = useState([]);
 
-    console.log('orderDetails: ', orderDetails);
-
     const { data: countryData } = useQuery(COUNTRY_LIST);
 
     const { data: shippingProvider } = useQuery(SHIPPING_LIST, {
@@ -223,6 +221,8 @@ const Editorder = () => {
     const [slipLoading, setSlipLoading] = useState(false);
 
     const [slipNumber, setSlipNumber] = useState('');
+    const [coupenAmt, setCoupenAmt] = useState(null);
+
     const [slipDate, setSlipDate] = useState('');
     //For shipping
     const [shippingOpen, setShippingOpen] = useState(false);
@@ -267,20 +267,31 @@ const Editorder = () => {
 
                 setOrderData(orderDetails?.order);
                 const allGiftCards = orderDetails?.order?.lines?.every((line: any) => line?.variant?.product?.category?.name === 'Gift Card');
-                console.log('allGiftCards: ', allGiftCards);
                 setIsGiftCart(allGiftCards);
 
+                //coupen code
+
+                const coupenData = orderDetails?.order?.giftCards;
+                if (coupenData?.length > 0) {
+                    const coupenValue = sumOldCurrentBalance(coupenData);
+                    console.log('coupenAmt: ', coupenValue[0]);
+                    setCoupenAmt(coupenValue[0]);
+                }
+
                 //Payslip
-                {
-                    orderDetails?.order?.metadata?.length > 0 && setSlipDate(mintDateTime(orderDetails?.order?.metadata[0]?.value));
+                if (orderDetails?.order?.metadata?.length > 0) {
+                    setSlipDate(mintDateTime(orderDetails?.order?.metadata[0]?.value));
                     setSlipNumber(orderDetails?.order?.metadata[1]?.value);
                 }
+                // {
+                //     orderDetails?.order?.metadata?.length > 0 && setSlipDate(mintDateTime(orderDetails?.order?.metadata[0]?.value));
+                //     setSlipNumber(orderDetails?.order?.metadata[1]?.value);
+                // }
 
                 //Status
                 const filteredArray = orderDetails?.order?.events?.filter(
                     (item: any) => item.type === 'CONFIRMED' || item.type === 'FULFILLMENT_FULFILLED_ITEMS' || item.type === 'NOTE_ADDED' || item.type === 'ORDER_MARKED_AS_PAID'
                 );
-                console.log('filteredArray: ', filteredArray);
 
                 const result = filteredArray?.map((item: any) => {
                     const secondItem: any = NotesMsg.find((i) => i.type === item.type);
@@ -360,6 +371,32 @@ const Editorder = () => {
         } else {
             setLoading(false);
         }
+    };
+
+    // const sumOldCurrentBalance = (giftCards: any[]) => {
+    //     return giftCards?.reduce((sum: any, card: any) => {
+    //         const usedInOrderEvents = card.events.filter((event: any) => event.type === 'USED_IN_ORDER');
+    //         const oldCurrentBalanceSum = usedInOrderEvents?.reduce((eventSum: any, event: any) => {
+    //             return eventSum + (event.balance.oldCurrentBalance ? event.balance.oldCurrentBalance.amount : 0);
+    //         }, 0);
+    //         return sum + oldCurrentBalanceSum;
+    //     }, 0);
+    // };
+
+    const sumOldCurrentBalance = (giftCards) => {
+        const balanceMap = giftCards
+            .flatMap((giftCard) => giftCard.events)
+            .filter((event) => event.type === 'USED_IN_ORDER' && event.balance.oldCurrentBalance)
+            .reduce((acc, event) => {
+                const { amount, currency } = event.balance.oldCurrentBalance;
+                if (!acc[currency]) {
+                    acc[currency] = 0;
+                }
+                acc[currency] += amount;
+                return acc;
+            }, {});
+
+        return Object.entries(balanceMap).map(([currency, amount]) => ({ currency, amount }));
     };
 
     const getCustomer = () => {
@@ -674,8 +711,8 @@ const Editorder = () => {
             });
             getOrderDetails();
             setUpdateLoading(false);
-
-            Success('Shipping provider updated');
+            Success('Order updated successfully');
+            router.push('/orders/orders');
         } catch (error) {
             setUpdateLoading(false);
 
@@ -1070,9 +1107,9 @@ const Editorder = () => {
                                 <div className="col-span-6 mr-5">
                                     <div className="flex w-52 items-center justify-between">
                                         <h5 className="mb-3 text-lg font-semibold">Billing</h5>
-                                        <button type="button" onClick={() => BillingInputs()}>
+                                        {/* <button type="button" onClick={() => BillingInputs()}>
                                             <IconPencil className="cursor-pointer" />
-                                        </button>
+                                        </button> */}
                                     </div>
                                     {showBillingInputs === false ? (
                                         <>
@@ -1332,9 +1369,9 @@ const Editorder = () => {
                                 <div className="col-span-6 mr-5">
                                     <div className="flex w-52 items-center justify-between">
                                         <h5 className="mb-3 text-lg font-semibold">Shipping</h5>
-                                        <button type="button" onClick={() => ShippingInputs()}>
+                                        {/* <button type="button" onClick={() => ShippingInputs()}>
                                             <IconPencil />
-                                        </button>
+                                        </button> */}
                                     </div>
 
                                     {showShippingInputs === false ? (
@@ -1602,6 +1639,10 @@ const Editorder = () => {
                                     )}
                                 </div>
                             </div>
+                            <div className="mt-3">
+                                <div className="text-md">User Email :</div>
+                                <div className="text-primary underline">{orderData?.userEmail}</div>
+                            </div>
                         </div>
                         <div className="panel p-5">
                             <div className="table-responsive">
@@ -1741,6 +1782,14 @@ const Editorder = () => {
                                                 <IconPencil />
                                             </div> */}
                                     </div>
+                                    {orderDetails?.order?.giftCards?.length > 0 && (
+                                        <div className="mt-4 flex  justify-between">
+                                            <div>Coupon Amount</div>
+                                            <div>
+                                                <div className="ml-[94px] items-end">{`${formatCurrency(coupenAmt?.currency)}${addCommasToNumber(coupenAmt?.amount)}`}</div>
+                                            </div>
+                                        </div>
+                                    )}
                                     {orderData?.discounts?.length > 0 && (
                                         <div className="mt-4 flex items-center justify-between">
                                             <div>Discount</div>
@@ -1761,7 +1810,21 @@ const Editorder = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    {orderData?.totalCaptured?.amount !== 0 && (
+                                    {orderData?.paymentStatus == 'FULLY_CHARGED' && (
+                                        <div className="mt-4 flex items-center justify-between font-semibold">
+                                            <div>Paid Amount</div>
+                                            <div>
+                                                <div className="ml-[90px] justify-end">{`${formatCurrency(orderData?.total?.gross?.currency)}${addCommasToNumber(
+                                                    orderData?.total?.gross?.amount
+                                                )}`}</div>
+
+                                                {/* <div className=" text-sm">
+                                               {`${orderData?.total?.tax?.currency == 'USD' ? '$' : '₹'} ${roundOff(orderData?.total?.tax?.amount)} `}
+                                            </div> */}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* {orderData?.totalCaptured?.amount !== 0 && (
                                         <div className="mt-4 flex items-center justify-between font-semibold">
                                             <div>Paid Amount</div>
                                             <div>
@@ -1771,7 +1834,7 @@ const Editorder = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
+                                    )} */}
                                 </div>
                             </div>
                         </div>
@@ -1865,7 +1928,9 @@ const Editorder = () => {
                                         <select className="form-select" value={shippingPatner} onChange={(e) => setShippingPatner(e.target.value)}>
                                             <option value="">Choose Shipping Provider</option>
                                             {customerData?.map((item: any) => (
-                                                <option key={item?.node?.id} value={item?.node?.id}>{item?.node?.name}</option>
+                                                <option key={item?.node?.id} value={item?.node?.id}>
+                                                    {item?.node?.name}
+                                                </option>
                                             ))}
                                         </select>
                                         {shippingPatner == '' && shippingError && <div className=" text-danger">Required this field</div>}

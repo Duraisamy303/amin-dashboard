@@ -52,6 +52,7 @@ const Category = () => {
     const [categoryList, setCategoryList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [parentLists, setParentLists] = useState([]);
+    console.log("parentLists: ", parentLists);
     const [previewUrl, setPreviewUrl] = useState(null);
 
     const [createCategoryLoader, setCreateCategoryLoader] = useState(false);
@@ -73,6 +74,7 @@ const Category = () => {
                     return {
                         ...item.node,
                         parent: item.node.parent?.name || '',
+                        parentId: item.node.parent?.id,
                         product: item.node.products?.totalCount,
                         textdescription: textValue || '',
                         image: item.node?.backgroundImage?.url, // Set textValue or empty string if it doesn't exist
@@ -126,7 +128,7 @@ const Category = () => {
     useEffect(() => {
         const getparentCategoryList = parentList?.categories?.edges;
         setParentLists(getparentCategoryList);
-    }, []);
+    }, [parentList]);
 
     //Mutation
     const [addCategory] = useMutation(CREATE_CATEGORY);
@@ -501,10 +503,7 @@ const Category = () => {
                                                     : {
                                                           name: modalContant?.name,
                                                           description: modalContant?.textdescription,
-
-                                                          //   count: modalContant?.count,
-                                                          //   image: modalContant?.image,
-                                                          parentCategory: modalContant?.parent?.id,
+                                                          parentCategory: modalContant?.parentId,
                                                       }
                                             }
                                             validationSchema={SubmittedForm}
@@ -618,11 +617,6 @@ const Category = () => {
                                                                     </>
                                                                 );
                                                             })}
-
-                                                            {/* <option value="">Open this select menu</option>
-                                                            <option value="Anklets">Anklets</option>
-                                                            <option value="BlackThread">__Black Thread</option>
-                                                            <option value="Kada">__Kada</option> */}
                                                         </Field>
                                                         {/* {submitCount ? (
                                                             errors.parentCategory ? (

@@ -275,11 +275,13 @@ const CustomerList = () => {
                             {
                                 accessor: 'name',
                                 sortable: true,
-                                render: (row) => (
-                                    <>
-                                        <div className="">{row.name}</div>
-                                    </>
-                                ),
+                                // render: (row) => (
+                                //     <>
+                                //         <div  >
+                                //             {row.name}
+                                //         </div>
+                                //     </>
+                                // ),
                             },
 
                             { accessor: 'email', sortable: true },
@@ -288,13 +290,13 @@ const CustomerList = () => {
                             {
                                 accessor: 'orderCount',
                                 sortable: true,
-                                // render: (row) => (
-                                //     <>
-                                //         <button className="" onClick={() => router.push(`/orders/orders?customer=${row.email}`)}>
-                                //             {row.orderCount}
-                                //         </button>
-                                //     </>
-                                // ),
+                                render: (row) => (
+                                    <>
+                                        <button className=" underline" onClick={() => router.push(`/orders/orders/?customer=${row.email}`)}>
+                                            {row.orderCount}
+                                        </button>
+                                    </>
+                                ),
                             },
                             {
                                 // Custom column for actions

@@ -1618,8 +1618,8 @@ const AddOrder = () => {
                                 </div>
                                 <div className="mb-5 border-b border-gray-200 pb-2 ">
                                     {orderData?.events?.length > 0 ? (
-                                        orderData?.events?.map((data: any) => (
-                                            <div className="mb-5">
+                                        orderData?.events?.map((data: any, index: number) => (
+                                            <div className="mb-5" key={index}>
                                                 <div className="text-gray-500">
                                                     <div className=" mb-2 bg-gray-100  p-3 ">{data?.message}</div>
                                                     <span className=" mr-1 border-b border-dotted border-gray-500">{moment(data?.date).format('MMMM DD, YYYY [at] HH:mm a')}</span>
@@ -1697,7 +1697,7 @@ const AddOrder = () => {
                                 {productIsEdit ? (
                                     <div className="p-5">
                                         <div className="p-5">
-                                            <input type="number" className="form-input" value={quantity} onChange={(e:any) => setQuantity(e.target.value)} />
+                                            <input type="number" className="form-input" value={quantity} onChange={(e: any) => setQuantity(e.target.value)} />
                                         </div>
                                         <div className="flex justify-end gap-5">
                                             <button

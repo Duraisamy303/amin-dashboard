@@ -43,6 +43,7 @@ import moment from 'moment';
 import { Failure, Success, duplicateUploadImage, formatCurrency, profilePic, roundOff, uploadImage } from '@/utils/functions';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
 import IconLoader from '@/components/Icon/IconLoader';
+import CommonLoader from './elements/commonLoader';
 
 const ProductList = () => {
     const router = useRouter();
@@ -50,8 +51,10 @@ const ProductList = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
     const { error, data: productData } = useQuery(PRODUCT_LIST, {
-        variables: { channel: 'india-channel', first: 100, direction: 'DESC', field: 'CREATED_AT' }, // Pass variables here
+        variables: { channel: 'india-channel', first: 200, direction: 'DESC', field: 'CREATED_AT' }, // Pass variables here
     });
+
+    const { data: stockFilter, refetch: productListRefetch } = useQuery(PRODUCT_LIST);
 
     const [addFormData] = useMutation(CREATE_PRODUCT);
     const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
@@ -88,6 +91,7 @@ const ProductList = () => {
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
                     tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
+                    stock: checkStock(item?.node?.variants) ? 'In stock' : 'Out of stock',
                 }));
                 // const sorting: any = sortBy(newData, 'id');
                 setProductList(newData);
@@ -175,7 +179,6 @@ const ProductList = () => {
         const data = sortBy(initialRecords, sortStatus.columnAccessor);
         // setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
         setInitialRecords(initialRecords);
-
     }, [sortStatus]);
 
     //    parent category list query
@@ -226,6 +229,8 @@ const ProductList = () => {
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
                     tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
+                    stock: checkStock(item?.node?.variants) ? 'In stock' : 'Out of stock',
+
                     // shipmentTracking: item?.node?.shipments?.length>0?item
                 }));
 
@@ -261,6 +266,8 @@ const ProductList = () => {
                     status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
                     sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
                     tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
+                    stock: checkStock(item?.node?.variants) ? 'In stock' : 'Out of stock',
+
                     // shipmentTracking: item?.node?.shipments?.length>0?item
                 }));
 
@@ -277,6 +284,17 @@ const ProductList = () => {
         } else {
             setLoading(false);
         }
+    };
+
+    const checkStock = (variants: any[]) => {
+        let stock = false;
+        if (variants?.length > 0) {
+            const total = variants?.reduce((total, item) => total + item.quantityAvailable, 0);
+            if (total > 0) {
+                stock = true;
+            }
+        }
+        return stock;
     };
 
     const onFilterSubmit = async (e: any) => {
@@ -380,8 +398,53 @@ const ProductList = () => {
         // }));
     };
 
-    const statusChange = (e: string) => {
-        setStatus(e);
+    const statusChange = async (e: string) => {
+        try {
+            setStatus(e);
+
+            let filter = {};
+            if (e == 'OutOfStock') {
+                filter = { stockAvailability: 'OUT_OF_STOCK' };
+            } else {
+                filter = { stockAvailability: 'IN_STOCK' };
+            }
+            const res = await productListRefetch({
+                channel: 'india-channel',
+                first: 100,
+                direction: 'DESC',
+                field: 'CREATED_AT',
+                filter,
+            });
+
+            const newData = res?.data?.products?.edges.map((item: any) => ({
+                ...item.node,
+                product: item?.node?.products?.totalCount,
+                image: item?.node?.thumbnail?.url,
+                categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
+                date: item?.node?.updatedAt
+                    ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
+                    : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
+                // price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
+                price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
+                status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
+                sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
+                tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
+                stock: checkStock(item?.node?.variants) ? 'In stock' : 'Out of stock',
+
+                // shipmentTracking: item?.node?.shipments?.length>0?item
+            }));
+
+            // const sorting: any = sortBy(newData, 'id');
+            if (e == '') {
+                getProductList();
+            } else {
+                setProductList(newData);
+            }
+
+            console.log('res: ', res);
+        } catch (error) {
+            console.log('error: ', error);
+        }
     };
 
     const productTypeChange = (selectedProductType: string) => {
@@ -611,7 +674,7 @@ const ProductList = () => {
         }
     };
 
-    const variantChannelListUpdate = async ( price: any,productId: any, variantId: any, row: any) => {
+    const variantChannelListUpdate = async (price: any, productId: any, variantId: any, row: any) => {
         try {
             const { data } = await updateVariantList({
                 variables: {
@@ -683,11 +746,11 @@ const ProductList = () => {
     const statusFilter = [
         {
             name: 'In Stock',
-            value: 'inStock',
+            value: 'InStock',
         },
         {
             name: 'Out of stock',
-            value: 'outOfStock',
+            value: 'OutOfStock',
         },
     ];
 
@@ -752,7 +815,7 @@ const ProductList = () => {
                                     );
                                 })}
                             </select>
-                            {/* <select className="form-select flex-1" value={status} onChange={(e) => statusChange(e.target.value)}>
+                            <select className="form-select flex-1" value={status} onChange={(e) => statusChange(e.target.value)}>
                                 <option value={''}>Select a status</option>;
                                 {statusFilter?.map((item: any) => {
                                     return (
@@ -761,7 +824,7 @@ const ProductList = () => {
                                         </>
                                     );
                                 })}
-                            </select> */}
+                            </select>
 
                             {/* New select dropdown for stock status */}
                             {/* <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>
@@ -782,107 +845,101 @@ const ProductList = () => {
                 </div>
 
                 <div className="datatables">
-                    <DataTable
-                        className="table-hover whitespace-nowrap"
-                        records={recordsData}
-                        columns={[
-                            // { accessor: 'id', sortable: true },
-                            { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                            // { accessor: 'name', sortable: true },
-                            {
-                                accessor: 'name',
-                                sortable: true,
-                                render: (row) => (
-                                    <>
-                                        <div className="">{row.name}</div>
-                                        <button onClick={() => duplicate(row)} className=" cursor-pointer text-blue-400 underline">
-                                            Duplicate
-                                        </button>
-                                    </>
-                                ),
-                            },
-
-                            { accessor: 'sku', sortable: true, title: 'SKU' },
-                            { accessor: 'status', sortable: true },
-                            { accessor: 'price', sortable: true },
-                            { accessor: 'categories', sortable: true },
-                            {
-                                accessor: 'tags',
-                                sortable: true,
-                                width: 200,
-
-                                render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '200px' }}>{row.tags}</div>,
-                            },
-                            {
-                                accessor: 'date',
-                                sortable: true,
-                                width: 160,
-                                render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '160px' }}>{row.date}</div>,
-                            },
-                            {
-                                // Custom column for actions
-                                accessor: 'actions', // You can use any accessor name you want
-                                title: 'Actions',
-                                // Render method for custom column
-                                render: (row: any) => (
-                                    <>
-                                        <div className="mx-auto flex w-max items-center gap-4">
-                                            <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/edit?id=${row.id}`)}>
-                                                <IconEdit className="h-4.5 w-4.5" />
+                    {loading ? (
+                        <CommonLoader />
+                    ) : (
+                        <DataTable
+                            customLoader={<CommonLoader />}
+                            className="table-hover whitespace-nowrap"
+                            records={recordsData}
+                            columns={[
+                                // { accessor: 'id', sortable: true },
+                                { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                                // { accessor: 'name', sortable: true },
+                                {
+                                    accessor: 'name',
+                                    sortable: true,
+                                    render: (row) => (
+                                        <>
+                                            <div className="">{row.name}</div>
+                                            <button onClick={() => duplicate(row)} className=" cursor-pointer text-blue-400 underline">
+                                                Duplicate
                                             </button>
-                                            {/* {row?.status == 'Published' && ( */}
-                                            <button
-                                                className="flex hover:text-info"
-                                                onClick={() => {
-                                                    if (row.status == 'Draft') {
-                                                        Failure('Product is Draft !');
-                                                    } else {
-                                                        window.open(`http://www1.prade.in/product-details/${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
-                                                    }
-                                                }}
-                                            >
-                                                {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
-                                                <IconEye />
-                                            </button>
-                                            {/* )} */}
+                                        </>
+                                    ),
+                                },
 
-                                            <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
-                                                <IconTrashLines />
-                                            </button>
-                                        </div>
-                                    </>
-                                ),
-                            },
-                        ]}
-                        highlightOnHover
-                        totalRecords={initialRecords.length}
-                        recordsPerPage={pageSize}
-                        page={page}
-                        onPageChange={(p) => setPage(p)}
-                        recordsPerPageOptions={PAGE_SIZES}
-                        onRecordsPerPageChange={setPageSize}
-                        sortStatus={sortStatus}
-                        onSortStatusChange={setSortStatus}
-                        selectedRecords={selectedRecords}
-                        onSelectedRecordsChange={(selectedRecords) => {
-                            setSelectedRecords(selectedRecords);
-                        }}
-                        minHeight={200}
-                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                        // mantineRowDragHandleProps={({ table }) => ({
-                        //     onDragEnd: () => {
-                        //       const { draggingRow, hoveredRow } = table.getState();
-                        //       if (hoveredRow && draggingRow) {
-                        //         data.splice(
-                        //           (hoveredRow as MRT_Row<Person>).index,
-                        //           0,
-                        //           data.splice(draggingRow.index, 1)[0],
-                        //         );
-                        //         setData([...data]);
-                        //       }
-                        //     },
-                        //   })}
-                    />
+                                { accessor: 'sku', sortable: true, title: 'SKU' },
+                                { accessor: 'stock', sortable: false },
+
+                                { accessor: 'status', sortable: true },
+                                { accessor: 'price', sortable: true },
+                                { accessor: 'categories', sortable: true },
+                                {
+                                    accessor: 'tags',
+                                    sortable: true,
+                                    width: 200,
+
+                                    render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '200px' }}>{row.tags}</div>,
+                                },
+                                {
+                                    accessor: 'date',
+                                    sortable: true,
+                                    width: 160,
+                                    render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '160px' }}>{row.date}</div>,
+                                },
+                                {
+                                    // Custom column for actions
+                                    accessor: 'actions', // You can use any accessor name you want
+                                    title: 'Actions',
+                                    // Render method for custom column
+                                    render: (row: any) => (
+                                        <>
+                                            <div className="mx-auto flex w-max items-center gap-4">
+                                                <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/edit?id=${row.id}`)}>
+                                                    <IconEdit className="h-4.5 w-4.5" />
+                                                </button>
+                                                {/* {row?.status == 'Published' && ( */}
+                                                <button
+                                                    className="flex hover:text-info"
+                                                    onClick={() => {
+                                                        if (row.status == 'Draft') {
+                                                            Failure('Product is Draft !');
+                                                        } else {
+                                                            window.open(`http://www1.prade.in/product-details/${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
+                                                        }
+                                                    }}
+                                                >
+                                                    {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
+                                                    <IconEye />
+                                                </button>
+                                                {/* )} */}
+
+                                                <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </div>
+                                        </>
+                                    ),
+                                },
+                            ]}
+                            highlightOnHover
+                            totalRecords={initialRecords.length}
+                            recordsPerPage={pageSize}
+                            page={page}
+                            onPageChange={(p) => setPage(p)}
+                            recordsPerPageOptions={PAGE_SIZES}
+                            onRecordsPerPageChange={setPageSize}
+                            sortStatus={sortStatus}
+                            onSortStatusChange={setSortStatus}
+                            selectedRecords={selectedRecords}
+                            onSelectedRecordsChange={(selectedRecords) => {
+                                setSelectedRecords(selectedRecords);
+                            }}
+                            minHeight={200}
+                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                        />
+                    )}
                 </div>
             </div>
         </div>

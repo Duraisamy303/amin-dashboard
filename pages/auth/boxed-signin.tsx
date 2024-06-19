@@ -16,6 +16,8 @@ import IconTwitter from '@/components/Icon/IconTwitter';
 import IconGoogle from '@/components/Icon/IconGoogle';
 import { useMutation } from '@apollo/client';
 import { CHECKOUT_TOKEN, LOGIN } from '@/query/auth';
+import { Failure, Success } from '@/utils/functions';
+import IconLoader from '@/components/Icon/IconLoader';
 
 const LoginBoxed = () => {
     const [addFormData] = useMutation(LOGIN);
@@ -28,16 +30,21 @@ const LoginBoxed = () => {
         subscribe: false,
     });
 
+    const [loading, setLoading] = useState(false);
+
     const dispatch = useDispatch();
+
     useEffect(() => {
         dispatch(setPageTitle('Login Boxed'));
     });
     const router = useRouter();
 
-    // const submitForm = (e: any) => {
-    //     e.preventDefault();
-    //     router.push('/');
-    // };
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            router.replace('/');
+        }
+    }, []);
 
     const getCheckoutToken = async (email: any) => {
         try {
@@ -52,13 +59,15 @@ const LoginBoxed = () => {
     };
 
     const submitForm = async () => {
+        setLoading(true);
         const { data } = await addFormData({
             variables: { email: formData.email, password: formData.password },
         });
         if (data?.tokenCreate?.errors?.length > 0) {
-            alert(data?.tokenCreate?.errors[0]?.message);
+            Failure(data?.tokenCreate?.errors[0]?.message);
+            setLoading(false);
         } else {
-            console.log("data?.tokenCreate: ", data?.tokenCreate);
+            console.log('data?.tokenCreate: ', data?.tokenCreate);
 
             localStorage.setItem('token', data?.tokenCreate?.token);
             localStorage.setItem('user', data?.tokenCreate?.user);
@@ -70,17 +79,18 @@ const LoginBoxed = () => {
             const checkoutToken: any = await getCheckoutToken(data?.data?.data?.tokenCreate?.user?.email);
             console.log('checkoutToken: ', checkoutToken);
             localStorage.setItem('checkoutToken', checkoutToken);
-
-            router.push('/');
+            setLoading(false);
+            router.replace('/');
+            Success('Login successfully');
         }
         console.log('data: ', data);
 
         // e.preventDefault();
         // router.push('/');
     };
-    const isRtl = useSelector((state:any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
-    const themeConfig = useSelector((state:any) => state.themeConfig);
+    const themeConfig = useSelector((state: any) => state.themeConfig);
     const setLocale = (flag: string) => {
         setFlag(flag);
         if (flag.toLowerCase() === 'ae') {
@@ -215,8 +225,8 @@ const LoginBoxed = () => {
                                 </button> */}
                             </form>
 
-                            <button onClick={() => submitForm()} className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]">
-                                Sign in
+                            <button onClick={() => submitForm()} className="btn  animate__animated animate__fadeIn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]">
+                                {loading ? <IconLoader /> : 'Sign in'}
                             </button>
                             {/* <div className="relative my-7 text-center md:mb-9">
                                 <span className="absolute inset-x-0 top-1/2 h-px w-full -translate-y-1/2 bg-white-light dark:bg-white-dark"></span>
@@ -262,12 +272,12 @@ const LoginBoxed = () => {
                                     </li>
                                 </ul>
                             </div> */}
-                            <div className="text-center dark:text-white mt-5">
+                            {/* <div className="text-center dark:text-white mt-5">
                                 Don't have an account ?&nbsp;
                                 <Link href="/auth/boxed-signup" className="uppercase text-primary underline transition hover:text-black dark:hover:text-white">
                                     SIGN UP
                                 </Link>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>
