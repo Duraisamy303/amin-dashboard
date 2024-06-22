@@ -9423,6 +9423,13 @@ export const SALES_BY_DATE = gql`
             noOfOrderList
             dates
             couponAmountList
+            productsTotalAmount
+            couponAmountListTotal
+            noOfOrderListCount
+            productsTotalAmountTotal
+            refundAmountListTotal
+            shippingAmountListTotal
+            totalItemsSoldListCount
         }
     }
 `;
@@ -9431,6 +9438,123 @@ export const SALES_BY_PRODUCT = gql`
     mutation SalesByProduct($fromdate: String!, $toDate: String!, $currency: String!) {
         salesByProduct(fromDate: $fromdate, inputString: $currency, toDate: $toDate) {
             topProducts
+        }
+    }
+`;
+
+export const SALES_BY_SINGLE_PRODUCT = gql`
+    mutation SalesByProduct($fromdate: String!, $toDate: String!, $currency: String!, $productid: Int!) {
+        salesByProduct(fromDate: $fromdate, inputString: $currency, toDate: $toDate, productid: $productid) {
+            dates
+            totalItemsSoldList
+            productsTotalAmount
+        }
+    }
+`;
+
+export const SALES_BY_CATEGORY = gql`
+    mutation SalesByCategory($fromdate: String!, $toDate: String!, $currency: String!, $categoryid: [ID!]!) {
+        salesByCategory(fromDate: $fromdate, inputString: $currency, toDate: $toDate, categoryid: $categoryid) {
+            dates
+            outputData
+        }
+    }
+`;
+
+export const SALES_BY_COUPON = gql`
+    mutation SalesByCoupon($fromdate: String!, $toDate: String!) {
+        salesByCoupon(fromDate: $fromdate, toDate: $toDate) {
+            dates
+            dates
+            discountAmount
+            noOfCouponsUsed
+        }
+    }
+`;
+
+export const ANALYSIS_BY_ORDER = gql`
+    mutation OrderAnalysis($fromdate: String!, $toDate: String!, $categoryIds: [ID!]!, $countryCodeList: [String!]!, $productIds: [ID]!) {
+        orderAnalysis(fromDate: $fromdate, toDate: $toDate, categoryIds: $categoryIds, countryCodeList: $countryCodeList, productIds: $productIds) {
+            dates
+            dates
+            countries
+            outputData
+        }
+    }
+`;
+export const ANALYSIS_BY_REVENUE = gql`
+    mutation orderRevenue($currency: String!, $fromdate: String!, $toDate: String!, $categoryIds: [ID!]!, $countryCodeList: [String!]!, $productIds: [ID]!) {
+        orderRevenue(fromDate: $fromdate, toDate: $toDate, categoryIds: $categoryIds, countryCodeList: $countryCodeList, productIds: $productIds, currency: $currency) {
+            dates
+            countries
+            outputData
+        }
+    }
+`;
+
+export const ANALYSIS_BY_CUSTOMER = gql`
+    mutation Customer($currency: String!, $fromdate: String!, $toDate: String!, $categoryIds: [ID!]!, $countryCodeList: [String!]!, $productIds: [ID]!) {
+        orderCustomer(fromDate: $fromdate, toDate: $toDate, categoryIds: $categoryIds, countryCodeList: $countryCodeList, productIds: $productIds, currency: $currency) {
+            countries
+            customers
+            revenue
+        }
+    }
+`;
+
+export const ANALYSIS_BY_PRODUCT_REVENUE = gql`
+    mutation orderProductsAmountByCountry($currency: String!, $fromdate: String!, $toDate: String!, $categoryIds: [ID!]!, $countryCodeList: [String!]!, $productIds: [ID]!) {
+        orderProductsAmountByCountry(fromDate: $fromdate, toDate: $toDate, categoryIds: $categoryIds, countryCodeList: $countryCodeList, productIds: $productIds, currency: $currency) {
+            countries
+            outputData
+            productsName
+        }
+    }
+`;
+
+export const PRODUCT_BY_NAME = gql`
+    query ProductSearch($name: String!) {
+        products(search: $name, channel: "india-channel", first: 100, sortBy: { direction: ASC, field: NAME }) {
+            edges {
+                node {
+                    id
+                    name
+                }
+            }
+        }
+    }
+`;
+
+export const ANALYSIS_PRODUCT_BY_COUNTRY = gql`
+    mutation Customer($currency: String!, $fromdate: String!, $toDate: String!, $categoryIds: [ID!]!, $countryCodeList: [String!]!, $productIds: [ID]!) {
+        orderSalesByCountry(fromDate: $fromdate, toDate: $toDate, categoryIds: $categoryIds, countryCodeList: $countryCodeList, productIds: $productIds, currency: $currency) {
+            countries
+            orders
+            revenue
+        }
+    }
+`;
+
+export const GUEST_LIST = gql`
+    mutation questReport($fromdate: String!, $toDate: String!) {
+        questReport(fromDate: $fromdate, toDate: $toDate) {
+            dates
+            ordersList
+            ordersListCount
+        }
+    }
+`;
+
+export const CUSTOMER_REPORT_LIST = gql`
+    mutation {
+        customerReport {
+            nameList
+            userIds
+            emailList
+            moneySpentList
+            lastOrder
+            lastOrderIds
+            lastOrderDate
         }
     }
 `;
