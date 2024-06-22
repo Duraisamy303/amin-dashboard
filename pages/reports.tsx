@@ -1,13 +1,29 @@
 import React, { Fragment, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
 import Link from 'next/link';
-import { downloadExlcel, formatCurrency, getCurrentDateTime, getDateRange, mintDateTime, useSetState } from '@/utils/functions';
+import { Failure, downloadExlcel, formatCurrency, getCurrentDateTime, getDateRange, mintDateTime, useSetState } from '@/utils/functions';
 import IconDownload from '@/components/Icon/IconDownload';
 import Tippy from '@tippyjs/react';
 import IconPencil from '@/components/Icon/IconPencil';
 import { DataTable } from 'mantine-datatable';
 import { useMutation, useQuery } from '@apollo/client';
-import { PARENT_CATEGORY_LIST, SALES_BY_DATE, SALES_BY_PRODUCT } from '@/query/product';
+import {
+    ANALYSIS_BY_CUSTOMER,
+    ANALYSIS_BY_ORDER,
+    ANALYSIS_BY_PRODUCT_REVENUE,
+    ANALYSIS_BY_REVENUE,
+    ANALYSIS_PRODUCT_BY_COUNTRY,
+    COUNTRY_LIST,
+    CUSTOMER_REPORT_LIST,
+    GUEST_LIST,
+    PARENT_CATEGORY_LIST,
+    PRODUCT_BY_NAME,
+    SALES_BY_CATEGORY,
+    SALES_BY_COUPON,
+    SALES_BY_DATE,
+    SALES_BY_PRODUCT,
+    SALES_BY_SINGLE_PRODUCT,
+} from '@/query/product';
 import Select from 'react-select';
 import moment from 'moment';
 
@@ -18,8 +34,9 @@ const tabClassNames = (selected: boolean) =>
 export default function Reports() {
     const order = ['Sales by date', 'Sales by product', 'Sales by category', 'Coupons by date'];
     const analysis = ['Order Analysis', 'Revenue Analysis', 'Customer Analysis', 'Product by Country', 'Product Revenue'];
-    const customer = ['Customers vs. guests', 'Customer list'];
+    const customer = ['Guests list', 'Customer list'];
     const orderFilter = ['Last 7 Days', 'This Month', 'Last Month', 'Year', 'Custome'];
+
     const salesByDate = [
         {
             name: 'gross sales in this period',
@@ -61,16 +78,29 @@ export default function Reports() {
 
     const [salesBydate] = useMutation(SALES_BY_DATE);
     const [salesByProduct] = useMutation(SALES_BY_PRODUCT);
+    const [salesBySingleProduct] = useMutation(SALES_BY_SINGLE_PRODUCT);
+    const [salesByCategory] = useMutation(SALES_BY_CATEGORY);
+    const [salesByCoupon] = useMutation(SALES_BY_COUPON);
+    const [analysisByOrder] = useMutation(ANALYSIS_BY_ORDER);
+    const [analysisByRevenue] = useMutation(ANALYSIS_BY_REVENUE);
+    const [analysisByCustomer] = useMutation(ANALYSIS_BY_CUSTOMER);
+    const [analysisByProductRevenue] = useMutation(ANALYSIS_BY_PRODUCT_REVENUE);
+    const [analysisProductByCountry] = useMutation(ANALYSIS_PRODUCT_BY_COUNTRY);
+    const [customerList] = useMutation(CUSTOMER_REPORT_LIST);
+    const [guestList] = useMutation(GUEST_LIST);
+
+    const { data: productSearch, refetch: productSearchRefetch } = useQuery(PRODUCT_BY_NAME);
+
+    const { data: country } = useQuery(COUNTRY_LIST);
 
     const { data: parentList, error: parentListError, refetch: parentListRefetch } = useQuery(PARENT_CATEGORY_LIST);
 
     const [state, setState] = useSetState({
         orderSubMenu: 'Sales by date',
-        customerIndex: 0,
         activeTab: 'Orders',
         dateFilter: 'Last 7 Days',
         orderDateFilter: 'Last 7 Days',
-        search: '',
+        productSearch: '',
         activeAccordion: null,
         analysisTab: 'Order Analysis',
         orderStartDate: new Date(),
@@ -78,6 +108,28 @@ export default function Reports() {
         orderCurrency: 'All Currencies',
         analysisCurrency: 'All Currencies',
         tableData: [],
+        salesByDate: [],
+        productList: [],
+        tableColumn: [],
+        topSellers: [],
+        selectedTopSeller: '',
+        analysisColumn: [],
+        analysisTable: [],
+        analysisDateFilter: 'Last 7 Days',
+        analysisStartDate: new Date(),
+        analysisEndDate: new Date(),
+        analysisProductsearch: '',
+        analysisSelectedCountries: [],
+        analysisSelectedCategory: [],
+        analysisSelectedProduct: [],
+        countryList: [],
+        analysisProductList: [],
+        customerDateFilter: 'Last 7 Days',
+        customerTab: 'Guests list',
+        customerStartDate: new Date(),
+        customerEndDate: new Date(),
+        customerTable: [],
+        customerColumn: [],
     });
 
     const getBorderColor = (index) => {
@@ -88,19 +140,74 @@ export default function Reports() {
     };
 
     const toggleAccordion = (accordion) => {
-        console.log('accordion: ', accordion);
         setState({
             activeAccordion: state.activeAccordion === accordion ? null : accordion,
         });
     };
 
     useEffect(() => {
+        if (state.orderSubMenu == 'Sales by product') {
+            getSalesByProduct();
+        }
+    }, [state.orderSubMenu]);
+
+    useEffect(() => {
+        getCountryList();
+    }, [country]);
+
+    useEffect(() => {
+        getProductByName();
+    }, [productSearch]);
+
+    useEffect(() => {
         if (state.orderSubMenu == 'Sales by date') {
             getSalesByDate();
         } else if (state.orderSubMenu == 'Sales by product') {
-            getSalesByProduct();
+            if (state.productSearch !== '') {
+                getSalesBySingleProduct('search', state.productSearch?.value);
+            }
+            if (state.selectedTopSeller !== '') {
+                getSalesBySingleProduct('select', state.selectedTopSeller);
+            }
+        } else if (state.orderSubMenu == 'Sales by category') {
+            getSalesByCategory(state.selectedCategory);
+        } else if (state.orderSubMenu == 'Coupons by date') {
+            getSalesByCoupon();
         }
-    }, [state.orderDateFilter, state.orderStartDate, state.orderEndDate, state.orderSubMenu]);
+    }, [state.orderDateFilter, state.orderStartDate, state.orderEndDate, state.orderSubMenu, state.orderCurrency]);
+
+    useEffect(() => {
+        if (state.analysisTab == 'Order Analysis') {
+            getAnalysisByOrder();
+        } else if (state.analysisTab == 'Revenue Analysis') {
+            getAnalysisByRevenue();
+        } else if (state.analysisTab == 'Customer Analysis') {
+            getAnalysisByCustomer();
+        } else if (state.analysisTab == 'Product Revenue') {
+            getAnalysisByProductRevenue();
+        } else if (state.analysisTab == 'Product by Country') {
+            getAnalysisProductByCountry();
+        }
+    }, [
+        state.analysisDateFilter,
+        state.analysisTab,
+        state.analysisStartDate,
+        state.analysisEndDate,
+        state.analysisCurrency,
+        state.analysisSelectedCountries,
+        state.analysisSelectedCategory,
+        state.analysisSelectedProduct,
+        ,
+        state.activeTab,
+    ]);
+
+    useEffect(() => {
+        if (state.customerTab == 'Guests list') {
+            getGuestList();
+        } else if (state.customerTab == 'Customer list') {
+            getCustomerList();
+        }
+    }, [state.customerDateFilter, state.customerTab, state.customerStartDate, state.customerEndDate]);
 
     useEffect(() => {
         GetcategoryFilterData();
@@ -120,10 +227,37 @@ export default function Reports() {
         }
     };
 
+    const getCountryList = async () => {
+        try {
+            const dropdownData = country?.shop?.countries?.map((item: any) => {
+                return { value: item.code, label: item.country };
+            });
+
+            setState({ countryList: dropdownData });
+            // setParentLists(getparentCategoryList);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getProductByName = async () => {
+        try {
+            const res = await productSearchRefetch({
+                name: '',
+            });
+
+            const response = res?.data?.products?.edges;
+            const dropdownData = response?.map((item: any) => ({ value: item?.node?.id, label: item?.node?.name }));
+            console.log('dropdownData: ', dropdownData);
+            setState({ analysisProductList: dropdownData });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
     const getSalesByDate = async () => {
         try {
             let startDate: any, endDate: any;
-            console.log('state.orderDateFilter: ', state.orderDateFilter);
 
             if (state.orderDateFilter == 'Last 7 Days') {
                 const { start, end } = getDateRange('last7Days');
@@ -140,23 +274,91 @@ export default function Reports() {
                 (startDate = start), (endDate = end);
             }
 
+            if (state.orderDateFilter == 'Year') {
+                const { start, end } = getDateRange('Year');
+                (startDate = start), (endDate = end);
+            }
+
             if (state.orderDateFilter == 'Custome') {
                 (startDate = moment(state.orderStartDate).format('YYYY-MM-DD')), (endDate = moment(state.orderEndDate).format('YYYY-MM-DD'));
             }
 
-            console.log('startDate: ', startDate, endDate);
+            const variables = {
+                fromdate: startDate,
+                toDate: endDate,
+                currency: state.orderCurrency,
+            };
 
             const res = await salesBydate({
-                variables: {
-                    fromdate: startDate,
-                    toDate: endDate,
-                    currency: state.currency,
-                },
+                variables,
             });
+            const response = res?.data?.salesByDate;
+            const orderCounts = {
+                couponAmountListTotal: response.couponAmountListTotal,
+                noOfOrderListCount: response.noOfOrderListCount,
+                productsTotalAmountTotal: response.productsTotalAmountTotal,
+                refundAmountListTotal: response.refundAmountListTotal,
+                shippingAmountListTotal: response.shippingAmountListTotal,
+                totalItemsSoldListCount: response.totalItemsSoldListCount,
+            };
 
-            const tableData = salesBydateTable(res?.data?.salesByDate);
-            console.log('tableData: ', tableData);
-            setState({ tableData });
+            const salesByDate = [
+                // {
+                //     name: 'gross sales in this period',
+                //     value: '0.00',
+                // },
+                // {
+                //     name: 'average gross monthly sales',
+                //     value: '0.00',
+                // },
+                // {
+                //     name: 'net sales in this period',
+                //     value: '0.00',
+                // },
+                // {
+                //     name: 'average net monthly sales',
+                //     value: '0.00',
+                // },
+                {
+                    name: 'Orders placed',
+                    value: response.noOfOrderListCount,
+                },
+                // {
+                //     name: 'Items purchased',
+                //     value: '0.00',
+                // },
+                {
+                    name: 'Total items sold',
+                    value: response.totalItemsSoldListCount,
+                },
+                {
+                    name: 'Product total amount',
+                    value: `${formatCurrency('INR')} ${response.productsTotalAmountTotal}`,
+                },
+                {
+                    name: `Refunded 0 orders (0 items)`,
+                    value: `${formatCurrency('INR')} ${response.refundAmountListTotal}`,
+                },
+                {
+                    name: 'Charged for shipping',
+                    value: `${formatCurrency('INR')} ${response.shippingAmountListTotal}`,
+                },
+                {
+                    name: 'Worth of coupons used',
+                    value: `${formatCurrency('INR')} ${response.couponAmountListTotal}`,
+                },
+            ];
+            const tableColumn = [
+                { accessor: 'date', title: 'Date' },
+                { accessor: 'noOfOrders', title: 'No of orders' },
+                { accessor: 'totalItemsSold', title: 'Total Items Sold' },
+                { accessor: 'couponAmount', title: 'Coupon Amount' },
+                { accessor: 'refundAmount', title: 'Refund Amount' },
+                { accessor: 'shippingAmount', title: 'Shipping Amount' },
+            ];
+
+            const tableData = salesBydateTable(response);
+            setState({ tableData, salesByDate, tableColumn });
         } catch (error) {
             console.log('error: ', error);
         }
@@ -180,6 +382,10 @@ export default function Reports() {
                 const { start, end } = getDateRange('lastMonth');
                 (startDate = start), (endDate = end);
             }
+            if (state.orderDateFilter == 'Year') {
+                const { start, end } = getDateRange('Year');
+                (startDate = start), (endDate = end);
+            }
 
             if (state.orderDateFilter == 'Custome') {
                 (startDate = moment(state.orderStartDate).format('YYYY-MM-DD')), (endDate = moment(state.orderEndDate).format('YYYY-MM-DD'));
@@ -189,21 +395,714 @@ export default function Reports() {
                 variables: {
                     fromdate: startDate,
                     toDate: endDate,
-                    currency: state.currency,
+                    currency: state.orderCurrency,
                 },
             });
-            console.log('res?.data: ', res?.data);
+            const structuredData = res?.data?.salesByProduct?.topProducts?.map(cleanAndParseJSON);
 
-            const tableData = salesBydateTable(res?.data?.salesByDate);
-            console.log('tableData: ', tableData);
-            setState({ tableData });
+            const dropdownData = structuredData?.map((item: any) => {
+                return { value: item.variant__product__id, label: item.variant__product__name };
+            });
+            setState({ tableData: [], productList: dropdownData, tableColumn: [], topSellers: structuredData });
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
+    const getSalesBySingleProduct = async (type: string, productId: any) => {
+        try {
+            if (type == 'search' && state.productSearch == '') {
+                Failure('Please select product ');
+            } else if (productId == '') {
+                setState({ tableData: [], tableColumn: [] });
+            } else {
+                let startDate: any, endDate: any;
+
+                if (state.orderDateFilter == 'Last 7 Days') {
+                    const { start, end } = getDateRange('last7Days');
+                    (startDate = start), (endDate = end);
+                }
+
+                if (state.orderDateFilter == 'This Month') {
+                    const { start, end } = getDateRange('thisMonth');
+                    (startDate = start), (endDate = end);
+                }
+
+                if (state.orderDateFilter == 'Last Month') {
+                    const { start, end } = getDateRange('lastMonth');
+                    (startDate = start), (endDate = end);
+                }
+                if (state.orderDateFilter == 'Year') {
+                    const { start, end } = getDateRange('Year');
+                    (startDate = start), (endDate = end);
+                }
+
+                if (state.orderDateFilter == 'Custome') {
+                    (startDate = moment(state.orderStartDate).format('YYYY-MM-DD')), (endDate = moment(state.orderEndDate).format('YYYY-MM-DD'));
+                }
+
+                const res = await salesBySingleProduct({
+                    variables: {
+                        fromdate: startDate,
+                        toDate: endDate,
+                        currency: state.orderCurrency,
+                        productid: productId,
+                    },
+                });
+                const tableColumn = [
+                    // { accessor: 'variant__product__id', title: 'Variant Product ID' },
+                    { accessor: 'dates', title: 'Date' },
+                    { accessor: 'totalItemsSoldList', title: 'Total Items Sold' },
+                    { accessor: 'productsTotalAmount', title: 'Product Total Amount' },
+                ];
+
+                const response = res?.data?.salesByProduct;
+
+                const table = response?.dates?.map((dates, index) => ({
+                    dates,
+                    productsTotalAmount: response?.productsTotalAmount[index],
+                    totalItemsSoldList: response?.totalItemsSoldList[index],
+                }));
+                setState({ tableData: table, tableColumn });
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getSalesByCategory = async (categoryid) => {
+        try {
+            if (categoryid?.length > 0) {
+                let startDate: any, endDate: any;
+
+                if (state.orderDateFilter == 'Last 7 Days') {
+                    const { start, end } = getDateRange('last7Days');
+                    (startDate = start), (endDate = end);
+                }
+
+                if (state.orderDateFilter == 'This Month') {
+                    const { start, end } = getDateRange('thisMonth');
+                    (startDate = start), (endDate = end);
+                }
+
+                if (state.orderDateFilter == 'Last Month') {
+                    const { start, end } = getDateRange('lastMonth');
+                    (startDate = start), (endDate = end);
+                }
+                if (state.orderDateFilter == 'Year') {
+                    const { start, end } = getDateRange('Year');
+                    (startDate = start), (endDate = end);
+                }
+
+                if (state.orderDateFilter == 'Custome') {
+                    (startDate = moment(state.orderStartDate).format('YYYY-MM-DD')), (endDate = moment(state.orderEndDate).format('YYYY-MM-DD'));
+                }
+                const arr = categoryid?.map((item) => item.value);
+
+                const res = await salesByCategory({
+                    variables: {
+                        fromdate: startDate,
+                        toDate: endDate,
+                        currency: state.orderCurrency,
+                        categoryid: arr,
+                    },
+                });
+                const response = res?.data?.salesByCategory;
+
+                const transformDataForTable = (response) => {
+                    return response.dates.map((date, index) => {
+                        const rowData = { date };
+                        response.outputData.forEach((data, dataIndex) => {
+                            rowData[`value${dataIndex + 1}`] = data[index];
+                        });
+                        return rowData;
+                    });
+                };
+
+                const tableData = transformDataForTable(response);
+
+                const generateColumns = (outputDataLength, categoryid) => {
+                    const columns = [{ accessor: 'date', title: 'Date' }];
+                    for (let i = 0; i < outputDataLength; i++) {
+                        const title = categoryid[i]?.label;
+                        columns.push({ accessor: `value${i + 1}`, title });
+                    }
+                    return columns;
+                };
+                const columns = generateColumns(response.outputData.length, categoryid);
+
+                setState({ tableData, tableColumn: columns });
+            } else {
+                setState({ tableData: [], tableColumn: [] });
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getSalesByCoupon = async () => {
+        try {
+            // if (categoryid?.length > 0) {
+            let startDate: any, endDate: any;
+
+            if (state.orderDateFilter == 'Last 7 Days') {
+                const { start, end } = getDateRange('last7Days');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.orderDateFilter == 'This Month') {
+                const { start, end } = getDateRange('thisMonth');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.orderDateFilter == 'Last Month') {
+                const { start, end } = getDateRange('lastMonth');
+                (startDate = start), (endDate = end);
+            }
+            if (state.orderDateFilter == 'Year') {
+                const { start, end } = getDateRange('Year');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.orderDateFilter == 'Custome') {
+                (startDate = moment(state.orderStartDate).format('YYYY-MM-DD')), (endDate = moment(state.orderEndDate).format('YYYY-MM-DD'));
+            }
+
+            const res = await salesByCoupon({
+                variables: {
+                    fromdate: startDate,
+                    toDate: endDate,
+                    // currency: state.orderCurrency,
+                },
+            });
+            console.log('salesByCoupon: ', res);
+            const response = res?.data?.salesByCoupon;
+
+            const table = response?.dates?.map((date, index) => ({
+                date,
+                discountAmount: response?.discountAmount[index],
+                noOfCouponsUsed: response?.noOfCouponsUsed[index],
+            }));
+
+            const tableColumn = [
+                { accessor: 'date', title: 'Date' },
+                { accessor: 'discountAmount', title: 'Discount Amount' },
+                { accessor: 'noOfCouponsUsed', title: 'Number of coupon used' },
+            ];
+
+            setState({ tableData: table, tableColumn });
+            // } else {
+            //     setState({ tableData: [], tableColumn: [] });
+            // }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getAnalysisByOrder = async () => {
+        try {
+            let startDate: any, endDate: any;
+
+            if (state.analysisDateFilter == 'Last 7 Days') {
+                const { start, end } = getDateRange('last7Days');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'This Month') {
+                const { start, end } = getDateRange('thisMonth');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Last Month') {
+                const { start, end } = getDateRange('lastMonth');
+                (startDate = start), (endDate = end);
+            }
+            if (state.analysisDateFilter == 'Year') {
+                const { start, end } = getDateRange('Year');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Custome') {
+                (startDate = moment(state.analysisStartDate).format('YYYY-MM-DD')), (endDate = moment(state.analysisEndDate).format('YYYY-MM-DD'));
+            }
+            let categoryIds = [];
+            let countryCodeList = [];
+            let productIds = [];
+
+            if (state.analysisSelectedCountries?.length > 0) {
+                countryCodeList = state.analysisSelectedCountries?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedCategory?.length > 0) {
+                categoryIds = state.analysisSelectedCategory?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedProduct?.length > 0) {
+                productIds = state.analysisSelectedProduct?.map((item) => item?.value);
+            }
+
+            const res = await analysisByOrder({
+                variables: {
+                    fromdate: startDate,
+                    toDate: endDate,
+                    categoryIds,
+                    countryCodeList,
+                    productIds,
+                },
+            });
+            const response = res?.data?.orderAnalysis;
+
+            const generateColumns = (dates) => {
+                const columns = [{ accessor: 'country', title: 'Countries' }];
+                dates.forEach((date, index) => {
+                    columns.push({ accessor: `value${index + 1}`, title: date });
+                });
+                return columns;
+            };
+
+            const columns = generateColumns(response.dates);
+
+            // Step 3: Populate Rows
+            const rows = response.outputData.map((data) => {
+                const row = { country: data[0] };
+                data.slice(1).forEach((value, index) => {
+                    row[`value${index + 1}`] = value;
+                });
+                return row;
+            });
+
+            setState({ analysisTable: rows, analysisColumn: columns });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getAnalysisByRevenue = async () => {
+        try {
+            let startDate: any, endDate: any;
+
+            if (state.analysisDateFilter == 'Last 7 Days') {
+                const { start, end } = getDateRange('last7Days');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'This Month') {
+                const { start, end } = getDateRange('thisMonth');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Last Month') {
+                const { start, end } = getDateRange('lastMonth');
+                (startDate = start), (endDate = end);
+            }
+            if (state.analysisDateFilter == 'Year') {
+                const { start, end } = getDateRange('Year');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Custome') {
+                (startDate = moment(state.analysisStartDate).format('YYYY-MM-DD')), (endDate = moment(state.analysisEndDate).format('YYYY-MM-DD'));
+            }
+            let categoryIds = [];
+            let countryCodeList = [];
+            let productIds = [];
+
+            if (state.analysisSelectedCountries?.length > 0) {
+                countryCodeList = state.analysisSelectedCountries?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedCategory?.length > 0) {
+                categoryIds = state.analysisSelectedCategory?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedProduct?.length > 0) {
+                productIds = state.analysisSelectedProduct?.map((item) => item?.value);
+            }
+
+            const res = await analysisByRevenue({
+                variables: {
+                    fromdate: startDate,
+                    toDate: endDate,
+                    categoryIds,
+                    countryCodeList,
+                    productIds,
+                    currency: state.analysisCurrency,
+                },
+            });
+            const response = res?.data?.orderRevenue;
+
+            const generateColumns = (dates) => {
+                const columns = [{ accessor: 'country', title: 'Countries' }];
+                dates.forEach((date, index) => {
+                    columns.push({ accessor: `value${index + 1}`, title: date });
+                });
+                return columns;
+            };
+
+            const columns = generateColumns(response.dates);
+
+            // Step 3: Populate Rows
+            const rows = response.outputData.map((data) => {
+                const row = { country: data[0] };
+                data.slice(1).forEach((value, index) => {
+                    row[`value${index + 1}`] = value;
+                });
+                return row;
+            });
+
+            setState({ analysisTable: rows, analysisColumn: columns });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getAnalysisByCustomer = async () => {
+        try {
+            let startDate: any, endDate: any;
+
+            if (state.analysisDateFilter == 'Last 7 Days') {
+                const { start, end } = getDateRange('last7Days');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'This Month') {
+                const { start, end } = getDateRange('thisMonth');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Last Month') {
+                const { start, end } = getDateRange('lastMonth');
+                (startDate = start), (endDate = end);
+            }
+            if (state.analysisDateFilter == 'Year') {
+                const { start, end } = getDateRange('Year');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Custome') {
+                (startDate = moment(state.analysisStartDate).format('YYYY-MM-DD')), (endDate = moment(state.analysisEndDate).format('YYYY-MM-DD'));
+            }
+            let categoryIds = [];
+            let countryCodeList = [];
+            let productIds = [];
+
+            if (state.analysisSelectedCountries?.length > 0) {
+                countryCodeList = state.analysisSelectedCountries?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedCategory?.length > 0) {
+                categoryIds = state.analysisSelectedCategory?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedProduct?.length > 0) {
+                productIds = state.analysisSelectedProduct?.map((item) => item?.value);
+            }
+
+            const res = await analysisByCustomer({
+                variables: {
+                    fromdate: startDate,
+                    toDate: endDate,
+                    categoryIds,
+                    countryCodeList,
+                    productIds,
+                    currency: state.analysisCurrency,
+                },
+            });
+
+            const response = res?.data?.orderCustomer;
+
+            const generateColumns = (data) => {
+                return Object.keys(data)
+                    .filter((key) => key !== '__typename')
+                    .map((key) => {
+                        return { accessor: key, title: key.charAt(0).toUpperCase() + key.slice(1) };
+                    });
+            };
+
+            const generateRows = (data) => {
+                const rowCount = data.countries.length;
+                const rows = [];
+
+                for (let i = 0; i < rowCount; i++) {
+                    const row = {};
+                    Object.keys(data).forEach((key) => {
+                        if (key !== '__typename') {
+                            row[key] = data[key][i];
+                        }
+                    });
+                    rows.push(row);
+                }
+
+                return rows;
+            };
+            const columns = generateColumns(response);
+            const rows = generateRows(response);
+
+            setState({ analysisTable: rows, analysisColumn: columns });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getAnalysisProductByCountry = async () => {
+        try {
+            let startDate: any, endDate: any;
+
+            if (state.analysisDateFilter == 'Last 7 Days') {
+                const { start, end } = getDateRange('last7Days');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'This Month') {
+                const { start, end } = getDateRange('thisMonth');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Last Month') {
+                const { start, end } = getDateRange('lastMonth');
+                (startDate = start), (endDate = end);
+            }
+            if (state.analysisDateFilter == 'Year') {
+                const { start, end } = getDateRange('Year');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Custome') {
+                (startDate = moment(state.analysisStartDate).format('YYYY-MM-DD')), (endDate = moment(state.analysisEndDate).format('YYYY-MM-DD'));
+            }
+            let categoryIds = [];
+            let countryCodeList = [];
+            let productIds = [];
+
+            if (state.analysisSelectedCountries?.length > 0) {
+                countryCodeList = state.analysisSelectedCountries?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedCategory?.length > 0) {
+                categoryIds = state.analysisSelectedCategory?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedProduct?.length > 0) {
+                productIds = state.analysisSelectedProduct?.map((item) => item?.value);
+            }
+
+            const res = await analysisProductByCountry({
+                variables: {
+                    fromdate: startDate,
+                    toDate: endDate,
+                    categoryIds,
+                    countryCodeList,
+                    productIds,
+                    currency: state.analysisCurrency,
+                },
+            });
+
+            const response = res?.data?.orderSalesByCountry;
+
+            const generateColumns = (data) => {
+                return Object.keys(data)
+                    .filter((key) => key !== '__typename') // Ignore __typename
+                    .map((key) => {
+                        return { accessor: key, title: key.charAt(0).toUpperCase() + key.slice(1) };
+                    });
+            };
+
+            const generateRows = (data) => {
+                const rowCount = data.countries.length;
+                const rows = [];
+
+                for (let i = 0; i < rowCount; i++) {
+                    const row = {};
+                    Object.keys(data)
+                        .filter((key) => key !== '__typename') // Ignore __typename
+                        .forEach((key) => {
+                            row[key] = data[key][i];
+                        });
+                    rows.push(row);
+                }
+
+                return rows;
+            };
+
+            const columns = generateColumns(response);
+            const rows = generateRows(response);
+            setState({ analysisTable: rows, analysisColumn: columns });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getAnalysisByProductRevenue = async () => {
+        try {
+            let startDate: any, endDate: any;
+
+            if (state.analysisDateFilter == 'Last 7 Days') {
+                const { start, end } = getDateRange('last7Days');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'This Month') {
+                const { start, end } = getDateRange('thisMonth');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Last Month') {
+                const { start, end } = getDateRange('lastMonth');
+                (startDate = start), (endDate = end);
+            }
+            if (state.analysisDateFilter == 'Year') {
+                const { start, end } = getDateRange('Year');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.analysisDateFilter == 'Custome') {
+                (startDate = moment(state.analysisStartDate).format('YYYY-MM-DD')), (endDate = moment(state.analysisEndDate).format('YYYY-MM-DD'));
+            }
+            let categoryIds = [];
+            let countryCodeList = [];
+            let productIds = [];
+
+            if (state.analysisSelectedCountries?.length > 0) {
+                countryCodeList = state.analysisSelectedCountries?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedCategory?.length > 0) {
+                categoryIds = state.analysisSelectedCategory?.map((item) => item?.value);
+            }
+
+            if (state.analysisSelectedProduct?.length > 0) {
+                productIds = state.analysisSelectedProduct?.map((item) => item?.value);
+            }
+
+            const res = await analysisByProductRevenue({
+                variables: {
+                    fromdate: startDate,
+                    toDate: endDate,
+                    categoryIds,
+                    countryCodeList,
+                    productIds,
+                    currency: state.analysisCurrency,
+                },
+            });
+
+            const orderData = res.data.orderProductsAmountByCountry;
+
+            // Generate columns
+            const generateColumns = (data) => {
+                const columns = [{ accessor: 'productName', title: 'Product Name' }];
+
+                data.countries.forEach((country, index) => {
+                    columns.push({ accessor: `country${index}`, title: country });
+                });
+
+                return columns;
+            };
+
+            // Generate rows
+            const generateRows = (data) => {
+                const rows = data.productsName.map((productName, productIndex) => {
+                    const row = { productName };
+
+                    data.countries.forEach((_, countryIndex) => {
+                        row[`country${countryIndex}`] = data.outputData[countryIndex][productIndex + 1];
+                    });
+
+                    return row;
+                });
+
+                return rows;
+            };
+
+            // Generate columns and rows
+            const columns = generateColumns(orderData);
+            const rows = generateRows(orderData);
+
+            setState({ analysisTable: rows, analysisColumn: columns });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getGuestList = async () => {
+        try {
+            let startDate: any, endDate: any;
+
+            if (state.customerDateFilter == 'Last 7 Days') {
+                const { start, end } = getDateRange('last7Days');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.customerDateFilter == 'This Month') {
+                const { start, end } = getDateRange('thisMonth');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.customerDateFilter == 'Last Month') {
+                const { start, end } = getDateRange('lastMonth');
+                (startDate = start), (endDate = end);
+            }
+            if (state.customerDateFilter == 'Year') {
+                const { start, end } = getDateRange('Year');
+                (startDate = start), (endDate = end);
+            }
+
+            if (state.customerDateFilter == 'Custome') {
+                (startDate = moment(state.customerStartDate).format('YYYY-MM-DD')), (endDate = moment(state.customerEndDate).format('YYYY-MM-DD'));
+            }
+
+            const res = await guestList({
+                variables: {
+                    fromdate: startDate,
+                    toDate: endDate,
+                },
+            });
+            const response = res?.data?.questReport;
+
+            const table = response?.dates?.map((date, index) => ({
+                date,
+                ordersList: response.ordersList[index],
+            }));
+            const tableColumn = [
+                { accessor: 'date', title: 'Date' },
+                { accessor: 'ordersList', title: 'Order count' },
+            ];
+            setState({ customerTable: table, customerColumn: tableColumn });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const getCustomerList = async () => {
+        try {
+            const res = await customerList();
+            const response = res?.data?.customerReport;
+            const table = response?.nameList?.map((item, index) => ({
+                name: item,
+                emailList: response.emailList[index],
+                moneySpentList: response.moneySpentList[index],
+                lastOrder: response.lastOrder[index],
+                lastOrderDate: response.lastOrderDate[index],
+            }));
+            const tableColumn = [
+                { accessor: 'name', title: 'Name' },
+                { accessor: 'emailList', title: 'Email' },
+                { accessor: 'moneySpentList', title: 'Spend money' },
+                { accessor: 'lastOrder', title: 'Last order' },
+                { accessor: 'lastOrderDate', title: 'Last order date' },
+            ];
+
+            setState({ customerTable: table, customerColumn: tableColumn });
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
+    const cleanAndParseJSON = (str) => {
+        str = str.replace(/'/g, '"').replace(/None/g, 'null');
+        return JSON.parse(str);
+    };
+
     const salesBydateTable = (data) => {
-        console.log('data: ', data);
         const { dates, totalItemsSoldList, shippingAmountList, refundAmountList, noOfOrderList, couponAmountList, productsTotalAmount } = data;
 
         const table = dates?.map((date, index) => ({
@@ -218,7 +1117,6 @@ export default function Reports() {
 
         return table;
     };
-    // Mapping selected values to options for display in the Select component
 
     return (
         <>
@@ -238,6 +1136,10 @@ export default function Reports() {
                                             orderCurrency: 'All Currencies',
                                             analysisTab: 'Order Analysis',
                                             analysisCurrency: 'All Currencies',
+                                            productSearch: '',
+                                            analysisDateFilter: 'Last 7 Days',
+                                            customerDateFilter: 'Last 7 Days',
+                                            customerTab: 'Guests list',
                                         });
                                     }}
                                     className={tabClassNames(selected)}
@@ -258,7 +1160,12 @@ export default function Reports() {
                             {order?.map((link, index) => (
                                 <React.Fragment key={index}>
                                     <div
-                                        onClick={() => setState({ orderSubMenu: link })}
+                                        onClick={() => {
+                                            if (link == 'Sales by product') {
+                                                setState({ activeAccordion: 'topSellers' });
+                                            }
+                                            setState({ orderSubMenu: link });
+                                        }}
                                         className={`dark:hover:text-primary-dark hover: px-4 py-2 ${link == state.orderSubMenu ? 'text-primary' : ' border-gray-300'} border-r`}
                                     >
                                         {link?.split(' ')?.map((word, i) => (
@@ -278,8 +1185,8 @@ export default function Reports() {
                             {customer?.map((link, index) => (
                                 <React.Fragment key={index}>
                                     <div
-                                        onClick={() => setState({ customerIndex: index })}
-                                        className={`dark:hover:text-primary-dark hover: px-4 py-2 ${index == state.customerIndex ? 'text-primary' : ' border-gray-300'} border-r`}
+                                        onClick={() => setState({ customerTab: link })}
+                                        className={`dark:hover:text-primary-dark hover: px-4 py-2 ${link == state.customerTab ? 'text-primary' : ' border-gray-300'} border-r`}
                                     >
                                         {link?.split(' ')?.map((word, i) => (
                                             <React.Fragment key={i}>
@@ -322,7 +1229,12 @@ export default function Reports() {
                                     {orderFilter?.map((link, index) => (
                                         <React.Fragment key={index}>
                                             <div
-                                                onClick={() => setState({ orderDateFilter: link })}
+                                                onClick={() => {
+                                                    setState({ orderDateFilter: link });
+                                                    if (state.orderSubMenu == 'Sales by product') {
+                                                        setState({ activeAccordion: 'topSellers' });
+                                                    }
+                                                }}
                                                 className={`dark:hover:text-primary-dark hover: px-4 py-2 ${link == state.orderDateFilter ? 'text-primary' : ' border-gray-300'} border`}
                                             >
                                                 {link?.split(' ')?.map((word, i) => (
@@ -334,13 +1246,15 @@ export default function Reports() {
                                             </div>
                                         </React.Fragment>
                                     ))}
-                                    <div className="pl-4">
-                                        <select className="form-select w-[180px]" value={state.orderCurrency} onChange={(e) => setState({ orderCurrency: e.target.value })}>
-                                            <option value="All Currencies">All Currencies</option>
-                                            <option value="INR">INR</option>
-                                            <option value="USD">USD</option>
-                                        </select>
-                                    </div>
+                                    {state.orderSubMenu !== 'Coupons by date' && (
+                                        <div className="pl-4">
+                                            <select className="form-select w-[180px]" value={state.orderCurrency} onChange={(e) => setState({ orderCurrency: e.target.value })}>
+                                                <option value="All Currencies">All Currencies</option>
+                                                <option value="INR">INR</option>
+                                                <option value="USD">USD</option>
+                                            </select>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex gap-2 border p-3">
@@ -391,7 +1305,7 @@ export default function Reports() {
                                 <div className="col-span-3">
                                     {/* Sale by date data */}
                                     {state.orderSubMenu == 'Sales by date' ? (
-                                        salesByDate?.map((link, index) => (
+                                        state.salesByDate?.map((link, index) => (
                                             <React.Fragment key={index}>
                                                 <div
                                                     style={{ borderRightWidth: '3px', borderRightColor: getBorderColor(index), height: '80px' }} // Adjust the height as needed
@@ -400,7 +1314,7 @@ export default function Reports() {
 
                                                     // className={`dark:hover:text-primary-dark hover: mb-4 cursor-pointer px-4 py-2 ${'border-gray-300'} border`}
                                                 >
-                                                    <div className="text-md cursor-pointer text-lg ">{`${formatCurrency('INR')}${link.value}`}</div>
+                                                    <div className="text-md text-bold cursor-pointer text-lg ">{`${link.value}`}</div>
                                                     <div className="text-md cursor-pointer  text-[16px]">{link.name}</div>
                                                 </div>
                                             </React.Fragment>
@@ -417,16 +1331,31 @@ export default function Reports() {
                                                 </button>
                                                 {state.activeAccordion === 'search' && (
                                                     <div className="border border-t-0 border-gray-300 p-4 dark:border-gray-700">
-                                                        <input
-                                                            type="text"
-                                                            className="form-input w-full p-2"
-                                                            placeholder="Search by product"
-                                                            value={state.search}
-                                                            onChange={(e) => setState({ search: e.target.value })}
-                                                        />
-                                                        <button type="button" className="btn btn-primary mt-3 h-9" onClick={() => setState({ isOpenChannel: true })}>
-                                                            Submit
-                                                        </button>
+                                                        <div className="pl-4">
+                                                            <Select
+                                                                placeholder="Select a product"
+                                                                options={state.productList}
+                                                                value={state.productSearch}
+                                                                onChange={(e) => setState({ productSearch: e })}
+                                                                isSearchable={true}
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center justify-between">
+                                                            <button type="button" className="btn btn-primary mt-3 h-9" onClick={() => getSalesBySingleProduct('search', state.productSearch?.value)}>
+                                                                Submit
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-primary mt-3 h-9"
+                                                                onClick={() => {
+                                                                    setState({ productSearch: '' });
+                                                                    // getSalesByProduct();
+                                                                    setState({ tableData: [], tableColumn: [] });
+                                                                }}
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -441,11 +1370,39 @@ export default function Reports() {
                                                 </button>
                                                 {state.activeAccordion === 'topSellers' && (
                                                     <div className="border border-t-0 border-gray-300 p-4 dark:border-gray-700">
-                                                        {Array.from({ length: 8 }, (_, i) => i + 1).map((item) => (
-                                                            <div key={item} className="py-1">
-                                                                {`${1} ${'Product name'}`}
-                                                            </div>
-                                                        ))}
+                                                        {state.topSellers?.length > 0 ? (
+                                                            <>
+                                                                {state.topSellers?.map((item, index) => (
+                                                                    <div
+                                                                        key={item}
+                                                                        className={`cursor-pointer py-1 underline ${
+                                                                            item?.variant__product__id == state.selectedTopSeller ? 'text-primary' : 'text-black'
+                                                                        }`}
+                                                                        onClick={() => {
+                                                                            getSalesBySingleProduct('select', item?.variant__product__id);
+                                                                            setState({ selectedTopSeller: item?.variant__product__id });
+                                                                        }}
+                                                                    >
+                                                                        {`${item?.variant__product__id} ${item?.variant__product__name}`}
+                                                                    </div>
+                                                                ))}
+                                                                {state.selectedTopSeller !== ''}
+                                                                {
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-primary mt-3 h-9"
+                                                                        onClick={() => {
+                                                                            setState({ selectedTopSeller: '' });
+                                                                            getSalesBySingleProduct('select', '');
+                                                                        }}
+                                                                    >
+                                                                        Reset
+                                                                    </button>
+                                                                }
+                                                            </>
+                                                        ) : (
+                                                            <div>No Product found</div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
@@ -465,39 +1422,31 @@ export default function Reports() {
                                                     isSearchable={true}
                                                     isMulti
                                                 />
-                                                <button type="button" className="btn btn-primary mt-3 h-9" onClick={() => setState({ isOpenChannel: true })}>
+                                                <button type="button" className="btn btn-primary mt-3 h-9" onClick={() => getSalesByCategory(state.selectedCategory)}>
                                                     Submit
                                                 </button>
                                             </div>
                                         </div>
                                     ) : null}
                                 </div>
-                                <div className="col-span-9">
+                                <div className={`${state.orderSubMenu !== 'Coupons by date' ? 'col-span-9' : 'col-span-12'} `}>
                                     <div className="datatables">
                                         <DataTable
+                                            withBorder={true}
                                             className="table-hover whitespace-nowrap"
                                             records={state.tableData}
-                                            columns={[
-                                                { accessor: 'date', title: 'Date' },
-                                                { accessor: 'noOfOrders', title: 'No of orders' },
-                                                { accessor: 'totalItemsSold', title: 'Total Items Sold' },
-                                                { accessor: 'couponAmount', title: 'Coupon Amount' },
-                                                { accessor: 'refundAmount', title: 'Refund Amount' },
-                                                { accessor: 'shippingAmount', title: 'Shipping Amount' },
-                                            ]}
+                                            columns={state.tableColumn}
                                             highlightOnHover
                                             totalRecords={state.tableData?.length}
                                             recordsPerPage={10}
-                                            page={0}
-                                            // onPageChange={(p) => setPage(p)}
+                                            page={null}
+                                            onPageChange={(p) => {}}
                                             recordsPerPageOptions={[10, 20, 30]}
-                                            // onRecordsPerPageChange={setPageSize}
-                                            // sortStatus={sortStatus}
+                                            onRecordsPerPageChange={() => {}}
+                                            // sortStatus={}
                                             // onSortStatusChange={setSortStatus}
-                                            // selectedRecords={selectedRecords}
-                                            // onSelectedRecordsChange={(selectedRecords) => {
-                                            //     setSelectedRecords(selectedRecords);
-                                            // }}
+                                            // selectedRecords={[]}
+                                            // onSelectedRecordsChange={(selectedRecords) => {}}
                                             minHeight={200}
                                             paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
                                         />
@@ -506,41 +1455,33 @@ export default function Reports() {
                             </div>
                         </div>
                     ) : state.activeTab == 'Customers' ? (
-                        <div>Customer</div>
-                    ) : (
-                        <div className="panel mt-5 ">
-                            {/* Filter By last 7 days,last month year */}
-                            <div className="flex items-center justify-between">
-                                <div className="flex  items-center  ">
-                                    {orderFilter?.map((link, index) => (
-                                        <React.Fragment key={index}>
-                                            <div
-                                                onClick={() => setState({ dateFilter: link })}
-                                                className={`dark:hover:text-primary-dark hover: px-4 py-2 ${link == state.dateFilter ? 'text-primary' : ' border-gray-300'} border`}
-                                            >
-                                                {link?.split(' ')?.map((word, i) => (
-                                                    <React.Fragment key={i}>
-                                                        <span className="text-md cursor-pointer">{word}</span>
-                                                        {i !== link.split(' ').length - 1 && <span className="border-b-1 mx-1 border-black"></span>}
-                                                    </React.Fragment>
-                                                ))}
-                                            </div>
-                                        </React.Fragment>
-                                    ))}
-                                    <div className="pl-4">
-                                        <select className="form-select w-[180px]" value={state.analysisCurrency} onChange={(e) => setState({ analysisCurrency: e.target.value })}>
-                                            <option value="All Currencies">All Currencies</option>
-                                            <option value="INR">INR</option>
-                                            <option value="USD">USD</option>
-                                        </select>
+                        <div className="panel  ">
+                            {state.customerTab !== 'Customer list' && (
+                                <div className="flex items-center justify-between">
+                                    <div className="flex  items-center  ">
+                                        {orderFilter?.map((link, index) => (
+                                            <React.Fragment key={index}>
+                                                <div
+                                                    onClick={() => setState({ customerDateFilter: link })}
+                                                    className={`dark:hover:text-primary-dark hover: px-4 py-2 ${link == state.customerDateFilter ? 'text-primary' : ' border-gray-300'} border`}
+                                                >
+                                                    {link?.split(' ')?.map((word, i) => (
+                                                        <React.Fragment key={i}>
+                                                            <span className="text-md cursor-pointer">{word}</span>
+                                                            {i !== link.split(' ').length - 1 && <span className="border-b-1 mx-1 border-black"></span>}
+                                                        </React.Fragment>
+                                                    ))}
+                                                </div>
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2 border p-3">
+                                        <IconDownload />
+                                        <div className="">Export CSV</div>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 border p-3">
-                                    <IconDownload />
-                                    <div className="">Export CSV</div>
-                                </div>
-                            </div>
-                            {state.dateFilter == 'Custome' && (
+                            )}
+                            {state.customerDateFilter == 'Custome' && (
                                 <div className="mt-3 flex   items-center gap-4">
                                     <div className="">
                                         <label htmlFor="dateTimeCreated" className="block pr-2 text-sm font-medium text-gray-700">
@@ -548,10 +1489,10 @@ export default function Reports() {
                                         </label>
                                         <input
                                             type="datetime-local"
-                                            // value={startDate}
-                                            // // onChange={(e) => {
-                                            // //     setStartDate(e.target.value);
-                                            // // }}
+                                            value={state.customerStartDate}
+                                            onChange={(e) => {
+                                                setState({ customerStartDate: e.target.value });
+                                            }}
                                             id="dateTimeCreated"
                                             name="dateTimeCreated"
                                             className="form-input"
@@ -564,11 +1505,10 @@ export default function Reports() {
                                         </label>
                                         <input
                                             type="datetime-local"
-                                            // value={endDate}
-                                            // onChange={(e) => {
-                                            //     setEndDate(e.target.value);
-                                            //     filterByDates(e.target.value);
-                                            // }}
+                                            value={state.customerEndDate}
+                                            onChange={(e) => {
+                                                setState({ customerEndDate: e.target.value });
+                                            }}
                                             id="dateTimeCreated"
                                             name="dateTimeCreated"
                                             className="form-input"
@@ -576,10 +1516,101 @@ export default function Reports() {
                                             // min={mintDateTime(startDate || new Date())}
                                         />
                                     </div>
-                                    <div className="mt-7 flex">
-                                        <button type="button" className="btn btn-primary h-9" onClick={() => setState({ isOpenChannel: true })}>
-                                            Submit
-                                        </button>
+                                </div>
+                            )}
+
+                            <div className=" mt-5 items-center justify-center">
+                                <div className="datatables">
+                                    <DataTable
+                                        className="table-hover whitespace-nowrap"
+                                        records={state.customerTable}
+                                        columns={state.customerColumn}
+                                        highlightOnHover
+                                        totalRecords={state.tableData?.length}
+                                        recordsPerPage={10}
+                                        page={null}
+                                        onPageChange={(p) => {}}
+                                        recordsPerPageOptions={[10, 20, 30]}
+                                        onRecordsPerPageChange={() => null}
+                                        // sortStatus={}
+                                        // onSortStatusChange={setSortStatus}
+                                        selectedRecords={null}
+                                        onSelectedRecordsChange={(selectedRecords) => null}
+                                        minHeight={200}
+                                        paginationText={({ from, to, totalRecords }) => null}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="panel mt-5 ">
+                            {/* Filter By last 7 days,last month year */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex  items-center  ">
+                                    {orderFilter?.map((link, index) => (
+                                        <React.Fragment key={index}>
+                                            <div
+                                                onClick={() => setState({ analysisDateFilter: link })}
+                                                className={`dark:hover:text-primary-dark hover: px-4 py-2 ${link == state.analysisDateFilter ? 'text-primary' : ' border-gray-300'} border`}
+                                            >
+                                                {link?.split(' ')?.map((word, i) => (
+                                                    <React.Fragment key={i}>
+                                                        <span className="text-md cursor-pointer">{word}</span>
+                                                        {i !== link.split(' ').length - 1 && <span className="border-b-1 mx-1 border-black"></span>}
+                                                    </React.Fragment>
+                                                ))}
+                                            </div>
+                                        </React.Fragment>
+                                    ))}
+                                    {state.analysisTab !== 'Order Analysis' && (
+                                        <div className="pl-4">
+                                            <select className="form-select w-[180px]" value={state.analysisCurrency} onChange={(e) => setState({ analysisCurrency: e.target.value })}>
+                                                <option value="All Currencies">All Currencies</option>
+                                                <option value="INR">INR</option>
+                                                <option value="USD">USD</option>
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex gap-2 border p-3">
+                                    <IconDownload />
+                                    <div className="">Export CSV</div>
+                                </div>
+                            </div>
+                            {state.analysisDateFilter == 'Custome' && (
+                                <div className="mt-3 flex   items-center gap-4">
+                                    <div className="">
+                                        <label htmlFor="dateTimeCreated" className="block pr-2 text-sm font-medium text-gray-700">
+                                            From :
+                                        </label>
+                                        <input
+                                            type="datetime-local"
+                                            value={state.analysisStartDate}
+                                            onChange={(e) => {
+                                                setState({ analysisStartDate: e.target.value });
+                                            }}
+                                            id="dateTimeCreated"
+                                            name="dateTimeCreated"
+                                            className="form-input"
+                                            // max={getCurrentDateTime()}
+                                        />
+                                    </div>
+                                    <div className="">
+                                        <label htmlFor="dateTimeCreated" className="block pr-2 text-sm font-medium text-gray-700">
+                                            To:
+                                        </label>
+                                        <input
+                                            type="datetime-local"
+                                            value={state.analysisEndDate}
+                                            onChange={(e) => {
+                                                setState({ analysisEndDate: e.target.value });
+                                            }}
+                                            id="dateTimeCreated"
+                                            name="dateTimeCreated"
+                                            className="form-input"
+                                            // max={getCurrentDateTime()}
+                                            // min={mintDateTime(startDate || new Date())}
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -590,16 +1621,14 @@ export default function Reports() {
                                     <div className="mb-4">
                                         <button className="flex w-full items-center justify-between bg-gray-200 p-4 text-lg font-medium dark:bg-gray-800">Products</button>
                                         <div className="border border-t-0 border-gray-300 p-4 dark:border-gray-700">
-                                            <input
-                                                type="text"
-                                                className="form-input w-full p-2"
-                                                placeholder="Search by product"
-                                                value={state.search}
-                                                onChange={(e) => setState({ search: e.target.value })}
+                                            <Select
+                                                placeholder="Select products "
+                                                options={state.analysisProductList}
+                                                value={state.analysisSelectedProduct}
+                                                onChange={(e: any) => setState({ analysisSelectedProduct: e })}
+                                                isSearchable={true}
+                                                isMulti
                                             />
-                                            <button type="button" className="btn btn-primary mt-3 h-9" onClick={() => setState({ isOpenChannel: true })}>
-                                                Submit
-                                            </button>
                                         </div>
                                     </div>
 
@@ -612,14 +1641,11 @@ export default function Reports() {
                                                     value: edge.node.id,
                                                     label: edge.node.name,
                                                 }))}
-                                                value={state.selectedCategory}
-                                                onChange={(data: any) => setState({ selectedCategory: data })}
+                                                value={state.analysisSelectedCategory}
+                                                onChange={(data: any) => setState({ analysisSelectedCategory: data })}
                                                 isSearchable={true}
                                                 isMulti
                                             />
-                                            <button type="button" className="btn btn-primary mt-3 h-9" onClick={() => setState({ isOpenChannel: true })}>
-                                                Submit
-                                            </button>
                                         </div>
                                     </div>
 
@@ -628,18 +1654,12 @@ export default function Reports() {
                                         <div className="border border-t-0 border-gray-300 p-4 dark:border-gray-700">
                                             <Select
                                                 placeholder="Select countries"
-                                                options={state.categoryList.map((edge) => ({
-                                                    value: edge.node.id,
-                                                    label: edge.node.name,
-                                                }))}
-                                                value={state.selectedCategory}
-                                                onChange={(data: any) => setState({ selectedCategory: data })}
+                                                options={state.countryList}
+                                                value={state.analysisSelectedCountries}
+                                                onChange={(data: any) => setState({ analysisSelectedCountries: data })}
                                                 isSearchable={true}
                                                 isMulti
                                             />
-                                            <button type="button" className="btn btn-primary mt-3 h-9" onClick={() => setState({ isOpenChannel: true })}>
-                                                Submit
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -647,30 +1667,21 @@ export default function Reports() {
                                     <div className="datatables">
                                         <DataTable
                                             className="table-hover whitespace-nowrap"
-                                            records={state.tableData}
-                                            columns={[
-                                                { accessor: 'date', title: 'Date' },
-                                                { accessor: 'couponAmount', title: 'Coupon Amount' },
-                                                { accessor: 'noOfOrders', title: 'No of orders' },
-                                                { accessor: 'refundAmount', title: 'Refund Amount' },
-                                                { accessor: 'shippingAmount', title: 'ShippinAmount' },
-                                                { accessor: 'totalItemsSold', title: 'Total Items Sold' },
-                                            ]}
+                                            records={state.analysisTable}
+                                            columns={state.analysisColumn}
                                             highlightOnHover
-                                            // totalRecords={state.tableData?.length}
-                                            // recordsPerPage={10}
-                                            // page={0}
-                                            // onPageChange={(p) => setPage(p)}
-                                            // recordsPerPageOptions={[10, 20, 30]}
-                                            // onRecordsPerPageChange={setPageSize}
-                                            // sortStatus={sortStatus}
+                                            totalRecords={state.tableData?.length}
+                                            recordsPerPage={10}
+                                            page={null}
+                                            onPageChange={(p) => {}}
+                                            recordsPerPageOptions={[10, 20, 30]}
+                                            onRecordsPerPageChange={() => null}
+                                            // sortStatus={}
                                             // onSortStatusChange={setSortStatus}
-                                            // selectedRecords={selectedRecords}
-                                            // onSelectedRecordsChange={(selectedRecords) => {
-                                            //     setSelectedRecords(selectedRecords);
-                                            // }}
+                                            selectedRecords={null}
+                                            onSelectedRecordsChange={(selectedRecords) => null}
                                             minHeight={200}
-                                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                                            paginationText={({ from, to, totalRecords }) => null}
                                         />
                                     </div>
                                 </div>
