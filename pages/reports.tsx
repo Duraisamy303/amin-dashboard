@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
 import Link from 'next/link';
-import { Failure, downloadExlcel, formatCurrency, getCurrentDateTime, getDateRange, mintDateTime, useSetState } from '@/utils/functions';
+import { Failure, downloadExlcel, filterByDates, formatCurrency, getCurrentDateTime, getDateRange, mintDateTime, useSetState } from '@/utils/functions';
 import IconDownload from '@/components/Icon/IconDownload';
 import Tippy from '@tippyjs/react';
 import IconPencil from '@/components/Icon/IconPencil';
@@ -174,7 +174,7 @@ export default function Reports() {
         } else if (state.orderSubMenu == 'Coupons by date') {
             getSalesByCoupon();
         }
-    }, [state.orderDateFilter, state.orderStartDate, state.orderEndDate, state.orderSubMenu, state.orderCurrency]);
+    }, [state.orderDateFilter, state.orderStartDate, state.orderEndDate, state.orderSubMenu, state.orderCurrency, state.selectedCategory]);
 
     useEffect(() => {
         if (state.analysisTab == 'Order Analysis') {
@@ -248,7 +248,6 @@ export default function Reports() {
 
             const response = res?.data?.products?.edges;
             const dropdownData = response?.map((item: any) => ({ value: item?.node?.id, label: item?.node?.name }));
-            console.log('dropdownData: ', dropdownData);
             setState({ analysisProductList: dropdownData });
         } catch (error) {
             console.log('error: ', error);
@@ -575,7 +574,6 @@ export default function Reports() {
                     // currency: state.orderCurrency,
                 },
             });
-            console.log('salesByCoupon: ', res);
             const response = res?.data?.salesByCoupon;
 
             const table = response?.dates?.map((date, index) => ({
@@ -670,8 +668,11 @@ export default function Reports() {
                 });
                 return row;
             });
-
-            setState({ analysisTable: rows, analysisColumn: columns });
+            if (rows.length > 0) {
+                setState({ analysisTable: rows, analysisColumn: columns });
+            } else {
+                setState({ analysisTable: [], analysisColumn: [] });
+            }
         } catch (error) {
             console.log('error: ', error);
         }
@@ -750,7 +751,11 @@ export default function Reports() {
                 return row;
             });
 
-            setState({ analysisTable: rows, analysisColumn: columns });
+            if (rows.length > 0) {
+                setState({ analysisTable: rows, analysisColumn: columns });
+            } else {
+                setState({ analysisTable: [], analysisColumn: [] });
+            }
         } catch (error) {
             console.log('error: ', error);
         }
@@ -838,7 +843,11 @@ export default function Reports() {
             const columns = generateColumns(response);
             const rows = generateRows(response);
 
-            setState({ analysisTable: rows, analysisColumn: columns });
+            if (rows.length > 0) {
+                setState({ analysisTable: rows, analysisColumn: columns });
+            } else {
+                setState({ analysisTable: [], analysisColumn: [] });
+            }
         } catch (error) {
             console.log('error: ', error);
         }
@@ -870,6 +879,9 @@ export default function Reports() {
             if (state.analysisDateFilter == 'Custome') {
                 (startDate = moment(state.analysisStartDate).format('YYYY-MM-DD')), (endDate = moment(state.analysisEndDate).format('YYYY-MM-DD'));
             }
+
+            // const {startDate, endDate}=filterByDates(state.analysisDateFilter,state.analysisStartDate,state.analysisEndDate)
+
             let categoryIds = [];
             let countryCodeList = [];
             let productIds = [];
@@ -926,7 +938,11 @@ export default function Reports() {
 
             const columns = generateColumns(response);
             const rows = generateRows(response);
-            setState({ analysisTable: rows, analysisColumn: columns });
+            if (rows.length > 0) {
+                setState({ analysisTable: rows, analysisColumn: columns });
+            } else {
+                setState({ analysisTable: [], analysisColumn: [] });
+            }
         } catch (error) {
             console.log('error: ', error);
         }
@@ -1016,8 +1032,11 @@ export default function Reports() {
             // Generate columns and rows
             const columns = generateColumns(orderData);
             const rows = generateRows(orderData);
-
-            setState({ analysisTable: rows, analysisColumn: columns });
+            if (rows.length > 0) {
+                setState({ analysisTable: rows, analysisColumn: columns });
+            } else {
+                setState({ analysisTable: [], analysisColumn: [] });
+            }
         } catch (error) {
             console.log('error: ', error);
         }
@@ -1116,6 +1135,80 @@ export default function Reports() {
         }));
 
         return table;
+    };
+
+    const downloadCSV = (type) => {
+        const orderLabels = {
+            'Sales by date': 'SaleByDate',
+            'Sales by product': 'SaleByProduct',
+            'Sales by category': 'SaleByCategory',
+            'Coupons by date': 'CouponsByDate',
+        };
+
+        const customerLabels = {
+            'Guests list': 'GuestsList',
+            'Customer list': 'CustomerList',
+        };
+
+        const analysisLabels = {
+            'Order Analysis': 'OrderAnalysis',
+            'Revenue Analysis': 'RevenueAnalysis',
+            'Customer Analysis': 'CustomerAnalysis',
+            'Product by Country': 'ProductByCountry',
+            'Product Revenue': 'ProductRevenue',
+        };
+
+        let label = '';
+
+        if (type === 'Orders') {
+            label = orderLabels[state.orderSubMenu] || '';
+        } else if (type === 'Customers') {
+            label = customerLabels[state.customerTab] || '';
+        } else if (type === 'Analysis') {
+            label = analysisLabels[state.analysisTab] || '';
+        }
+
+        if (type === 'Orders') {
+            if (state.orderSubMenu == 'Sales by category') {
+                const excelData = state.tableData?.map((item) => {
+                    const res = { Date: item.date };
+
+                    if (state.tableColumn?.[1]?.title) {
+                        res[state.tableColumn[1].title] = item?.value1;
+                    }
+
+                    return res;
+                });
+                downloadExlcel(excelData, label);
+            } else {
+                downloadExlcel(state.tableData, label);
+            }
+        } else if (type === 'Customers') {
+            downloadExlcel(state.customerTable, label);
+        } else if (type === 'Analysis') {
+            if (state.analysisTab === 'Product Revenue' || state.analysisTab === 'Order Analysis' || state.analysisTab === 'Revenue Analysis') {
+                const finalData = excelFormatData(state.analysisTable, state.analysisColumn);
+                downloadExlcel(finalData, label);
+            } else {
+                downloadExlcel(state.analysisTable, label);
+            }
+        }
+    };
+
+    const excelFormatData = (countryData: any, columnInfo: any) => {
+        return countryData.map((country: any) => {
+            let newObj = {};
+
+            columnInfo.forEach((col: any) => {
+                if (col.accessor === 'country') {
+                    newObj[col.title] = country[col.accessor];
+                } else {
+                    newObj[col.title] = country[col.accessor];
+                }
+            });
+
+            return newObj;
+        });
     };
 
     return (
@@ -1257,9 +1350,9 @@ export default function Reports() {
                                     )}
                                 </div>
 
-                                <div className="flex gap-2 border p-3">
+                                <div className="flex cursor-pointer gap-2 border p-3" onClick={() => downloadCSV('Orders')}>
                                     <IconDownload />
-                                    <div onClick={() => downloadExlcel(state.tableData, 'Orders')} className="">
+                                    <div onClick={() => downloadCSV('Orders')} className="cursor-pointer">
                                         Export CSV
                                     </div>
                                 </div>
@@ -1336,7 +1429,9 @@ export default function Reports() {
                                                                 placeholder="Select a product"
                                                                 options={state.productList}
                                                                 value={state.productSearch}
-                                                                onChange={(e) => setState({ productSearch: e })}
+                                                                onChange={(e) => {
+                                                                    setState({ productSearch: e });
+                                                                }}
                                                                 isSearchable={true}
                                                             />
                                                         </div>
@@ -1422,9 +1517,9 @@ export default function Reports() {
                                                     isSearchable={true}
                                                     isMulti
                                                 />
-                                                <button type="button" className="btn btn-primary mt-3 h-9" onClick={() => getSalesByCategory(state.selectedCategory)}>
+                                                {/* <button type="button" className="btn btn-primary mt-3 h-9" onClick={() => getSalesByCategory(state.selectedCategory)}>
                                                     Submit
-                                                </button>
+                                                </button> */}
                                             </div>
                                         </div>
                                     ) : null}
@@ -1456,8 +1551,8 @@ export default function Reports() {
                         </div>
                     ) : state.activeTab == 'Customers' ? (
                         <div className="panel  ">
-                            {state.customerTab !== 'Customer list' && (
-                                <div className="flex items-center justify-between">
+                            <div className={`flex items-center ${state.customerTab == 'Customer list' ? 'justify-end' : ' justify-between'}`}>
+                                {state.customerTab !== 'Customer list' && (
                                     <div className="flex  items-center  ">
                                         {orderFilter?.map((link, index) => (
                                             <React.Fragment key={index}>
@@ -1475,12 +1570,15 @@ export default function Reports() {
                                             </React.Fragment>
                                         ))}
                                     </div>
-                                    <div className="flex gap-2 border p-3">
-                                        <IconDownload />
-                                        <div className="">Export CSV</div>
+                                )}
+                                <div className="flex cursor-pointer gap-2 border p-3" onClick={() => downloadCSV('Customers')}>
+                                    <IconDownload />
+                                    <div onClick={() => downloadCSV('Customers')} className="cursor-pointer">
+                                        Export CSV
                                     </div>
                                 </div>
-                            )}
+                            </div>
+
                             {state.customerDateFilter == 'Custome' && (
                                 <div className="mt-3 flex   items-center gap-4">
                                     <div className="">
@@ -1572,9 +1670,11 @@ export default function Reports() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex gap-2 border p-3">
+                                <div className="flex cursor-pointer gap-2 border p-3" onClick={() => downloadCSV('Analysis')}>
                                     <IconDownload />
-                                    <div className="">Export CSV</div>
+                                    <div className="cursor-pointer" onClick={() => downloadCSV('Analysis')}>
+                                        Export CSV
+                                    </div>
                                 </div>
                             </div>
                             {state.analysisDateFilter == 'Custome' && (

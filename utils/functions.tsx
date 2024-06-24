@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import placeholder from '../public/assets/images/placeholder.png';
 import * as FileSaver from 'file-saver';
 import XLSX from 'sheetjs-style';
+import moment from 'moment';
 
 export const capitalizeFLetter = (string = '') => {
     if (string.length > 0) {
@@ -573,4 +574,32 @@ export const getDateRange = (rangeType) => {
     const end = endDate.toISOString().split('T')[0];
 
     return { start, end };
+};
+
+export const filterByDates = (filter: any, fromDate: any, toDate: any) => {
+    let startDate: any, endDate: any;
+
+    if (filter == 'Last 7 Days') {
+        const { start, end } = getDateRange('last7Days');
+        (startDate = start), (endDate = end);
+    }
+
+    if (filter == 'This Month') {
+        const { start, end } = getDateRange('thisMonth');
+        (startDate = start), (endDate = end);
+    }
+
+    if (filter == 'Last Month') {
+        const { start, end } = getDateRange('lastMonth');
+        (startDate = start), (endDate = end);
+    }
+    if (filter == 'Year') {
+        const { start, end } = getDateRange('Year');
+        (startDate = start), (endDate = end);
+    }
+
+    if (filter == 'Custome') {
+        (startDate = moment(fromDate).format('YYYY-MM-DD')), (endDate = moment(toDate).format('YYYY-MM-DD'));
+    }
+    return { startDate, endDate };
 };
