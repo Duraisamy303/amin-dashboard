@@ -45,6 +45,7 @@ import {
     DESIGN_LIST,
     FINISH_LIST,
     PRODUCTS_MEDIA_ORDERS,
+    PRODUCT_BY_NAME,
     PRODUCT_CAT_LIST,
     PRODUCT_DETAILS,
     PRODUCT_FULL_DETAILS,
@@ -89,6 +90,8 @@ const ProductEdit = (props: any) => {
     });
     const [salePrice, setSalePrice] = useState('');
     const [menuOrder, setMenuOrder] = useState(0);
+    const [selectedUpsell, setSelectedUpsell] = useState([]);
+    const [selectedCrosssell, setSelectedCrosssell] = useState([]);
 
     // ------------------------------------------New Data--------------------------------------------
 
@@ -206,24 +209,24 @@ const ProductEdit = (props: any) => {
 
     const [createProductMedia] = useMutation(PRODUCT_MEDIA_CREATE);
 
+    const { data: productSearch, refetch: productSearchRefetch } = useQuery(PRODUCT_BY_NAME);
+
     const [categoryList, setCategoryList] = useState([]);
     const [tagList, setTagList] = useState([]);
     const [selectedTag, setSelectedTag] = useState([]);
     const [collectionList, setCollectionList] = useState([]);
     const [label, setLabel] = useState<any>('');
     const [productData, setProductData] = useState({});
-    const [modal3, setModal3] = useState(false);
     const [modal4, setModal4] = useState(false);
 
     const [productType, setProductType] = useState([]);
     const [mediaData, setMediaData] = useState([]);
+    const [productList, setProductList] = useState([]);
 
     const [imageUrl, setImageUrl] = useState('');
     const [thumbnailFile, setThumbnailFile] = useState<any>({});
-    const [file, setFile] = useState(null);
 
     const [thumbnail, setThumbnail] = useState('');
-    const [isthumbImgUpdate, setIsthumbImgUpdate] = useState(false);
 
     const [images, setImages] = useState<any>([]);
 
@@ -250,8 +253,8 @@ const ProductEdit = (props: any) => {
     ]);
 
     // editor js
-    const editorRef: any = useRef(null);
-    const [editorInstance, setEditorInstance] = useState<any>(null);
+    // const editorRef: any = useRef(null);
+    // const [editorInstance, setEditorInstance] = useState<any>(null);
     // const [content, setContent] = useState('');
     // let count = 0;
 
@@ -301,6 +304,10 @@ const ProductEdit = (props: any) => {
     }, [productTypelist]);
 
     useEffect(() => {
+        getProductByName();
+    }, [productSearch]);
+
+    useEffect(() => {
         const arr1 = {
             design: designData?.productDesigns,
             style: styleData?.productStyles,
@@ -319,11 +326,19 @@ const ProductEdit = (props: any) => {
         setDropdownData(singleObj);
     }, [finishData, stoneData, designData, styleData, typeData, sizeData, stoneColorData]);
 
-    //     const updateEditorValue = (newValue) => {
-    // console.log('✌️newValue --->', newValue);
-    //         setValue(newValue);
-    //         console.log("value", value)
-    //       }
+    const getProductByName = async () => {
+        try {
+            const res = await productSearchRefetch({
+                name: '',
+            });
+
+            const response = res?.data?.products?.edges;
+            const dropdownData = response?.map((item: any) => ({ value: item?.node?.id, label: item?.node?.name }));
+            setProductList(dropdownData);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
     const productsDetails = async () => {
         try {
@@ -336,6 +351,19 @@ const ProductEdit = (props: any) => {
                     setSeoTittle(data?.seoTitle);
                     setSeoDesc(data?.seoDescription);
                     setProductName(data?.name);
+
+                    let upsells = [];
+                    if (data?.getUpsells?.length > 0) {
+                        upsells = data?.getUpsells?.map((item) => ({ value: item.productId, label: item.name }));
+                    }
+                    setSelectedUpsell(upsells);
+
+                    let crossells = [];
+                    if (data?.getCrosssells?.length > 0) {
+                        crossells = data?.getCrosssells?.map((item) => ({ value: item.productId, label: item.name }));
+                    }
+                    setSelectedCrosssell(crossells);
+
                     const category: any = categoryList?.find((item: any) => item.value === data?.category?.id);
                     setselectedCat(category);
                     if (data?.tags?.length > 0) {
@@ -513,65 +541,65 @@ const ProductEdit = (props: any) => {
 
     // editor start
 
-    let editors = { isReady: false };
-    useEffect(() => {
-        if (!editors.isReady) {
-            editor();
-            editors.isReady = true;
-        }
+    // let editors = { isReady: false };
+    // useEffect(() => {
+    //     if (!editors.isReady) {
+    //         editor();
+    //         editors.isReady = true;
+    //     }
 
-        return () => {
-            if (editorInstance) {
-                editorInstance?.blocks?.clear();
-            }
-        };
-    }, [descriptionContent]);
+    //     return () => {
+    //         if (editorInstance) {
+    //             editorInstance?.blocks?.clear();
+    //         }
+    //     };
+    // }, [descriptionContent]);
 
     // const editorRef = useRef(null); // Define a ref to hold the editor instance
 
-    const editor = useCallback(() => {
-        // Check if the window object is available and if the editorRef.current is set
-        if (typeof window === 'undefined' || !editorRef.current) return;
+    // const editor = useCallback(() => {
+    //     // Check if the window object is available and if the editorRef.current is set
+    //     if (typeof window === 'undefined' || !editorRef.current) return;
 
-        // Ensure only one editor instance is created
-        if (editorInstance) {
-            return;
-        }
+    //     // Ensure only one editor instance is created
+    //     if (editorInstance) {
+    //         return;
+    //     }
 
-        // console.log('value2: ', value2);
-        // Dynamically import the EditorJS module
-        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
-            // Create a new instance of EditorJS with the appropriate configuration
+    //     // console.log('value2: ', value2);
+    //     // Dynamically import the EditorJS module
+    //     import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+    //         // Create a new instance of EditorJS with the appropriate configuration
 
-            const editor = new EditorJS({
-                holder: editorRef.current,
-                //  data: {
-                //         blocks: descriptionContent || [],
-                //     },
-                tools: {
-                    // Configure tools as needed
-                    header: {
-                        class: require('@editorjs/header'),
-                    },
-                    list: {
-                        class: require('@editorjs/list'),
-                    },
-                    table: {
-                        class: require('@editorjs/table'),
-                    },
-                },
-            });
-            // Set the editorInstance state variable
-            setEditorInstance(editor);
-        });
+    //         const editor = new EditorJS({
+    //             holder: editorRef.current,
+    //             //  data: {
+    //             //         blocks: descriptionContent || [],
+    //             //     },
+    //             tools: {
+    //                 // Configure tools as needed
+    //                 header: {
+    //                     class: require('@editorjs/header'),
+    //                 },
+    //                 list: {
+    //                     class: require('@editorjs/list'),
+    //                 },
+    //                 table: {
+    //                     class: require('@editorjs/table'),
+    //                 },
+    //             },
+    //         });
+    //         // Set the editorInstance state variable
+    //         setEditorInstance(editor);
+    //     });
 
-        // Cleanup function to destroy the current editor instance when the component unmounts
-        return () => {
-            if (editorInstance) {
-                editorInstance?.blocks?.clear();
-            }
-        };
-    }, [editorInstance, descriptionContent]);
+    //     // Cleanup function to destroy the current editor instance when the component unmounts
+    //     return () => {
+    //         if (editorInstance) {
+    //             editorInstance?.blocks?.clear();
+    //         }
+    //     };
+    // }, [editorInstance, descriptionContent]);
     // editor end
 
     // const editor = () => {
@@ -874,9 +902,14 @@ const ProductEdit = (props: any) => {
                 return;
             }
 
-            console.log('hasError: ', hasError);
-            console.log('AttributesErrors: ', AttributesErrors);
-            console.log('newVariantErrors: ', newVariantErrors);
+            let upsells = [];
+            if (selectedUpsell?.length > 0) {
+                upsells = selectedUpsell?.map((item) => item?.value);
+            }
+            let crosssells = [];
+            if (selectedCrosssell?.length > 0) {
+                crosssells = selectedCrosssell?.map((item) => item?.value);
+            }
 
             const tagId = selectedTag?.map((item) => item.value) || [];
             const { data } = await updateProduct({
@@ -893,6 +926,8 @@ const ProductEdit = (props: any) => {
                             description: seoDesc,
                             title: seoTittle,
                         },
+                        upsells,
+                        crosssells,
                         slug: slug,
                         ...(menuOrder && menuOrder > 0 && { order_no: menuOrder }),
                         ...(selectedValues && selectedValues.design && { prouctDesign: selectedValues.design }),
@@ -1494,6 +1529,16 @@ const ProductEdit = (props: any) => {
                                                         </button>
                                                     )}
                                                 </Tab>
+                                                <Tab as={Fragment}>
+                                                    {({ selected }) => (
+                                                        <button
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] dark:border-[#191e3a] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px]`}
+                                                        >
+                                                            Linked Product
+                                                        </button>
+                                                    )}
+                                                </Tab>
                                             </Tab.List>
                                         </div>
                                         <Tab.Panels className="w-full">
@@ -1828,6 +1873,44 @@ const ProductEdit = (props: any) => {
 
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4 pr-6">
+                                                        <label htmlFor="upsells" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            Upsells
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5" style={{ width: '100%' }}>
+                                                        <Select
+                                                            placeholder="Select an option"
+                                                            value={selectedUpsell}
+                                                            options={productList}
+                                                            onChange={(e: any) => setSelectedUpsell(e)}
+                                                            isMulti
+                                                            isSearchable={true}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4">
+                                                        <label htmlFor="cross-sells" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            Cross-sells
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5 w-full">
+                                                        <Select
+                                                            placeholder="Select an option"
+                                                            value={selectedCrosssell}
+                                                            options={productList}
+                                                            onChange={(e: any) => setSelectedCrosssell(e)}
+                                                            isMulti
+                                                            isSearchable={true}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </Tab.Panel>
+
+                                            {/* <Tab.Panel>
+                                                <div className="active flex items-center">
                                                     <div className="mb-20 mr-4">
                                                         <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
                                                             Purchase note
@@ -1859,7 +1942,7 @@ const ProductEdit = (props: any) => {
                                                         <input type="checkbox" className="form-checkbox" defaultChecked />
                                                     </div>
                                                 </div>
-                                            </Tab.Panel>
+                                            </Tab.Panel> */}
                                         </Tab.Panels>
                                     </Tab.Group>
                                 )}

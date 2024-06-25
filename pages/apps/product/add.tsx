@@ -57,6 +57,7 @@ import {
     UPDATE_META_DATA,
     UPDATE_PRODUCT_CHANNEL,
     UPDATE_VARIANT_LIST,
+    PRODUCT_BY_NAME,
 } from '@/query/product';
 import { Failure, Success, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
@@ -76,12 +77,11 @@ const ProductAdd = () => {
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
 
-    const [value, setValue] = useState('demo content'); // quill text editor
     const [isMounted, setIsMounted] = useState(false); //tabs
+
     useEffect(() => {
         setIsMounted(true);
     });
-    const [salePrice, setSalePrice] = useState('');
     const [menuOrder, setMenuOrder] = useState(0);
 
     // ------------------------------------------New Data--------------------------------------------
@@ -149,10 +149,6 @@ const ProductAdd = () => {
         },
     ]);
 
-    // editor start
-
-    const [editorInstance, setEditorInstance] = useState<any>(null);
-
     // ------------------------------------------New Data--------------------------------------------
 
     const [statusVisible, setStatusVisible] = useState(false);
@@ -162,6 +158,22 @@ const ProductAdd = () => {
     // const [addCategory, setAddCategory] = useState(false);
     const [quantityTrack, setQuantityTrack] = useState(true);
     const [parentLists, setParentLists] = useState([]);
+    // const editorRef = useRef(null);
+    // const [editorInstance, setEditorInstance] = useState(null);
+    const [content, setContent] = useState('');
+
+    const [value, setValue] = useState<any>({
+        time: Date.now(),
+        blocks: [
+            {
+                type: 'paragraph',
+                data: {
+                    text: 'This is the default content.',
+                },
+            },
+        ],
+        version: '2.19.0',
+    });
 
     const [active, setActive] = useState<string>('1');
     // track stock
@@ -258,6 +270,8 @@ const ProductAdd = () => {
         variables: { channel: 'india-channel' },
     });
 
+    const { data: productSearch, refetch: productSearchRefetch } = useQuery(PRODUCT_BY_NAME);
+
     useEffect(() => {
         const arr1 = {
             design: designData?.productDesigns,
@@ -280,7 +294,11 @@ const ProductAdd = () => {
     useEffect(() => {
         const getparentCategoryList = parentList?.categories?.edges;
         setParentLists(getparentCategoryList);
-    });
+    }, []);
+
+    useEffect(() => {
+        getProductByName();
+    }, [productSearch]);
 
     const { data: tagsList, refetch: tagListRefetch } = useQuery(PRODUCT_LIST_TAGS, {
         variables: { channel: 'india-channel' },
@@ -315,6 +333,10 @@ const ProductAdd = () => {
     const [isOpenCat, setIsOpenCat] = useState(false);
     const [isOpenTag, setIsOpenTag] = useState(false);
     const [tagLoader, setTagLoader] = useState(false);
+    const [productList, setProductList] = useState([]);
+
+    const [selectedUpsell, setSelectedUpsell] = useState([]);
+    const [selectedCrosssell, setSelectedCrosssell] = useState([]);
 
     const [createCategoryLoader, setCreateCategoryLoader] = useState(false);
 
@@ -394,6 +416,63 @@ const ProductAdd = () => {
             }
         } catch (error) {}
     };
+
+    // -------------------------EDITOR---------------------------------------
+    // let editors = { isReady: false };
+    // useEffect(() => {
+    //     if (!editors.isReady) {
+    //         editor();
+    //         editors.isReady = true;
+    //     }
+
+    //     return () => {
+    //         if (editorInstance) {
+    //             editorInstance?.blocks?.clear();
+    //         }
+    //     };
+    // }, [value]);
+
+    // const editor = useCallback(() => {
+    //     // Check if the window object is available and if the editorRef.current is set
+    //     if (typeof window === 'undefined' || !editorRef.current) return;
+
+    //     // Ensure only one editor instance is created
+    //     if (editorInstance) {
+    //         return;
+    //     }
+
+    //     console.log('value: ', value);
+    //     // Dynamically import the EditorJS module
+    //     import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+    //         // Create a new instance of EditorJS with the appropriate configuration
+    //         const editor = new EditorJS({
+    //             holder: editorRef.current,
+    //             data: value,
+    //             tools: {
+    //                 // Configure tools as needed
+    //                 header: {
+    //                     class: require('@editorjs/header'),
+    //                 },
+    //                 list: {
+    //                     class: require('@editorjs/list'),
+    //                 },
+    //                 table: {
+    //                     class: require('@editorjs/table'),
+    //                 },
+    //             },
+    //         });
+
+    //         // Set the editorInstance state variable
+    //         setEditorInstance(editor);
+    //     });
+
+    //     // Cleanup function to destroy the current editor instance when the component unmounts
+    //     return () => {
+    //         if (editorInstance) {
+    //             editorInstance?.blocks?.clear();
+    //         }
+    //     };
+    // }, [editorInstance, value]);
 
     const selectCat = (cat: any) => {
         setselectedCat(cat);
@@ -488,6 +567,15 @@ const ProductAdd = () => {
             const collectionId = selectedCollection?.map((item) => item.value) || [];
             const tagId = selectedTag?.map((item) => item.value) || [];
 
+            let upsells = [];
+            if (selectedUpsell?.length > 0) {
+                upsells = selectedUpsell?.map((item) => item?.value);
+            }
+            let crosssells = [];
+            if (selectedCrosssell?.length > 0) {
+                crosssells = selectedCrosssell?.map((item) => item?.value);
+            }
+
             const { data } = await addFormData({
                 variables: {
                     input: {
@@ -497,6 +585,8 @@ const ProductAdd = () => {
                         tags: tagId,
                         name: productName,
                         productType: 'UHJvZHVjdFR5cGU6Mg==',
+                        upsells,
+                        crosssells,
                         seo: {
                             description: seoDesc,
                             title: seoTittle,
@@ -887,6 +977,20 @@ const ProductAdd = () => {
         }));
     };
 
+    const getProductByName = async () => {
+        try {
+            const res = await productSearchRefetch({
+                name: '',
+            });
+
+            const response = res?.data?.products?.edges;
+            const dropdownData = response?.map((item: any) => ({ value: item?.node?.id, label: item?.node?.name }));
+            setProductList(dropdownData);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
     return (
         <div>
             <div className="  mt-6">
@@ -953,6 +1057,8 @@ const ProductAdd = () => {
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
+
+                            {/* <div ref={editorRef} className="mb-5 border border-gray-200"></div> */}
                             <textarea
                                 id="ctnTextarea"
                                 value={description}
@@ -1031,33 +1137,19 @@ const ProductAdd = () => {
                                                         </button>
                                                     )}
                                                 </Tab>
+                                                <Tab as={Fragment}>
+                                                    {({ selected }) => (
+                                                        <button
+                                                            className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
+                                                        relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] dark:border-[#191e3a] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px]`}
+                                                        >
+                                                            Linked Product
+                                                        </button>
+                                                    )}
+                                                </Tab>
                                             </Tab.List>
                                         </div>
                                         <Tab.Panels className="w-full">
-                                            {/* <Tab.Panel>
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4 pr-6">
-                                                        <label htmlFor="upsells" className="block pr-5 text-sm font-medium text-gray-700">
-                                                            Upsells
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5" style={{ width: '100%' }}>
-                                                        <Select placeholder="Select an option" options={options} isMulti isSearchable={true} />
-                                                    </div>
-                                                </div>
-
-                                                <div className="active flex items-center">
-                                                    <div className="mb-5 mr-4">
-                                                        <label htmlFor="cross-sells" className="block pr-5 text-sm font-medium text-gray-700">
-                                                            Cross-sells
-                                                        </label>
-                                                    </div>
-                                                    <div className="mb-5" style={{ width: '100%' }}>
-                                                        <Select placeholder="Select an option" options={options} isMulti isSearchable={false} />
-                                                    </div>
-                                                </div>
-                                            </Tab.Panel> */}
-
                                             <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-5 pr-3" style={{ width: '50%' }}>
@@ -1346,8 +1438,44 @@ const ProductAdd = () => {
                                                     </div>
                                                 </div>
                                             </Tab.Panel>
-
                                             <Tab.Panel>
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4 pr-6">
+                                                        <label htmlFor="upsells" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            Upsells
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5" style={{ width: '100%' }}>
+                                                        <Select
+                                                            placeholder="Select an option"
+                                                            value={selectedUpsell}
+                                                            options={productList}
+                                                            onChange={(e: any) => setSelectedUpsell(e)}
+                                                            isMulti
+                                                            isSearchable={true}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="active flex items-center">
+                                                    <div className="mb-5 mr-4">
+                                                        <label htmlFor="cross-sells" className="block pr-5 text-sm font-medium text-gray-700">
+                                                            Cross-sells
+                                                        </label>
+                                                    </div>
+                                                    <div className="mb-5 w-full">
+                                                        <Select
+                                                            placeholder="Select an option"
+                                                            value={selectedCrosssell}
+                                                            options={productList}
+                                                            onChange={(e: any) => setSelectedCrosssell(e)}
+                                                            isMulti
+                                                            isSearchable={true}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </Tab.Panel>
+                                            {/* <Tab.Panel>
                                                 <div className="active flex items-center">
                                                     <div className="mb-20 mr-4">
                                                         <label htmlFor="regularPrice" className="block pr-5 text-sm font-medium text-gray-700">
@@ -1379,7 +1507,7 @@ const ProductAdd = () => {
                                                         <input type="checkbox" className="form-checkbox" defaultChecked />
                                                     </div>
                                                 </div>
-                                            </Tab.Panel>
+                                            </Tab.Panel> */}
                                         </Tab.Panels>
                                     </Tab.Group>
                                 )}

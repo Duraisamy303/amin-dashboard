@@ -42,6 +42,7 @@ import dayjs from 'dayjs';
 import IconLoader from '@/components/Icon/IconLoader';
 import Link from 'next/link';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import CommonLoader from '../elements/commonLoader';
 
 const Orders = () => {
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
@@ -75,7 +76,7 @@ const Orders = () => {
     const [initialRecords, setInitialRecords] = useState([]); // Initialize initialRecords with an empty array
     const [recordsData, setRecordsData] = useState([]);
 
-    const { data: finishData, refetch: orderRefetch } = useQuery(ORDER_LIST);
+    const { data: finishData, refetch: orderRefetch, loading: getLoading } = useQuery(ORDER_LIST);
 
     const [finishList, setFinishList] = useState([]);
     const [allData, setAllData] = useState([]);
@@ -100,14 +101,14 @@ const Orders = () => {
 
         if (router.query?.customer) {
             body = {
-                first: 100,
+                first: 500,
                 direction: 'DESC',
                 field: 'CREATED_AT',
                 filter: { created: null, customer: router.query?.customer },
             };
         } else {
             body = {
-                first: 100,
+                first: 500,
                 direction: 'DESC',
                 field: 'CREATED_AT',
             };
@@ -391,7 +392,7 @@ const Orders = () => {
         const excelData = allData?.map((item: any) => {
             const data = item?.node;
             const res = {
-                OrderNumber:orderNumber(item),
+                OrderNumber: orderNumber(item),
                 CustomerName: ` ${data?.user?.firstName}${data?.user?.lastName}`,
                 EmailID: data?.userEmail,
                 PhoneNumber: data?.shippingAddress?.phone,
@@ -414,7 +415,6 @@ const Orders = () => {
         });
 
         downloadExlcel(excelData, 'Orders');
-        console.log('excelData: ', excelData);
     };
 
     const filterByDates = async (e: any) => {
@@ -599,77 +599,81 @@ const Orders = () => {
                 )}
 
                 <div className="datatables">
-                    <DataTable
-                        className="table-hover whitespace-nowrap"
-                        records={initialRecords}
-                        columns={[
-                            // { accessor: 'id', sortable: true },
-                            // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                            { accessor: 'order', sortable: true },
-                            { accessor: 'invoice', sortable: true, title: 'Invoice Number' },
+                    {getLoading ? (
+                        <CommonLoader />
+                    ) : (
+                        <DataTable
+                            className="table-hover whitespace-nowrap"
+                            records={initialRecords}
+                            columns={[
+                                // { accessor: 'id', sortable: true },
+                                // { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                                { accessor: 'order', sortable: true },
+                                { accessor: 'invoice', sortable: true, title: 'Invoice Number' },
 
-                            { accessor: 'date', sortable: true },
-                            { accessor: 'status', sortable: true, title: 'Order status' },
-                            { accessor: 'paymentStatus', sortable: true, title: 'Payment status' },
-                            {
-                                accessor: 'shipmentTracking',
-                                sortable: true,
-                                title: 'Shipment Tracking',
-                                render: (item) => {
-                                    return item?.courierPartner && item?.fulfillments?.length > 0 ? (
-                                        <Link href={`${item?.courierPartner?.trackingUrl}${item?.fulfillments[0]?.trackingNumber}`.trim()} target="_blank">
-                                            <div>{item?.courierPartner?.name}</div>
-                                            <div>{item?.fulfillments[0]?.trackingNumber}</div>
-                                        </Link>
-                                    ) : (
-                                        <div>-</div>
-                                    );
+                                { accessor: 'date', sortable: true },
+                                { accessor: 'status', sortable: true, title: 'Order status' },
+                                { accessor: 'paymentStatus', sortable: true, title: 'Payment status' },
+                                {
+                                    accessor: 'shipmentTracking',
+                                    sortable: true,
+                                    title: 'Shipment Tracking',
+                                    render: (item) => {
+                                        return item?.courierPartner && item?.fulfillments?.length > 0 ? (
+                                            <Link href={`${item?.courierPartner?.trackingUrl}${item?.fulfillments[0]?.trackingNumber}`.trim()} target="_blank">
+                                                <div>{item?.courierPartner?.name}</div>
+                                                <div>{item?.fulfillments[0]?.trackingNumber}</div>
+                                            </Link>
+                                        ) : (
+                                            <div>-</div>
+                                        );
+                                    },
                                 },
-                            },
 
-                            { accessor: 'total', sortable: true },
-                            {
-                                // Custom column for actions
-                                accessor: 'actions', // You can use any accessor name you want
-                                title: 'Actions',
-                                // Render method for custom column
-                                render: (row: any) => (
-                                    <>
-                                        {/* <Tippy content="View">
+                                { accessor: 'total', sortable: true },
+                                {
+                                    // Custom column for actions
+                                    accessor: 'actions', // You can use any accessor name you want
+                                    title: 'Actions',
+                                    // Render method for custom column
+                                    render: (row: any) => (
+                                        <>
+                                            {/* <Tippy content="View">
                                                 <button type="button" onClick={() => ViewOrder(row)}>
                                                     <IconEye className="ltr:mr-2 rtl:ml-2" />
                                                 </button>
                                             </Tippy> */}
-                                        <Tippy content="Edit">
-                                            <button type="button" onClick={() => EditOrder(row)}>
-                                                <IconPencil className="ltr:mr-2 rtl:ml-2" />
-                                            </button>
-                                        </Tippy>
-                                        <Tippy content="Delete">
-                                            <button type="button" onClick={() => DeleteOrder(row)}>
-                                                <IconTrashLines />
-                                            </button>
-                                        </Tippy>
-                                    </>
-                                ),
-                            },
-                        ]}
-                        highlightOnHover
-                        totalRecords={initialRecords.length}
-                        recordsPerPage={pageSize}
-                        page={page}
-                        onPageChange={(p) => setPage(p)}
-                        recordsPerPageOptions={PAGE_SIZES}
-                        onRecordsPerPageChange={setPageSize}
-                        sortStatus={sortStatus}
-                        onSortStatusChange={setSortStatus}
-                        selectedRecords={selectedRecords}
-                        onSelectedRecordsChange={(selectedRecords) => {
-                            setSelectedRecords(selectedRecords);
-                        }}
-                        minHeight={200}
-                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                    />
+                                            <Tippy content="Edit">
+                                                <button type="button" onClick={() => EditOrder(row)}>
+                                                    <IconPencil className="ltr:mr-2 rtl:ml-2" />
+                                                </button>
+                                            </Tippy>
+                                            <Tippy content="Delete">
+                                                <button type="button" onClick={() => DeleteOrder(row)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </Tippy>
+                                        </>
+                                    ),
+                                },
+                            ]}
+                            highlightOnHover
+                            totalRecords={initialRecords.length}
+                            recordsPerPage={pageSize}
+                            page={page}
+                            onPageChange={(p) => setPage(p)}
+                            recordsPerPageOptions={PAGE_SIZES}
+                            onRecordsPerPageChange={setPageSize}
+                            sortStatus={sortStatus}
+                            onSortStatusChange={setSortStatus}
+                            selectedRecords={selectedRecords}
+                            onSelectedRecordsChange={(selectedRecords) => {
+                                setSelectedRecords(selectedRecords);
+                            }}
+                            minHeight={200}
+                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                        />
+                    )}
                 </div>
             </div>
 

@@ -47,10 +47,15 @@ import CommonLoader from './elements/commonLoader';
 
 const ProductList = () => {
     const router = useRouter();
+    const [loader, setLoading] = useState(false);
 
     const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
 
-    const { error, data: productData } = useQuery(PRODUCT_LIST, {
+    const {
+        error,
+        data: productData,
+        loading: getloading,
+    } = useQuery(PRODUCT_LIST, {
         variables: { channel: 'india-channel', first: 200, direction: 'DESC', field: 'CREATED_AT' }, // Pass variables here
     });
 
@@ -64,8 +69,6 @@ const ProductList = () => {
     const [assignTagToProduct] = useMutation(ASSIGN_TAG_PRODUCT);
 
     const [productList, setProductList] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [duplicateLoading, setDuplicateLoading] = useState(false);
 
     useEffect(() => {
         if (router?.query?.category) {
@@ -461,13 +464,17 @@ const ProductList = () => {
 
     const fetchData = async () => {
         try {
+            setLoading(true);
             const res = await productDetailsRefetch({
                 channel: 'india-channel',
                 id: rowId,
                 choicesFirst: 10,
             });
             console.log('Refetch result: ', res);
+            setLoading(false);
         } catch (error) {
+            setLoading(true);
+
             console.error('Error refetching: ', error);
         }
     };
@@ -524,6 +531,15 @@ const ProductList = () => {
                 stone = row?.productStoneType?.map((item: any) => item.id);
             }
 
+            let upsells = [];
+            if (row?.getUpsells?.length > 0) {
+                upsells = row?.getUpsells?.map((item: any) => item?.productId);
+            }
+            let crosssells = [];
+            if (row?.getCrosssells?.length > 0) {
+                crosssells = row?.getCrosssells?.map((item: any) => item?.productId);
+            }
+
             const { data } = await addFormData({
                 variables: {
                     input: {
@@ -531,6 +547,8 @@ const ProductList = () => {
                         category: row?.category?.id,
                         collections: collectionId,
                         tags: tagId,
+                        upsells,
+                        crosssells,
                         // description: formattedDescription,
                         name: row.name,
                         productType: row.productType?.id,
@@ -762,8 +780,8 @@ const ProductList = () => {
                         <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
                         {/* <button type="button" className="btn btn-outline-primary">
                             Import
-                        </button>
-                        <button type="button" className="btn btn-outline-primary">
+                        </button> */}
+                        {/* <button type="button" className="btn btn-outline-primary" onClick={() => router.push('/product_export')}>
                             Export
                         </button> */}
                     </div>
@@ -845,7 +863,7 @@ const ProductList = () => {
                 </div>
 
                 <div className="datatables">
-                    {loading ? (
+                    {getloading ? (
                         <CommonLoader />
                     ) : (
                         <DataTable

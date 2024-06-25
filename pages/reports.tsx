@@ -26,6 +26,7 @@ import {
 } from '@/query/product';
 import Select from 'react-select';
 import moment from 'moment';
+import CommonLoader from './elements/commonLoader';
 
 const tabClassNames = (selected: boolean) =>
     `${selected ? ' text-lg !border-white-light !border-b-white text-primary !outline-none dark:!border-[#191e3a] dark:!border-b-black' : ''}
@@ -76,11 +77,11 @@ export default function Reports() {
         },
     ];
 
-    const [salesBydate] = useMutation(SALES_BY_DATE);
-    const [salesByProduct] = useMutation(SALES_BY_PRODUCT);
-    const [salesBySingleProduct] = useMutation(SALES_BY_SINGLE_PRODUCT);
-    const [salesByCategory] = useMutation(SALES_BY_CATEGORY);
-    const [salesByCoupon] = useMutation(SALES_BY_COUPON);
+    const [salesBydate, { loading: salesBydateLoading }] = useMutation(SALES_BY_DATE);
+    const [salesByProduct, { loading: salesByProductLoading }] = useMutation(SALES_BY_PRODUCT);
+    const [salesBySingleProduct, { loading: salesBySingleProductLoading }] = useMutation(SALES_BY_SINGLE_PRODUCT);
+    const [salesByCategory, { loading: salesByCategoryLoading }] = useMutation(SALES_BY_CATEGORY);
+    const [salesByCoupon, { loading: salesByCouponLoading }] = useMutation(SALES_BY_COUPON);
     const [analysisByOrder] = useMutation(ANALYSIS_BY_ORDER);
     const [analysisByRevenue] = useMutation(ANALYSIS_BY_REVENUE);
     const [analysisByCustomer] = useMutation(ANALYSIS_BY_CUSTOMER);
@@ -1526,25 +1527,29 @@ export default function Reports() {
                                 </div>
                                 <div className={`${state.orderSubMenu !== 'Coupons by date' ? 'col-span-9' : 'col-span-12'} `}>
                                     <div className="datatables">
-                                        <DataTable
-                                            withBorder={true}
-                                            className="table-hover whitespace-nowrap"
-                                            records={state.tableData}
-                                            columns={state.tableColumn}
-                                            highlightOnHover
-                                            totalRecords={state.tableData?.length}
-                                            recordsPerPage={10}
-                                            page={null}
-                                            onPageChange={(p) => {}}
-                                            recordsPerPageOptions={[10, 20, 30]}
-                                            onRecordsPerPageChange={() => {}}
-                                            // sortStatus={}
-                                            // onSortStatusChange={setSortStatus}
-                                            // selectedRecords={[]}
-                                            // onSelectedRecordsChange={(selectedRecords) => {}}
-                                            minHeight={200}
-                                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                                        />
+                                        {salesBydateLoading || salesByProductLoading || salesBySingleProductLoading || salesByCategoryLoading || salesByCouponLoading ? (
+                                            <CommonLoader />
+                                        ) : (
+                                            <DataTable
+                                                withBorder={true}
+                                                className="table-hover whitespace-nowrap"
+                                                records={state.tableData}
+                                                columns={state.tableColumn}
+                                                highlightOnHover
+                                                totalRecords={state.tableData?.length}
+                                                recordsPerPage={10}
+                                                page={null}
+                                                onPageChange={(p) => {}}
+                                                recordsPerPageOptions={[10, 20, 30]}
+                                                onRecordsPerPageChange={() => {}}
+                                                // sortStatus={}
+                                                // onSortStatusChange={setSortStatus}
+                                                // selectedRecords={[]}
+                                                // onSelectedRecordsChange={(selectedRecords) => {}}
+                                                minHeight={200}
+                                                paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             </div>

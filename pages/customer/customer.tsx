@@ -30,6 +30,7 @@ import { DELETE_PRODUCTS, CUSTOMER_ALL_LIST, DELETE_CUSTOMER } from '@/query/pro
 import { Failure, showDeleteAlert } from '@/utils/functions';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
 import moment from 'moment';
+import CommonLoader from '../elements/commonLoader';
 
 const CustomerList = () => {
     const router = useRouter();
@@ -39,6 +40,7 @@ const CustomerList = () => {
     const {
         error,
         data: customerData,
+        loading: getLoading,
         refetch: customerListRefetch,
     } = useQuery(CUSTOMER_ALL_LIST, {
         variables: {
@@ -267,49 +269,52 @@ const CustomerList = () => {
                 </div>
 
                 <div className="datatables">
-                    <DataTable
-                        className="table-hover whitespace-nowrap"
-                        records={recordsData}
-                        columns={[
-                            // { accessor: 'id', sortable: true },
-                            {
-                                accessor: 'name',
-                                sortable: true,
-                                // render: (row) => (
-                                //     <>
-                                //         <div  >
-                                //             {row.name}
-                                //         </div>
-                                //     </>
-                                // ),
-                            },
+                    {getLoading ? (
+                        <CommonLoader />
+                    ) : (
+                        <DataTable
+                            className="table-hover whitespace-nowrap"
+                            records={recordsData}
+                            columns={[
+                                // { accessor: 'id', sortable: true },
+                                {
+                                    accessor: 'name',
+                                    sortable: true,
+                                    // render: (row) => (
+                                    //     <>
+                                    //         <div  >
+                                    //             {row.name}
+                                    //         </div>
+                                    //     </>
+                                    // ),
+                                },
 
-                            { accessor: 'email', sortable: true },
-                            { accessor: 'dateJoined', sortable: true, title: 'Registered Date' },
+                                { accessor: 'email', sortable: true },
+                                { accessor: 'dateJoined', sortable: true, title: 'Registered Date' },
 
-                            {
-                                accessor: 'orderCount',
-                                sortable: true,
-                                render: (row) => (
-                                    <>
-                                        <button className=" underline" onClick={() => router.push(`/orders/orders/?customer=${row.email}`)}>
-                                            {row.orderCount}
-                                        </button>
-                                    </>
-                                ),
-                            },
-                            {
-                                // Custom column for actions
-                                accessor: 'actions', // You can use any accessor name you want
-                                title: 'Actions',
-                                // Render method for custom column
-                                render: (row: any) => (
-                                    <>
-                                        <div className="mx-auto flex w-max items-center gap-4">
-                                            <button className="flex hover:text-info" onClick={() => router.push(`/customer/edit?id=${row.id}`)}>
-                                                <IconEdit className="h-4.5 w-4.5" />
+                                {
+                                    accessor: 'orderCount',
+                                    sortable: true,
+                                    render: (row) => (
+                                        <>
+                                            <button className=" underline" onClick={() => router.push(`/orders/orders/?customer=${row.email}`)}>
+                                                {row.orderCount}
                                             </button>
-                                            {/* <button
+                                        </>
+                                    ),
+                                },
+                                {
+                                    // Custom column for actions
+                                    accessor: 'actions', // You can use any accessor name you want
+                                    title: 'Actions',
+                                    // Render method for custom column
+                                    render: (row: any) => (
+                                        <>
+                                            <div className="mx-auto flex w-max items-center gap-4">
+                                                <button className="flex hover:text-info" onClick={() => router.push(`/customer/edit?id=${row.id}`)}>
+                                                    <IconEdit className="h-4.5 w-4.5" />
+                                                </button>
+                                                {/* <button
                                                 className="flex hover:text-info"
                                                 onClick={() => {
                                                     if (row.status == 'Draft') {
@@ -322,30 +327,31 @@ const CustomerList = () => {
                                                 <IconEye />
                                             </button> */}
 
-                                            <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
-                                                <IconTrashLines />
-                                            </button>
-                                        </div>
-                                    </>
-                                ),
-                            },
-                        ]}
-                        highlightOnHover
-                        totalRecords={initialRecords.length}
-                        recordsPerPage={pageSize}
-                        page={page}
-                        onPageChange={(p) => setPage(p)}
-                        recordsPerPageOptions={PAGE_SIZES}
-                        onRecordsPerPageChange={setPageSize}
-                        sortStatus={sortStatus}
-                        onSortStatusChange={setSortStatus}
-                        selectedRecords={selectedRecords}
-                        onSelectedRecordsChange={(selectedRecords) => {
-                            setSelectedRecords(selectedRecords);
-                        }}
-                        minHeight={200}
-                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                    />
+                                                <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
+                                                    <IconTrashLines />
+                                                </button>
+                                            </div>
+                                        </>
+                                    ),
+                                },
+                            ]}
+                            highlightOnHover
+                            totalRecords={initialRecords.length}
+                            recordsPerPage={pageSize}
+                            page={page}
+                            onPageChange={(p) => setPage(p)}
+                            recordsPerPageOptions={PAGE_SIZES}
+                            onRecordsPerPageChange={setPageSize}
+                            sortStatus={sortStatus}
+                            onSortStatusChange={setSortStatus}
+                            selectedRecords={selectedRecords}
+                            onSelectedRecordsChange={(selectedRecords) => {
+                                setSelectedRecords(selectedRecords);
+                            }}
+                            minHeight={200}
+                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                        />
+                    )}
                 </div>
             </div>
         </div>

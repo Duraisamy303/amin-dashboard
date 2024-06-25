@@ -12,6 +12,16 @@ export const PRODUCT_LIST = gql`
                         id
                     }
                     __typename
+                    getCrosssells {
+                        name
+                        productId
+                        id
+                    }
+                    getUpsells {
+                        name
+                        productId
+                        id
+                    }
                 }
                 cursor
                 __typename
@@ -668,6 +678,91 @@ export const DELETE_STYLE = gql`
     }
 `;
 
+export const PRODUCT_EXPORT = gql`
+    query ProductVariantsExport($first: Int!, $after: String) {
+        productVariants(first: $first, after: $after, channel: "india-channel") {
+            edges {
+                node {
+                    id
+                    name
+                    sku
+                    stocks {
+                        quantity
+                    }
+                    media {
+                        url
+                    }
+                    pricing {
+                        price {
+                            gross {
+                                amount
+                                currency
+                            }
+                        }
+                    }
+                    product {
+                        category {
+                            name
+                        }
+                        name
+                        orderNo
+                        media {
+                            url
+                        }
+                        slug
+                        prouctDesign {
+                            name
+                        }
+                        productstyle {
+                            name
+                        }
+                        productStonecolor {
+                            name
+                        }
+                        productStoneType {
+                            name
+                        }
+                        productSize {
+                            name
+                        }
+                        productItemtype {
+                            name
+                        }
+                        productFinish {
+                            name
+                        }
+                        getCrosssells {
+                            name
+                        }
+                        getUpsells {
+                            name
+                        }
+                        tags {
+                            name
+                        }
+                        taxClass {
+                            name
+                        }
+                        metadata {
+                            key
+                            value
+                        }
+                        channelListings {
+                            isPublished
+                        }
+                    }
+                }
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+            }
+        }
+    }
+`;
+
 export const ORDER_LIST = gql`
     query OrderList($first: Int, $after: String, $last: Int, $before: String, $filter: OrderFilterInput, $sort: OrderSortingInput) {
         orders(before: $before, after: $after, first: $first, last: $last, filter: $filter, sortBy: $sort) {
@@ -686,6 +781,11 @@ export const ORDER_LIST = gql`
                     total {
                         __typename
                         gross {
+                            __typename
+                            amount
+                            currency
+                        }
+                        tax {
                             __typename
                             amount
                             currency
@@ -710,6 +810,40 @@ export const ORDER_LIST = gql`
                         id
                         lastName
                         firstName
+                    }
+                    shippingPrice {
+                        gross {
+                            amount
+                            currency
+                        }
+                    }
+                    lines {
+                        id
+                        productName
+                        productSku
+                        totalPrice {
+                            gross {
+                                amount
+                                currency
+                            }
+                        }
+                    }
+                    shippingAddress {
+                        ...Address
+                        city
+                        cityArea
+                        companyName
+                        country {
+                            code
+                            country
+                        }
+                        countryArea
+                        firstName
+                        id
+                        lastName
+                        phone
+                        streetAddress1
+                        streetAddress2
                     }
                 }
                 __typename
@@ -9851,6 +9985,14 @@ export const PRODUCT_FULL_DETAILS = gql`
             }
             ...Product
             __typename
+            getUpsells {
+                name
+                productId
+            }
+            getCrosssells {
+                name
+                productId
+            }
             productFinish {
                 id
                 name
