@@ -48,7 +48,8 @@ export default function LowStock() {
                     onPageChange={(p) => setPage(p)}
                     recordsPerPageOptions={PAGE_SIZES}
                     onRecordsPerPageChange={setPageSize}
-                    sortStatus={sortStatus}
+                    sortStatus={null}
+
                     onSortStatusChange={setSortStatus}
                     minHeight={200}
                     paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}

@@ -54,7 +54,7 @@ export default function LastUpdates() {
                     onPageChange={(p) => setPage(p)}
                     recordsPerPageOptions={PAGE_SIZES}
                     onRecordsPerPageChange={setPageSize}
-                    sortStatus={sortStatus}
+                    sortStatus={null}
                     onSortStatusChange={setSortStatus}
                    
                     minHeight={200}

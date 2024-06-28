@@ -43,10 +43,6 @@ export default function ProductImport() {
             formData.append('excel', state.file);
             console.log('formData: ', formData);
 
-            for (let [key, value] of formData.entries()) {
-                console.log(key, value);
-            }
-
             let config = {
                 method: 'post',
                 maxBodyLength: Infinity,
