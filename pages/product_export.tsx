@@ -114,7 +114,7 @@ export default function Product_export() {
 
                 if (product?.metadata?.length > 0) {
                     const shortDescription = product?.metadata?.find((meta) => meta.key === 'short_description')?.value;
-                    const description = product?.metadata?.find((meta) => meta.key === 'description')?.value;
+                    const description = product?.description;
                     if (description) {
                         res.Description = description;
                     } else {

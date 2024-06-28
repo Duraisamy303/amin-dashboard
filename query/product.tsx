@@ -732,6 +732,7 @@ export const PRODUCT_EXPORT = gql`
                         }
                         name
                         orderNo
+                        description
                         media {
                             url
                         }
@@ -9697,6 +9698,28 @@ export const PRODUCT_BY_NAME = gql`
                     name
                 }
             }
+        }
+    }
+`;
+
+export const LOW_STOCK_LIST = gql`
+    query ProductListPaginated($channel: String!, $first: Int!, $after: String, $filter: ProductFilterInput!) {
+        products(filter: $filter, first: $first, after: $after, channel: $channel) {
+            totalCount
+            edges {
+                node {
+                    id
+                    name
+                }
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                __typename
+            }
+            __typename
         }
     }
 `;
