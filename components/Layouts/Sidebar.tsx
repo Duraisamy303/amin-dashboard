@@ -36,6 +36,8 @@ import IconMenuReport from '../Icon/Menu/IconMenuReport';
 import { useQuery } from '@apollo/client';
 import { PRODUCT_CAT_LIST } from '@/query/product';
 import { sampleParams } from '@/utils/functions';
+import IconAward from '../Icon/IconAward';
+import IconPaymentList from '../Icon/IconPayment';
 
 const Sidebar = () => {
     const router = useRouter();
@@ -308,9 +310,16 @@ const Sidebar = () => {
                                                         <span className="flex h-6 w-[80px] items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">{0}</span>
                                                     </Link>
                                                 </li>
-                                               
                                             </ul>
                                         </AnimateHeight>
+                                    </li>
+                                    <li className="nav-item">
+                                        <Link href="/payments" className="group">
+                                            <div className="flex items-center">
+                                                <IconPaymentList className="shrink-0 group-hover:!text-primary" />
+                                                <span className="text-black dark:text-[#506690] dark:group-hover:text-white-dark ltr:pl-3 rtl:pr-3">{t('Payments')}</span>
+                                            </div>
+                                        </Link>
                                     </li>
 
                                     {/* <li className="nav-item">

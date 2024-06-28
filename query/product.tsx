@@ -678,6 +678,32 @@ export const DELETE_STYLE = gql`
     }
 `;
 
+export const CREATE_PAYMENT = gql`
+    mutation PaymentGatewayCreate($input: PaymentGatewayInput!) {
+        paymentGatewayCreate(input: $input) {
+            paymentGateway {
+                id
+                name
+                isActive
+                description
+            }
+        }
+    }
+`;
+
+export const UPDATE_PAYMENT = gql`
+    mutation PaymentGatewayCreate($id: ID!, $input: PaymentGatewayInput!) {
+        paymentGatewayUpdate(id: $id, input: $input) {
+            paymentGateway {
+                id
+                name
+                isActive
+                description
+            }
+        }
+    }
+`;
+
 export const PRODUCT_EXPORT = gql`
     query ProductVariantsExport($first: Int!, $after: String, $categories: [ID!]!) {
         productVariants(first: $first, after: $after, channel: "india-channel", categories: $categories) {
@@ -889,6 +915,21 @@ export const SHIPPING_LIST = gql`
                     id
                     name
                     trackingUrl
+                }
+            }
+        }
+    }
+`;
+
+export const PAYMENT_LIST = gql`
+    query GetPaymnetGatewayList {
+        paymentGateways(first: 10) {
+            edges {
+                node {
+                    description
+                    id
+                    isActive
+                    name
                 }
             }
         }

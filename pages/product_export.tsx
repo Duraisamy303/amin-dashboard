@@ -127,8 +127,6 @@ export default function Product_export() {
                 return res;
             });
 
-            console.log('excelData: ', excelData);
-
             downloadExlcel(excelData, 'Export Products');
         } catch (error) {
             setState({ loading: false });
@@ -169,7 +167,7 @@ export default function Product_export() {
                             </select>
                         </div>
                     </div>
-                    <div className="flex gap-5">
+                    <div className="flex items-center justify-center gap-5">
                         <div className="mb-5">
                             {state.loading ? (
                                 <button type="button" className="btn btn-primary ">
