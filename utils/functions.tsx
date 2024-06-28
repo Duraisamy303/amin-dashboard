@@ -538,40 +538,33 @@ export const PaymentStatus = (status: any) => {
 };
 
 export const getDateRange = (rangeType) => {
+    console.log('rangeType: ', rangeType);
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
-
     let startDate, endDate;
 
     if (rangeType === 'thisMonth') {
-        // Start of this month
         startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        // End of today
         endDate = today;
     } else if (rangeType === 'lastMonth') {
-        // Start of last month
         startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        // End of last month
         endDate = new Date(today.getFullYear(), today.getMonth(), 0);
     } else if (rangeType === 'last7Days') {
-        // Start date 7 days ago from yesterday
-        startDate = new Date(yesterday);
-        startDate.setDate(yesterday.getDate() - 6);
-        // End of yesterday
-        endDate = yesterday;
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 6);
+        endDate = today;
     } else if (rangeType === 'Year') {
-        // Start date 365 days ago from yesterday
-        startDate = new Date(yesterday);
-        startDate.setDate(yesterday.getDate() - 365);
-        // End of yesterday
-        endDate = yesterday;
+        startDate = new Date(today.getFullYear(), 0, 1);
+        endDate = today;
     } else {
         throw new Error("Invalid rangeType. Use 'thisMonth', 'lastMonth', 'last7Days', or 'lastYear'.");
     }
+    console.log('startDate: ', startDate);
 
-    const start = startDate.toISOString().split('T')[0];
-    const end = endDate.toISOString().split('T')[0];
+    const start = moment(startDate).format('YYYY-MM-DD');
+    console.log('start: ', start);
+    const end = moment(endDate).format('YYYY-MM-DD');
 
     return { start, end };
 };

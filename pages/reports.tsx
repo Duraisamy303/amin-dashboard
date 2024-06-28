@@ -276,6 +276,7 @@ export default function Reports() {
 
             if (state.orderDateFilter == 'Year') {
                 const { start, end } = getDateRange('Year');
+                console.log('start, end: ', start, end);
                 (startDate = start), (endDate = end);
             }
 
@@ -293,14 +294,6 @@ export default function Reports() {
                 variables,
             });
             const response = res?.data?.salesByDate;
-            const orderCounts = {
-                couponAmountListTotal: response.couponAmountListTotal,
-                noOfOrderListCount: response.noOfOrderListCount,
-                productsTotalAmountTotal: response.productsTotalAmountTotal,
-                refundAmountListTotal: response.refundAmountListTotal,
-                shippingAmountListTotal: response.shippingAmountListTotal,
-                totalItemsSoldListCount: response.totalItemsSoldListCount,
-            };
 
             const salesByDate = [
                 // {
@@ -358,7 +351,12 @@ export default function Reports() {
             ];
 
             const tableData = salesBydateTable(response);
+            // if (state.orderDateFilter == 'Last Month' || state.orderDateFilter == 'Year') {
+            //     setState({ tableData: tableData?.reverse(), salesByDate, tableColumn });
+            // } else {
+            //     console.log('tableData: ', tableData);
             setState({ tableData, salesByDate, tableColumn });
+            // }
         } catch (error) {
             console.log('error: ', error);
         }
@@ -531,7 +529,7 @@ export default function Reports() {
                 };
                 const columns = generateColumns(response.outputData.length, categoryid);
 
-                setState({ tableData, tableColumn: columns });
+                setState({ tableData: tableData?.reverse(), tableColumn: columns });
             } else {
                 setState({ tableData: [], tableColumn: [] });
             }

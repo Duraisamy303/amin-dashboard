@@ -34,7 +34,7 @@ import IconMenuDocumentation from '@/components/Icon/Menu/IconMenuDocumentation'
 import IconMicrophoneOff from '../Icon/IconMicrophoneOff';
 import IconMenuReport from '../Icon/Menu/IconMenuReport';
 import { useQuery } from '@apollo/client';
-import { PRODUCT_CAT_LIST } from '@/query/product';
+import { LOW_STOCK_LIST, PRODUCT_CAT_LIST } from '@/query/product';
 import { sampleParams } from '@/utils/functions';
 import IconAward from '../Icon/IconAward';
 import IconPaymentList from '../Icon/IconPayment';
@@ -42,7 +42,8 @@ import IconPaymentList from '../Icon/IconPayment';
 const Sidebar = () => {
     const router = useRouter();
     const [currentMenu, setCurrentMenu] = useState<string>('');
-    const [errorSubMenu, setErrorSubMenu] = useState(false);
+    const [lowStockCount, setLowStockCount] = useState(0);
+
     const themeConfig = useSelector((state: any) => state.themeConfig);
     const semidark = useSelector((state: any) => state.themeConfig.semidark);
     const toggleMenu = (value: string) => {
@@ -50,10 +51,12 @@ const Sidebar = () => {
             return oldValue === value ? '' : value;
         });
     };
-    // const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
-    //     variables: sampleParams,
-    // });
-    // console.log("cat_list: ", cat_list);
+
+    const { data: productSearch, refetch: lowStockRefetch } = useQuery(LOW_STOCK_LIST);
+
+    useEffect(() => {
+        getLowStockCount();
+    }, [router.pathname]);
 
     useEffect(() => {
         const selector = document.querySelector('.sidebar ul a[href="' + window.location.pathname + '"]');
@@ -78,6 +81,23 @@ const Sidebar = () => {
             dispatch(toggleSidebar());
         }
     }, [router.pathname]);
+
+    const getLowStockCount = async () => {
+        try {
+            const res = await lowStockRefetch({
+                channel: 'india-channel',
+                first: 100,
+                after: null,
+                filter: {
+                    categories: [],
+                    stockAvailability: 'OUT_OF_STOCK',
+                },
+            });
+            setLowStockCount(res?.data?.products?.totalCount);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
     const setActiveRoute = () => {
         let allLinks = document.querySelectorAll('.sidebar ul a.active');
@@ -299,9 +319,9 @@ const Sidebar = () => {
                                         <AnimateHeight duration={300} height={currentMenu === 'Stock Management' ? 'auto' : 0}>
                                             <ul className="sub-menu text-gray-500">
                                                 <li className="relative flex items-center">
-                                                    <Link href="/lowStock" className="flex items-center space-x-2">
+                                                    <Link href="/lowStock" className="flex items-center ">
                                                         <span className="flex items-center">{t('Low stocks')}</span>
-                                                        <span className="flex h-6 w-8 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">{0}</span>
+                                                        <span className="flex h-6 w-8 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">{lowStockCount}</span>
                                                     </Link>
                                                 </li>
                                                 <li className="relative flex items-center">

@@ -143,7 +143,6 @@ const ProductList = () => {
     });
 
     useEffect(() => {
-        // Sort finishList by 'id' and update initialRecords
         setInitialRecords(productList);
     }, [productList]);
 
@@ -164,13 +163,9 @@ const ProductList = () => {
         setInitialRecords(() => {
             return productList.filter((item: any) => {
                 return (
-                    // item.id.toString().includes(search.toLowerCase()) ||
-                    // item.image.toLowerCase().includes(search.toLowerCase()) ||
                     item?.name?.toLowerCase().includes(search.toLowerCase()) ||
                     item?.sku?.toLowerCase().includes(search.toLowerCase()) ||
                     item?.status.toLowerCase().includes(search.toLowerCase()) ||
-                    // item.stock.toLowerCase().includes(search.toLowerCase()) ||
-                    // item.price.toString().includes(search.toLowerCase()) ||
                     item?.categories?.toLowerCase().includes(search.toLowerCase()) ||
                     item?.date?.toString().includes(search.toLowerCase())
                 );
