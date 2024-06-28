@@ -293,9 +293,9 @@ const ProductEdit = (props: any) => {
                         crossells = data?.getCrosssells?.map((item) => ({ value: item.productId, label: item.name }));
                     }
                     setSelectedCrosssell(crossells);
-                   
-                    setselectedCat({value: data?.category.id, label: data?.category?.name});
-                    
+
+                    setselectedCat({ value: data?.category.id, label: data?.category?.name });
+
                     if (data?.tags?.length > 0) {
                         const tags: any = data?.tags?.map((item: any) => ({ value: item.id, label: item.name }));
                         setSelectedTag(tags);
@@ -921,10 +921,10 @@ const ProductEdit = (props: any) => {
                 key: 'short_descripton',
                 value: shortDescription,
             });
-            input.push({
-                key: 'description',
-                value: description,
-            });
+            // input.push({
+            //     key: 'description',
+            //     value: description,
+            // });
             if (label?.value) {
                 input.push({
                     key: 'label',
@@ -1245,7 +1245,7 @@ const ProductEdit = (props: any) => {
                                 placeholder="Enter Description"
                                 required
                             ></textarea> */}
-                            {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
+                            {/* {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>} */}
                             <div className="" style={{ height: '250px', overflow: 'scroll' }}>
                                 <div ref={editorRef} className="border border-r-8 border-gray-200"></div>
                             </div>

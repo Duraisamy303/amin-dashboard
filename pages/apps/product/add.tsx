@@ -407,9 +407,7 @@ const ProductAdd = () => {
     const [content, setContent] = useState('');
     const [value, setValue] = useState<any>({
         time: Date.now(),
-        blocks: [
-            
-        ],
+        blocks: [],
         version: '2.19.0',
     });
 
@@ -749,10 +747,10 @@ const ProductAdd = () => {
                 key: 'short_descripton',
                 value: shortDescription,
             });
-            input.push({
-                key: 'description',
-                value: description,
-            });
+            // input.push({
+            //     key: 'description',
+            //     value: description,
+            // });
             if (label?.value) {
                 input.push({
                     key: 'label',
@@ -764,20 +762,6 @@ const ProductAdd = () => {
                 variables: {
                     id: productId,
                     input,
-                    // input: [
-                    //     {
-                    //         key: 'short_descripton',
-                    //         value: shortDescription,
-                    //     },
-                    //     {
-                    //         key: 'label',
-                    //         value: label.value,
-                    //     },
-                    //     {
-                    //         key: 'description',
-                    //         value: description,
-                    //     },
-                    // ],
                     keysToDelete: [],
                 },
                 // variables: { email: formData.email, password: formData.password },
