@@ -59,7 +59,7 @@ import {
     UPDATE_VARIANT_LIST,
     PRODUCT_BY_NAME,
 } from '@/query/product';
-import { Failure, Success, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
+import { Failure, Success, objIsEmpty, sampleParams, showDeleteAlert, uploadImage } from '@/utils/functions';
 import IconRestore from '@/components/Icon/IconRestore';
 import { cA } from '@fullcalendar/core/internal-common';
 import PrivateRouter from '@/components/Layouts/PrivateRouter';
@@ -158,22 +158,6 @@ const ProductAdd = () => {
     // const [addCategory, setAddCategory] = useState(false);
     const [quantityTrack, setQuantityTrack] = useState(true);
     const [parentLists, setParentLists] = useState([]);
-    // const editorRef = useRef(null);
-    // const [editorInstance, setEditorInstance] = useState(null);
-    const [content, setContent] = useState('');
-
-    const [value, setValue] = useState<any>({
-        time: Date.now(),
-        blocks: [
-            {
-                type: 'paragraph',
-                data: {
-                    text: 'This is the default content.',
-                },
-            },
-        ],
-        version: '2.19.0',
-    });
 
     const [active, setActive] = useState<string>('1');
     // track stock
@@ -418,61 +402,71 @@ const ProductAdd = () => {
     };
 
     // -------------------------EDITOR---------------------------------------
-    // let editors = { isReady: false };
-    // useEffect(() => {
-    //     if (!editors.isReady) {
-    //         editor();
-    //         editors.isReady = true;
-    //     }
+    const editorRef = useRef(null);
+    const [editorInstance, setEditorInstance] = useState(null);
+    const [content, setContent] = useState('');
+    const [value, setValue] = useState<any>({
+        time: Date.now(),
+        blocks: [
+            
+        ],
+        version: '2.19.0',
+    });
 
-    //     return () => {
-    //         if (editorInstance) {
-    //             editorInstance?.blocks?.clear();
-    //         }
-    //     };
-    // }, [value]);
+    let editors = { isReady: false };
+    useEffect(() => {
+        if (!editors.isReady) {
+            editor();
+            editors.isReady = true;
+        }
 
-    // const editor = useCallback(() => {
-    //     // Check if the window object is available and if the editorRef.current is set
-    //     if (typeof window === 'undefined' || !editorRef.current) return;
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, [value]);
+    const editor = useCallback(() => {
+        // Check if the window object is available and if the editorRef.current is set
+        if (typeof window === 'undefined' || !editorRef.current) return;
 
-    //     // Ensure only one editor instance is created
-    //     if (editorInstance) {
-    //         return;
-    //     }
+        // Ensure only one editor instance is created
+        if (editorInstance) {
+            return;
+        }
 
-    //     console.log('value: ', value);
-    //     // Dynamically import the EditorJS module
-    //     import('@editorjs/editorjs').then(({ default: EditorJS }) => {
-    //         // Create a new instance of EditorJS with the appropriate configuration
-    //         const editor = new EditorJS({
-    //             holder: editorRef.current,
-    //             data: value,
-    //             tools: {
-    //                 // Configure tools as needed
-    //                 header: {
-    //                     class: require('@editorjs/header'),
-    //                 },
-    //                 list: {
-    //                     class: require('@editorjs/list'),
-    //                 },
-    //                 table: {
-    //                     class: require('@editorjs/table'),
-    //                 },
-    //             },
-    //         });
+        console.log('value: ', value);
+        // Dynamically import the EditorJS module
+        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+            // Create a new instance of EditorJS with the appropriate configuration
+            const editor = new EditorJS({
+                holder: editorRef.current,
+                data: value,
+                tools: {
+                    // Configure tools as needed
+                    header: {
+                        class: require('@editorjs/header'),
+                    },
+                    list: {
+                        class: require('@editorjs/list'),
+                    },
+                    table: {
+                        class: require('@editorjs/table'),
+                    },
+                },
+            });
 
-    //         // Set the editorInstance state variable
-    //         setEditorInstance(editor);
-    //     });
+            // Set the editorInstance state variable
+            setEditorInstance(editor);
+        });
 
-    //     // Cleanup function to destroy the current editor instance when the component unmounts
-    //     return () => {
-    //         if (editorInstance) {
-    //             editorInstance?.blocks?.clear();
-    //         }
-    //     };
-    // }, [editorInstance, value]);
+        // Cleanup function to destroy the current editor instance when the component unmounts
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, [editorInstance, value]);
 
     const selectCat = (cat: any) => {
         setselectedCat(cat);
@@ -488,6 +482,10 @@ const ProductAdd = () => {
 
     const CreateProduct = async () => {
         try {
+            const savedContent = await editorInstance.save();
+            const descr = JSON.stringify(savedContent, null, 2);
+            console.log('descr: ', descr);
+            console.log('Editor content:', savedContent);
             setCreateLoading(true);
             // Reset error messages
             setProductNameErrMsg('');
@@ -506,7 +504,7 @@ const ProductAdd = () => {
                 slug: slug.trim() === '' ? 'Slug cannot be empty' : '',
                 seoTittle: seoTittle.trim() === '' ? 'Seo title cannot be empty' : '',
                 seoDesc: seoDesc.trim() === '' ? 'Seo description cannot be empty' : '',
-                description: description.trim() === '' ? 'Description cannot be empty' : '',
+                description: savedContent?.blocks?.length == 0 ? 'Description cannot be empty' : '',
                 shortDescription: shortDescription?.trim() === '' ? 'Short description cannot be empty' : '',
                 category: selectedCat === '' ? 'Category cannot be empty' : '',
             };
@@ -579,6 +577,7 @@ const ProductAdd = () => {
             const { data } = await addFormData({
                 variables: {
                     input: {
+                        description: descr,
                         attributes: [],
                         category: catId,
                         collections: collectionId,
@@ -1057,9 +1056,13 @@ const ProductAdd = () => {
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
+                            <div className="" style={{ height: '250px', overflow: 'scroll' }}>
+                                <div ref={editorRef} className="border border-r-8 border-gray-200"></div>
+                            </div>
 
-                            {/* <div ref={editorRef} className="mb-5 border border-gray-200"></div> */}
-                            <textarea
+                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
+
+                            {/* <textarea
                                 id="ctnTextarea"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -1067,8 +1070,7 @@ const ProductAdd = () => {
                                 className="form-textarea"
                                 placeholder="Enter Description"
                                 required
-                            ></textarea>
-                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
+                            ></textarea> */}
                         </div>
 
                         <div className="panel mb-5 ">
@@ -1143,7 +1145,7 @@ const ProductAdd = () => {
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
                                                         relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] dark:border-[#191e3a] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px]`}
                                                         >
-                                                            Linked Product
+                                                            Linked Products
                                                         </button>
                                                     )}
                                                 </Tab>

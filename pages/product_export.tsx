@@ -1,10 +1,23 @@
-import { CATEGORY_LIST, PRODUCT_EXPORT } from '@/query/product';
+import { CATEGORY_LIST, PARENT_CATEGORY_LIST, PRODUCT_EXPORT } from '@/query/product';
+import { downloadExlcel, useSetState } from '@/utils/functions';
 import { useQuery } from '@apollo/client';
+import moment from 'moment';
 import React from 'react';
 import Select from 'react-select';
+import Loader from './elements/loader';
+import IconLoader from '@/components/Icon/IconLoader';
+import { useRouter } from 'next/router';
 
 export default function Product_export() {
     const { data: exportData, refetch: exportDatarefetch } = useQuery(PRODUCT_EXPORT);
+
+    const router = useRouter();
+
+    const [state, setState] = useSetState({
+        loading: false,
+        category: '',
+    });
+
     const { data: categoryList } = useQuery(CATEGORY_LIST, {
         variables: {
             first: 500,
@@ -13,16 +26,44 @@ export default function Product_export() {
         },
     });
 
+    const { data: parentList } = useQuery(PARENT_CATEGORY_LIST, {
+        variables: { channel: 'india-channel' },
+    });
+
+    console.log('category: ', state.category);
+
+    const ArrayToString = (array) => {
+        let label = '';
+        if (array?.length > 0) {
+            label = array?.map((item: any) => item.name).join(',');
+        }
+        return label;
+    };
+
+    const IsPublished = (array) => {
+        let label = 0;
+        if (array?.length > 0) {
+            label = array[0]?.isPublished == true ? 1 : 0;
+        }
+        return label;
+    };
+
     const generateCSV = async () => {
         try {
+            setState({ loading: true });
             let hasNextPage = true;
             let after = null;
             let allData = [];
 
             while (hasNextPage) {
+                let cat = [];
+                if (state.category) {
+                    cat = [state.category];
+                }
                 const res = await exportDatarefetch({
                     first: 200,
                     after: after,
+                    categories: cat,
                 });
 
                 const edges = res.data.productVariants?.edges;
@@ -30,6 +71,8 @@ export default function Product_export() {
 
                 if (!pageInfo || !edges) {
                     console.error('Invalid response structure:', res);
+                    setState({ loading: false });
+
                     throw new Error('Invalid response structure');
                 }
 
@@ -37,10 +80,59 @@ export default function Product_export() {
                 after = pageInfo.endCursor;
                 hasNextPage = pageInfo.hasNextPage;
             }
+            setState({ loading: false });
 
             console.log('allData: ', allData);
-            
+
+            const excelData = allData?.map((item: any) => {
+                const data = item?.node;
+                const product = data?.product;
+                let res: any = {
+                    ID: product?.productId,
+                    SKU: data?.sku,
+                    Name: product?.name,
+                    // TaxStatus: '',
+                    TaxClass: product?.taxClass?.name,
+                    'In Stock': product?.stocks?.length > 0 ? (product?.stocks[0]?.quantity > 0 ? 'Yes' : 'No') : 'No',
+                    Stock: product?.stocks?.length > 0 ? product?.stocks[0]?.quantity : 0,
+                    Price: data?.pricing?.price?.gross?.amount,
+                    Category: product?.category?.name,
+                    Tags: ArrayToString(product?.tags),
+                    Images: product?.media?.length,
+                    Upsells: product?.getUpsells?.length,
+                    'Cross-sells': product?.getCrosssells?.length,
+                    Position: 0,
+                    Sizes: ArrayToString(product?.productSize),
+                    'Item Types': ArrayToString(product?.productItemtype),
+                    'Stone Types': ArrayToString(product?.productStoneType),
+                    Designs: ArrayToString(product?.prouctDesign),
+                    Styles: ArrayToString(product?.productstyle),
+                    Finishes: ArrayToString(product?.productFinish),
+                    'Stone Colors': ArrayToString(product?.productStonecolor),
+                    Published: IsPublished(product?.channelListings),
+                };
+
+                if (product?.metadata?.length > 0) {
+                    const shortDescription = product?.metadata?.find((meta) => meta.key === 'short_description')?.value;
+                    const description = product?.metadata?.find((meta) => meta.key === 'description')?.value;
+
+                    if (shortDescription) {
+                        res['Short description'] = shortDescription;
+                    }
+                    if (description) {
+                        res.Description = description;
+                    }
+                }
+
+                return res;
+            });
+
+            console.log('excelData: ', excelData);
+
+            downloadExlcel(excelData, 'Export Products');
         } catch (error) {
+            setState({ loading: false });
+
             console.error('Error:', error);
         }
     };
@@ -60,20 +152,41 @@ export default function Product_export() {
                             </label>
                         </div>
                         <div className="mb-5">
-                            <Select
-                                placeholder="Select an option"
-                                // value={selectedUpsell}
-                                // options={productList}
-                                // onChange={(e: any) => setSelectedUpsell(e)}
-                                isMulti
-                                isSearchable={true}
-                            />
+                            <select className="form-select flex-1" value={state.category} onChange={(e) => setState({ category: e.target.value })}>
+                                <option value="">Select a Categories </option>
+                                {parentList?.categories?.edges?.map((item: any) => {
+                                    return (
+                                        <>
+                                            <option value={item?.node?.id}>{item.node?.name}</option>
+                                            {item?.node?.children?.edges.map((child: any) => (
+                                                <option key={child.id} value={child.node?.id} style={{ paddingLeft: '20px' }}>
+                                                    -- {child.node?.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    );
+                                })}
+                            </select>
                         </div>
                     </div>
-                    <div className="mb-5">
-                        <button type="button" className="btn btn-outline-primary" onClick={generateCSV}>
-                            Generate CSV
-                        </button>
+                    <div className="flex gap-5">
+                        <div className="mb-5">
+                            {state.loading ? (
+                                <button type="button" className="btn btn-primary ">
+                                    <IconLoader className="inline-block shrink-0 animate-[spin_2s_linear_infinite] align-middle ltr:mr-2 rtl:ml-2" />
+                                    Loading
+                                </button>
+                            ) : (
+                                <button type="button" className="btn btn-primary " onClick={generateCSV}>
+                                    Generate CSV
+                                </button>
+                            )}
+                        </div>
+                        <div className="mb-5">
+                            <button type="button" className="btn btn-primary " onClick={() => router.push('/')}>
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -546,6 +546,7 @@ const ProductList = () => {
                         attributes: [],
                         category: row?.category?.id,
                         collections: collectionId,
+                        description:row.description,
                         tags: tagId,
                         upsells,
                         crosssells,
@@ -776,14 +777,14 @@ const ProductList = () => {
         <div>
             <div className="panel mt-6">
                 <div className="mb-10 flex flex-col gap-5 lg:mb-5 lg:flex-row lg:items-center">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-5">
                         <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
-                        {/* <button type="button" className="btn btn-outline-primary">
+                         <button type="button" className="btn btn-outline-primary" onClick={() => router.push('/product_import')}>
                             Import
-                        </button> */}
-                        {/* <button type="button" className="btn btn-outline-primary" onClick={() => router.push('/product_export')}>
+                        </button> 
+                         <button type="button" className="btn btn-outline-primary" onClick={() => router.push('/product_export')}>
                             Export
-                        </button> */}
+                        </button> 
                     </div>
                     <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
                         <input type="text" className="form-input  mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />

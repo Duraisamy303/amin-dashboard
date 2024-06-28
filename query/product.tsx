@@ -679,8 +679,8 @@ export const DELETE_STYLE = gql`
 `;
 
 export const PRODUCT_EXPORT = gql`
-    query ProductVariantsExport($first: Int!, $after: String) {
-        productVariants(first: $first, after: $after, channel: "india-channel") {
+    query ProductVariantsExport($first: Int!, $after: String, $categories: [ID!]!) {
+        productVariants(first: $first, after: $after, channel: "india-channel", categories: $categories) {
             edges {
                 node {
                     id
@@ -750,6 +750,7 @@ export const PRODUCT_EXPORT = gql`
                         channelListings {
                             isPublished
                         }
+                        productId
                     }
                 }
             }

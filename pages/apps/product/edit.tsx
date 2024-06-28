@@ -76,8 +76,6 @@ const ProductEdit = (props: any) => {
     const [modal1, setModal1] = useState(false);
     const [modal2, setModal2] = useState(false);
 
-    const [value, setValue] = useState({});
-
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -88,7 +86,6 @@ const ProductEdit = (props: any) => {
     useEffect(() => {
         setIsMounted(true);
     });
-    const [salePrice, setSalePrice] = useState('');
     const [menuOrder, setMenuOrder] = useState(0);
     const [selectedUpsell, setSelectedUpsell] = useState([]);
     const [selectedCrosssell, setSelectedCrosssell] = useState([]);
@@ -102,10 +99,7 @@ const ProductEdit = (props: any) => {
 
     const [shortDescription, setShortDescription] = useState('');
     const [description, setDescription] = useState('');
-    const [quantity, setQuantity] = useState('');
-    const [regularPrice, setRegularPrice] = useState('');
     const [selectedCollection, setSelectedCollection] = useState<any>([]);
-    const [stackMgmt, setStackMgmt] = useState(false);
     const [publish, setPublish] = useState('published');
 
     // error message start
@@ -114,9 +108,9 @@ const ProductEdit = (props: any) => {
     const [slugErrMsg, setSlugErrMsg] = useState('');
     const [seoTittleErrMsg, setSeoTittleErrMsg] = useState('');
     const [seoDescErrMsg, setSeoDescErrMsg] = useState('');
+    const [descriptionErrMsg, setDescriptionErrMsg] = useState('');
+
     const [shortDesErrMsg, setShortDesErrMsg] = useState('');
-    const [skuErrMsg, setSkuErrMsg] = useState('');
-    const [salePriceErrMsg, setSalePriceErrMsg] = useState('');
     const [categoryErrMsg, setCategoryErrMsg] = useState('');
     const [attributeError, setAttributeError] = useState('');
     const [variantErrors, setVariantErrors] = useState<any>([]);
@@ -126,35 +120,19 @@ const ProductEdit = (props: any) => {
     // ------------------------------------------New Data--------------------------------------------
     const [quantityTrack, setQuantityTrack] = useState(true);
     const [active, setActive] = useState<string>('1');
-    // track stock
-    const trackStock = (value: any) => {
-        setQuantityTrack(!quantityTrack);
-    };
 
     const options = [
         { value: 'New', label: 'New' },
         { value: 'Hot', label: 'Hot' },
     ];
 
-    const togglePara = (value: string) => {
-        setActive((oldValue) => {
-            return oldValue === value ? '' : value;
-        });
-    };
-
     // -------------------------------------New Added-------------------------------------------------------
-    const { data: productDetails, refetch: productDataRefetch } = useQuery(PRODUCT_FULL_DETAILS, {
+    const { data: productDetails } = useQuery(PRODUCT_FULL_DETAILS, {
         variables: { channel: 'india-channel', id: id },
     });
 
     const { data: tagsList } = useQuery(PRODUCT_LIST_TAGS, {
         variables: { channel: 'india-channel', id: id },
-    });
-
-    // console.log('productDetails: ', productDetails);
-
-    const { error, data: orderDetails } = useQuery(CHANNEL_LIST, {
-        variables: sampleParams,
     });
 
     const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
@@ -169,29 +147,29 @@ const ProductEdit = (props: any) => {
         variables: sampleParams,
     });
 
-    const { data: finishData } = useQuery(FINISH_LIST, {
+    const { data: finishData, refetch: finishRefetch } = useQuery(FINISH_LIST, {
         variables: sampleParams,
     });
 
-    const { data: stoneData } = useQuery(STONE_LIST, {
+    const { data: stoneData, refetch: stoneRefetch } = useQuery(STONE_LIST, {
         variables: sampleParams,
     });
-    const { data: designData } = useQuery(DESIGN_LIST, {
+    const { data: designData, refetch: designRefetch } = useQuery(DESIGN_LIST, {
         variables: sampleParams,
     });
-    const { data: styleData } = useQuery(STYLE_LIST, {
-        variables: sampleParams,
-    });
-
-    const { data: stoneColorData } = useQuery(COLOR_LIST, {
+    const { data: styleData, refetch: styleRefetch } = useQuery(STYLE_LIST, {
         variables: sampleParams,
     });
 
-    const { data: typeData } = useQuery(TYPE_LIST, {
+    const { data: stoneColorData, refetch: stoneColorRefetch } = useQuery(COLOR_LIST, {
         variables: sampleParams,
     });
 
-    const { data: sizeData } = useQuery(SIZE_LIST, {
+    const { data: typeData, refetch: typeRefetch } = useQuery(TYPE_LIST, {
+        variables: sampleParams,
+    });
+
+    const { data: sizeData, refetch: sizeRefetch } = useQuery(SIZE_LIST, {
         variables: sampleParams,
     });
 
@@ -229,6 +207,8 @@ const ProductEdit = (props: any) => {
     const [thumbnail, setThumbnail] = useState('');
 
     const [images, setImages] = useState<any>([]);
+    const [deletedImages, setDeletedImages] = useState<any>([]);
+    console.log('deletedImages: ', deletedImages);
 
     const [selectedArr, setSelectedArr] = useState<any>([]);
     const [accordions, setAccordions] = useState<any>([]);
@@ -237,7 +217,6 @@ const ProductEdit = (props: any) => {
     const [selectedValues, setSelectedValues] = useState<any>({});
     const [dropdowndata, setDropdownData] = useState<any>([]);
     const [dropIndex, setDropIndex] = useState<any>(null);
-    const [descriptionContent, setDescriptionContent] = useState<any>('');
     const [updateLoading, setUpdateLoading] = useState(false);
 
     const [variants, setVariants] = useState([
@@ -252,40 +231,11 @@ const ProductEdit = (props: any) => {
         },
     ]);
 
-    // editor js
-    // const editorRef: any = useRef(null);
-    // const [editorInstance, setEditorInstance] = useState<any>(null);
-    // const [content, setContent] = useState('');
-    // let count = 0;
-
-    // useEffect(() => {
-    //     if (count === 0) {
-    //         editor();
-    //         count = 1;
-    //     }
-    // }, []);
-
-    // let editors = { isReady: false };
-    // useEffect(() => {
-    //   if (!editors.isReady) {
-    //     editor();
-    //     editors.isReady = true;
-    //   }
-
-    //   return () => {
-    //     if (editorInstance) {
-    //       editorInstance?.blocks?.clear();
-    //     }
-    //   };
-    // }, [value, productDetails]);
-
-    // State to track whether delete icon should be displayed
-
     const [selectedCat, setselectedCat] = useState<any>('');
 
     useEffect(() => {
         productsDetails();
-    }, [productDetails, dropdowndata]);
+    }, [productDetails]);
 
     useEffect(() => {
         tags_list();
@@ -307,25 +257,6 @@ const ProductEdit = (props: any) => {
         getProductByName();
     }, [productSearch]);
 
-    useEffect(() => {
-        const arr1 = {
-            design: designData?.productDesigns,
-            style: styleData?.productStyles,
-            finish: finishData?.productFinishes,
-            stoneType: stoneData?.productStoneTypes,
-            stoneColor: stoneColorData?.stoneColors,
-            type: typeData?.itemTypes,
-            size: sizeData?.sizes,
-        };
-
-        const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
-            acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
-            return acc;
-        }, {});
-
-        setDropdownData(singleObj);
-    }, [finishData, stoneData, designData, styleData, typeData, sizeData, stoneColorData]);
-
     const getProductByName = async () => {
         try {
             const res = await productSearchRefetch({
@@ -345,7 +276,6 @@ const ProductEdit = (props: any) => {
             if (productDetails) {
                 if (productDetails && productDetails?.product) {
                     const data = productDetails?.product;
-                    console.log('data: ', data);
                     setProductData(data);
                     setSlug(data?.slug);
                     setSeoTittle(data?.seoTitle);
@@ -363,9 +293,9 @@ const ProductEdit = (props: any) => {
                         crossells = data?.getCrosssells?.map((item) => ({ value: item.productId, label: item.name }));
                     }
                     setSelectedCrosssell(crossells);
-
-                    const category: any = categoryList?.find((item: any) => item.value === data?.category?.id);
-                    setselectedCat(category);
+                   
+                    setselectedCat({value: data?.category.id, label: data?.category?.name});
+                    
                     if (data?.tags?.length > 0) {
                         const tags: any = data?.tags?.map((item: any) => ({ value: item.id, label: item.name }));
                         setSelectedTag(tags);
@@ -378,29 +308,8 @@ const ProductEdit = (props: any) => {
                     }
                     setMenuOrder(data?.orderNo);
 
-                    // const stringDescription = data.description;
-                    // const removeString = JSON.parse(stringDescription);
-                    // const Description = removeString.blocks.map((block) => block.data.text).join('');
-
-                    // console.log('Description --->', Description);
-
-                    const Description = data.description;
-                    setDescriptionContent(JSON.parse(Description));
-                    console.log('descriptionContent', descriptionContent);
-                    // const desciption1 = {
-                    //     time: Date.now(),
-                    //     blocks: [
-                    //         {
-                    //             type: 'paragraph',
-                    //             data: {
-                    //                 text: 'This is api  content.',
-                    //             },
-                    //         },
-                    //     ],
-                    //     version: '2.19.0',
-                    // };
-
-                    setValue(Description);
+                    const Description = JSON.parse(data.description);
+                    DescriptionEditor(Description);
 
                     const shortDesc = getValueByKey(data?.metadata, 'short_descripton');
                     setShortDescription(shortDesc);
@@ -417,104 +326,7 @@ const ProductEdit = (props: any) => {
                         setImages(data?.media);
                     }
 
-                    const arr = [];
-                    const type: any[] = [];
-                    let selectedAccValue: any = {};
-
-                    const attributes = [
-                        { key: 'prouctDesign', type: 'design', name: 'designName', dropdowndataKey: 'design' },
-                        { key: 'productstyle', type: 'style', name: 'styleName', dropdowndataKey: 'style' },
-                        { key: 'productStoneType', type: 'stone', name: 'stoneName', dropdowndataKey: 'stoneType' },
-                        { key: 'productFinish', type: 'finish', name: 'finishName', dropdowndataKey: 'finish' },
-                        { key: 'productStonecolor', type: 'stoneColor', name: 'stoneColorName', dropdowndataKey: 'stoneColor' },
-                        { key: 'productItemtype', type: 'type', name: 'typeName', dropdowndataKey: 'type' },
-                        { key: 'productSize', type: 'size', name: 'sizeName', dropdowndataKey: 'size' },
-                    ];
-
-                    attributes.forEach((attribute) => {
-                        if (data?.[attribute.key]?.length > 0) {
-                            const obj = {
-                                type: attribute.type,
-                                [attribute.name]: dropdowndata?.[attribute.dropdowndataKey],
-                            };
-                            arr.push(obj);
-                            type.push(attribute.type);
-                            selectedAccValue[attribute.type] = data?.[attribute.key].map((item: any) => item.id);
-                        }
-                    });
-                    // if (data?.prouctDesign?.length > 0) {
-                    //     const obj = {
-                    //         type: 'design',
-                    //         designName: dropdowndata?.design,
-                    //     };
-                    //     arr.push(obj);
-                    //     type.push('design');
-                    //     selectedAccValue.design = data?.prouctDesign?.map((item: any) => item.id);
-                    // }
-                    // if (data?.productstyle?.length > 0) {
-                    //     const obj = {
-                    //         type: 'style',
-                    //         styleName: dropdowndata?.style,
-                    //     };
-                    //     arr.push(obj);
-                    //     type.push('style');
-                    //     selectedAccValue.style = data?.productstyle?.map((item: any) => item.id);
-                    // }
-                    // if (data?.productStoneType?.length > 0) {
-                    //     const obj = {
-                    //         type: 'stone',
-                    //         stoneName: dropdowndata?.stoneType,
-                    //     };
-                    //     arr.push(obj);
-                    //     type.push('stone');
-                    //     selectedAccValue.stone = data?.productStoneType?.map((item: any) => item.id);
-                    // }
-                    // if (data?.productFinish?.length > 0) {
-                    //     const obj = {
-                    //         type: 'finish',
-                    //         finishName: dropdowndata?.finish,
-                    //     };
-                    //     arr.push(obj);
-                    //     type.push('finish');
-                    //     selectedAccValue.finish = data?.productFinish?.map((item: any) => item.id);
-                    // }
-
-                    // if (data?.productStonecolor?.length > 0) {
-                    //     const obj = {
-                    //         type: 'stoneColor',
-                    //         stoneColorName: dropdowndata?.stoneColor,
-                    //     };
-                    //     arr.push(obj);
-                    //     type.push('stoneColor');
-                    //     selectedAccValue.stoneColor = data?.productStonecolor?.map((item: any) => item.id);
-                    // }
-                    // //Type
-                    // if (data?.productItemtype?.length > 0) {
-                    //     const obj = {
-                    //         type: 'type',
-                    //         typeName: dropdowndata?.type,
-                    //     };
-                    //     arr.push(obj);
-                    //     type.push('type');
-                    //     selectedAccValue.type = data?.productItemtype?.map((item: any) => item.id);
-                    // }
-
-                    // //size
-                    // if (data?.productSize?.length > 0) {
-                    //     const obj = {
-                    //         type: 'size',
-                    //         sizeName: dropdowndata?.size,
-                    //     };
-                    //     arr.push(obj);
-                    //     type.push('size');
-                    //     selectedAccValue.size = data?.productSize?.map((item: any) => item.id);
-                    // }
-
-                    // const selectedAccValue: any = {};
-
-                    setAccordions(arr.flat());
-                    setSelectedArr(type);
-                    setSelectedValues(selectedAccValue);
+                    Attributes(data);
                     if (data?.variants?.length > 0) {
                         const variant = data?.variants?.map((item: any) => ({
                             sku: item.sku,
@@ -539,110 +351,165 @@ const ProductEdit = (props: any) => {
         }
     };
 
+    const Attributes = async (data) => {
+        const styleRes = await styleRefetch({
+            sampleParams,
+        });
+
+        const designRes = await designRefetch({
+            sampleParams,
+        });
+
+        const finishRes = await finishRefetch({
+            sampleParams,
+        });
+
+        const stoneTypeRes = await stoneRefetch({
+            sampleParams,
+        });
+
+        const stoneColorRes = await stoneColorRefetch({
+            sampleParams,
+        });
+
+        const typeRes = await typeRefetch({
+            sampleParams,
+        });
+
+        const sizeRes = await sizeRefetch({
+            sampleParams,
+        });
+
+        const arr1 = {
+            design: designRes?.data?.productDesigns,
+            style: styleRes?.data?.productStyles,
+            finish: finishRes?.data?.productFinishes,
+            stoneType: stoneTypeRes?.data?.productStoneTypes,
+            stoneColor: stoneColorRes?.data?.stoneColors,
+            type: typeRes?.data?.itemTypes,
+            size: sizeRes?.data?.sizes,
+        };
+
+        const singleObj = Object.entries(arr1).reduce((acc: any, [key, value]) => {
+            acc[key] = value?.edges.map(({ node }: any) => ({ value: node?.id, label: node?.name }));
+            return acc;
+        }, {});
+
+        setDropdownData(singleObj);
+
+        const arr = [];
+        const type: any[] = [];
+        let selectedAccValue: any = {};
+
+        const attributes = [
+            { key: 'prouctDesign', type: 'design', name: 'designName', dropdowndataKey: 'design' },
+            { key: 'productstyle', type: 'style', name: 'styleName', dropdowndataKey: 'style' },
+            { key: 'productStoneType', type: 'stone', name: 'stoneName', dropdowndataKey: 'stoneType' },
+            { key: 'productFinish', type: 'finish', name: 'finishName', dropdowndataKey: 'finish' },
+            { key: 'productStonecolor', type: 'stoneColor', name: 'stoneColorName', dropdowndataKey: 'stoneColor' },
+            { key: 'productItemtype', type: 'type', name: 'typeName', dropdowndataKey: 'type' },
+            { key: 'productSize', type: 'size', name: 'sizeName', dropdowndataKey: 'size' },
+        ];
+
+        attributes.forEach((attribute) => {
+            if (data?.[attribute.key]?.length > 0) {
+                const obj = {
+                    type: attribute.type,
+                    [attribute.name]: singleObj?.[attribute.dropdowndataKey],
+                };
+                arr.push(obj);
+                type.push(attribute.type);
+                selectedAccValue[attribute.type] = data?.[attribute.key].map((item: any) => item.id);
+            }
+        });
+        // if (data?.prouctDesign?.length > 0) {
+        //     const obj = {
+        //         type: 'design',
+        //         designName: dropdowndata?.design,
+        //     };
+        //     arr.push(obj);
+        //     type.push('design');
+        //     selectedAccValue.design = data?.prouctDesign?.map((item: any) => item.id);
+        // }
+
+        setAccordions(arr.flat());
+        setSelectedArr(type);
+        setSelectedValues(selectedAccValue);
+    };
+
+    const DescriptionEditor = async (Description) => {
+        try {
+            let formattedData = {};
+            if (Description && Description.blocks) {
+                const formattedBlocks = Description.blocks.map((block) => ({
+                    ...block,
+                    data: {
+                        ...block.data,
+                        text: block.data.text ? block.data.text.replace(/\n/g, '<br>') : block.data.text, // Convert newlines to <br> for HTML display if text exists
+                    },
+                }));
+                formattedData = {
+                    ...Description,
+                    blocks: formattedBlocks,
+                };
+            }
+
+            let editors = { isReady: false };
+            if (!editors.isReady) {
+                editor(formattedData);
+                editors.isReady = true;
+            }
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
+
     // editor start
 
-    // let editors = { isReady: false };
-    // useEffect(() => {
-    //     if (!editors.isReady) {
-    //         editor();
-    //         editors.isReady = true;
-    //     }
+    const editorRef = useRef(null);
+    const [editorInstance, setEditorInstance] = useState(null);
+    const [content, setContent] = useState('');
 
-    //     return () => {
-    //         if (editorInstance) {
-    //             editorInstance?.blocks?.clear();
-    //         }
-    //     };
-    // }, [descriptionContent]);
+    const editor = useCallback((value) => {
+        // Check if the window object is available and if the editorRef.current is set
+        if (typeof window === 'undefined' || !editorRef.current) return;
 
-    // const editorRef = useRef(null); // Define a ref to hold the editor instance
+        // Ensure only one editor instance is created
+        if (editorInstance) {
+            return;
+        }
 
-    // const editor = useCallback(() => {
-    //     // Check if the window object is available and if the editorRef.current is set
-    //     if (typeof window === 'undefined' || !editorRef.current) return;
+        // Dynamically import the EditorJS module
+        import('@editorjs/editorjs').then(({ default: EditorJS }) => {
+            // Create a new instance of EditorJS with the appropriate configuration
+            const editor = new EditorJS({
+                holder: editorRef.current,
+                data: value,
+                tools: {
+                    // Configure tools as needed
+                    header: {
+                        class: require('@editorjs/header'),
+                    },
+                    list: {
+                        class: require('@editorjs/list'),
+                    },
+                    table: {
+                        class: require('@editorjs/table'),
+                    },
+                },
+            });
 
-    //     // Ensure only one editor instance is created
-    //     if (editorInstance) {
-    //         return;
-    //     }
+            // Set the editorInstance state variable
+            setEditorInstance(editor);
+        });
 
-    //     // console.log('value2: ', value2);
-    //     // Dynamically import the EditorJS module
-    //     import('@editorjs/editorjs').then(({ default: EditorJS }) => {
-    //         // Create a new instance of EditorJS with the appropriate configuration
-
-    //         const editor = new EditorJS({
-    //             holder: editorRef.current,
-    //             //  data: {
-    //             //         blocks: descriptionContent || [],
-    //             //     },
-    //             tools: {
-    //                 // Configure tools as needed
-    //                 header: {
-    //                     class: require('@editorjs/header'),
-    //                 },
-    //                 list: {
-    //                     class: require('@editorjs/list'),
-    //                 },
-    //                 table: {
-    //                     class: require('@editorjs/table'),
-    //                 },
-    //             },
-    //         });
-    //         // Set the editorInstance state variable
-    //         setEditorInstance(editor);
-    //     });
-
-    //     // Cleanup function to destroy the current editor instance when the component unmounts
-    //     return () => {
-    //         if (editorInstance) {
-    //             editorInstance?.blocks?.clear();
-    //         }
-    //     };
-    // }, [editorInstance, descriptionContent]);
-    // editor end
-
-    // const editor = () => {
-    //     // Check if the window object is available and if the editorRef.current is set
-    //     if (typeof window === 'undefined' || !editorRef.current) return;
-
-    //     // Destroy the previous editor instance, if it exists
-    //     if (editorInstance) {
-    //         editorInstance?.blocks?.clear();
-    //     }
-
-    //     console.log('value: ', value);
-    //     // Dynamically import the EditorJS module
-    //     import('@editorjs/editorjs').then(({ default: EditorJS }) => {
-    //         // Create a new instance of EditorJS with the appropriate configuration
-    //         const editor = new EditorJS({
-    //             holder: editorRef.current,
-    //             data: value,
-    //             tools: {
-    //                 // Configure tools as needed
-    //                 header: {
-    //                     class: require('@editorjs/header'),
-    //                 },
-    //                 list: {
-    //                     class: require('@editorjs/list'),
-    //                 },
-    //                 table: {
-    //                     class: require('@editorjs/table'),
-    //                 },
-    //             },
-    //         });
-
-    //         // Set the editorInstance state variable
-    //         setEditorInstance(editor);
-    //     });
-
-    //     // Cleanup function to destroy the current editor instance when the component unmounts
-    //     return () => {
-    //         if (editorInstance) {
-    //             editorInstance?.blocks?.clear();
-    //         }
-    //     };
-    // };
+        // Cleanup function to destroy the current editor instance when the component unmounts
+        return () => {
+            if (editorInstance) {
+                editorInstance?.blocks?.clear();
+            }
+        };
+    }, []);
 
     // editor end
 
@@ -745,18 +612,17 @@ const ProductEdit = (props: any) => {
         setModal4(false);
 
         const res = await uploadImage(id, selectedFile);
-        console.log('res: ', res);
         setImages(res?.data?.productMediaCreate?.product?.media);
     };
 
-    const multiImageDelete = async (item: any) => {
+    const multiImageDelete = async (val: any) => {
+        console.log('item: ', val);
         showDeleteAlert(
             async () => {
-                const { data } = await removeImage({
-                    variables: { id: item.id },
-                });
-                const pendingImg = data?.productMediaDelete?.product?.media;
-                setImages(pendingImg);
+                setDeletedImages([...deletedImages, val.id]);
+                const filter = images?.filter((item) => item.id !== val.id);
+                console.log('filter: ', filter);
+                setImages(filter);
                 Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
             },
             () => {
@@ -785,14 +651,12 @@ const ProductEdit = (props: any) => {
         });
     };
 
-    const deleteProductGallery = (i: any) => {
-        const filter = images?.filter((item: any, index: any) => index !== i);
-        setImages(filter);
-    };
-
     const updateProducts = async () => {
-        console.log('updateProducts: ');
         try {
+            const savedContent = await editorInstance.save();
+            console.log('savedContent: ', savedContent);
+            const descr = JSON.stringify(savedContent, null, 2);
+            console.log('descr: ', descr);
             setUpdateLoading(true);
 
             // Reset error messages
@@ -810,6 +674,7 @@ const ProductEdit = (props: any) => {
             resetErrors();
 
             let hasError = false;
+            console.log('hasError: ', hasError);
             let AttributesErrors: any = {};
 
             let newVariantErrors: any = [];
@@ -827,48 +692,15 @@ const ProductEdit = (props: any) => {
             validateField(seoTittle, setSeoTittleErrMsg, 'Seo title cannot be empty');
             validateField(seoDesc, setSeoDescErrMsg, 'Seo description cannot be empty');
             validateField(shortDescription, setShortDesErrMsg, 'Short description cannot be empty');
+            if (savedContent?.blocks?.length == 0) {
+                hasError = true;
+                setDescriptionErrMsg('Description cannot be empty');
+            }
+
             if (selectedCat === '') {
                 setCategoryErrMsg('Category cannot be empty');
                 hasError = true;
             }
-
-            console.log('selectedValues: ', selectedValues);
-
-            // if (!objIsEmpty(selectedValues)) {
-            //     if (selectedValues?.stone?.length > 0) {
-            //         AttributesErrors.stone = 'Stone cannot be empty';
-            //         hasError = true;
-            //     }
-            //     if (selectedValues?.design?.length > 0) {
-            //         AttributesErrors.design = 'Design cannot be empty';
-            //         hasError = true;
-            //     }
-            //     if (selectedValues?.style?.length > 0) {
-            //         AttributesErrors.style = 'Style cannot be empty';
-            //         hasError = true;
-            //     }
-            //     if (selectedValues?.finish?.length > 0) {
-            //         AttributesErrors.finish = 'Finish cannot be empty';
-            //         hasError = true;
-            //     }
-
-            //     if (selectedValues?.type?.length > 0) {
-            //         AttributesErrors.type = 'Type cannot be empty';
-            //         hasError = true;
-            //     }
-
-            //     if (selectedValues?.size?.length > 0) {
-            //         AttributesErrors.size = 'Size cannot be empty';
-            //         hasError = true;
-            //     }
-
-            //     if (selectedValues?.stoneColor?.length === 0) {
-            //         AttributesErrors.stoneColor = 'Stone color cannot be empty';
-            //         hasError = true;
-            //     }
-
-            //     setAttributeError(AttributesErrors);
-            // }
 
             if (variants && variants.length > 0) {
                 variants.forEach((variant, index) => {
@@ -895,6 +727,7 @@ const ProductEdit = (props: any) => {
                 });
                 setVariantErrors(newVariantErrors);
             }
+            console.log('hasError: ', hasError);
 
             // If there are any errors, do not proceed with the update
             if (hasError) {
@@ -903,6 +736,7 @@ const ProductEdit = (props: any) => {
             }
 
             let upsells = [];
+            console.log('upsells: ', upsells);
             if (selectedUpsell?.length > 0) {
                 upsells = selectedUpsell?.map((item) => item?.value);
             }
@@ -921,6 +755,7 @@ const ProductEdit = (props: any) => {
                         collections: selectedCollection.map((item) => item.value),
                         tags: tagId,
                         name: productName,
+                        description: descr,
                         rating: 0,
                         seo: {
                             description: seoDesc,
@@ -945,15 +780,11 @@ const ProductEdit = (props: any) => {
             if (data?.productUpdate?.errors?.length > 0) {
                 Failure(data?.productUpdate?.errors[0]?.message);
                 setUpdateLoading(false);
-                console.log('Error updating product');
             } else {
                 productChannelListUpdate();
-                console.log('Product update successful:', data);
             }
         } catch (error) {
             setUpdateLoading(false);
-
-            console.error('Failed to update product:', error);
         } finally {
             setUpdateLoading(false);
         }
@@ -982,13 +813,22 @@ const ProductEdit = (props: any) => {
             if (data?.productChannelListingUpdate?.errors?.length > 0) {
                 setUpdateLoading(false);
                 Failure(data?.productChannelListingUpdate?.errors[0]?.message);
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
-                console.log('productChannelListUpdate: ', data);
-                // variantCreate(productId);
-                console.log('productChannelListUpdate end');
                 variantListUpdate();
-                console.log('variantListUpdate start');
+                const updatedImg = images?.map((item: any) => item.id);
+                if (deletedImages?.length > 0) {
+                    deletedImages?.map(async (val: any) => {
+                        const { data } = await removeImage({
+                            variables: { id: val },
+                        });
+                    });
+                }
+                await mediaReorder({
+                    variables: {
+                        mediaIds: updatedImg,
+                        productId: id,
+                    },
+                });
             }
         } catch (error) {
             setUpdateLoading(false);
@@ -1041,16 +881,12 @@ const ProductEdit = (props: any) => {
                 });
 
                 if (data?.productVariantBulkUpdate?.errors?.length > 0) {
-                    console.log(' if: ');
                     setUpdateLoading(false);
                     Failure(data?.productVariantBulkUpdate?.errors[0]?.message);
                 } else {
-                    console.log('else: ');
                     const results = data?.productVariantBulkUpdate?.results || [];
 
                     if (results.length > 0) {
-                        console.log('data?.productVariantBulkUpdate?.results:', results);
-
                         // Find the first result with errors
                         const firstErrorResult = results.find((result) => result.errors?.length > 0);
 
@@ -1060,13 +896,11 @@ const ProductEdit = (props: any) => {
                                 Failure(errorMessage);
                             }
                         } else {
-                            console.log('No errors found in results.');
                             if (NewAddedVariant?.length === 0) {
                                 updateMetaData();
                             }
                         }
                     } else {
-                        console.log('No results found.');
                         if (NewAddedVariant?.length === 0) {
                             updateMetaData();
                         }
@@ -1122,10 +956,10 @@ const ProductEdit = (props: any) => {
             if (data?.updateMetadata?.errors?.length > 0) {
                 setUpdateLoading(false);
                 Failure(data?.updateMetadata?.errors[0]?.message);
-                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
             } else {
                 Success('Product updated successfully');
-                productDataRefetch();
+                // productUpdateRefetch();
+                router.push('/');
                 setUpdateLoading(false);
 
                 // assignsTagToProduct();
@@ -1166,12 +1000,10 @@ const ProductEdit = (props: any) => {
                 },
                 // variables: { email: formData.email, password: formData.password },
             });
-            console.log('data: ', data);
 
             if (data?.productVariantBulkCreate?.errors?.length > 0) {
                 setUpdateLoading(false);
                 Failure(data?.productVariantBulkCreate?.errors[0]?.message);
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
                 const resVariants = data?.productVariantBulkCreate?.productVariants;
                 if (resVariants?.length > 0) {
@@ -1188,14 +1020,12 @@ const ProductEdit = (props: any) => {
     };
 
     const variantChannelListUpdate = async (variantId: any, NewAddedVariant: any) => {
-        console.log('variantChannelListUpdate: ');
         try {
             const variantArr = NewAddedVariant?.map((item: any) => ({
                 channelId: 'Q2hhbm5lbDoy',
                 price: item.regularPrice,
                 costPrice: item.regularPrice,
             }));
-            console.log('variantArr: ', variantArr);
 
             const { data } = await updateVariantList({
                 variables: {
@@ -1207,41 +1037,12 @@ const ProductEdit = (props: any) => {
             if (data?.productVariantChannelListingUpdate?.errors?.length > 0) {
                 setUpdateLoading(false);
                 Failure(data?.productVariantChannelListingUpdate?.errors[0]?.message);
-                console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
             } else {
                 updateMetaData();
             }
         } catch (error) {
             setUpdateLoading(false);
 
-            console.log('error: ', error);
-        }
-    };
-
-    const assignsTagToProduct = async () => {
-        try {
-            let tagId: any[] = [];
-            // if (selectedCollection?.length > 0) {
-            tagId = selectedTag?.map((item: any) => item.value);
-            // }
-            console.log('tagId: ', tagId);
-
-            const { data } = await assignTagToProduct({
-                variables: {
-                    id,
-                    input: {
-                        tags: tagId,
-                    },
-                },
-                // variables: { email: formData.email, password: formData.password },
-            });
-            if (data?.productUpdate?.errors?.length > 0) {
-                console.log('error: ', data?.updateMetadata?.errors[0]?.message);
-            } else {
-                // router.push('/product/product');
-                console.log('success: ', data);
-            }
-        } catch (error) {
             console.log('error: ', error);
         }
     };
@@ -1353,14 +1154,14 @@ const ProductEdit = (props: any) => {
             const [draggedImage] = newImages.splice(draggedImageIndex, 1);
             newImages.splice(newIndex, 0, draggedImage);
             setImages(newImages);
-            const updatedImg = newImages?.map((item) => item.id);
-            const { data } = await mediaReorder({
-                variables: {
-                    mediaIds: updatedImg,
-                    productId: id,
-                },
-            });
-            productDataRefetch();
+            // const updatedImg = newImages?.map((item) => item.id);
+            // const { data } = await mediaReorder({
+            //     variables: {
+            //         mediaIds: updatedImg,
+            //         productId: id,
+            //     },
+            // });
+            // productUpdateRefetch();
         }
     };
     // -------------------------------------New Added-------------------------------------------------------
@@ -1435,7 +1236,7 @@ const ProductEdit = (props: any) => {
                             <label htmlFor="editor" className="block text-sm font-medium text-gray-700">
                                 Product description
                             </label>
-                            <textarea
+                            {/* <textarea
                                 id="ctnTextarea"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -1443,9 +1244,12 @@ const ProductEdit = (props: any) => {
                                 className="form-textarea mt-5"
                                 placeholder="Enter Description"
                                 required
-                            ></textarea>
+                            ></textarea> */}
                             {seoDescErrMsg && <p className="error-message mt-1 text-red-500 ">{seoDescErrMsg}</p>}
-                            {/* <div ref={editorRef} className="mb-5 border border-gray-200"></div> */}
+                            <div className="" style={{ height: '250px', overflow: 'scroll' }}>
+                                <div ref={editorRef} className="border border-r-8 border-gray-200"></div>
+                            </div>
+                            {descriptionErrMsg && <p className="error-message mt-1 text-red-500 ">{descriptionErrMsg}</p>}
                         </div>
 
                         <div className="panel mb-5">
@@ -1535,7 +1339,7 @@ const ProductEdit = (props: any) => {
                                                             className={`${selected ? '!bg-primary text-white !outline-none hover:text-white' : ''}
                                                         relative -mb-[1px] block w-full border-white-light p-3.5 py-2 before:absolute before:bottom-0 before:top-0 before:m-auto before:inline-block before:h-0 before:w-[1px] before:bg-primary before:transition-all before:duration-700 hover:text-primary hover:before:h-[80%] dark:border-[#191e3a] ltr:border-r ltr:before:-right-[1px] rtl:border-l rtl:before:-left-[1px]`}
                                                         >
-                                                            Linked Product
+                                                            Linked Products
                                                         </button>
                                                     )}
                                                 </Tab>
