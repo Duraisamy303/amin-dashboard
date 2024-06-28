@@ -1,5 +1,5 @@
 import { CATEGORY_LIST, PARENT_CATEGORY_LIST, PRODUCT_EXPORT } from '@/query/product';
-import { downloadExlcel, useSetState } from '@/utils/functions';
+import { Failure, downloadExlcel, useSetState } from '@/utils/functions';
 import { useQuery } from '@apollo/client';
 import moment from 'moment';
 import React from 'react';
@@ -115,19 +115,28 @@ export default function Product_export() {
                 if (product?.metadata?.length > 0) {
                     const shortDescription = product?.metadata?.find((meta) => meta.key === 'short_description')?.value;
                     const description = product?.metadata?.find((meta) => meta.key === 'description')?.value;
-
-                    if (shortDescription) {
-                        res['Short description'] = shortDescription;
-                    }
                     if (description) {
                         res.Description = description;
+                    } else {
+                        res.Description = '';
                     }
+                    if (shortDescription) {
+                        res['Short description'] = shortDescription;
+                    } else {
+                        res['Short description'] = '';
+                    }
+                } else {
+                    res['Short description'] = '';
+                    res.Description = '';
                 }
 
                 return res;
             });
-
-            downloadExlcel(excelData, 'Export Products');
+            if (excelData?.length > 0) {
+                downloadExlcel(excelData, 'Export Products');
+            } else {
+                Failure('No Data Found');
+            }
         } catch (error) {
             setState({ loading: false });
 
