@@ -158,6 +158,7 @@ const ProductAdd = () => {
     // const [addCategory, setAddCategory] = useState(false);
     const [quantityTrack, setQuantityTrack] = useState(true);
     const [parentLists, setParentLists] = useState([]);
+    console.log('parentLists: ', parentLists);
 
     const [active, setActive] = useState<string>('1');
     // track stock
@@ -253,6 +254,7 @@ const ProductAdd = () => {
     const { data: parentList, error: parentListError } = useQuery(PARENT_CATEGORY_LIST, {
         variables: { channel: 'india-channel' },
     });
+    console.log('parentList: ', parentList);
 
     const { data: productSearch, refetch: productSearchRefetch } = useQuery(PRODUCT_BY_NAME);
 
@@ -278,7 +280,7 @@ const ProductAdd = () => {
     useEffect(() => {
         const getparentCategoryList = parentList?.categories?.edges;
         setParentLists(getparentCategoryList);
-    }, []);
+    }, [parentList]);
 
     useEffect(() => {
         getProductByName();
@@ -559,7 +561,7 @@ const ProductAdd = () => {
                 return; // Exit if any variant has errors
             }
 
-            const catId = selectedCat?.value;
+            // const catId = selectedCat?.value;
             const collectionId = selectedCollection?.map((item) => item.value) || [];
             const tagId = selectedTag?.map((item) => item.value) || [];
 
@@ -577,7 +579,7 @@ const ProductAdd = () => {
                     input: {
                         description: descr,
                         attributes: [],
-                        category: catId,
+                        category: selectedCat,
                         collections: collectionId,
                         tags: tagId,
                         name: productName,
@@ -1719,7 +1721,36 @@ const ProductAdd = () => {
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Categories</h5>
                             </div>
                             <div className="mb-5">
-                                <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
+                                {/* <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
+                                <option value="">Select a Categories </option>
+                                {categoryList?.map((item: any) => {
+                                    return (
+                                        <>
+                                            <option value={item?.node?.id}>{item.node?.name}</option>
+                                            {item?.node?.children?.edges.map((child: any) => (
+                                                <option key={child.id} value={child.node?.id} style={{ paddingLeft: '20px' }}>
+                                                    -- {child.node?.name}
+                                                </option>
+                                            ))}
+                                        </>
+                                    );
+                                })}
+                            </select> */}
+                                <select name="parentCategory" className="form-select" value={selectedCat} onChange={(e) => selectCat(e.target.value)}>
+                                    <option value="">Open this select</option>
+                                    {parentLists?.map((item) => (
+                                        <React.Fragment key={item?.node?.id}>
+                                            <option value={item?.node?.id}>{item.node?.name}</option>
+                                            {item?.node?.children?.edges?.map((child) => (
+                                                <option key={child?.node?.id} value={child?.node?.id} style={{ paddingLeft: '20px' }}>
+                                                    -- {child?.node?.name}
+                                                </option>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
+                                </select>
+
+                                {/* <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} /> */}
                                 {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
                             </div>
                             <p className="mt-5 cursor-pointer text-primary underline" onClick={() => setIsOpenCat(true)}>

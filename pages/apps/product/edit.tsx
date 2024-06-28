@@ -1,5 +1,5 @@
 import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment, useRef, useCallback } from 'react';
+import React, { useEffect, useState, Fragment, useRef, useCallback } from 'react';
 import sortBy from 'lodash/sortBy';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
@@ -44,6 +44,7 @@ import {
     DELETE_VARIENT,
     DESIGN_LIST,
     FINISH_LIST,
+    PARENT_CATEGORY_LIST,
     PRODUCTS_MEDIA_ORDERS,
     PRODUCT_BY_NAME,
     PRODUCT_CAT_LIST,
@@ -135,9 +136,9 @@ const ProductEdit = (props: any) => {
         variables: { channel: 'india-channel', id: id },
     });
 
-    const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
-        variables: sampleParams,
-    });
+    // const { data: cat_list } = useQuery(PRODUCT_CAT_LIST, {
+    //     variables: sampleParams,
+    // });
 
     const { data: collection_list } = useQuery(COLLECTION_LIST, {
         variables: sampleParams,
@@ -171,6 +172,10 @@ const ProductEdit = (props: any) => {
 
     const { data: sizeData, refetch: sizeRefetch } = useQuery(SIZE_LIST, {
         variables: sampleParams,
+    });
+
+    const { data: parentList, error: parentListError } = useQuery(PARENT_CATEGORY_LIST, {
+        variables: { channel: 'india-channel' },
     });
 
     const [addFormData] = useMutation(CREATE_PRODUCT);
@@ -208,7 +213,6 @@ const ProductEdit = (props: any) => {
 
     const [images, setImages] = useState<any>([]);
     const [deletedImages, setDeletedImages] = useState<any>([]);
-    console.log('deletedImages: ', deletedImages);
 
     const [selectedArr, setSelectedArr] = useState<any>([]);
     const [accordions, setAccordions] = useState<any>([]);
@@ -241,9 +245,9 @@ const ProductEdit = (props: any) => {
         tags_list();
     }, [tagsList]);
 
-    useEffect(() => {
-        category_list();
-    }, [cat_list]);
+    // useEffect(() => {
+    //     category_list();
+    // }, [cat_list]);
 
     useEffect(() => {
         collections_list();
@@ -256,6 +260,11 @@ const ProductEdit = (props: any) => {
     useEffect(() => {
         getProductByName();
     }, [productSearch]);
+
+    useEffect(() => {
+        const getparentCategoryList = parentList?.categories?.edges;
+        setCategoryList(getparentCategoryList);
+    }, [parentList]);
 
     const getProductByName = async () => {
         try {
@@ -292,9 +301,9 @@ const ProductEdit = (props: any) => {
                     if (data?.getCrosssells?.length > 0) {
                         crossells = data?.getCrosssells?.map((item) => ({ value: item.productId, label: item.name }));
                     }
-                    setSelectedCrosssell(crossells);
 
-                    setselectedCat({ value: data?.category.id, label: data?.category?.name });
+                    setselectedCat(data?.category?.id);
+                    setSelectedCrosssell(crossells);
 
                     if (data?.tags?.length > 0) {
                         const tags: any = data?.tags?.map((item: any) => ({ value: item.id, label: item.name }));
@@ -513,22 +522,6 @@ const ProductEdit = (props: any) => {
 
     // editor end
 
-    const category_list = async () => {
-        try {
-            if (cat_list) {
-                if (cat_list && cat_list?.search?.edges?.length > 0) {
-                    const list = cat_list?.search?.edges;
-                    const dropdownData = list?.map((item: any) => {
-                        return { value: item.node?.id, label: item.node?.name };
-                    });
-
-                    setCategoryList(dropdownData);
-                }
-            }
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
 
     const tags_list = async () => {
         try {
@@ -653,10 +646,6 @@ const ProductEdit = (props: any) => {
 
     const updateProducts = async () => {
         try {
-            const savedContent = await editorInstance.save();
-            console.log('savedContent: ', savedContent);
-            const descr = JSON.stringify(savedContent, null, 2);
-            console.log('descr: ', descr);
             setUpdateLoading(true);
 
             // Reset error messages
@@ -674,14 +663,12 @@ const ProductEdit = (props: any) => {
             resetErrors();
 
             let hasError = false;
-            console.log('hasError: ', hasError);
-            let AttributesErrors: any = {};
 
             let newVariantErrors: any = [];
 
             // Validation
             const validateField = (value, setError, message) => {
-                if (value.trim() === '') {
+                if (value === null || value.trim() === '') {
                     setError(message);
                     hasError = true;
                 }
@@ -692,41 +679,44 @@ const ProductEdit = (props: any) => {
             validateField(seoTittle, setSeoTittleErrMsg, 'Seo title cannot be empty');
             validateField(seoDesc, setSeoDescErrMsg, 'Seo description cannot be empty');
             validateField(shortDescription, setShortDesErrMsg, 'Short description cannot be empty');
-            if (savedContent?.blocks?.length == 0) {
-                hasError = true;
-                setDescriptionErrMsg('Description cannot be empty');
-            }
+            // const savedContent = await editorInstance.save();
+            // const descr = JSON.stringify(savedContent, null, 2);
+            // if (savedContent?.blocks?.length == 0) {
+            //     hasError = true;
+            //     setDescriptionErrMsg('Description cannot be empty');
+            // }
 
-            if (selectedCat === '') {
-                setCategoryErrMsg('Category cannot be empty');
-                hasError = true;
-            }
+            // if (selectedCat === '') {
+            //     setCategoryErrMsg('Category cannot be empty');
+            //     hasError = true;
+            // }
 
-            if (variants && variants.length > 0) {
-                variants.forEach((variant, index) => {
-                    let errors: any = {};
+            if (variants.length > 0)
+                if (variants && variants.length > 0) {
+                    variants.forEach((variant, index) => {
+                        let errors: any = {};
 
-                    if (!variant.sku) {
-                        errors.sku = 'SKU cannot be empty';
-                        hasError = true;
-                    }
-                    if (variant.quantity <= 0 || isNaN(variant.quantity)) {
-                        errors.quantity = 'Quantity must be a valid number and greater than 0';
-                        hasError = true;
-                    }
-                    if (variant.regularPrice <= 0 || isNaN(variant.regularPrice)) {
-                        errors.regularPrice = 'Regular Price must be a valid number and greater than 0';
-                        hasError = true;
-                    }
-                    if (!variant.stackMgmt) {
-                        errors.stackMgmt = 'Check Stack Management';
-                        hasError = true;
-                    }
+                        if (!variant.sku) {
+                            errors.sku = 'SKU cannot be empty';
+                            hasError = true;
+                        }
+                        if (variant.quantity <= 0 || isNaN(variant.quantity)) {
+                            errors.quantity = 'Quantity must be a valid number and greater than 0';
+                            hasError = true;
+                        }
+                        if (variant.regularPrice <= 0 || isNaN(variant.regularPrice)) {
+                            errors.regularPrice = 'Regular Price must be a valid number and greater than 0';
+                            hasError = true;
+                        }
+                        if (!variant.stackMgmt) {
+                            errors.stackMgmt = 'Check Stack Management';
+                            hasError = true;
+                        }
 
-                    newVariantErrors[index] = errors;
-                });
-                setVariantErrors(newVariantErrors);
-            }
+                        newVariantErrors[index] = errors;
+                    });
+                    setVariantErrors(newVariantErrors);
+                }
             console.log('hasError: ', hasError);
 
             // If there are any errors, do not proceed with the update
@@ -744,14 +734,17 @@ const ProductEdit = (props: any) => {
             if (selectedCrosssell?.length > 0) {
                 crosssells = selectedCrosssell?.map((item) => item?.value);
             }
+            console.log("selectedCat: ", selectedCat);
 
             const tagId = selectedTag?.map((item) => item.value) || [];
+            const savedContent = await editorInstance.save();
+            const descr = JSON.stringify(savedContent, null, 2);
             const { data } = await updateProduct({
                 variables: {
                     id: id,
                     input: {
                         attributes: [],
-                        category: selectedCat?.value,
+                        category: selectedCat,
                         collections: selectedCollection.map((item) => item.value),
                         tags: tagId,
                         name: productName,
@@ -917,10 +910,12 @@ const ProductEdit = (props: any) => {
     const updateMetaData = async () => {
         try {
             const input = [];
-            input.push({
-                key: 'short_descripton',
-                value: shortDescription,
-            });
+            if (shortDescription) {
+                input.push({
+                    key: 'short_descripton',
+                    value: shortDescription ? shortDescription : '',
+                });
+            }
             // input.push({
             //     key: 'description',
             //     value: description,
@@ -2022,7 +2017,20 @@ const ProductEdit = (props: any) => {
                                 <h5 className=" block text-lg font-medium text-gray-700">Product Categories</h5>
                             </div>
                             <div className="mb-5">
-                                <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} />
+                                <select name="parentCategory" className="form-select" value={selectedCat} onChange={(e) => selectCat(e.target.value)}>
+                                    <option value="">Open this select</option>
+                                    {categoryList?.map((item) => (
+                                        <React.Fragment key={item?.node?.id}>
+                                            <option value={item?.node?.id}>{item.node?.name}</option>
+                                            {item?.node?.children?.edges?.map((child) => (
+                                                <option key={child?.node?.id} value={child?.node?.id} style={{ paddingLeft: '20px' }}>
+                                                    -- {child?.node?.name}
+                                                </option>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
+                                </select>
+                                {/* <Select placeholder="Select an category" options={categoryList} value={selectedCat} onChange={selectCat} isSearchable={true} /> */}
                                 {categoryErrMsg && <p className="error-message mt-1 text-red-500 ">{categoryErrMsg}</p>}
                             </div>
                             {/* <div className="mb-5">
