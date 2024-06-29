@@ -1,293 +1,108 @@
-import { DataTable, DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useState, Fragment } from 'react';
-import sortBy from 'lodash/sortBy';
-import { useDispatch, useSelector } from 'react-redux';
-import { setPageTitle } from '../store/themeConfigSlice';
-import IconBell from '@/components/Icon/IconBell';
-import Tippy from '@tippyjs/react';
-import 'tippy.js/dist/tippy.css';
 import IconTrashLines from '@/components/Icon/IconTrashLines';
-import IconPencil from '@/components/Icon/IconPencil';
-import { Button } from '@mantine/core';
+import {
+    CREATE_PRODUCT,
+    CREATE_VARIANT,
+    DELETE_PRODUCTS,
+    PARENT_CATEGORY_LIST,
+    PRODUCT_FULL_DETAILS,
+    PRODUCT_PREV_PAGINATION,
+    UPDATED_PRODUCT_PAGINATION,
+    UPDATE_META_DATA,
+    UPDATE_PRODUCT_CHANNEL,
+    UPDATE_VARIANT_LIST,
+} from '@/query/product';
+import { useQuery, useLazyQuery, useMutation } from '@apollo/client';
+import { DataTable } from 'mantine-datatable';
+import moment from 'moment';
+import { useRouter } from 'next/router';
+import React, { useEffect, useRef, useState } from 'react';
+import CommonLoader from './elements/commonLoader';
+import { Failure, Success, formatCurrency, roundOff } from '@/utils/functions';
 import Dropdown from '../components/Dropdown';
 import IconCaretDown from '@/components/Icon/IconCaretDown';
-
-import { Dialog, Transition } from '@headlessui/react';
-import IconX from '@/components/Icon/IconX';
-import Image1 from '@/public/assets/images/profile-1.jpeg';
-import Image2 from '@/public/assets/images/profile-2.jpeg';
-import Image3 from '@/public/assets/images/profile-3.jpeg';
-import { Field, Form, Formik } from 'formik';
-import * as Yup from 'yup';
 import Swal from 'sweetalert2';
-import IconEye from '@/components/Icon/IconEye';
-import { date } from 'yup/lib/locale';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
 import IconEdit from '@/components/Icon/IconEdit';
-import { useMutation, useQuery } from '@apollo/client';
-import {
-    DELETE_PRODUCTS,
-    PRODUCT_LIST,
-    PARENT_CATEGORY_LIST,
-    CATEGORY_FILTER_LIST,
-    CREATE_PRODUCT,
-    UPDATE_PRODUCT_CHANNEL,
-    CREATE_VARIANT,
-    UPDATE_VARIANT_LIST,
-    UPDATE_META_DATA,
-    ASSIGN_TAG_PRODUCT,
-    PRODUCT_FULL_DETAILS,
-} from '@/query/product';
-import moment from 'moment';
-import { Failure, Success, duplicateUploadImage, formatCurrency, profilePic, roundOff, uploadImage } from '@/utils/functions';
-import PrivateRouter from '@/components/Layouts/PrivateRouter';
+import IconEye from '@/components/Icon/IconEye';
+import IconArrowLeft from '@/components/Icon/IconArrowLeft';
+import IconArrowBackward from '@/components/Icon/IconArrowBackward';
+import IconArrowForward from '@/components/Icon/IconArrowForward';
 import IconLoader from '@/components/Icon/IconLoader';
-import CommonLoader from './elements/commonLoader';
 
-const ProductList = () => {
+export default function LowStock() {
+    const PAGE_SIZE = 20;
+
     const router = useRouter();
-    const [loader, setLoading] = useState(false);
 
-    const isRtl = useSelector((state: any) => state.themeConfig.rtlClass) === 'rtl' ? true : false;
+    const [recordsData, setRecordsData] = useState([]);
+    const [startCursor, setStartCursor] = useState(null);
+    const [endCursor, setEndCursor] = useState(null);
+    const [hasNextPage, setHasNextPage] = useState(false);
+    const [hasPreviousPage, setHasPreviousPage] = useState(false);
+    const [search, setSearch] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [status, setStatus] = useState('');
+    const [parentLists, setParentLists] = useState([]);
+    const [selectedRecords, setSelectedRecords] = useState([]);
+    const [loadingRows, setLoadingRows] = useState({});
 
-    const {
-        error,
-        data: productData,
-        loading: getloading,
-    } = useQuery(PRODUCT_LIST, {
-        variables: { channel: 'india-channel', first: 200, direction: 'DESC', field: 'CREATED_AT' }, // Pass variables here
-    });
-
-    const { data: stockFilter, refetch: productListRefetch } = useQuery(PRODUCT_LIST);
-
+    const [deleteProducts] = useMutation(DELETE_PRODUCTS);
+    const { data: productDetails, refetch: productDetailsRefetch } = useQuery(PRODUCT_FULL_DETAILS);
     const [addFormData] = useMutation(CREATE_PRODUCT);
     const [updateProductChannelList] = useMutation(UPDATE_PRODUCT_CHANNEL);
     const [createVariant] = useMutation(CREATE_VARIANT);
     const [updateVariantList] = useMutation(UPDATE_VARIANT_LIST);
     const [updateMedatData] = useMutation(UPDATE_META_DATA);
-    const [assignTagToProduct] = useMutation(ASSIGN_TAG_PRODUCT);
 
-    const [productList, setProductList] = useState([]);
+    const tableRef = useRef(null);
 
-    useEffect(() => {
+    const buildFilter = (category, availability) => {
+        const filter: any = {};
         if (router?.query?.category) {
-            OneCatProductList();
+            filter.categories = [router?.query?.category];
         } else {
-            getProductList();
-        }
-    }, [router?.query, productData]);
-
-    const getProductList = () => {
-        setLoading(true);
-        if (productData) {
-            if (productData && productData.products && productData.products.edges?.length > 0) {
-                const newData = productData?.products?.edges.map((item: any) => ({
-                    ...item.node,
-                    product: item?.node?.products?.totalCount,
-                    image: item?.node?.thumbnail?.url,
-                    categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
-                    date: item?.node?.updatedAt
-                        ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
-                        : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
-                    price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
-                    status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
-                    sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
-                    stock: checkStock(item?.node?.variants) ? 'In stock' : 'Out of stock',
-                }));
-                // const sorting: any = sortBy(newData, 'id');
-                setProductList(newData);
-                setLoading(false);
-
-                // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
-            } else {
-                setLoading(false);
+            if (category && category !== '') {
+                filter.categories = [category];
             }
-        } else {
-            setLoading(false);
         }
-    };
-
-    const dispatch = useDispatch();
-    useEffect(() => {
-        dispatch(setPageTitle('Products'));
-    });
-    const [page, setPage] = useState(1);
-    const PAGE_SIZES = [10, 20, 30, 50, 100];
-    const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
-    const [initialRecords, setInitialRecords] = useState([]);
-    const [recordsData, setRecordsData] = useState(initialRecords);
-    const [parentLists, setParentLists] = useState([]);
-    const [rowId, setRowId] = useState('');
-
-    const [deleteProducts] = useMutation(DELETE_PRODUCTS);
-
-    const { data: productDetails, refetch: productDetailsRefetch } = useQuery(PRODUCT_FULL_DETAILS);
-
-    const [selectedRecords, setSelectedRecords] = useState<any>([]);
-
-    const [search, setSearch] = useState('');
-    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
-        columnAccessor: 'id',
-        direction: 'asc',
-    });
-
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [status, setStatus] = useState('');
-
-    const [filterFormData, setFilterFormData] = useState({
-        category: '',
-        stock: '',
-        productType: '',
-    });
-
-    useEffect(() => {
-        setInitialRecords(productList);
-    }, [productList]);
-
-    // Log initialRecords when it changes
-    useEffect(() => {}, [initialRecords]);
-
-    useEffect(() => {
-        setPage(1);
-    }, [pageSize]);
-
-    useEffect(() => {
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize;
-        setRecordsData([...initialRecords.slice(from, to)]);
-    }, [page, pageSize, initialRecords]);
-
-    useEffect(() => {
-        setInitialRecords(() => {
-            return productList.filter((item: any) => {
-                return (
-                    item?.name?.toLowerCase().includes(search.toLowerCase()) ||
-                    item?.sku?.toLowerCase().includes(search.toLowerCase()) ||
-                    item?.status.toLowerCase().includes(search.toLowerCase()) ||
-                    item?.categories?.toLowerCase().includes(search.toLowerCase()) ||
-                    item?.date?.toString().includes(search.toLowerCase())
-                );
-            });
-        });
-    }, [search]);
-
-    useEffect(() => {
-        const data = sortBy(initialRecords, sortStatus.columnAccessor);
-        // setInitialRecords(sortStatus.direction === 'desc' ? data.reverse() : data);
-        setInitialRecords(initialRecords);
-    }, [sortStatus]);
-
-    //    parent category list query
-    const {
-        data: parentList,
-        error: parentListError,
-        refetch: parentListRefetch,
-    } = useQuery(PARENT_CATEGORY_LIST, {
-        variables: { channel: 'india-channel' },
-    });
-    const GetcategoryFilterData = () => {
-        const getparentCategoryList = parentList?.categories?.edges;
-        setParentLists(getparentCategoryList);
-    };
-
-    useEffect(() => {
-        GetcategoryFilterData();
-    }, [parentList]);
-
-    const {
-        data: FilterCategoryList,
-        error: FilterCategoryListError,
-        refetch: FilterCategoryListRefetch,
-    } = useQuery(CATEGORY_FILTER_LIST, {
-        variables: { channel: 'india-channel', first: 100, categoryId: selectedCategory },
-    });
-
-    const { data: CategoryProductList, refetch: CategoryProductListRefetch } = useQuery(CATEGORY_FILTER_LIST, {
-        variables: { channel: 'india-channel', first: 100, categoryId: router?.query?.category },
-    });
-
-    const OneCatProductList = async () => {
-        try {
-            const res = await CategoryProductListRefetch();
-            console.log('OneCatProductList: ', res);
-            const products = res?.data?.products?.edges;
-            if (products?.length > 0) {
-                const newData = products?.map((item: any) => ({
-                    ...item.node,
-                    product: item?.node?.products?.totalCount,
-                    image: item?.node?.thumbnail?.url,
-                    categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
-                    date: item?.node?.updatedAt
-                        ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
-                        : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
-                    // price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
-                    price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
-                    status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
-                    sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
-                    stock: checkStock(item?.node?.variants) ? 'In stock' : 'Out of stock',
-
-                    // shipmentTracking: item?.node?.shipments?.length>0?item
-                }));
-
-                // const sorting: any = sortBy(newData, 'id');
-                setProductList(newData);
-                setLoading(false);
-            }
-        } catch (error) {
-            console.log('error: ', error);
+        if (availability) {
+            filter.stockAvailability = availability;
         }
-        setLoading(false);
+        return filter;
     };
 
-    const CategoryFilterList = () => {
-        // const getFilterCategoryList = FilterCategoryList?.products?.edges;
-        // console.log('✌️getFilterCategoryList --->', getFilterCategoryList);
-        // setRecordsData(getFilterCategoryList);
+    const { loading: getLoading, refetch: fetchLowStockList } = useQuery(UPDATED_PRODUCT_PAGINATION, {
+        variables: {
+            channel: 'india-channel',
+            first: PAGE_SIZE,
+            after: null,
+            search: search,
+            filter: buildFilter(selectedCategory, status),
+        },
+        onCompleted: (data) => {
+            const products = data?.products?.edges || [];
+            setRecordsData(tableFormat(products));
+            setStartCursor(data?.products?.pageInfo?.startCursor || null);
+            setEndCursor(data?.products?.pageInfo?.endCursor || null);
+            setHasNextPage(data?.products?.pageInfo?.hasNextPage || false);
+            setHasPreviousPage(data?.products?.pageInfo?.hasPreviousPage || false);
+        },
+    });
 
-        setLoading(true);
+    const [fetchNextPage] = useLazyQuery(UPDATED_PRODUCT_PAGINATION, {
+        onCompleted: (data) => {
+            const products = data?.products?.edges || [];
+            setRecordsData(tableFormat(products));
+            setStartCursor(data?.products?.pageInfo?.startCursor || null);
+            setEndCursor(data?.products?.pageInfo?.endCursor || null);
+            setHasNextPage(data?.products?.pageInfo?.hasNextPage || false);
+            setHasPreviousPage(data?.products?.pageInfo?.hasPreviousPage || false);
+        },
+    });
 
-        if (FilterCategoryList) {
-            if (FilterCategoryList && FilterCategoryList.products && FilterCategoryList.products.edges?.length > 0) {
-                const newData = FilterCategoryList?.products?.edges.map((item: any) => ({
-                    ...item.node,
-                    product: item?.node?.products?.totalCount,
-                    image: item?.node?.thumbnail?.url,
-                    categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
-                    date: item?.node?.updatedAt
-                        ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
-                        : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
-                    // price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
-                    price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
-                    status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
-                    sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                    tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
-                    stock: checkStock(item?.node?.variants) ? 'In stock' : 'Out of stock',
-
-                    // shipmentTracking: item?.node?.shipments?.length>0?item
-                }));
-
-                // const sorting: any = sortBy(newData, 'id');
-                setProductList(newData);
-                setLoading(false);
-
-                // const newData = categoryData.categories.edges.map((item) => item.node).map((item)=>{{...item,product:isTemplateExpression.products.totalCount}});
-            } else if (FilterCategoryList && FilterCategoryList.products && FilterCategoryList.products.edges?.length === 0) {
-                setProductList([]);
-            } else {
-                setLoading(false);
-            }
-        } else {
-            setLoading(false);
-        }
-    };
-
-    const checkStock = (variants: any[]) => {
+    const checkStock = (variants) => {
         let stock = false;
         if (variants?.length > 0) {
-            const total = variants?.reduce((total, item) => total + item.quantityAvailable, 0);
+            const total = variants.reduce((total, item) => total + item.quantityAvailable, 0);
             if (total > 0) {
                 stock = true;
             }
@@ -295,25 +110,168 @@ const ProductList = () => {
         return stock;
     };
 
-    const onFilterSubmit = async (e: any) => {
-        e.preventDefault();
-        if (selectedCategory !== '') {
-            await FilterCategoryListRefetch();
-            CategoryFilterList();
-        } else {
-            getProductList();
-        }
+    const tableFormat = (products) => {
+        const newData = products?.map((item) => ({
+            ...item.node,
+            product: item.node.products?.totalCount,
+            image: item.node.thumbnail?.url,
+            categories: item.node.category?.name ? item.node.category.name : '-',
+            date: item.node.updatedAt
+                ? `Last Modified ${moment(item.node.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
+                : `Published ${moment(item.node.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
+            price: `${formatCurrency(item.node.pricing?.priceRange?.start?.gross?.currency)}${roundOff(item.node.pricing?.priceRange?.start?.gross?.amount)}`,
+            status: item.node.channelListings[0]?.isPublished ? 'Published' : 'Draft',
+            sku: item.node.defaultVariant ? item.node.defaultVariant.sku : '-',
+            tags: item.node.tags?.length > 0 ? item.node.tags.map((tag) => tag.name).join(',') : '-',
+            stock: checkStock(item.node.variants) ? 'In stock' : 'Out of stock',
+        }));
 
-        if (status != '') {
-        }
+        return newData;
     };
 
-    // Product table create
-    const CreateProduct = () => {
-        router.push('/apps/product/add');
+    const [fetchPreviousPage] = useLazyQuery(PRODUCT_PREV_PAGINATION, {
+        onCompleted: (data) => {
+            const products = data?.products?.edges || [];
+            setRecordsData(tableFormat(products));
+            setStartCursor(data?.products?.pageInfo?.startCursor || null);
+            setEndCursor(data?.products?.pageInfo?.endCursor || null);
+            setHasNextPage(data?.products?.pageInfo?.hasNextPage || false);
+            setHasPreviousPage(data?.products?.pageInfo?.hasPreviousPage || false);
+        },
+    });
+
+    const handleNextPage = () => {
+        fetchNextPage({
+            variables: {
+                channel: 'india-channel',
+                first: PAGE_SIZE,
+                after: endCursor,
+                search: search,
+                filter: buildFilter(selectedCategory, status),
+            },
+        });
+        // .then(() => {
+        //     window.scrollTo({
+        //         top: tableRef.current.offsetTop,
+        //         behavior: 'smooth',
+        //     });
+        // });
     };
 
-    // delete Alert Message
+    const handlePreviousPage = () => {
+        fetchPreviousPage({
+            variables: {
+                channel: 'india-channel',
+                last: PAGE_SIZE,
+                before: startCursor,
+                search: search,
+                filter: buildFilter(selectedCategory, status),
+            },
+        });
+        // .then(() => {
+        //     window.scrollTo({
+        //         top: tableRef.current.offsetTop,
+        //         behavior: 'smooth',
+        //     });
+        // });
+    };
+
+    const handleSearchChange = (e) => {
+        setSearch(e);
+        fetchLowStockList({
+            variables: {
+                channel: 'india-channel',
+                first: PAGE_SIZE,
+                after: null,
+                search: e,
+                filter: buildFilter(selectedCategory, status),
+            },
+        });
+    };
+
+    const handleCategoryChange = (e) => {
+        setSelectedCategory(e.target.value);
+        console.log('e.target.value: ', e.target.value);
+        fetchLowStockList({
+            variables: {
+                channel: 'india-channel',
+                first: PAGE_SIZE,
+                after: null,
+                search: search,
+                filter: buildFilter(e.target.value, status),
+            },
+        });
+    };
+
+    const handleStatusChange = (selectedStatus) => {
+        setStatus(selectedStatus);
+        fetchLowStockList({
+            variables: {
+                channel: 'india-channel',
+                first: PAGE_SIZE,
+                after: null,
+                search: search,
+                filter: buildFilter(selectedCategory, selectedStatus),
+            },
+        });
+    };
+
+    const { data: parentList } = useQuery(PARENT_CATEGORY_LIST, {
+        variables: { channel: 'india-channel' },
+    });
+
+    const getParentCategories = () => {
+        const parentCategories = parentList?.categories?.edges || [];
+        return parentCategories.map(({ node }) => ({
+            id: node.id,
+            name: node.name,
+            children:
+                node.children?.edges.map(({ node }) => ({
+                    id: node.id,
+                    name: node.name,
+                })) || [],
+        }));
+    };
+
+    useEffect(() => {
+        if (parentList) {
+            setParentLists(getParentCategories());
+        }
+    }, [parentList]);
+
+    const BulkDeleteProduct = async () => {
+        showDeleteAlert(
+            () => {
+                if (selectedRecords.length === 0) {
+                    Swal.fire('Cancelled', 'Please select at least one record!', 'error');
+                    return;
+                }
+                const productIds = selectedRecords?.map((item: any) => item.id);
+                const { data }: any = deleteProducts({
+                    variables: {
+                        ids: productIds,
+                    },
+                });
+                const updatedRecordsData = recordsData.filter((record) => !selectedRecords.includes(record));
+                setRecordsData(updatedRecordsData);
+                setSelectedRecords([]);
+                fetchLowStockList({
+                    variables: {
+                        channel: 'india-channel',
+                        first: PAGE_SIZE,
+                        after: null,
+                        search: search,
+                        filter: buildFilter(selectedCategory, status),
+                    },
+                });
+                Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
+            },
+            () => {
+                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
+            }
+        );
+    };
+
     const showDeleteAlert = (onConfirm: () => void, onCancel: () => void) => {
         const swalWithBootstrapButtons = Swal.mixin({
             customClass: {
@@ -344,30 +302,6 @@ const ProductList = () => {
             });
     };
 
-    const BulkDeleteProduct = async () => {
-        showDeleteAlert(
-            () => {
-                if (selectedRecords.length === 0) {
-                    Swal.fire('Cancelled', 'Please select at least one record!', 'error');
-                    return;
-                }
-                const productIds = selectedRecords?.map((item: any) => item.id);
-                const { data }: any = deleteProducts({
-                    variables: {
-                        ids: productIds,
-                    },
-                });
-                const updatedRecordsData = recordsData.filter((record) => !selectedRecords.includes(record));
-                setRecordsData(updatedRecordsData);
-                setSelectedRecords([]);
-                Swal.fire('Deleted!', 'Your files have been deleted.', 'success');
-            },
-            () => {
-                Swal.fire('Cancelled', 'Your Product List is safe :)', 'error');
-            }
-        );
-    };
-
     const DeleteProduct = (record: any) => {
         showDeleteAlert(
             () => {
@@ -378,6 +312,15 @@ const ProductList = () => {
                 });
                 const updatedRecordsData = recordsData.filter((dataRecord: any) => dataRecord.id !== record.id);
                 setRecordsData(updatedRecordsData);
+                fetchLowStockList({
+                    variables: {
+                        channel: 'india-channel',
+                        first: PAGE_SIZE,
+                        after: null,
+                        search: search,
+                        filter: buildFilter(selectedCategory, status),
+                    },
+                });
                 Swal.fire('Deleted!', 'Your Product has been deleted.', 'success');
             },
             () => {
@@ -386,105 +329,16 @@ const ProductList = () => {
         );
     };
 
-    // top Filter Category change
-    const CategoryChange = (selectedCategory: string) => {
-        // Update the state with the selected category
-        setSelectedCategory(selectedCategory);
-        // setFilterFormData((prevState) => ({
-        //     ...prevState,
-        //     category: selectedCategory,
-        // }));
-    };
-
-    const statusChange = async (e: string) => {
-        try {
-            setStatus(e);
-
-            let filter = {};
-            if (e == 'OutOfStock') {
-                filter = { stockAvailability: 'OUT_OF_STOCK' };
-            } else {
-                filter = { stockAvailability: 'IN_STOCK' };
-            }
-            const res = await productListRefetch({
-                channel: 'india-channel',
-                first: 100,
-                direction: 'DESC',
-                field: 'CREATED_AT',
-                filter,
-            });
-
-            const newData = res?.data?.products?.edges.map((item: any) => ({
-                ...item.node,
-                product: item?.node?.products?.totalCount,
-                image: item?.node?.thumbnail?.url,
-                categories: item?.node?.category?.name ? item?.node?.category?.name : '-',
-                date: item?.node?.updatedAt
-                    ? `Last Modified ${moment(item?.node?.updatedAt).format('YYYY/MM/DD [at] h:mm a')}`
-                    : `Published ${moment(item?.node?.channelListings[0]?.publishedAt).format('YYYY/MM/DD [at] h:mm a')}`,
-                // price: item?.node?.pricing?.priceRange?.start?.gross?.amount,
-                price: `${formatCurrency('INR')}${roundOff(item?.node?.pricing?.priceRange?.start?.gross?.amount)}`,
-                status: item?.node?.channelListings[0]?.isPublished == true ? 'Published' : 'Draft',
-                sku: item?.node?.defaultVariant ? item?.node?.defaultVariant?.sku : '-',
-                tags: item?.node?.tags?.length > 0 ? item?.node?.tags?.map((item: any) => item.name)?.join(',') : '-',
-                stock: checkStock(item?.node?.variants) ? 'In stock' : 'Out of stock',
-
-                // shipmentTracking: item?.node?.shipments?.length>0?item
-            }));
-
-            // const sorting: any = sortBy(newData, 'id');
-            if (e == '') {
-                getProductList();
-            } else {
-                setProductList(newData);
-            }
-
-            console.log('res: ', res);
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
-
-    const productTypeChange = (selectedProductType: string) => {
-        console.log('Selected Product Type:', selectedProductType);
-        // Update the state with the selected product type
-        setFilterFormData((prevState) => ({
-            ...prevState,
-            productType: selectedProductType,
-        }));
-    };
-    useEffect(() => {
-        fetchData();
-    }, [rowId]);
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const res = await productDetailsRefetch({
-                channel: 'india-channel',
-                id: rowId,
-                choicesFirst: 10,
-            });
-            console.log('Refetch result: ', res);
-            setLoading(false);
-        } catch (error) {
-            setLoading(true);
-
-            console.error('Error refetching: ', error);
-        }
-    };
-
     const duplicate = async (row: any) => {
+        console.log("row: ", row);
         try {
-            setLoading(true);
-            setRowId(row.id);
+            setLoadingRows((prev) => ({ ...prev, [row.id]: true }));
             // productDetailsRefetch()
             const res = await productDetailsRefetch({
                 channel: 'india-channel',
                 id: row.id,
             });
             const response = res.data?.product;
-            setLoading(false);
 
             CreateDuplicateProduct(response);
         } catch (error) {
@@ -494,8 +348,6 @@ const ProductList = () => {
 
     const CreateDuplicateProduct = async (row: any) => {
         try {
-            setLoading(true);
-
             let collectionId: any = [];
 
             if (row?.collections?.length > 0) {
@@ -526,6 +378,11 @@ const ProductList = () => {
                 stone = row?.productStoneType?.map((item: any) => item.id);
             }
 
+            let size = [];
+            if (row?.productSize?.length > 0) {
+                size = row?.productSize?.map((item: any) => item.id);
+            }
+
             let upsells = [];
             if (row?.getUpsells?.length > 0) {
                 upsells = row?.getUpsells?.map((item: any) => item?.productId);
@@ -541,7 +398,7 @@ const ProductList = () => {
                         attributes: [],
                         category: row?.category?.id,
                         collections: collectionId,
-                        description:row.description,
+                        description: row.description,
                         tags: tagId,
                         upsells,
                         crosssells,
@@ -558,6 +415,7 @@ const ProductList = () => {
                         productstyle: style,
                         productFinish: finish,
                         productStoneType: stone,
+                        productSize: size,
                     },
                 },
             });
@@ -565,6 +423,8 @@ const ProductList = () => {
             if (data?.productCreate?.errors?.length > 0) {
                 Failure(data?.productCreate?.errors[0]?.message);
                 console.log('error: ', data?.productCreate?.errors[0]?.message);
+                
+                setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 const productId = data?.productCreate?.product?.id;
                 productChannelListUpdate(productId, row);
@@ -575,7 +435,6 @@ const ProductList = () => {
                 //     });
                 // }
             }
-            setLoading(false);
         } catch (error) {
             console.log('error: ', error);
         }
@@ -583,8 +442,6 @@ const ProductList = () => {
 
     const productChannelListUpdate = async (productId: any, row: any) => {
         try {
-            setLoading(true);
-
             const { data } = await updateProductChannelList({
                 variables: {
                     id: productId,
@@ -606,13 +463,14 @@ const ProductList = () => {
             if (data?.productChannelListingUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
                 Failure(data?.productChannelListingUpdate?.errors[0]?.message);
-                deleteDuplicateProduct(productId);
+                deleteDuplicateProduct(productId,row);
+                
+                setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 console.log('productChannelListUpdate: ', data);
 
                 variantListUpdate(productId, row);
             }
-            setLoading(false);
         } catch (error) {
             console.log('error: ', error);
         }
@@ -653,7 +511,9 @@ const ProductList = () => {
             });
             if (data?.productVariantBulkCreate?.errors?.length > 0) {
                 Failure(data?.productVariantBulkCreate?.errors[0]?.message);
-                deleteDuplicateProduct(productId);
+                deleteDuplicateProduct(productId,row);
+                
+                setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 const resVariants = data?.productVariantBulkCreate?.productVariants;
                 console.log('resVariants: ', resVariants);
@@ -705,7 +565,9 @@ const ProductList = () => {
             });
             if (data?.productVariantChannelListingUpdate?.errors?.length > 0) {
                 Failure(data?.productVariantChannelListingUpdate?.errors[0]?.message);
-                deleteDuplicateProduct(productId);
+                deleteDuplicateProduct(productId,row);
+                
+                setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 updateMetaData(productId, row);
             }
@@ -730,8 +592,10 @@ const ProductList = () => {
             });
             if (data?.updateMetadata?.errors?.length > 0) {
                 Failure(data?.updateMetadata?.errors[0]?.message);
-                deleteDuplicateProduct(productId);
+                deleteDuplicateProduct(productId,row);
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
+                
+                setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 // if (selectedTag?.length > 0) {
                 //     assignsTagToProduct(productId);
@@ -745,219 +609,171 @@ const ProductList = () => {
         }
     };
 
-    const deleteDuplicateProduct = async (productId: any) => {
+    const deleteDuplicateProduct = async (productId: any,row:any) => {
         try {
             const { data }: any = deleteProducts({
                 variables: {
                     ids: [productId],
                 },
             });
+            
+            setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
         } catch (error) {
             console.log('error: ', error);
         }
     };
 
-    const statusFilter = [
-        {
-            name: 'In Stock',
-            value: 'InStock',
-        },
-        {
-            name: 'Out of stock',
-            value: 'OutOfStock',
-        },
-    ];
-
     return (
-        <div>
-            <div className="panel mt-6">
-                <div className="mb-10 flex flex-col gap-5 lg:mb-5 lg:flex-row lg:items-center">
-                    <div className="flex items-center gap-5">
-                        <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
-                         <button type="button" className="btn btn-outline-primary" onClick={() => router.push('/product_import')}>
-                            Import
-                        </button> 
-                         <button type="button" className="btn btn-outline-primary" onClick={() => router.push('/product_export')}>
-                            Export
-                        </button> 
-                    </div>
-                    <div className="mt-5 md:mt-0 md:flex  md:ltr:ml-auto md:rtl:mr-auto">
-                        <input type="text" className="form-input  mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                        <div className="dropdown mb-3 mr-0  md:mb-0 md:mr-2">
-                            <Dropdown
-                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="btn btn-outline-primary dropdown-toggle  lg:w-auto w-full"
-                                button={
+        <div className="">
+            <div className="panel mb-5 flex items-center justify-between gap-5">
+                <div className="flex items-center gap-5">
+                    <h5 className="text-lg font-semibold dark:text-white-light">Product</h5>
+                    <button type="button" className="btn btn-outline-primary" onClick={() => router.push('/product_import')}>
+                        Import
+                    </button>
+                    <button type="button" className="btn btn-outline-primary" onClick={() => router.push('/product_export')}>
+                        Export
+                    </button>
+                </div>
+                <div>
+                    <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => router.push('/apps/product/add')}>
+                        + Create
+                    </button>
+                </div>
+            </div>
+            <div className="mb-5 mt-5 justify-between  md:mt-0 md:flex md:ltr:ml-auto md:rtl:mr-auto">
+                <input type="text" className="w-82 form-input mb-3 mr-2 h-[40px] md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => handleSearchChange(e.target.value)} />
+                <div className="dropdown mb-3 mr-0 md:mb-0 md:mr-2 ">
+                    <Dropdown
+                        btnClassName="btn btn-outline-primary dropdown-toggle  lg:w-auto w-full"
+                        button={
+                            <>
+                                Bulk Actions
+                                <span>
+                                    <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
+                                </span>
+                            </>
+                        }
+                    >
+                        <ul className="!min-w-[170px]">
+                            <li>
+                                <button type="button" onClick={() => BulkDeleteProduct()}>
+                                    Delete
+                                </button>
+                            </li>
+                        </ul>
+                    </Dropdown>
+                </div>
+            </div>
+            <div className="col-4 mx-auto  mb-5 flex items-center gap-4 md:flex-row">
+                <select className="form-select flex-1" value={selectedCategory} onChange={handleCategoryChange}>
+                    <option value="">Select a Category</option>
+                    {parentLists.map((parent) => (
+                        <React.Fragment key={parent.id}>
+                            <option value={parent.id}>{parent.name}</option>
+                            {parent.children.map((child) => (
+                                <option key={child.id} value={child.id} style={{ paddingLeft: '20px' }}>
+                                    -- {child.name}
+                                </option>
+                            ))}
+                        </React.Fragment>
+                    ))}
+                </select>
+                <select className="form-select flex-1" value={status} onChange={(e) => handleStatusChange(e.target.value)}>
+                    <option value="">Select a Status</option>
+                    <option value="IN_STOCK">In Stock</option>
+                    <option value="OUT_OF_STOCK">Out of Stock</option>
+                </select>
+            </div>
+            <div className="datatables" ref={tableRef}>
+                {getLoading ? (
+                    <CommonLoader />
+                ) : (
+                    <DataTable
+                        className="table-hover whitespace-nowrap"
+                        records={recordsData}
+                        columns={[
+                            { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
+                            {
+                                accessor: 'name',
+                                sortable: true,
+                                render: (row,index) => (
                                     <>
-                                        Bulk Actions
-                                        <span>
-                                            <IconCaretDown className="inline-block ltr:ml-1 rtl:mr-1" />
-                                        </span>
-                                    </>
-                                }
-                            >
-                                <ul className="!min-w-[170px]">
-                                    <li>
-                                        <button type="button" onClick={() => BulkDeleteProduct()}>
-                                            Delete
+                                        <div className="">{row.name}</div>
+                                        <button onClick={() => duplicate(row)} className=" cursor-pointer text-blue-400 underline">
+                                            {loadingRows[row.id]  ? "...Loading" : 'Duplicate'}
                                         </button>
-                                    </li>
-                                </ul>
-                            </Dropdown>
-                        </div>
-                        <button type="button" className="btn btn-primary  w-full md:mb-0 md:w-auto" onClick={() => CreateProduct()}>
-                            + Create
-                        </button>
-                    </div>
-                </div>
-
-                <div className="mb-5 ">
-                    <form onSubmit={onFilterSubmit}>
-                        <div className="col-4 mx-auto  flex items-center gap-4 md:flex-row">
-                            <select className="form-select flex-1" onChange={(e) => CategoryChange(e.target.value)}>
-                                <option value="">Select a Categories </option>
-                                {parentLists?.map((item: any) => {
-                                    return (
-                                        <>
-                                            <option value={item?.node?.id}>{item.node?.name}</option>
-                                            {item?.node?.children?.edges.map((child: any) => (
-                                                <option key={child.id} value={child.node?.id} style={{ paddingLeft: '20px' }}>
-                                                    -- {child.node?.name}
-                                                </option>
-                                            ))}
-                                        </>
-                                    );
-                                })}
-                            </select>
-                            <select className="form-select flex-1" value={status} onChange={(e) => statusChange(e.target.value)}>
-                                <option value={''}>Select a status</option>;
-                                {statusFilter?.map((item: any) => {
-                                    return (
-                                        <>
-                                            <option value={item.value}>{item.name}</option>
-                                        </>
-                                    );
-                                })}
-                            </select>
-
-                            {/* New select dropdown for stock status */}
-                            {/* <select className="form-select flex-1" onChange={(e) => StockStatusChange(e.target.value)}>
-                                <option value="">Filter By Stock Status</option>
-                                <option value="In Stock">In Stock</option>
-                                <option value="Out Of Stock">Out Of Stock</option>
-                            </select>
-
-                            <select className="form-select flex-1" onChange={(e) => productTypeChange(e.target.value)}>
-                                <option value="sample-product">Simple Product</option>
-                                <option value="variable-product">Variable Product</option>
-                            </select> */}
-                            <button type="submit" className="btn btn-primary w-full py-2.5 md:w-auto">
-                                Filter
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <div className="datatables">
-                    {getloading ? (
-                        <CommonLoader />
-                    ) : (
-                        <DataTable
-                            customLoader={<CommonLoader />}
-                            className="table-hover whitespace-nowrap"
-                            records={recordsData}
-                            columns={[
-                                // { accessor: 'id', sortable: true },
-                                { accessor: 'image', sortable: true, render: (row) => <img src={row.image} alt="Product" className="h-10 w-10 object-cover ltr:mr-2 rtl:ml-2" /> },
-                                // { accessor: 'name', sortable: true },
-                                {
-                                    accessor: 'name',
-                                    sortable: true,
-                                    render: (row) => (
-                                        <>
-                                            <div className="">{row.name}</div>
-                                            <button onClick={() => duplicate(row)} className=" cursor-pointer text-blue-400 underline">
-                                                Duplicate
+                                    </>
+                                ),
+                            },
+                            { accessor: 'sku', sortable: true, title: 'SKU' },
+                            { accessor: 'stock', sortable: false },
+                            { accessor: 'status', sortable: true },
+                            { accessor: 'price', sortable: true },
+                            { accessor: 'categories', sortable: true },
+                            {
+                                accessor: 'tags',
+                                sortable: true,
+                                width: 200,
+                                render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '200px' }}>{row.tags}</div>,
+                            },
+                            {
+                                accessor: 'date',
+                                sortable: true,
+                                width: 160,
+                                render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '160px' }}>{row.date}</div>,
+                            },
+                            {
+                                accessor: 'actions',
+                                title: 'Actions',
+                                render: (row: any) => (
+                                    <>
+                                        <div className="mx-auto flex w-max items-center gap-4">
+                                            <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/edit?id=${row.id}`)}>
+                                                <IconEdit className="h-4.5 w-4.5" />
                                             </button>
-                                        </>
-                                    ),
-                                },
+                                            {/* {row?.status == 'Published' && ( */}
+                                            <button
+                                                className="flex hover:text-info"
+                                                onClick={() => {
+                                                    if (row.status == 'Draft') {
+                                                        Failure('Product is Draft !');
+                                                    } else {
+                                                        window.open(`http://www1.prade.in/product-details/${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
+                                                    }
+                                                }}
+                                            >
+                                                {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
+                                                <IconEye />
+                                            </button>
+                                            {/* )} */}
 
-                                { accessor: 'sku', sortable: true, title: 'SKU' },
-                                { accessor: 'stock', sortable: false },
-
-                                { accessor: 'status', sortable: true },
-                                { accessor: 'price', sortable: true },
-                                { accessor: 'categories', sortable: true },
-                                {
-                                    accessor: 'tags',
-                                    sortable: true,
-                                    width: 200,
-
-                                    render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '200px' }}>{row.tags}</div>,
-                                },
-                                {
-                                    accessor: 'date',
-                                    sortable: true,
-                                    width: 160,
-                                    render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '160px' }}>{row.date}</div>,
-                                },
-                                {
-                                    // Custom column for actions
-                                    accessor: 'actions', // You can use any accessor name you want
-                                    title: 'Actions',
-                                    // Render method for custom column
-                                    render: (row: any) => (
-                                        <>
-                                            <div className="mx-auto flex w-max items-center gap-4">
-                                                <button className="flex hover:text-info" onClick={() => router.push(`/apps/product/edit?id=${row.id}`)}>
-                                                    <IconEdit className="h-4.5 w-4.5" />
-                                                </button>
-                                                {/* {row?.status == 'Published' && ( */}
-                                                <button
-                                                    className="flex hover:text-info"
-                                                    onClick={() => {
-                                                        if (row.status == 'Draft') {
-                                                            Failure('Product is Draft !');
-                                                        } else {
-                                                            window.open(`http://www1.prade.in/product-details/${row.id}`, '_blank'); // '_blank' parameter opens the link in a new tab
-                                                        }
-                                                    }}
-                                                >
-                                                    {/* <Link href="/apps/product/view" className="flex hover:text-primary"> */}
-                                                    <IconEye />
-                                                </button>
-                                                {/* )} */}
-
-                                                <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
-                                                    <IconTrashLines />
-                                                </button>
-                                            </div>
-                                        </>
-                                    ),
-                                },
-                            ]}
-                            highlightOnHover
-                            totalRecords={initialRecords.length}
-                            recordsPerPage={pageSize}
-                            page={page}
-                            onPageChange={(p) => setPage(p)}
-                            recordsPerPageOptions={PAGE_SIZES}
-                            onRecordsPerPageChange={setPageSize}
-                            sortStatus={sortStatus}
-                            onSortStatusChange={setSortStatus}
-                            selectedRecords={selectedRecords}
-                            onSelectedRecordsChange={(selectedRecords) => {
-                                setSelectedRecords(selectedRecords);
-                            }}
-                            minHeight={200}
-                            paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                        />
-                    )}
-                </div>
+                                            <button type="button" className="flex hover:text-danger" onClick={() => DeleteProduct(row)}>
+                                                <IconTrashLines />
+                                            </button>
+                                        </div>
+                                    </>
+                                ),
+                            },
+                        ]}
+                        highlightOnHover
+                        totalRecords={recordsData?.length}
+                        recordsPerPage={PAGE_SIZE}
+                        minHeight={200}
+                        selectedRecords={selectedRecords}
+                        onSelectedRecordsChange={(val) => setSelectedRecords(val)}
+                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                    />
+                )}
+            </div>
+            <div className="mt-5 flex justify-end gap-3">
+                <button disabled={!hasPreviousPage} onClick={handlePreviousPage} className={`btn ${!hasPreviousPage ? 'btn-disabled' : 'btn-primary'}`}>
+                    <IconArrowBackward />
+                </button>
+                <button disabled={!hasNextPage} onClick={handleNextPage} className={`btn ${!hasNextPage ? 'btn-disabled' : 'btn-primary'}`}>
+                    <IconArrowForward />
+                </button>
             </div>
         </div>
     );
-};
-
-export default PrivateRouter(ProductList);
+}

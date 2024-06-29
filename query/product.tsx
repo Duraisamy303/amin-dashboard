@@ -154,6 +154,191 @@ export const DELETE_PRODUCT = gql`
     }
 `;
 
+export const UPDATED_PRODUCT_PAGINATION = gql`
+    query ProductListPaginatedInitialandNext($channel: String!, $first: Int!, $after: String, $search: String!, $filter: ProductFilterInput) {
+        products(first: $first, after: $after, channel: $channel, filter: $filter, search: $search, sortBy: { direction: DESC, field: CREATED_AT }) {
+            totalCount
+            edges {
+                node {
+                    ...ProductListItem
+                    tags {
+                        name
+                        id
+                        __typename
+                    }
+                    __typename
+                }
+                cursor
+                __typename
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductListItem on Product {
+        id
+        name
+        slug
+         defaultVariant {
+          id
+          name
+          sku
+
+        }
+        pricing {
+            priceRange {
+                start {
+                    gross {
+                        amount
+                        currency
+                        __typename
+                    }
+                    __typename
+                }
+                stop {
+                    gross {
+                        amount
+                        currency
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+            discount {
+                currency
+                __typename
+            }
+            __typename
+        }
+        category {
+            id
+            name
+            __typename
+        }
+        thumbnail(size: 1024, format: WEBP) {
+            url
+            alt
+            __typename
+        }
+        variants {
+            id
+            __typename
+        }
+        images {
+            url
+            __typename
+        }
+        description
+        updatedAt
+        channelListings {
+            publishedAt
+            isPublished
+            __typename
+        }
+        __typename
+    }
+`;
+
+export const PRODUCT_PREV_PAGINATION = gql`
+    query ProductListPaginated($channel: String!, $last: Int!, $before: String, $search: String!, $filter: ProductFilterInput) {
+        products(filter: $filter, last: $last, before: $before, channel: $channel, search: $search, sortBy: { direction: DESC, field: CREATED_AT }) {
+            totalCount
+            edges {
+                node {
+                    ...ProductListItem
+                    tags {
+                        name
+                        id
+                        __typename
+                    }
+                    __typename
+                }
+                cursor
+                __typename
+            }
+            pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                __typename
+            }
+            __typename
+        }
+    }
+
+    fragment ProductListItem on Product {
+        id
+        name
+        slug
+         defaultVariant {
+          id
+          name
+          sku
+        }
+        pricing {
+            priceRange {
+                start {
+                    gross {
+                        amount
+                        currency
+                        __typename
+                    }
+                    __typename
+                }
+                stop {
+                    gross {
+                        amount
+                        currency
+                        __typename
+                    }
+                    __typename
+                }
+                __typename
+            }
+            discount {
+                currency
+                __typename
+            }
+            __typename
+        }
+        category {
+            id
+            name
+            __typename
+        }
+        thumbnail(size: 1024, format: WEBP) {
+            url
+            alt
+            __typename
+        }
+        variants {
+            id
+            __typename
+        }
+        images {
+            url
+            __typename
+        }
+        description
+        updatedAt
+        channelListings {
+            publishedAt
+            isPublished
+            __typename
+        }
+        __typename
+    }
+`;
+
 export const SEND_GIFT_CART = gql`
     mutation SendGiftCard($orderid: ID!) {
         sendGiftCard(id: $orderid) {
