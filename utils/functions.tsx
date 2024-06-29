@@ -452,10 +452,10 @@ export const handleExportByChange = (e: any) => {
 };
 export const downloadExlcel = (excelData: any, fileName: any) => {
     const filetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8';
-    const fileExtension = '.xlsx';
+    const fileExtension = '.csv';
     const ws = XLSX.utils.json_to_sheet(excelData);
     const wb = { Sheets: { data: ws }, SheetNames: ['data'] };
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const excelBuffer = XLSX.write(wb, { bookType: 'csv', type: 'array' });
     const data = new Blob([excelBuffer], { type: filetype });
     FileSaver.saveAs(data, fileName + fileExtension);
 };
