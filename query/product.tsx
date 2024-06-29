@@ -921,6 +921,16 @@ export const SHIPPING_LIST = gql`
         }
     }
 `;
+export const LAST_UPDATE_DETAILS = gql`
+    mutation {
+        stockUpdate {
+            dates
+            quantityList
+            productNameList
+            total
+        }
+    }
+`;
 
 export const PAYMENT_LIST = gql`
     query GetPaymnetGatewayList {

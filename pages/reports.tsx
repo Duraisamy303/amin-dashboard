@@ -351,12 +351,8 @@ export default function Reports() {
             ];
 
             const tableData = salesBydateTable(response);
-            // if (state.orderDateFilter == 'Last Month' || state.orderDateFilter == 'Year') {
-            //     setState({ tableData: tableData?.reverse(), salesByDate, tableColumn });
-            // } else {
-            //     console.log('tableData: ', tableData);
+
             setState({ tableData, salesByDate, tableColumn });
-            // }
         } catch (error) {
             console.log('error: ', error);
         }
@@ -1178,18 +1174,38 @@ export default function Reports() {
 
                     return res;
                 });
-                downloadExlcel(excelData, label);
+                if (excelData.length > 0) {
+                    downloadExlcel(excelData, label);
+                } else {
+                    Failure('No Excel data found');
+                }
             } else {
-                downloadExlcel(state.tableData, label);
+                if (state.tableData.length > 0) {
+                    downloadExlcel(state.tableData, label);
+                } else {
+                    Failure('No Excel data found');
+                }
             }
         } else if (type === 'Customers') {
-            downloadExlcel(state.customerTable, label);
+            if (state.customerTable?.length > 0) {
+                downloadExlcel(state.customerTable, label);
+            } else {
+                Failure('No Excel data found');
+            }
         } else if (type === 'Analysis') {
             if (state.analysisTab === 'Product Revenue' || state.analysisTab === 'Order Analysis' || state.analysisTab === 'Revenue Analysis') {
                 const finalData = excelFormatData(state.analysisTable, state.analysisColumn);
-                downloadExlcel(finalData, label);
+                if (finalData?.length > 0) {
+                    downloadExlcel(finalData, label);
+                } else {
+                    Failure('No Excel data found');
+                }
             } else {
-                downloadExlcel(state.analysisTable, label);
+                if (state.analysisTable?.length > 0) {
+                    downloadExlcel(state.analysisTable, label);
+                } else {
+                    Failure('No Excel data found');
+                }
             }
         }
     };

@@ -1,65 +1,106 @@
 import IconTrashLines from '@/components/Icon/IconTrashLines';
-import { DataTable } from 'mantine-datatable';
+import { LAST_UPDATE_DETAILS, LOW_STOCK_LIST } from '@/query/product';
+import { useMutation, useQuery } from '@apollo/client';
+import { DataTable, DataTableSortStatus } from 'mantine-datatable';
 import moment from 'moment';
 import { useRouter } from 'next/router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import CommonLoader from './elements/commonLoader';
 
 export default function LastUpdates() {
-    const recordsData = [
-        { id: 1, item: 'Product A',  date: moment(new Date()).format("YYYY-MM-DD"),quantity: 7},
-        { id: 2, item: 'Product A',  date: moment(new Date()).format("YYYY-MM-DD"),quantity: 7},
+    const [lastUpdateData, { loading: getLoading }] = useMutation(LAST_UPDATE_DETAILS);
 
-        { id: 3, item: 'Product A',  date: moment(new Date()).format("YYYY-MM-DD"),quantity: 7},
+    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
+        columnAccessor: 'id',
+        direction: 'asc',
+    });
 
-        // Add more records as needed
-    ];
-    
-    const initialRecords = recordsData;
     const PAGE_SIZES = [10, 20, 30];
-    const router = useRouter();
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [sortStatus, setSortStatus] = useState({ columnAccessor: 'name', direction: 'asc' });
-    const [selectedRecords, setSelectedRecords] = useState([]);
+    const [lowStockData, setLowStockData] = useState([]);
+    const [initialData, setInitialData] = useState([]);
+    const [search, setSearch] = useState('');
+
+    useEffect(() => {
+        lastUpdate();
+    }, []);
+
+    useEffect(() => {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize;
+        setInitialData([...lowStockData.slice(from, to)]);
+    }, [page, pageSize, lowStockData]);
+
+    useEffect(() => {
+        if (search === '') {
+            // If search input is cleared, show all data
+            const from = (page - 1) * pageSize;
+            const to = from + pageSize;
+            setInitialData([...lowStockData.slice(from, to)]);
+        } else {
+            // If there is a search term, filter the data
+            setInitialData(() => {
+                return lowStockData.filter((item: any) => {
+                    return item['product Name']?.toLowerCase().includes(search.toLowerCase());
+                });
+            });
+        }
+    }, [search, page, pageSize, lowStockData]);
+
+    const lastUpdate = async () => {
+        try {
+            const res = await lastUpdateData();
+            console.log('res: ', res);
+
+            const update = res?.data?.stockUpdate;
+            const table = update?.dates?.map((date, index) => ({
+                date,
+                'product Name': update.productNameList[index],
+                Quantity: update.quantityList[index],
+            }));
+
+            setLowStockData(table);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
     return (
         <div className="">
-            <div className="panel mb-5 flex flex-col gap-5 md:flex-row md:items-center">
+            <div className="panel mb-5 flex flex-col justify-between gap-5 md:flex-row md:items-center">
                 <h5 className="text-lg font-semibold dark:text-white-light">Last Updates</h5>
+                <input type="text" className="form-input  mb-3 mr-2 w-full md:mb-0 md:w-auto" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <div className="datatables">
-                {/* {getLoading ? (
-                        <CommonLoader />
-                    ) : ( */}
-                <DataTable
-                    className="table-hover whitespace-nowrap"
-                    records={recordsData}
-                    columns={[
-                        {
-                            accessor: 'item',
-                            sortable: true,
-                           
-                        },
-
-                        { accessor: 'date', sortable: true },
-                        { accessor: 'quantity', sortable: true },
-
-                        
-                       
-                    ]}
-                    highlightOnHover
-                    totalRecords={initialRecords.length}
-                    recordsPerPage={pageSize}
-                    page={page}
-                    onPageChange={(p) => setPage(p)}
-                    recordsPerPageOptions={PAGE_SIZES}
-                    onRecordsPerPageChange={setPageSize}
-                    sortStatus={null}
-                    onSortStatusChange={setSortStatus}
-                   
-                    minHeight={200}
-                    paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
-                />
+                {getLoading ? (
+                    <CommonLoader />
+                ) : (
+                    <DataTable
+                        className="table-hover whitespace-nowrap"
+                        records={initialData}
+                        columns={[
+                            { accessor: 'product Name', sortable: true },
+                            { accessor: 'date', sortable: true },
+                            { accessor: 'Quantity', sortable: true },
+                        ]}
+                        highlightOnHover
+                        totalRecords={lowStockData.length}
+                        recordsPerPage={pageSize}
+                        page={page}
+                        onPageChange={(p) => setPage(p)}
+                        recordsPerPageOptions={PAGE_SIZES}
+                        onRecordsPerPageChange={setPageSize}
+                        sortStatus={null}
+                        onSortStatusChange={null}
+                        selectedRecords={null}
+                        onSelectedRecordsChange={(selectedRecords) => {
+                            // setSelectedRecords(selectedRecords);
+                        }}
+                        minHeight={200}
+                        paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
+                    />
+                )}
             </div>
         </div>
     );

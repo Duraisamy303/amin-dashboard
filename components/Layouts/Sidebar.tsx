@@ -33,8 +33,8 @@ import IconMenuAuthentication from '@/components/Icon/Menu/IconMenuAuthenticatio
 import IconMenuDocumentation from '@/components/Icon/Menu/IconMenuDocumentation';
 import IconMicrophoneOff from '../Icon/IconMicrophoneOff';
 import IconMenuReport from '../Icon/Menu/IconMenuReport';
-import { useQuery } from '@apollo/client';
-import { LOW_STOCK_LIST, PRODUCT_CAT_LIST } from '@/query/product';
+import { useMutation, useQuery } from '@apollo/client';
+import { LAST_UPDATE_DETAILS, LOW_STOCK_LIST, PRODUCT_CAT_LIST } from '@/query/product';
 import { sampleParams } from '@/utils/functions';
 import IconAward from '../Icon/IconAward';
 import IconPaymentList from '../Icon/IconPayment';
@@ -43,6 +43,7 @@ const Sidebar = () => {
     const router = useRouter();
     const [currentMenu, setCurrentMenu] = useState<string>('');
     const [lowStockCount, setLowStockCount] = useState(0);
+    const [lastUpdateCount, setLastUpdateCount] = useState(0);
 
     const themeConfig = useSelector((state: any) => state.themeConfig);
     const semidark = useSelector((state: any) => state.themeConfig.semidark);
@@ -53,9 +54,11 @@ const Sidebar = () => {
     };
 
     const { data: productSearch, refetch: lowStockRefetch } = useQuery(LOW_STOCK_LIST);
+    const [lastUpdateData] = useMutation(LAST_UPDATE_DETAILS);
 
     useEffect(() => {
         getLowStockCount();
+        lastUpdate();
     }, [router.pathname]);
 
     useEffect(() => {
@@ -81,6 +84,15 @@ const Sidebar = () => {
             dispatch(toggleSidebar());
         }
     }, [router.pathname]);
+
+    const lastUpdate = async () => {
+        try {
+            const res = await lastUpdateData();
+            setLastUpdateCount(res.data?.stockUpdate?.total);
+        } catch (error) {
+            console.log('error: ', error);
+        }
+    };
 
     const getLowStockCount = async () => {
         try {
@@ -327,7 +339,7 @@ const Sidebar = () => {
                                                 <li className="relative flex items-center">
                                                     <Link href="/lastUpdates" className="flex items-center space-x-2">
                                                         <span className="flex items-center">{t('Last updated details')}</span>
-                                                        <span className="flex h-6 w-[80px] items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">{0}</span>
+                                                        <span className="flex h-6 w-[80px] items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">{lastUpdateCount}</span>
                                                     </Link>
                                                 </li>
                                             </ul>

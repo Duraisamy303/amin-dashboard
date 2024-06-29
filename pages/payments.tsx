@@ -35,7 +35,7 @@ const Payments = () => {
             const data = paymentData?.paymentGateways?.edges;
             const updateData = data?.map((item) => ({
                 name: item?.node?.name,
-                enabled: item?.node?.isActive,
+                status: item?.node?.isActive,
                 description: item?.node?.description,
                 id: item?.node?.id,
             }));
@@ -94,7 +94,7 @@ const Payments = () => {
                     id: record.id,
                     input: {
                         name: record.name,
-                        isActive: modalContant?.enabled ? modalContant?.enabled : false,
+                        isActive: modalContant?.status ? modalContant?.status : false,
                         description: record.description,
                     },
                 };
@@ -109,7 +109,7 @@ const Payments = () => {
                 const create = {
                     input: {
                         name: record.name,
-                        isActive: modalContant?.enabled ? modalContant?.enabled : false,
+                        isActive: modalContant?.status ? modalContant?.status : false,
                         description: record.description,
                     },
                 };
@@ -159,17 +159,18 @@ const Payments = () => {
                             columns={[
                                 { accessor: 'name', sortable: true },
                                 {
-                                    accessor: 'enabled',
+                                    accessor: 'status',
                                     sortable: true,
                                     render: (row: any) => (
                                         <div className="disabled: flex">
-                                            <div className={`flex h-5 w-10 items-center rounded-full p-1 transition duration-300 ease-in-out ${row.enabled ? 'bg-primary' : 'bg-gray-300'}`}>
+                                        <div>{row?.status?"Enabled":"Disabled"}</div>
+                                            {/* <div className={`flex h-5 w-10 items-center rounded-full p-1 transition duration-300 ease-in-out ${row.status ? 'bg-primary' : 'bg-gray-300'}`}>
                                                 <div
                                                     className={`h-4 w-4 transform rounded-full bg-white shadow-md transition duration-300 ease-in-out ${
-                                                        row.enabled ? 'translate-x-5' : 'translate-x-0'
+                                                        row.status ? 'translate-x-5' : 'translate-x-0'
                                                     }`}
                                                 ></div>
-                                            </div>
+                                            </div> */}
                                         </div>
                                     ),
                                 },
@@ -237,10 +238,10 @@ const Payments = () => {
                                         <Formik
                                             initialValues={
                                                 modalContant === null
-                                                    ? { name: '', enabled: false, description: '' }
+                                                    ? { name: '', status: false, description: '' }
                                                     : {
                                                           name: modalContant?.name,
-                                                          enabled: modalContant?.enabled,
+                                                          status: modalContant?.status,
                                                           description: modalContant?.description,
                                                           id: modalContant?.id,
                                                       }
@@ -263,18 +264,18 @@ const Payments = () => {
 
                                                         <div
                                                             className={`flex h-5 w-10 items-center rounded-full p-1 transition duration-300 ease-in-out ${
-                                                                modalContant?.enabled ? 'bg-primary' : 'bg-gray-300'
+                                                                modalContant?.status ? 'bg-primary' : 'bg-gray-300'
                                                             }`}
                                                             onClick={() => {
                                                                 setModalContant((prevState) => ({
                                                                     ...prevState,
-                                                                    enabled: !prevState?.enabled,
+                                                                    status: !prevState?.status,
                                                                 }));
                                                             }}
                                                         >
                                                             <div
                                                                 className={`h-4 w-4 transform rounded-full bg-white shadow-md transition duration-300 ease-in-out ${
-                                                                    modalContant?.enabled ? 'translate-x-5' : 'translate-x-0'
+                                                                    modalContant?.status ? 'translate-x-5' : 'translate-x-0'
                                                                 }`}
                                                             ></div>
                                                         </div>
