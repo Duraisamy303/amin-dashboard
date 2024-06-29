@@ -113,7 +113,7 @@ export default function Product_export() {
                 };
 
                 if (product?.metadata?.length > 0) {
-                    const shortDescription = product?.metadata?.find((meta) => meta.key === 'short_description')?.value;
+                    const shortDescription = product?.metadata?.find((meta) => meta.key === 'short_descripton')?.value;
                     const description = product?.description;
                     if (description) {
                         res.Description = description;
@@ -133,6 +133,7 @@ export default function Product_export() {
                 return res;
             });
             if (excelData?.length > 0) {
+                console.log("excelData: ", excelData);
                 downloadExlcel(excelData, 'Export Products');
             } else {
                 Failure('No Data Found');
