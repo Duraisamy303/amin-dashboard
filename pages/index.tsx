@@ -133,7 +133,7 @@ const  Index=()=> {
             price: `${formatCurrency(item.node.pricing?.priceRange?.start?.gross?.currency)}${roundOff(item.node.pricing?.priceRange?.start?.gross?.amount)}`,
             status: item.node.channelListings[0]?.isPublished ? 'Published' : 'Draft',
             sku: item.node.defaultVariant ? item.node.defaultVariant.sku : '-',
-            tags: item.node.tags?.length > 0 ? item.node.tags.map((tag) => tag.name).join(',') : '-',
+            tags: item.node.tags?.length > 0 ? item.node?.tags?.map((tag) => tag?.name).join(',') : '-',
             stock: checkStock(item.node.variants) ? 'In stock' : 'Out of stock',
         }));
 
@@ -722,12 +722,12 @@ const  Index=()=> {
                             { accessor: 'status', sortable: true },
                             { accessor: 'price', sortable: true },
                             { accessor: 'categories', sortable: true },
-                            {
-                                accessor: 'tags',
-                                sortable: true,
-                                width: 200,
-                                render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '200px' }}>{row.tags}</div>,
-                            },
+                            // {
+                            //     accessor: 'tags',
+                            //     sortable: true,
+                            //     width: 200,
+                            //     render: (row) => <div style={{ whiteSpace: 'normal', wordWrap: 'break-word', overflow: 'hidden', width: '200px' }}>{row.tags}</div>,
+                            // },
                             {
                                 accessor: 'date',
                                 sortable: true,
