@@ -41,6 +41,14 @@ const Product_export = () => {
         return label;
     };
 
+    const ArrayToImg = (array) => {
+        let label = '';
+        if (array?.length > 0) {
+            label = array?.map((item: any) => item.url).join(',');
+        }
+        return label;
+    };
+
     const IsPublished = (array) => {
         let label = 0;
         if (array?.length > 0) {
@@ -83,6 +91,7 @@ const Product_export = () => {
             }
             setState({ loading: false });
 
+            console.log("allData: ", allData);
 
             const excelData = allData?.map((item: any) => {
                 const data = item?.node;
@@ -98,7 +107,7 @@ const Product_export = () => {
                     Price: data?.pricing?.price?.gross?.amount,
                     Category: product?.category?.name,
                     Tags: ArrayToString(product?.tags),
-                    Images: product?.media?.length,
+                    Images: ArrayToImg(product?.media),
                     Upsells: ArrayToString(product?.getUpsells),
                     'Cross-sells': ArrayToString(product?.getCrosssells),
                     Position: product?.orderNo,
@@ -132,6 +141,7 @@ const Product_export = () => {
 
                 return res;
             });
+
             if (excelData?.length > 0) {
                 downloadExlcel(excelData, 'Export Products');
             } else {
