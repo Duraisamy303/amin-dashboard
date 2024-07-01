@@ -6,8 +6,9 @@ import moment from 'moment';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import CommonLoader from './elements/commonLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
-export default function LastUpdates() {
+const LastUpdates=()=> {
     const [lastUpdateData, { loading: getLoading }] = useMutation(LAST_UPDATE_DETAILS);
 
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
@@ -105,3 +106,4 @@ export default function LastUpdates() {
         </div>
     );
 }
+export default PrivateRouter(LastUpdates);

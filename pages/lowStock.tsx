@@ -6,8 +6,9 @@ import moment from 'moment';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import CommonLoader from './elements/commonLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
-export default function LowStock() {
+const LowStock = () => {
     const {
         data: lowStockList,
         loading: getLoading,
@@ -105,4 +106,6 @@ export default function LowStock() {
             </div>
         </div>
     );
-}
+};
+
+export default PrivateRouter(LowStock);

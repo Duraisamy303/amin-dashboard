@@ -28,8 +28,9 @@ import IconArrowBackward from '@/components/Icon/IconArrowBackward';
 import IconArrowForward from '@/components/Icon/IconArrowForward';
 import IconLoader from '@/components/Icon/IconLoader';
 import { sortBy } from 'lodash';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
-export default function LowStock() {
+const  Index=()=> {
     const PAGE_SIZE = 20;
 
     const router = useRouter();
@@ -792,3 +793,4 @@ export default function LowStock() {
         </div>
     );
 }
+export default PrivateRouter(Index);

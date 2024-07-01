@@ -6,8 +6,9 @@ import { Failure, Success, objIsEmpty, useSetState } from '@/utils/functions';
 import IconSettings from '@/components/Icon/IconSettings';
 import { useRouter } from 'next/router';
 import IconLoader from '@/components/Icon/IconLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
-export default function Address() {
+const Address=()=> {
     const router = useRouter();
     const { id } = router.query;
     const [showSettingsBox, setShowSettingsBox] = useState(null);
@@ -570,3 +571,4 @@ export default function Address() {
         </div>
     );
 }
+export default PrivateRouter(Address);

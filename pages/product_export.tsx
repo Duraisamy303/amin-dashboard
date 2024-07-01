@@ -7,8 +7,9 @@ import Select from 'react-select';
 import Loader from './elements/loader';
 import IconLoader from '@/components/Icon/IconLoader';
 import { useRouter } from 'next/router';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
-export default function Product_export() {
+const Product_export = () => {
     const { data: exportData, refetch: exportDatarefetch } = useQuery(PRODUCT_EXPORT);
 
     const router = useRouter();
@@ -133,7 +134,7 @@ export default function Product_export() {
                 return res;
             });
             if (excelData?.length > 0) {
-                console.log("excelData: ", excelData);
+                console.log('excelData: ', excelData);
                 downloadExlcel(excelData, 'Export Products');
             } else {
                 Failure('No Data Found');
@@ -200,4 +201,6 @@ export default function Product_export() {
             </div>
         </div>
     );
-}
+};
+
+export default PrivateRouter(Product_export);

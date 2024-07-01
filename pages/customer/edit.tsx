@@ -1,4 +1,5 @@
 import IconLoader from '@/components/Icon/IconLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 import { ADD_CUSTOMER, COUNTRY_LIST, CUSTOMER_DETAILS, RESET_PASSWORD, STATES_LIST, UPDATE_CUSTOMER } from '@/query/product';
 import { Failure, Success, useSetState } from '@/utils/functions';
 import { useMutation, useQuery } from '@apollo/client';
@@ -6,7 +7,7 @@ import { useRouter } from 'next/router';
 import React, { useEffect } from 'react';
 import * as Yup from 'yup';
 
-export default function Edit() {
+const Edit = () => {
     const router = useRouter();
     const { id } = router.query;
     const [state, setState] = useSetState({
@@ -357,4 +358,6 @@ export default function Edit() {
             </div>
         </>
     );
-}
+};
+
+export default PrivateRouter(Edit);

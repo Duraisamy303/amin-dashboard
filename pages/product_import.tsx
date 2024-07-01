@@ -4,8 +4,9 @@ import axios from 'axios';
 import { Failure, Success, useSetState } from '@/utils/functions';
 import { error } from 'console';
 import { useRouter } from 'next/router';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
-export default function ProductImport() {
+const ProductImport = () => {
     const router = useRouter();
 
     const [state, setState] = useSetState({
@@ -141,4 +142,5 @@ export default function ProductImport() {
             )}
         </div>
     );
-}
+};
+export default PrivateRouter(ProductImport);

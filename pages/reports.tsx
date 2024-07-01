@@ -27,12 +27,13 @@ import {
 import Select from 'react-select';
 import moment from 'moment';
 import CommonLoader from './elements/commonLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 
 const tabClassNames = (selected: boolean) =>
     `${selected ? ' text-lg !border-white-light !border-b-white text-primary !outline-none dark:!border-[#191e3a] dark:!border-b-black' : ''}
     -mb-[1px] block border border-transparent p-3.5 py-2 hover:text-primary dark:hover:border-b-black text-lg `;
 
-export default function Reports() {
+const  Reports=()=> {
     const order = ['Sales by date', 'Sales by product', 'Sales by category', 'Coupons by date'];
     const analysis = ['Order Analysis', 'Revenue Analysis', 'Customer Analysis', 'Product by Country', 'Product Revenue'];
     const customer = ['Guests list', 'Customer list'];
@@ -1812,3 +1813,5 @@ export default function Reports() {
         </>
     );
 }
+
+export default PrivateRouter(Reports);

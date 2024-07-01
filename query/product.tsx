@@ -186,11 +186,10 @@ export const UPDATED_PRODUCT_PAGINATION = gql`
         id
         name
         slug
-         defaultVariant {
-          id
-          name
-          sku
-
+        defaultVariant {
+            id
+            name
+            sku
         }
         pricing {
             priceRange {
@@ -230,6 +229,8 @@ export const UPDATED_PRODUCT_PAGINATION = gql`
         }
         variants {
             id
+            sku
+            quantityAvailable
             __typename
         }
         images {
@@ -279,10 +280,10 @@ export const PRODUCT_PREV_PAGINATION = gql`
         id
         name
         slug
-         defaultVariant {
-          id
-          name
-          sku
+        defaultVariant {
+            id
+            name
+            sku
         }
         pricing {
             priceRange {
@@ -322,6 +323,8 @@ export const PRODUCT_PREV_PAGINATION = gql`
         }
         variants {
             id
+            sku
+            quantityAvailable
             __typename
         }
         images {

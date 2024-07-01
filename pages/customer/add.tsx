@@ -1,4 +1,5 @@
 import IconLoader from '@/components/Icon/IconLoader';
+import PrivateRouter from '@/components/Layouts/PrivateRouter';
 import { ADD_CUSTOMER, COUNTRY_LIST, STATES_LIST } from '@/query/product';
 import { Failure, Success, useSetState } from '@/utils/functions';
 import { useMutation, useQuery } from '@apollo/client';
@@ -6,7 +7,7 @@ import { useRouter } from 'next/router';
 import React, { useEffect } from 'react';
 import * as Yup from 'yup';
 
-export default function Add() {
+const Add = () => {
     const router = useRouter();
     const [state, setState] = useSetState({
         firstName: '',
@@ -39,7 +40,9 @@ export default function Add() {
         pFirstName: Yup.string().required('Primary first name is required'),
         pLastName: Yup.string().required('Primary last name is required'),
         company: Yup.string().required('Company name is required'),
-        phone: Yup.string().required('Phone number is required').matches(/^\d{10}$/, 'Phone number is not valid'),
+        phone: Yup.string()
+            .required('Phone number is required')
+            .matches(/^\d{10}$/, 'Phone number is not valid'),
         address1: Yup.string().required('Address line 1 is required'),
         city: Yup.string().required('City is required'),
         postalCode: Yup.string().required('Postal code is required'),
@@ -166,14 +169,26 @@ export default function Add() {
                     <label htmlFor="pFirstName" className=" text-sm font-medium text-gray-700">
                         First Name
                     </label>
-                    <input type="text" className={`form-input ${state.errors.pFirstName && 'border border-danger focus:border-danger'}`} name="pFirstName" value={state.pFirstName} onChange={handleChange} />
+                    <input
+                        type="text"
+                        className={`form-input ${state.errors.pFirstName && 'border border-danger focus:border-danger'}`}
+                        name="pFirstName"
+                        value={state.pFirstName}
+                        onChange={handleChange}
+                    />
                     {state.errors.pFirstName && <div className="mt-1 text-danger">{state.errors.pFirstName}</div>}
                 </div>
                 <div className="col-span-6">
                     <label htmlFor="pLastName" className=" text-sm font-medium text-gray-700">
                         Last Name
                     </label>
-                    <input type="text" className={`form-input ${state.errors.pLastName && 'border border-danger focus:border-danger'}`} name="pLastName" value={state.pLastName} onChange={handleChange} />
+                    <input
+                        type="text"
+                        className={`form-input ${state.errors.pLastName && 'border border-danger focus:border-danger'}`}
+                        name="pLastName"
+                        value={state.pLastName}
+                        onChange={handleChange}
+                    />
                     {state.errors.pLastName && <div className="mt-1 text-danger">{state.errors.pLastName}</div>}
                 </div>
                 <div className="col-span-6">
@@ -187,7 +202,14 @@ export default function Add() {
                     <label htmlFor="phone" className=" text-sm font-medium text-gray-700">
                         Phone
                     </label>
-                    <input type="number" className={`form-input ${state.errors.phone && 'border border-danger focus:border-danger'}`} name="phone" value={state.phone} maxLength={10} onChange={handleChange} />
+                    <input
+                        type="number"
+                        className={`form-input ${state.errors.phone && 'border border-danger focus:border-danger'}`}
+                        name="phone"
+                        value={state.phone}
+                        maxLength={10}
+                        onChange={handleChange}
+                    />
                     {state.errors.phone && <div className="mt-1 text-danger">{state.errors.phone}</div>}
                 </div>
                 <div className="col-span-6">
@@ -215,7 +237,13 @@ export default function Add() {
                     <label htmlFor="pincode" className=" text-sm font-medium text-gray-700">
                         Post Code / ZIP
                     </label>
-                    <input type="number" className={`form-input ${state.errors.postalCode && 'border border-danger focus:border-danger'}`} name="postalCode" value={state.postalCode} onChange={handleChange} />
+                    <input
+                        type="number"
+                        className={`form-input ${state.errors.postalCode && 'border border-danger focus:border-danger'}`}
+                        name="postalCode"
+                        value={state.postalCode}
+                        onChange={handleChange}
+                    />
                     {state.errors.postalCode && <div className="mt-1 text-danger">{state.errors.postalCode}</div>}
                 </div>
                 <div className="col-span-6">
@@ -253,7 +281,13 @@ export default function Add() {
                     <label htmlFor="state" className=" text-sm font-medium text-gray-700">
                         State / Country
                     </label>
-                    <select className={`form-select mr-3 ${state.errors.countryArea && 'border border-danger focus:border-danger'}`} id="countryArea" name="countryArea" value={state.countryArea} onChange={handleChange}>
+                    <select
+                        className={`form-select mr-3 ${state.errors.countryArea && 'border border-danger focus:border-danger'}`}
+                        id="countryArea"
+                        name="countryArea"
+                        value={state.countryArea}
+                        onChange={handleChange}
+                    >
                         <option value={''}>Select countryArea</option>
                         {state.countryAreaList.map((item) => (
                             <option key={item.raw} value={item.raw}>
@@ -271,4 +305,6 @@ export default function Add() {
             </div>
         </>
     );
-}
+};
+
+export default PrivateRouter(Add);
