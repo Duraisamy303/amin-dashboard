@@ -12,7 +12,7 @@ import {
     UPDATE_VARIANT_LIST,
 } from '@/query/product';
 import { useQuery, useLazyQuery, useMutation } from '@apollo/client';
-import { DataTable } from 'mantine-datatable';
+import { DataTable, DataTableSortStatus } from 'mantine-datatable';
 import moment from 'moment';
 import { useRouter } from 'next/router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -27,6 +27,7 @@ import IconArrowLeft from '@/components/Icon/IconArrowLeft';
 import IconArrowBackward from '@/components/Icon/IconArrowBackward';
 import IconArrowForward from '@/components/Icon/IconArrowForward';
 import IconLoader from '@/components/Icon/IconLoader';
+import { sortBy } from 'lodash';
 
 export default function LowStock() {
     const PAGE_SIZE = 20;
@@ -44,6 +45,10 @@ export default function LowStock() {
     const [parentLists, setParentLists] = useState([]);
     const [selectedRecords, setSelectedRecords] = useState([]);
     const [loadingRows, setLoadingRows] = useState({});
+    const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
+        columnAccessor: 'id',
+        direction: 'asc',
+    });
 
     const [deleteProducts] = useMutation(DELETE_PRODUCTS);
     const { data: productDetails, refetch: productDetailsRefetch } = useQuery(PRODUCT_FULL_DETAILS);
@@ -69,6 +74,11 @@ export default function LowStock() {
         }
         return filter;
     };
+
+    useEffect(() => {
+        const data = sortBy(recordsData, sortStatus.columnAccessor);
+        setRecordsData(recordsData)
+    }, [sortStatus]);
 
     const { loading: getLoading, refetch: fetchLowStockList } = useQuery(UPDATED_PRODUCT_PAGINATION, {
         variables: {
@@ -330,7 +340,7 @@ export default function LowStock() {
     };
 
     const duplicate = async (row: any) => {
-        console.log("row: ", row);
+        console.log('row: ', row);
         try {
             setLoadingRows((prev) => ({ ...prev, [row.id]: true }));
             // productDetailsRefetch()
@@ -423,7 +433,7 @@ export default function LowStock() {
             if (data?.productCreate?.errors?.length > 0) {
                 Failure(data?.productCreate?.errors[0]?.message);
                 console.log('error: ', data?.productCreate?.errors[0]?.message);
-                
+
                 setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 const productId = data?.productCreate?.product?.id;
@@ -463,8 +473,8 @@ export default function LowStock() {
             if (data?.productChannelListingUpdate?.errors?.length > 0) {
                 console.log('error: ', data?.productChannelListingUpdate?.errors[0]?.message);
                 Failure(data?.productChannelListingUpdate?.errors[0]?.message);
-                deleteDuplicateProduct(productId,row);
-                
+                deleteDuplicateProduct(productId, row);
+
                 setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 console.log('productChannelListUpdate: ', data);
@@ -511,8 +521,8 @@ export default function LowStock() {
             });
             if (data?.productVariantBulkCreate?.errors?.length > 0) {
                 Failure(data?.productVariantBulkCreate?.errors[0]?.message);
-                deleteDuplicateProduct(productId,row);
-                
+                deleteDuplicateProduct(productId, row);
+
                 setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 const resVariants = data?.productVariantBulkCreate?.productVariants;
@@ -565,8 +575,8 @@ export default function LowStock() {
             });
             if (data?.productVariantChannelListingUpdate?.errors?.length > 0) {
                 Failure(data?.productVariantChannelListingUpdate?.errors[0]?.message);
-                deleteDuplicateProduct(productId,row);
-                
+                deleteDuplicateProduct(productId, row);
+
                 setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 updateMetaData(productId, row);
@@ -592,9 +602,9 @@ export default function LowStock() {
             });
             if (data?.updateMetadata?.errors?.length > 0) {
                 Failure(data?.updateMetadata?.errors[0]?.message);
-                deleteDuplicateProduct(productId,row);
+                deleteDuplicateProduct(productId, row);
                 console.log('error: ', data?.updateMetadata?.errors[0]?.message);
-                
+
                 setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
             } else {
                 // if (selectedTag?.length > 0) {
@@ -609,14 +619,14 @@ export default function LowStock() {
         }
     };
 
-    const deleteDuplicateProduct = async (productId: any,row:any) => {
+    const deleteDuplicateProduct = async (productId: any, row: any) => {
         try {
             const { data }: any = deleteProducts({
                 variables: {
                     ids: [productId],
                 },
             });
-            
+
             setLoadingRows((prev) => ({ ...prev, [row.id]: false }));
         } catch (error) {
             console.log('error: ', error);
@@ -697,11 +707,11 @@ export default function LowStock() {
                             {
                                 accessor: 'name',
                                 sortable: true,
-                                render: (row,index) => (
+                                render: (row, index) => (
                                     <>
                                         <div className="">{row.name}</div>
                                         <button onClick={() => duplicate(row)} className=" cursor-pointer text-blue-400 underline">
-                                            {loadingRows[row.id]  ? "...Loading" : 'Duplicate'}
+                                            {loadingRows[row.id] ? '...Loading' : 'Duplicate'}
                                         </button>
                                     </>
                                 ),
@@ -760,6 +770,11 @@ export default function LowStock() {
                         totalRecords={recordsData?.length}
                         recordsPerPage={PAGE_SIZE}
                         minHeight={200}
+                        page={null}
+                        onPageChange={(p) => {}}
+                        withBorder={true}
+                        sortStatus={sortStatus}
+                        onSortStatusChange={setSortStatus}
                         selectedRecords={selectedRecords}
                         onSelectedRecordsChange={(val) => setSelectedRecords(val)}
                         paginationText={({ from, to, totalRecords }) => `Showing  ${from} to ${to} of ${totalRecords} entries`}
