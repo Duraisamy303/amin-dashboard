@@ -517,7 +517,7 @@ const AddCoupon = () => {
                     id: productId,
                     input: [
                         {
-                            key: 'short_descripton',
+                            key: 'short_description',
                             value: shortDescription,
                         },
                         {

@@ -746,7 +746,7 @@ const ProductAdd = () => {
         try {
             const input = [];
             input.push({
-                key: 'short_descripton',
+                key: 'short_description',
                 value: shortDescription,
             });
             // input.push({

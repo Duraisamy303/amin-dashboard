@@ -320,7 +320,7 @@ const ProductEdit = (props: any) => {
                     const Description = JSON.parse(data.description);
                     DescriptionEditor(Description);
 
-                    const shortDesc = getValueByKey(data?.metadata, 'short_descripton');
+                    const shortDesc = getValueByKey(data?.metadata, 'short_description');
                     setShortDescription(shortDesc);
 
                     const label = getValueByKey(data?.metadata, 'label');
@@ -912,7 +912,7 @@ const ProductEdit = (props: any) => {
             const input = [];
             if (shortDescription) {
                 input.push({
-                    key: 'short_descripton',
+                    key: 'short_description',
                     value: shortDescription ? shortDescription : '',
                 });
             }
@@ -930,20 +930,6 @@ const ProductEdit = (props: any) => {
                 variables: {
                     id: id,
                     input,
-                    // input: [
-                    //     {
-                    //         key: 'short_descripton',
-                    //         value: shortDescription,
-                    //     },
-                    //     {
-                    //         key: 'label',
-                    //         value: label.value,
-                    //     },
-                    //     {
-                    //         key: 'description',
-                    //         value: description,
-                    //     },
-                    // ],
                     keysToDelete: [],
                 },
                 // variables: { email: formData.email, password: formData.password },
