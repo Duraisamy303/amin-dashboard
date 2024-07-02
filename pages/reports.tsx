@@ -349,6 +349,8 @@ const  Reports=()=> {
                 { accessor: 'couponAmount', title: 'Coupon Amount' },
                 { accessor: 'refundAmount', title: 'Refund Amount' },
                 { accessor: 'shippingAmount', title: 'Shipping Amount' },
+                { accessor: 'productsTotalAmount', title: 'Total Amount' },
+
             ];
 
             const tableData = salesBydateTable(response);
@@ -1127,7 +1129,7 @@ const  Reports=()=> {
             refundAmount: refundAmountList[index],
             noOfOrders: noOfOrderList[index],
             couponAmount: couponAmountList[index],
-            // productsTotalAmount: productsTotalAmount[index],
+            productsTotalAmount: productsTotalAmount[index],
         }));
 
         return table;
